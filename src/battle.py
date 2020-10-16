@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Union, Optional
-from discord import Emoji
+from typing import Optional
 
 
 class StateError(Exception):

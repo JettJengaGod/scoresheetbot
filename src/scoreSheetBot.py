@@ -5,7 +5,6 @@ import traceback
 
 import discord
 import functools
-from discord import Emoji
 from discord.ext import commands
 from dotenv import load_dotenv
 from typing import Dict
