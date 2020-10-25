@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Iterable
 
 
 class StateError(Exception):
@@ -22,16 +22,23 @@ class Character:
         return self.name
 
 
+def bold(s: str) -> str:
+    return f'**{s}**'
+
+
 @dataclass
 class Player:
     name: str
     team_name: str
     taken: int = 0
     left: int = PLAYER_STOCKS
-    char: Character = None
+    char: Character = Character('')
 
     def set_char(self, char: Character) -> None:
         self.char = char
+
+    def __str__(self) -> str:
+        return f'{self.name} {self.char}'
 
 
 @dataclass
@@ -71,6 +78,29 @@ class Team:
         self.current_player.taken -= took
         self.stocks += lost
 
+    def mvp(self) -> Optional[Iterable]:
+        highest = 0
+        ret = []
+        for player in self.players:
+            if player.taken > highest:
+                ret = [player]
+                highest = max(highest, player.taken)
+            elif player.taken == highest:
+                ret.append(player)
+        return ret
+
+    def mvp_parse(self) -> str:
+        players = ''
+        for player in self.mvp():
+            players += str(player)
+        return f'MVP for {self.name} was {players} with {self.mvp()[0].taken} stocks'
+
+    def current_status(self) -> str:
+        ret = f'{self.name}[{self.stocks}]'
+        if self.current_player:
+            ret += f' {str(self.current_player)} [{self.current_player.left}]'
+        return ret
+
 
 @dataclass
 class Match:
@@ -82,7 +112,13 @@ class Match:
 
     def __str__(self):
         # TODO bold winner here
-        return f'{self.p1.name}| {self.p1.char} [{self.p1_taken}] vs [{self.p2_taken}] {self.p2.char}|{self.p2.name}'
+        p1 = f'{self.p1.name}| {self.p1.char} [{self.p1_taken}]'
+        p2 = f'[{self.p2_taken}] {self.p2.char}|{self.p2.name}'
+        if self.winner == 1:
+            p1 = bold(p1)
+        else:
+            p2 = bold(p2)
+        return f'{p1} vs {p2}'
 
     def __eq__(self, other):
         return (
@@ -129,12 +165,18 @@ class Battle:
         p1.set_char(char1)
         p2 = self.team2.current_player
         p2.set_char(char2)
-        assert (p1.left == taken2) or (p2.left == taken1)
+        if not (p1.left == taken2 or p2.left == taken1):
+            raise StateError(self, f'Game ended incorrectly,\n'
+                                   f' {p1.name} has {p1.left} stocks {p2.name} has {p2.left} stocks')
         winner = 1 if taken1 == p2.left else 2
         if winner == 1:
-            assert taken2 < p1.left
+            if taken2 >= p1.left:
+                raise StateError(self, f'Both players can\'t win the game. Please try again. '
+                                       f' {p1.name} has {p1.left} stocks {p2.name} has {p2.left} stocks')
         else:
-            assert taken1 < p2.left
+            if taken1 >= p2.left:
+                raise StateError(self, f'Both players can\'t win the game. Please try again. '
+                                       f' {p1.name} has {p1.left} stocks {p2.name} has {p2.left} stocks')
         match = Match(p1, p2, taken1, taken2, winner)
         self.matches.append(match)
         self.team1.match_finish(taken2, taken1)
@@ -182,7 +224,9 @@ class Battle:
             out += '\n'
         if self.battle_over():
             out += '--------------------------------------------\n'
-            out += f'{self.winner().name} wins {self.winner().stocks} - 0 over {self.loser().name}'
+            out += f'{self.winner().name} wins {self.winner().stocks} - 0 over {self.loser().name}\n'
+            out += f'{self.team1.mvp_parse()}\n{self.team2.mvp_parse()}'
         else:
-            out += f'Current score: {self.team1.name}[{self.team1.stocks}] - {self.team2.name}[{self.team2.stocks}]'
+            out += f'Current score: {self.team1.current_status()} - {self.team2.current_status()}'
+
         return out

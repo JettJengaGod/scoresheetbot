@@ -16,7 +16,7 @@ help = dict(
     start=HelpDoc('Start a Scoresheet in this channel with two team names and a size',
                   'Takes 3 parameters, "Team1 Team2 Size"', "Team1 Team2 size"),
     add=HelpDoc('Add a player to a team', 'Takes 2 parameters, "TeamName PlayerName"', 'TeamName PlayerName'),
-    end_game=HelpDoc('End the game with characters and stocks', 'Takes 4 parameters "Char1 Stocks1 Char2 Stocks2"',
+    end=HelpDoc('End the game with characters and stocks', 'Takes 4 parameters "Char1 Stocks1 Char2 Stocks2"',
                      'Char1 StocksTaken1 Char2 StocksTaken2'),
     resize=HelpDoc('Resize the crew battle',
                    'Takes 1 parameter: "NewSize" and resizes the crew battle to that size '

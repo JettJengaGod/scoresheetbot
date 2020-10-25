@@ -56,9 +56,9 @@ class ScoreSheetBot(commands.Cog):
         self._current(ctx).add_player(team, player)
         await ctx.send(self._current(ctx))
 
-    @commands.command(**help['end_game'])
+    @commands.command(**help['end'])
     @has_sheet
-    async def end_game(self, ctx, char1: str, stocks1: int, char2: str, stocks2: int):
+    async def end(self, ctx, char1: str, stocks1: int, char2: str, stocks2: int):
         self._current(ctx).finish_match(stocks1, stocks2, Character(str(char1)),
                                         Character(str(char2)))
         await ctx.send(self._current(ctx))
@@ -131,7 +131,7 @@ class ScoreSheetBot(commands.Cog):
         if isinstance(error, commands.DisabledCommand):
             await ctx.send(f'{ctx.command} has been disabled.')
         elif isinstance(error, commands.CommandNotFound):
-            await ctx.author.send(f'{ctx.command} was not found, try "!help" for a list of commands.')
+            await ctx.author.send(f'{str(error)}, try "!help" for a list of commands.')
 
         elif isinstance(error, commands.NoPrivateMessage):
             try:
