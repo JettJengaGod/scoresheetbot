@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, Iterable
+from src.character import Character
+from discord import embeds
 
 
 class StateError(Exception):
@@ -12,14 +14,6 @@ class StateError(Exception):
 
 PLAYER_STOCKS = 3
 DEFAULT_SIZE = 5
-
-
-@dataclass
-class Character:
-    name: str
-
-    def __str__(self):
-        return self.name
 
 
 def bold(s: str) -> str:
@@ -96,10 +90,10 @@ class Team:
         return f'MVP for {self.name} was {players} with {self.mvp()[0].taken} stocks'
 
     def current_status(self) -> str:
-        ret = f'{self.name}[{self.stocks}]'
         if self.current_player:
-            ret += f' {str(self.current_player)} [{self.current_player.left}]'
-        return ret
+            ret = f'{str(self.current_player)} {self.current_player.left} stocks'
+            return ret
+        return 'Waiting'
 
 
 @dataclass
@@ -111,7 +105,6 @@ class Match:
     winner: int
 
     def __str__(self):
-        # TODO bold winner here
         p1 = f'{self.p1.name}| {self.p1.char} [{self.p1_taken}]'
         p2 = f'[{self.p2_taken}] {self.p2.char}|{self.p2.name}'
         if self.winner == 1:
@@ -136,6 +129,10 @@ class Battle:
         self.team2 = Team(name2, players, players * PLAYER_STOCKS)
         self.teams = (self.team1, self.team2)
         self.matches = []
+        self.confirms = [False, False]
+
+    def confirmed(self):
+        return all(self.confirms)
 
     def match_ready(self) -> bool:
         return all(t.current_player for t in self.teams)
@@ -181,10 +178,14 @@ class Battle:
         self.matches.append(match)
         self.team1.match_finish(taken2, taken1)
         self.team2.match_finish(taken1, taken2)
-        print(match)
-        if self.battle_over():
-            self.finish_battle()
         return match
+
+    def confirm(self, team: str) -> None:
+        if team == self.team1.name:
+            self.confirms[0] = not self.confirms[0]
+
+        if team == self.team2.name:
+            self.confirms[1] = not self.confirms[1]
 
     def battle_over(self):
         return any(t.stocks == 0 for t in self.teams)
@@ -198,9 +199,6 @@ class Battle:
         if self.battle_over():
             return self.team2 if self.team2.stocks == 0 else self.team1
         raise StateError(self, "This should not be reachable")
-
-    def finish_battle(self):
-        pass
 
     def resize(self, new_size: int) -> None:
         if new_size < max(len(self.team1.players), len(self.team2.players), 1):
@@ -230,3 +228,30 @@ class Battle:
             out += f'Current score: {self.team1.current_status()} - {self.team2.current_status()}'
 
         return out
+
+    def embed(self) -> embeds.Embed:
+        title = f'{self.team1.name} vs {self.team2.name}  ' \
+                f'{self.team1.num_players} vs {self.team2.num_players} Crew battle'
+        body = ''
+        for match in self.matches:
+            body += str(match)
+            body += '\n'
+
+        footer = ''
+        if self.battle_over():
+            footer += '--------------------------------------------\n' \
+                      f'{self.winner().name} wins {self.winner().stocks} - 0 over ' \
+                      f'{self.loser().name}\n{self.team1.mvp_parse()}\n{self.team2.mvp_parse()}'
+            if not all(self.confirms):
+                footer += '\nPlease confirm: '
+                if not self.confirms[0]:
+                    footer += f'{self.team1.name} '
+                if not self.confirms[1]:
+                    footer += f'{self.team2.name} '
+        else:
+            footer += f'Current score: {self.team1.name}[{self.team1.stocks}] - ' \
+                      f'{self.team2.name}[{self.team2.stocks}] \n' \
+                      f'{self.team1.name}: {self.team1.current_status()}  \n' \
+                      f'{self.team2.name}: {self.team2.current_status()}'
+        body += footer
+        return embeds.Embed(title=title, description=body)

@@ -7,16 +7,22 @@ import discord
 import functools
 from discord.ext import commands
 from dotenv import load_dotenv
-from typing import Dict
+from typing import Dict, Optional
 from src.battle import Battle, Character, StateError
 from src.help import help
+from src.character import string_to_emote, all_emojis
+from src.helpers import split_on_length_and_separator
+import src.roles
+
+Context = discord.ext.commands.context
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+cache = src.roles.CrewCache()
 
 
 def has_sheet(func):
-    """Decorator that returns if no battle has started."""
+    """Decorator that errors if no battle has started."""
 
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
@@ -31,6 +37,44 @@ def has_sheet(func):
     return wrapper
 
 
+def no_battle(func):
+    """Decorator that errors if no battle has started."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        battle = self.battle_map.get(str(ctx.guild) + str(ctx.channel))
+        if battle is not None:
+            await ctx.send('A battle is already going in this channel.')
+            return
+        # kwargs['battle'] = battle
+        return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def is_lead(func):
+    """Decorator that ensures caller is leader, or advisor."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        user = ctx.author
+        if not (any(role.name in ['Leader', 'Advisor'] for role in user.roles)):
+            await ctx.send('Only a a leader or advisor can run this command.')
+            return
+        return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def crew(user: discord.Member) -> str:
+    for role in user.roles:
+        if role.name in cache.crews():
+            return role.name
+    return "Not in crew"
+
+
 class ScoreSheetBot(commands.Cog):
     def __init__(self, bot: commands.bot):
         self.bot = bot
@@ -39,66 +83,136 @@ class ScoreSheetBot(commands.Cog):
     def _current(self, ctx) -> Battle:
         return self.battle_map[str(ctx.guild) + str(ctx.channel)]
 
-    def _set_current(self, ctx, battle: Battle):
+    def _battle_crew(self, ctx: Context, user: discord.member) -> Optional[str]:
+        for role in user.roles:
+            if role.name in (self._current(ctx).team1.name, self._current(ctx).team2.name):
+                return role.name
+        return None
+
+    def _reject_outsiders(self, ctx: Context):
+        if not self._battle_crew(ctx, ctx.author):
+            raise Exception('You are not in this battle, stop trying to mess with it.')
+
+    def _set_current(self, ctx: Context, battle: Battle):
         self.battle_map[str(ctx.guild) + str(ctx.channel)] = battle
 
     def _clear_current(self, ctx):
         self.battle_map[str(ctx.guild) + str(ctx.channel)] = None
 
-    @commands.command(**help['start'])
-    async def start(self, ctx, team1: str, team2: str, size: int):
-        self._set_current(ctx, Battle(team1, team2, size))
-        await ctx.send(self._current(ctx))
+    @commands.command(**help['battle'])
+    @no_battle
+    async def battle(self, ctx: Context, user: discord.Member, size: int):
+        if crew(ctx.author)!= crew(user):
+            self._set_current(ctx, Battle(crew(ctx.author), crew(user), size))
+            await ctx.send(embed=self._current(ctx).embed())
+        else:
+            await ctx.send('You can\'t battle your own crew')
 
-    @commands.command(**help['add'])
+    @commands.command(**help['send'])
     @has_sheet
-    async def add(self, ctx, team: str, player: str, battle=None):
-        self._current(ctx).add_player(team, player)
-        await ctx.send(self._current(ctx))
+    @is_lead
+    async def send(self, ctx: Context, user: discord.Member):
+        self._reject_outsiders(ctx)
+        current_crew = self._battle_crew(ctx, ctx.author)
+        if current_crew == self._battle_crew(ctx, user):
+            self._current(ctx).add_player(self._battle_crew(ctx, ctx.author), user.display_name)
+            await ctx.send(embed=self._current(ctx).embed())
+        else:
+            await ctx.send(f'{user.display_name} is not on {current_crew} please choose someone else.')
+
+    @commands.command(**help['replace'])
+    @has_sheet
+    @is_lead
+    async def replace(self, ctx: Context, user: discord.Member):
+        self._reject_outsiders(ctx)
+        current_crew = self._battle_crew(ctx, ctx.author)
+        if current_crew == self._battle_crew(ctx, user):
+            self._current(ctx).replace_player(self._battle_crew(ctx, ctx.author), user.display_name)
+            await ctx.send(embed=self._current(ctx).embed())
+        else:
+            await ctx.send(f'{user.display_name} is not on {current_crew}, please choose someone else.')
 
     @commands.command(**help['end'])
     @has_sheet
-    async def end(self, ctx, char1: str, stocks1: int, char2: str, stocks2: int):
+    async def end(self, ctx: Context, char1: str, stocks1: int, char2: str, stocks2: int):
+        self._reject_outsiders(ctx)
         self._current(ctx).finish_match(stocks1, stocks2, Character(str(char1)),
                                         Character(str(char2)))
-        await ctx.send(self._current(ctx))
-        if self._current(ctx).battle_over():
-            self._clear_current(ctx)
+        await ctx.send(embed=self._current(ctx).embed())
 
     @commands.command(**help['resize'])
+    @is_lead
     @has_sheet
-    async def resize(self, ctx, new_size: int):
+    async def resize(self, ctx: Context, new_size: int):
+        self._reject_outsiders(ctx)
         self._current(ctx).resize(new_size)
-        await ctx.send(self._current(ctx))
+        await ctx.send(embed=self._current(ctx).embed())
 
-    @commands.command(**help['resize'])
+    @commands.command(**help['undo'])
     @has_sheet
+    @is_lead
     async def undo(self, ctx):
+        self._reject_outsiders(ctx)
         self._current(ctx).undo()
-        await ctx.send(self._current(ctx))
+        await ctx.send(embed=self._current(ctx).embed())
+
+    @commands.command(**help['confirm'])
+    @has_sheet
+    @is_lead
+    async def confirm(self, ctx):
+        self._reject_outsiders(ctx)
+
+        if self._current(ctx).battle_over():
+            self._current(ctx).confirm(self._battle_crew(ctx, ctx.author))
+            await ctx.send(embed=self._current(ctx).embed())
+            if self._current(ctx).confirmed():
+                await ctx.send('The battle has been confirmed by both sides.')
+                self._clear_current(ctx)
+        else:
+            ctx.send('The battle is not over yet, wait till then to confirm.')
+
+    @commands.command(**help['clear'])
+    @has_sheet
+    @is_lead
+    async def status(self, ctx):
+        self._reject_outsiders(ctx)
+        self._clear_current()
+        await ctx.send('Cleared the crew battle')
+
+    @commands.command(**help['status'])
+    @has_sheet
+    async def status(self, ctx):
+        await ctx.send(embed=self._current(ctx).embed())
 
     """TESTING COMMANDS DON'T MODIFY """
 
-    @commands.command(**help['start'])
-    async def s(self, ctx):
-        team1, team2, size = 'a', 'b', 2
-        self._set_current(ctx, Battle(team1, team2, size))
-        await ctx.send(self._current(ctx))
+    @commands.command(**help['char'])
+    async def char(self, ctx: Context, thing):
+        await ctx.send(string_to_emote(thing))
 
-    @commands.command(**help['add'])
-    @has_sheet
-    async def a(self, ctx):
-        self._current(ctx).add_player('a', 'Player1')
-        self._current(ctx).add_player('b', 'Player2')
-        await ctx.send(self._current(ctx))
+    @commands.command(**help['crew'])
+    async def crew(self, ctx):
+        await ctx.send(crew(ctx.author))
 
-    @commands.command(**help['echo'])
-    async def echo(self, ctx, thing):
-        print(thing)
-        await ctx.send(thing)
+    @commands.command(**help['char'])
+    async def who(self, ctx: Context, user: discord.Member):
+
+        await ctx.send(crew(user))
+
+    @commands.command(**help['chars'])
+    async def chars(self, ctx):
+        emojis = all_emojis()
+        out = []
+        for emoji in emojis:
+            out.append(f'{emoji[0]}: {emoji[1]}\n')
+
+        out = "".join(out)
+        out = split_on_length_and_separator(out, 1999, ']')
+        for split in out:
+            await ctx.send(embed=discord.Embed(description=split))
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(self, ctx: Context, error):
         """The event triggered when an error is raised while invoking a command.
         Parameters
         ------------
@@ -145,7 +259,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'"{ctx.command}" did not work because:{error.message}')
         else:
             # All other Errors not returned come here. And we can just print the default TraceBack.
-            print(error)
+            await ctx.send(str(error))
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
 
