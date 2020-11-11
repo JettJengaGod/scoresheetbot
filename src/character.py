@@ -247,6 +247,10 @@ def string_to_emote2(input_str: str, bot) -> Optional[str]:
         raise ValueError('Unknown character: \'{}\', try `!chars` '.format(character))
     if canonical_name in S_SET and alt_num > 1:
         canonical_name = canonical_name[:-1]
+
+    if canonical_name == 'olimar':
+        if alt_num > 4:
+            canonical_name = 'alph'
     if canonical_name == 'steve':
         if alt_num in [2, 4, 6]:
             canonical_name = 'alex'

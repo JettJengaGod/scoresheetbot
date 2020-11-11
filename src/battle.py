@@ -106,7 +106,7 @@ class Match:
 
     def __str__(self):
         p1 = f'{self.p1.name} | {self.p1.char} [{self.p1_taken}]'
-        p2 = f'[{self.p2_taken}] {self.p2.char} |{self.p2.name}'
+        p2 = f'[{self.p2_taken}] {self.p2.char} | {self.p2.name}'
         if self.winner == 1:
             p1 = bold(p1)
         else:
