@@ -50,7 +50,7 @@ CHARACTERS = {
     'min_min': [],
     'mr_game_and_watch': ['gnw', 'g&w', 'gameandwatch', 'game&watch'],
     'ness': [],
-    'olimar': ['oli'],
+    'olimar': ['oli', 'alph'],
     'pac_man': ['pac'],
     'palutena': ['palu'],
     'peachs': ['peach'],
