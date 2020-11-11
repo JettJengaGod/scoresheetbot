@@ -8,17 +8,17 @@ import functools
 from discord.ext import commands
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union
-from src.battle import Battle, Character, StateError
-from src.help import help
-from src.character import string_to_emote, all_emojis, string_to_emote2
-from src.helpers import split_on_length_and_separator, is_usable_emoji
-import src.roles
+from battle import Battle, Character, StateError
+from help import help
+from character import string_to_emote, all_emojis, string_to_emote2
+from helpers import split_on_length_and_separator, is_usable_emoji
+import roles
 
 Context = discord.ext.commands.context
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-cache = src.roles.CrewCache()
+cache = roles.CrewCache()
 
 
 def ss_channel(func):

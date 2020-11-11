@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional, Iterable
-from src.character import Character
+from character import Character
 from discord import embeds
 
 

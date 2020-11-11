@@ -1,4 +1,4 @@
 
-from src.scoreSheetBot import main
+from scoreSheetBot import main
 
 main()
