@@ -1,6 +1,7 @@
 from typing import List
 
 import discord
+from typing import Iterable
 
 
 def split_on_length_and_separator(string: str, length: int, separator: str) -> List[str]:
@@ -26,3 +27,7 @@ def is_usable_emoji(text: str, bot):
         emoji_id = text[text.index(':') + 1:]
         return discord.utils.get(bot.emojis, name=name).available
     return False
+
+
+def check_roles(user: discord.member, roles: Iterable) -> bool:
+    return any((role.name in roles for role in user.roles))

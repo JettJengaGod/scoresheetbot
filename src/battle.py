@@ -46,7 +46,7 @@ class Team:
     def add_player(self, player_name: str) -> None:
         if self.current_player:
             raise StateError(None,
-                             f"This team already has a current player, {self.current_player.name}, use \"!replace\" "
+                             f"This team already has a current player, {self.current_player.name}, use \",replace\" "
                              f"to replace them")
             # TODO add role checks here to make sure the player is on their team
         self.current_player = Player(name=player_name, team_name=self.name)
@@ -130,6 +130,8 @@ class Battle:
         self.teams = (self.team1, self.team2)
         self.matches = []
         self.confirms = [False, False]
+        self.id = 'Not Set, use `,arena ID/PASS` to set '
+        self.stream = 'Not Set, use `,stream STREAMLINKHERE` to set '
 
     def confirmed(self):
         return all(self.confirms)
@@ -232,7 +234,8 @@ class Battle:
     def embed(self) -> embeds.Embed:
         title = f'{self.team1.name} vs {self.team2.name}  ' \
                 f'{self.team1.num_players} vs {self.team2.num_players} Crew battle'
-        body = ''
+        body = f'Lobby ID: {self.id}\n' \
+               f'Streamer: {self.stream}\n'
         for match in self.matches:
             body += str(match)
             body += '\n'

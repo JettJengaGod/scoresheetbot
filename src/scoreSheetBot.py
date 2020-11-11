@@ -11,7 +11,7 @@ from typing import Dict, Optional, Union
 from src.battle import Battle, Character, StateError
 from src.help import help
 from src.character import string_to_emote, all_emojis, string_to_emote2
-from src.helpers import split_on_length_and_separator, is_usable_emoji
+from src.helpers import split_on_length_and_separator, is_usable_emoji, check_roles
 import src.roles
 
 Context = discord.ext.commands.context
@@ -75,14 +75,31 @@ def is_lead(func):
         ctx = args[0]
         user = ctx.author
         if not (any(role.name in ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion'] for role in user.roles)):
-            await ctx.send('Only a a leader or advisor or admin can run this command.')
+            await ctx.send('Only a leader or advisor or admin can run this command.')
             return
         return await func(self, *args, **kwargs)
 
     return wrapper
 
 
-def crew(user: discord.Member) -> str:
+def is_streamer(func):
+    """Decorator that ensures caller is streamer."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        user = ctx.author
+        if not (
+                any(role.name in ['SCS Admin', 'v2 Minion', 'SCS Certified Streamer', 'Streamers'] for role in
+                    user.roles)):
+            await ctx.send('Only a streamer or admin can run this command.')
+            return
+        return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def crew(user: discord.Member) -> Optional[str]:
     for role in user.roles:
         if role.name in cache.crews():
             return role.name
@@ -183,6 +200,30 @@ class ScoreSheetBot(commands.Cog):
         self._current(ctx).resize(new_size)
         await ctx.send(embed=self._current(ctx).embed())
 
+    @commands.command(**help['arena'])
+    @has_sheet
+    @ss_channel
+    async def arena(self, ctx: Context, id_str: str = ''):
+        if id_str and check_roles(ctx.author, ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion', 'Streamers',
+                                               'SCS Certified Streamer']):
+            self._current(ctx).id = id_str
+            await ctx.send(f'Updated the id to {id_str}')
+            return
+        await ctx.send(f'The lobby id is {self._current(ctx).id}')
+
+    @commands.command(**help['stream'])
+    @has_sheet
+    @ss_channel
+    async def stream(self, ctx: Context, stream: str = ''):
+        if stream and check_roles(ctx.author, ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion', 'Streamers',
+                                               'SCS Certified Streamer']):
+            if '/' not in stream:
+                stream = 'https://twitch.tv/' + stream
+            self._current(ctx).stream = stream
+            await ctx.send(f'Updated the stream to {stream}')
+            return
+        await ctx.send(f'The stream is {self._current(ctx).stream}')
+
     @commands.command(**help['undo'])
     @has_sheet
     @ss_channel
@@ -213,7 +254,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def clear(self, ctx):
-        if not any(role.name in ['Advisor', 'SCS Admin'] for role in ctx.author.roles):
+        if not any(role.name in ['v2 Minion', 'SCS Admin'] for role in ctx.author.roles):
             self._reject_outsiders(ctx)
         self._clear_current(ctx)
         await ctx.send('Cleared the crew battle.')
@@ -292,7 +333,7 @@ class ScoreSheetBot(commands.Cog):
         if isinstance(error, commands.DisabledCommand):
             await ctx.send(f'{ctx.command} has been disabled.')
         elif isinstance(error, commands.CommandNotFound):
-            await ctx.send(f'{str(error)}, try "!help" for a list of commands.')
+            await ctx.send(f'{str(error)}, try ",help" for a list of commands.')
 
         elif isinstance(error, commands.NoPrivateMessage):
             try:
