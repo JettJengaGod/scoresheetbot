@@ -213,7 +213,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def clear(self, ctx):
-        if not any(role.name in ['Leader', 'Advisor'] for role in ctx.author.roles):
+        if not any(role.name in ['Advisor', 'SCS Admin'] for role in ctx.author.roles):
             self._reject_outsiders(ctx)
         self._clear_current(ctx)
         await ctx.send('Cleared the crew battle.')
