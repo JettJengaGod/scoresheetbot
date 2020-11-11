@@ -56,7 +56,7 @@ CHARACTERS = {
     'peachs': ['peach'],
     'pichu': [],
     'pikachu': ['pika'],
-    'piranha_plant': ['plant'],
+    'piranha_plant': ['plant', 'pp'],
     'pit': [],
     'pokemon_trainer': ['pt', 'trainer'],
     'richter': [],
@@ -85,6 +85,14 @@ CHARACTERS = {
     'zero_suit_samus': ['zss'],
 }
 
+S_SET = {
+    'clouds',
+    'wolfs',
+    'links',
+    'peachs',
+    'snakes'
+
+}
 ID_FROM_CANONICAL = {
     'banjo_and_kazooie': 596831625765978131,
     'bayonetta': 575804398215757854,
@@ -237,6 +245,13 @@ def string_to_emote2(input_str: str, bot) -> Optional[str]:
         canonical_name = CANONICAL_NAMES_MAP[character]
     else:
         raise ValueError('Unknown character: \'{}\', try `!chars` '.format(character))
+    if canonical_name in S_SET and alt_num > 1:
+        canonical_name = canonical_name[:-1]
+    if canonical_name == 'steve':
+        if alt_num in [2, 4, 6]:
+            canonical_name = 'alex'
+        if alt_num == 8:
+            canonical_name = 'enderman'
     return str(discord.utils.get(bot.emojis, name='{}{}'.format(canonical_name, '' if alt_num == 1 else alt_num)))
 
 
