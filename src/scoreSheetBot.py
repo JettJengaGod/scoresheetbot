@@ -74,8 +74,8 @@ def is_lead(func):
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
         user = ctx.author
-        if not (any(role.name in ['Leader', 'Advisor'] for role in user.roles)):
-            await ctx.send('Only a a leader or advisor can run this command.')
+        if not (any(role.name in ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion'] for role in user.roles)):
+            await ctx.send('Only a a leader or advisor or admin can run this command.')
             return
         return await func(self, *args, **kwargs)
 
@@ -86,7 +86,7 @@ def crew(user: discord.Member) -> str:
     for role in user.roles:
         if role.name in cache.crews():
             return role.name
-    return "Not in crew"
+    return None
 
 
 class ScoreSheetBot(commands.Cog):
@@ -115,8 +115,21 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help['battle'])
     @no_battle
+    @is_lead
     @ss_channel
     async def battle(self, ctx: Context, user: discord.Member, size: int):
+        user_crew = crew(ctx.author)
+        opp_crew = crew(user)
+        if not user_crew:
+            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if not opp_crew:
+            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
         if crew(ctx.author) != crew(user):
             self._set_current(ctx, Battle(crew(ctx.author), crew(user), size))
             await ctx.send(embed=self._current(ctx).embed())
@@ -200,7 +213,8 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def clear(self, ctx):
-        self._reject_outsiders(ctx)
+        if not any(role.name in ['Leader', 'Advisor'] for role in ctx.author.roles):
+            self._reject_outsiders(ctx)
         self._clear_current(ctx)
         await ctx.send('Cleared the crew battle.')
 
@@ -297,7 +311,7 @@ class ScoreSheetBot(commands.Cog):
 
 
 def main():
-    bot = commands.Bot(command_prefix='!')
+    bot = commands.Bot(command_prefix=',')
     bot.add_cog(ScoreSheetBot(bot))
     bot.run(TOKEN)
 
