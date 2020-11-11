@@ -7,11 +7,11 @@ import discord
 import functools
 from discord.ext import commands
 from dotenv import load_dotenv
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 from src.battle import Battle, Character, StateError
 from src.help import help
-from src.character import string_to_emote, all_emojis
-from src.helpers import split_on_length_and_separator
+from src.character import string_to_emote, all_emojis, string_to_emote2
+from src.helpers import split_on_length_and_separator, is_usable_emoji
 import src.roles
 
 Context = discord.ext.commands.context
@@ -19,6 +19,20 @@ Context = discord.ext.commands.context
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 cache = src.roles.CrewCache()
+
+
+def ss_channel(func):
+    """Decorator that errors if not in the correct channel."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        if 'scoresheet_bot' not in ctx.channel.name:
+            await ctx.send('Cannot use this bot in this channel, try a scoresheet_bot channel.')
+            return
+        return await func(self, *args, **kwargs)
+
+    return wrapper
 
 
 def has_sheet(func):
@@ -101,8 +115,9 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help['battle'])
     @no_battle
+    @ss_channel
     async def battle(self, ctx: Context, user: discord.Member, size: int):
-        if crew(ctx.author)!= crew(user):
+        if crew(ctx.author) != crew(user):
             self._set_current(ctx, Battle(crew(ctx.author), crew(user), size))
             await ctx.send(embed=self._current(ctx).embed())
         else:
@@ -110,6 +125,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help['send'])
     @has_sheet
+    @ss_channel
     @is_lead
     async def send(self, ctx: Context, user: discord.Member):
         self._reject_outsiders(ctx)
@@ -122,6 +138,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help['replace'])
     @has_sheet
+    @ss_channel
     @is_lead
     async def replace(self, ctx: Context, user: discord.Member):
         self._reject_outsiders(ctx)
@@ -134,15 +151,20 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help['end'])
     @has_sheet
-    async def end(self, ctx: Context, char1: str, stocks1: int, char2: str, stocks2: int):
+    @ss_channel
+    async def end(self, ctx: Context, char1: Union[str, discord.Emoji], stocks1: int, char2: Union[str, discord.Emoji],
+                  stocks2: int):
         self._reject_outsiders(ctx)
-        self._current(ctx).finish_match(stocks1, stocks2, Character(str(char1)),
-                                        Character(str(char2)))
+
+        self._current(ctx).finish_match(stocks1, stocks2,
+                                        Character(str(char1), self.bot, is_usable_emoji(char1, self.bot)),
+                                        Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
         await ctx.send(embed=self._current(ctx).embed())
 
     @commands.command(**help['resize'])
     @is_lead
     @has_sheet
+    @ss_channel
     async def resize(self, ctx: Context, new_size: int):
         self._reject_outsiders(ctx)
         self._current(ctx).resize(new_size)
@@ -150,6 +172,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help['undo'])
     @has_sheet
+    @ss_channel
     @is_lead
     async def undo(self, ctx):
         self._reject_outsiders(ctx)
@@ -158,6 +181,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help['confirm'])
     @has_sheet
+    @ss_channel
     @is_lead
     async def confirm(self, ctx):
         self._reject_outsiders(ctx)
@@ -173,33 +197,42 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help['clear'])
     @has_sheet
+    @ss_channel
     @is_lead
-    async def status(self, ctx):
+    async def clear(self, ctx):
         self._reject_outsiders(ctx)
-        self._clear_current()
-        await ctx.send('Cleared the crew battle')
+        self._clear_current(ctx)
+        await ctx.send('Cleared the crew battle.')
 
     @commands.command(**help['status'])
     @has_sheet
+    @ss_channel
     async def status(self, ctx):
         await ctx.send(embed=self._current(ctx).embed())
 
     """TESTING COMMANDS DON'T MODIFY """
 
     @commands.command(**help['char'])
-    async def char(self, ctx: Context, thing):
-        await ctx.send(string_to_emote(thing))
+    @ss_channel
+    async def char(self, ctx: Context, emoji):
+        if is_usable_emoji(emoji, self.bot):
+            await ctx.send(emoji)
+        else:
+            await ctx.send(string_to_emote2(emoji, self.bot))
 
     @commands.command(**help['crew'])
+    @ss_channel
     async def crew(self, ctx):
         await ctx.send(crew(ctx.author))
 
     @commands.command(**help['char'])
+    @ss_channel
     async def who(self, ctx: Context, user: discord.Member):
 
         await ctx.send(crew(user))
 
     @commands.command(**help['chars'])
+    @ss_channel
     async def chars(self, ctx):
         emojis = all_emojis()
         out = []
@@ -245,11 +278,11 @@ class ScoreSheetBot(commands.Cog):
         if isinstance(error, commands.DisabledCommand):
             await ctx.send(f'{ctx.command} has been disabled.')
         elif isinstance(error, commands.CommandNotFound):
-            await ctx.author.send(f'{str(error)}, try "!help" for a list of commands.')
+            await ctx.send(f'{str(error)}, try "!help" for a list of commands.')
 
         elif isinstance(error, commands.NoPrivateMessage):
             try:
-                await ctx.author.send(f'{ctx.command} can not be used in Private Messages.')
+                await ctx.send(f'{ctx.command} can not be used in Private Messages.')
             except discord.HTTPException:
                 pass
 

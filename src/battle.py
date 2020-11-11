@@ -26,7 +26,7 @@ class Player:
     team_name: str
     taken: int = 0
     left: int = PLAYER_STOCKS
-    char: Character = Character('')
+    char: Character = Character('', bot=None)
 
     def set_char(self, char: Character) -> None:
         self.char = char

@@ -1,4 +1,5 @@
 from typing import Optional, List, Tuple
+import discord
 
 CHARACTERS = {
     'banjo_and_kazooie': ['banjo', 'banjokazooie'],
@@ -214,6 +215,31 @@ def string_to_emote(input_str: str) -> Optional[str]:
     return '<:{}{}:{}>'.format(canonical_name, '' if alt_num == 1 else alt_num, ID_FROM_CANONICAL[canonical_name])
 
 
+def string_to_emote2(input_str: str, bot) -> Optional[str]:
+    input_str = clean_emoji(input_str)
+    # Lowercase, remove ':' and '_'.
+    input_str = input_str.strip(':').lower().replace('_', '')
+
+    if not input_str:
+        raise ValueError('Input string too short')
+
+    last_char = input_str[-1]
+    if last_char.isdigit():
+        alt_num = int(last_char)
+        if not 1 <= alt_num <= 8:
+            raise ValueError('Alt number {} must be 1-8'.format(alt_num))
+        character = input_str[:-1]
+    else:
+        alt_num = 1
+        character = input_str
+
+    if character in CANONICAL_NAMES_MAP:
+        canonical_name = CANONICAL_NAMES_MAP[character]
+    else:
+        raise ValueError('Unknown character: \'{}\', try `!chars` '.format(character))
+    return str(discord.utils.get(bot.emojis, name='{}{}'.format(canonical_name, '' if alt_num == 1 else alt_num)))
+
+
 def all_emojis() -> List[Tuple[str, str]]:
     ret = []
     for c_name, c_id in ID_FROM_CANONICAL.items():
@@ -222,17 +248,21 @@ def all_emojis() -> List[Tuple[str, str]]:
 
 
 class Character:
-    def __init__(self, char: str):
-        if not char:
-            self.name = ''
-            self.emoji = ''
-            return
-        char = clean_emoji(char)
-        if char[-1].isdigit():
-            self.skin = char[-1]
-            char = char[:-1]
-        self.name = char
-        self.emoji = string_to_emote(char)
+    def __init__(self, char: str, bot, valid_emoji: bool = False):
+        # TODO Parse this into categories
+        if not valid_emoji:
+            if not char:
+                self.name = ''
+                self.emoji = ''
+                return
+            char = clean_emoji(char)
+            if char[-1].isdigit():
+                self.skin = char[-1]
+            self.name = char
+            self.emoji = string_to_emote2(char, bot)
+        else:
+            self.char = char
+            self.emoji = char
 
     def __str__(self):
         return self.emoji

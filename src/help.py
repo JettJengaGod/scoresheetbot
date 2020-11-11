@@ -29,7 +29,7 @@ help = dict(
     crew=HelpDoc('Outputs what crew you are in.'),
     status=HelpDoc('Current status of the battle.'),
     chars=HelpDoc('Prints all characters names and their corresponding emojis'),
-
+    clear=HelpDoc('Clears the current cb in the channel.'),
     confirm=HelpDoc('Confirms the final score sheet is correct.'),
     char=HelpDoc('Prints the character emoji and all possible names'),
 
