@@ -135,6 +135,9 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     @ss_channel
     async def battle(self, ctx: Context, user: discord.Member, size: int):
+        if size < 1:
+            await ctx.send('Please enter a size greater than 0.')
+            return
         user_crew = crew(ctx.author)
         opp_crew = crew(user)
         if not user_crew:
@@ -244,7 +247,9 @@ class ScoreSheetBot(commands.Cog):
             self._current(ctx).confirm(self._battle_crew(ctx, ctx.author))
             await ctx.send(embed=self._current(ctx).embed())
             if self._current(ctx).confirmed():
-                await ctx.send('The battle has been confirmed by both sides.')
+                output_channel = discord.utils.get(ctx.guild.channels, name='scoresheet_output')
+                await output_channel.send(embed=self._current(ctx).embed())
+                await ctx.send(f'The battle has been confirmed by both sides and posted in {output_channel.mention}.')
                 self._clear_current(ctx)
         else:
             ctx.send('The battle is not over yet, wait till then to confirm.')

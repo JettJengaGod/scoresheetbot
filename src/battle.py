@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Optional, Iterable
 from src.character import Character
-from discord import embeds
+from discord import embeds, colour
+import random
 
 
 class StateError(Exception):
@@ -132,6 +133,7 @@ class Battle:
         self.confirms = [False, False]
         self.id = 'Not Set, use `,arena ID/PASS` to set '
         self.stream = 'Not Set, use `,stream STREAMLINKHERE` to set '
+        self.color = colour.Color.from_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
     def confirmed(self):
         return all(self.confirms)
@@ -257,4 +259,4 @@ class Battle:
                       f'{self.team1.name}: {self.team1.current_status()}  \n' \
                       f'{self.team2.name}: {self.team2.current_status()}'
         body += footer
-        return embeds.Embed(title=title, description=body)
+        return embeds.Embed(title=title, description=body, color=self.color)
