@@ -31,6 +31,8 @@ help = dict(
     chars=HelpDoc('Prints all characters names and their corresponding emojis'),
     clear=HelpDoc('Clears the current cb in the channel.'),
     confirm=HelpDoc('Confirms the final score sheet is correct.'),
-    char=HelpDoc('Prints the character emoji and all possible names'),
+    char=HelpDoc('Prints the character emoji (you can use this to test before entering in the sheet).'),
+    arena=HelpDoc('Sets the stream if you are a streamer, or prints it if you are not'),
+    stream=HelpDoc('Sets the stream if you are a streamer, or prints it if you are not'),
 
 )
