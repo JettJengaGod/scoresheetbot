@@ -5,7 +5,7 @@ CHARACTERS = {
     'banjo_and_kazooie': ['banjo', 'banjokazooie'],
     'bayonetta': ['bayo'],
     'bowser': [],
-    'bowser_jr': ['bjr'],
+    'bowser_jr': ['bjr', 'jr', 'larry', 'royjr', 'wendy', 'iggy', 'morton', 'lemmy', 'ludwig'],
     'byleth': [],
     'captain_falcon': ['falcon'],
     'chrom': [],
@@ -15,8 +15,8 @@ CHARACTERS = {
     'dark_pit': [],
     'diddy_kong': ['diddy'],
     'donkey_kong': ['dk'],
-    'dr_mario': ['dr.mario'],
-    'duck_hunt': ['dh'],
+    'dr_mario': ['dr.mario', 'doc'],
+    'duck_hunt': ['dh', 'dhd'],
     'falco': [],
     'foxs': ['fox'],
     'ganondorf': ['ganon'],
@@ -30,7 +30,7 @@ CHARACTERS = {
     'jigglypuff': ['jiggs', 'jigg', 'jiggly', 'puff'],
     'joker': [],
     'ken': [],
-    'king_dedede': ['dedede', 'd3', 'ddd'],
+    'king_dedede': ['dedede', 'ddd'],
     'king_k_rool': ['krool'],
     'kirby': [],
     'links': ['link'],
@@ -46,8 +46,8 @@ CHARACTERS = {
     'mewtwo': ['m2'],
     'mii_brawler': ['brawler'],
     'mii_gunner': ['gunner'],
-    'mii_swordfighter': ['swordfighter'],
-    'min_min': [],
+    'mii_swordfighter': ['swordfighter', 'msf'],
+    'min_min': ['min'],
     'mr_game_and_watch': ['gnw', 'g&w', 'gameandwatch', 'game&watch'],
     'ness': [],
     'olimar': ['oli', 'alph'],
@@ -72,10 +72,10 @@ CHARACTERS = {
     'simon': [],
     'snakes': ['snake'],
     'sonic': [],
-    'steve': ['enderman', 'alex'],
+    'steve': ['enderman', 'alex', 'zombie'],
     'terry': [],
     'toon_link': ['tink'],
-    'villager': ['villi'],
+    'villager': ['villi', 'villy'],
     'wario': [],
     'wii_fit_trainer': ['wiifit', 'wft'],
     'wolfs': ['wolf'],
@@ -90,92 +90,11 @@ S_SET = {
     'wolfs',
     'links',
     'peachs',
-    'snakes'
+    'snakes',
+    'foxs'
 
 }
-ID_FROM_CANONICAL = {
-    'banjo_and_kazooie': 596831625765978131,
-    'bayonetta': 575804398215757854,
-    'bowser': 575804398123352104,
-    'bowser_jr': 575804398186528768,
-    'byleth': 672630558886461460,
-    'captain_falcon': 575804398425604116,
-    'chrom': 575804398521810994,
-    'clouds': 575804398496776192,
-    'corrin': 575804398530330634,
-    'daisy': 575804398677262346,
-    'dark_pit': 575804398718943243,
-    'diddy_kong': 575804398413021219,
-    'donkey_kong': 575804398631124993,
-    'dr_mario': 575804398865743879,
-    'duck_hunt': 575804398962475029,
-    'falco': 575804399142567936,
-    'foxs': 575804399096561664,
-    'ganondorf': 575804399348088833,
-    'greninja': 575804399276916756,
-    'hero': 596831646842486805,
-    'ice_climbers': 575804399339700234,
-    'ike': 575804399377711115,
-    'incineroar': 575804399272722432,
-    'inkling': 575804399549415424,
-    'isabelle': 575804745453797396,
-    'jigglypuff': 575804399545483264,
-    'joker': 575804399742484500,
-    'ken': 575804400195469331,
-    'king_dedede': 575804399847211052,
-    'king_k_rool': 575804399830564894,
-    'kirby': 575804399587164190,
-    'links': 575804400056926250,
-    'little_mac': 575804400099131394,
-    'lucario': 575804400136880142,
-    'lucas': 575804400023371776,
-    'lucina': 575804400208052244,
-    'luigi': 575804401130799130,
-    'mario': 575804400140943381,
-    'marth': 575804400157589546,
-    'mega_man': 575804482064089089,
-    'meta_knight': 575804482084929546,
-    'mewtwo': 575804482198175763,
-    'mii_brawler': 596831773338632202,
-    'mii_gunner': 596831773556736000,
-    'mii_swordfighter': 596831773535764527,
-    'min_min': 728013949865558046,
-    'mr_game_and_watch': 575804481980071939,
-    'ness': 575804482642771994,
-    'olimar': 575804482756018196,
-    'pac_man': 575804482148106276,
-    'palutena': 575804482387050560,
-    'peachs': 575804482852618265,
-    'pichu': 575804744325398532,
-    'pikachu': 575804744040185894,
-    'piranha_plant': 595042549887139840,
-    'pit': 575804744476393502,
-    'pokemon_trainer': 575804744849948674,
-    'richter': 575804744510078976,
-    'ridley': 575804744996487168,
-    'rob': 575804744363409409,
-    'robin': 575804744707211284,
-    'rosalina_and_luma': 575804744917057577,
-    'roy': 575804744891891714,
-    'ryu': 575804745005006868,
-    'samus': 575804744959000577,
-    'steve': 761608590867038248,
-    'sheik': 575804745193881610,
-    'shulk': 575804745302671399,
-    'simon': 575804745340420126,
-    'snakes': 575804746561093632,
-    'sonic': 575804745462317071,
-    'terry': 641715693225639953,
-    'toon_link': 575804745760112650,
-    'villager': 575804745558655016,
-    'wario': 575804745520906260,
-    'wii_fit_trainer': 575804745654992906,
-    'wolfs': 575804745797599252,
-    'yoshi': 575804745734946816,
-    'young_link': 575804746091462688,
-    'zelda': 575804745877553182,
-    'zero_suit_samus': 575804746124886016,
-}
+
 for name in CHARACTERS:
     CHARACTERS[name].append(name.replace('_', ''))
 
@@ -195,6 +114,9 @@ def clean_emoji(input_str: str) -> str:
             input_str = input_str[:-1]
         return input_str[:input_str.index(':')]
     return input_str
+
+
+JR_LIST = ['bowser_jr', 'larry', 'royjr', 'wendy', 'iggy', 'morton', 'lemmy', 'ludwig']
 
 
 def string_to_emote(input_str: str) -> Optional[str]:
@@ -240,29 +162,45 @@ def string_to_emote2(input_str: str, bot) -> Optional[str]:
     else:
         alt_num = 1
         character = input_str
-
     if character in CANONICAL_NAMES_MAP:
         canonical_name = CANONICAL_NAMES_MAP[character]
     else:
-        raise ValueError('Unknown character: \'{}\', try `!chars` '.format(character))
+        raise ValueError('Unknown character: \'{}\', try `,chars` '.format(character))
     if canonical_name in S_SET and alt_num > 1:
         canonical_name = canonical_name[:-1]
-
+    if canonical_name in JR_LIST:
+        if alt_num > 1:
+            canonical_name = JR_LIST[alt_num - 1]
+            alt_num = 1
+        elif canonical_name != 'bowser_jr':
+            canonical_name = character
     if canonical_name == 'olimar':
         if alt_num > 4:
             canonical_name = 'alph'
     if canonical_name == 'steve':
         if alt_num in [2, 4, 6]:
             canonical_name = 'alex'
+        if alt_num == 7:
+            canonical_name = 'zombie'
         if alt_num == 8:
             canonical_name = 'enderman'
     return str(discord.utils.get(bot.emojis, name='{}{}'.format(canonical_name, '' if alt_num == 1 else alt_num)))
 
 
-def all_emojis() -> List[Tuple[str, str]]:
+def all_alts(input_str: str, bot):
+    last_char = input_str[-1]
+    if last_char.isdigit():
+        input_str = input_str[:-1]
+    return ''.join([string_to_emote2(input_str + str(i), bot) for i in range(1, 9)])
+
+
+def all_emojis(bot) -> List[Tuple[str, str]]:
     ret = []
-    for c_name, c_id in ID_FROM_CANONICAL.items():
-        ret.append((c_name, f'<:{c_name}:{c_id}> AKA: {CHARACTERS[c_name]}'))
+    for c_name, alts in CHARACTERS.items():
+        if c_name.startswith('mii'):
+            ret.append((c_name, f'{string_to_emote2(c_name,bot)} AKA: {alts}'))
+            continue
+        ret.append((c_name, f'{all_alts(c_name,bot)} AKA: {alts}'))
     return ret
 
 
