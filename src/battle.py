@@ -54,9 +54,11 @@ class Team:
         self.players.append(self.current_player)
 
     def replace_current(self, player_name: str) -> None:
+        current_stocks = PLAYER_STOCKS
         if self.current_player:
+            current_stocks = self.current_player.left
             self.players.pop()
-        self.current_player = Player(name=player_name, team_name=self.name)
+        self.current_player = Player(name=player_name, team_name=self.name, left=current_stocks)
         self.players.append(self.current_player)
 
     def match_finish(self, lost: int, took: int):
@@ -66,9 +68,12 @@ class Team:
         if self.current_player.left == 0:
             self.current_player = None
 
-    def undo_match(self, lost: int, took: int):
+    def undo_match(self, lost: int, took: int, player: Player):
         if not self.current_player:
-            self.current_player = self.players[-1]
+            self.current_player = player
+        elif self.current_player != player:
+            self.players.pop()
+            self.current_player = player
         self.current_player.left += lost
         self.current_player.taken -= took
         self.stocks += lost
@@ -87,8 +92,8 @@ class Team:
     def mvp_parse(self) -> str:
         players = ''
         for player in self.mvp():
-            players += str(player)
-        return f'MVP for {self.name} was {players} with {self.mvp()[0].taken} stocks'
+            players += f'**{str(player)}**, '
+        return f'MVP for **{self.name}** was {players[:-2]} with {self.mvp()[0].taken} stocks'
 
     def current_status(self) -> str:
         if self.current_player:
@@ -106,13 +111,13 @@ class Match:
     winner: int
 
     def __str__(self):
-        p1 = f'{self.p1.name} | {self.p1.char} [{self.p1_taken}]'
-        p2 = f'[{self.p2_taken}] {self.p2.char} | {self.p2.name}'
+        p1 = f'[{self.p1.char}]{self.p1.name} ({self.p1_taken})'
+        p2 = f'({self.p2_taken}) {self.p2.name} [{self.p2.char}]'
         if self.winner == 1:
             p1 = bold(p1)
         else:
             p2 = bold(p2)
-        return f'{p1} vs {p2}'
+        return f'{p1} <a:vs:775901296171155456> {p2}'
 
     def __eq__(self, other):
         return (
@@ -207,15 +212,18 @@ class Battle:
     def resize(self, new_size: int) -> None:
         if new_size < max(len(self.team1.players), len(self.team2.players), 1):
             raise StateError(self, "You can't resize under the current amount of players.")
+        current_size = self.team1.num_players
+        difference = new_size-current_size
         for team in self.teams:
             team.num_players = new_size
+            team.stocks += difference*PLAYER_STOCKS
 
     def undo(self):
         if not self.matches:
             raise StateError(self, "You can't undo a match when there are no matches!")
         last = self.matches.pop()
-        self.team1.undo_match(last.p2_taken, last.p1_taken)
-        self.team2.undo_match(last.p1_taken, last.p2_taken)
+        self.team1.undo_match(last.p2_taken, last.p1_taken, last.p1)
+        self.team2.undo_match(last.p1_taken, last.p2_taken, last.p2)
 
     def __str__(self):
         out = f'{self.team1.name} vs {self.team2.name}\n' \
@@ -234,19 +242,19 @@ class Battle:
         return out
 
     def embed(self) -> embeds.Embed:
-        title = f'{self.team1.name} vs {self.team2.name}  ' \
-                f'{self.team1.num_players} vs {self.team2.num_players} Crew battle'
+        title = f'{self.team1.name} vs {self.team2.name}'
         body = f'Lobby ID: {self.id}\n' \
-               f'Streamer: {self.stream}\n'
+               f'Streamer: {self.stream}\n\n' \
+               f'{self.team1.num_players} vs {self.team2.num_players} Crew battle\n\n'
         for match in self.matches:
             body += str(match)
             body += '\n'
 
-        footer = ''
+        footer = '\n'
         if self.battle_over():
             footer += '--------------------------------------------\n' \
                       f'{self.winner().name} wins {self.winner().stocks} - 0 over ' \
-                      f'{self.loser().name}\n{self.team1.mvp_parse()}\n{self.team2.mvp_parse()}'
+                      f'{self.loser().name}\n\n{self.team1.mvp_parse()}\n{self.team2.mvp_parse()}'
             if not all(self.confirms):
                 footer += '\nPlease confirm: '
                 if not self.confirms[0]:

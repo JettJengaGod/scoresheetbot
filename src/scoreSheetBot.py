@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from typing import Dict, Optional, Union
 from src.battle import Battle, Character, StateError
 from src.help import help
-from src.character import string_to_emote, all_emojis, string_to_emote2
+from src.character import string_to_emote, all_emojis, string_to_emote2, all_alts
 from src.helpers import split_on_length_and_separator, is_usable_emoji, check_roles
 import src.roles
 
@@ -154,7 +154,7 @@ class ScoreSheetBot(commands.Cog):
             self._set_current(ctx, Battle(crew(ctx.author), crew(user), size))
             await ctx.send(embed=self._current(ctx).embed())
         else:
-            await ctx.send('You can\'t battle your own crew')
+            await ctx.send('You can\'t battle your own crew.')
 
     @commands.command(**help['send'])
     @has_sheet
@@ -278,7 +278,8 @@ class ScoreSheetBot(commands.Cog):
         if is_usable_emoji(emoji, self.bot):
             await ctx.send(emoji)
         else:
-            await ctx.send(string_to_emote2(emoji, self.bot))
+            await ctx.send(f'What you put: {string_to_emote2(emoji, self.bot)}')
+            await ctx.send(f'All other alts in order: {all_alts(emoji, self.bot)}')
 
     @commands.command(**help['crew'])
     @ss_channel
@@ -294,7 +295,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help['chars'])
     @ss_channel
     async def chars(self, ctx):
-        emojis = all_emojis()
+        emojis = all_emojis(self.bot)
         out = []
         for emoji in emojis:
             out.append(f'{emoji[0]}: {emoji[1]}\n')
@@ -302,7 +303,7 @@ class ScoreSheetBot(commands.Cog):
         out = "".join(out)
         out = split_on_length_and_separator(out, 1999, ']')
         for split in out:
-            await ctx.send(embed=discord.Embed(description=split))
+            await ctx.send(split)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):
