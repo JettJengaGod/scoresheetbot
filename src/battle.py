@@ -130,7 +130,7 @@ class Match:
 
 
 class Battle:
-    def __init__(self, name1: str, name2: str, players: int):
+    def __init__(self, name1: str, name2: str, players: int, mock: bool = False):
         self.team1 = Team(name1, players, players * PLAYER_STOCKS)
         self.team2 = Team(name2, players, players * PLAYER_STOCKS)
         self.teams = (self.team1, self.team2)
@@ -139,6 +139,7 @@ class Battle:
         self.id = 'Not Set, use `,arena ID/PASS` to set '
         self.stream = 'Not Set, use `,stream STREAMLINKHERE` to set '
         self.color = colour.Color.from_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        self.mock = mock
 
     def confirmed(self):
         return all(self.confirms)

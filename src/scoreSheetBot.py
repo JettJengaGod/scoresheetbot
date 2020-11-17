@@ -72,12 +72,14 @@ def is_lead(func):
 
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
+
         ctx = args[0]
-        user = ctx.author
-        if not (any(role.name in ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion'] for role in user.roles)):
-            await ctx.send('Only a leader or advisor or admin can run this command.')
-            return
-        return await func(self, *args, **kwargs)
+        if not self._current(ctx).mock:
+            user = ctx.author
+            if not (any(role.name in ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion'] for role in user.roles)):
+                await ctx.send('Only a leader or advisor or admin can run this command.')
+                return
+            return await func(self, *args, **kwargs)
 
     return wrapper
 
@@ -156,11 +158,21 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('You can\'t battle your own crew.')
 
+    @commands.command(**help['mock'])
+    @no_battle
+    @ss_channel
+    async def battle(self, ctx: Context, team1: str, team2: str, size: int):
+        if size < 1:
+            await ctx.send('Please enter a size greater than 0.')
+            return
+        self._set_current(ctx, Battle(team1, team2, size, mock=True))
+        await ctx.send(embed=self._current(ctx).embed())
+
     @commands.command(**help['send'])
     @has_sheet
     @ss_channel
     @is_lead
-    async def send(self, ctx: Context, user: discord.Member):
+    async def send(self, ctx: Context, user: discord.Member, team: str = None):
         self._reject_outsiders(ctx)
         current_crew = self._battle_crew(ctx, ctx.author)
         if current_crew == self._battle_crew(ctx, user):
@@ -269,8 +281,6 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     async def status(self, ctx):
         await ctx.send(embed=self._current(ctx).embed())
-
-    """TESTING COMMANDS DON'T MODIFY """
 
     @commands.command(**help['char'])
     @ss_channel
