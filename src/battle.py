@@ -270,10 +270,13 @@ class Battle:
                       f'{self.loser().name}\n\n{self.team1.mvp_parse()}\n{self.team2.mvp_parse()}'
             if not all(self.confirms):
                 footer += '\nPlease confirm: '
-                if not self.confirms[0]:
-                    footer += f'{self.team1.name} '
-                if not self.confirms[1]:
-                    footer += f'{self.team2.name} '
+                if self.mock:
+                    footer += 'anyone can confirm or clear a mock.'
+                else:
+                    if not self.confirms[0]:
+                        footer += f'{self.team1.name} '
+                    if not self.confirms[1]:
+                        footer += f'{self.team2.name} '
         else:
             footer += f'Current score: {self.team1.name}[{self.team1.stocks}] - ' \
                       f'{self.team2.name}[{self.team2.stocks}] \n' \

@@ -15,6 +15,8 @@ class HelpDoc(dict):
 help = dict(
     battle=HelpDoc('Start a Scoresheet in this channel against the tagged players crew with a specific size',
                    '', "@OpponentName size"),
+    mock=HelpDoc('Start a Scoresheet in this channel with two team names and a size', '',
+                 'Team1 Team2 size'),
     send=HelpDoc('Sends in the tagged player', '', '@Player'),
     replace=HelpDoc('Replaces current player with the tagged player', '', '@Player'),
     end=HelpDoc('End the game with characters and stocks for both teams',
