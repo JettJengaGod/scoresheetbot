@@ -148,7 +148,7 @@ def string_to_emote(input_str: str) -> Optional[str]:
 def string_to_emote2(input_str: str, bot) -> Optional[str]:
     input_str = clean_emoji(input_str)
     # Lowercase, remove ':' and '_'.
-    input_str = input_str.strip(':').lower().replace('_', '')
+    input_str = input_str.strip(':').lower().replace('_', '').replace(' ', '')
 
     if not input_str:
         raise ValueError('Input string too short')

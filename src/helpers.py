@@ -4,6 +4,17 @@ import discord
 from typing import Iterable
 
 
+def split_embed(embed: discord.Embed, length: int) -> List[discord.Embed]:
+    ret = []
+    desc = embed.description
+    desc_split = split_on_length_and_separator(desc, length, '\n')
+    ret.append(discord.Embed(title=embed.title, color=embed.color, description=desc_split.pop(0)))
+
+    for split in desc_split:
+        ret.append(discord.Embed(color=embed.color, description=split))
+    return ret
+
+
 def split_on_length_and_separator(string: str, length: int, separator: str) -> List[str]:
     ret = []
     while len(string) > length:
