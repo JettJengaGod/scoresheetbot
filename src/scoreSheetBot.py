@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from typing import Dict, Optional, Union
 from src.battle import Battle, Character, StateError
 from src.help import help
-from src.character import string_to_emote, all_emojis, string_to_emote2, all_alts
+from src.character import string_to_emote, all_emojis, string_to_emote, all_alts
 from src.helpers import split_on_length_and_separator, is_usable_emoji, check_roles, split_embed
 import src.roles
 
@@ -296,7 +296,7 @@ class ScoreSheetBot(commands.Cog):
         if is_usable_emoji(emoji, self.bot):
             await ctx.send(emoji)
         else:
-            await ctx.send(f'What you put: {string_to_emote2(emoji, self.bot)}')
+            await ctx.send(f'What you put: {string_to_emote(emoji, self.bot)}')
             await ctx.send(f'All other alts in order: {all_alts(emoji, self.bot)}')
 
     @commands.command(**help['crew'])
