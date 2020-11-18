@@ -32,7 +32,7 @@ help = dict(
     clear=HelpDoc('Clears the current cb in the channel.'),
     confirm=HelpDoc('Confirms the final score sheet is correct.'),
     char=HelpDoc('Prints the character emoji (you can use this to test before entering in the sheet).'),
-    arena=HelpDoc('Sets the stream if you are a streamer, or prints it if you are not'),
-    stream=HelpDoc('Sets the stream if you are a streamer, or prints it if you are not'),
-
+    arena=HelpDoc('Sets the stream if you are a streamer or leader, or prints it if you are not'),
+    stream=HelpDoc('Sets the stream if you are a streamer or leader, or prints it if you are not'),
+    timer=HelpDoc('Prints the time since the last match ended.'),
 )
