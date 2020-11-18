@@ -119,36 +119,10 @@ def clean_emoji(input_str: str) -> str:
 JR_LIST = ['bowser_jr', 'larry', 'royjr', 'wendy', 'iggy', 'morton', 'lemmy', 'ludwig']
 
 
-def string_to_emote(input_str: str) -> Optional[str]:
+def string_to_emote(input_str: str, bot) -> Optional[str]:
     input_str = clean_emoji(input_str)
     # Lowercase, remove ':' and '_'.
-    input_str = input_str.strip(':').lower().replace('_', '')
-
-    if not input_str:
-        raise ValueError('Input string too short')
-
-    last_char = input_str[-1]
-    if last_char.isdigit():
-        alt_num = int(last_char)
-        if not 1 <= alt_num <= 8:
-            raise ValueError('Alt number {} must be 1-8'.format(alt_num))
-        character = input_str[:-1]
-    else:
-        alt_num = 1
-        character = input_str
-
-    if character in CANONICAL_NAMES_MAP:
-        canonical_name = CANONICAL_NAMES_MAP[character]
-    else:
-        raise ValueError('Unknown character: \'{}\', try `!chars` '.format(character))
-
-    return '<:{}{}:{}>'.format(canonical_name, '' if alt_num == 1 else alt_num, ID_FROM_CANONICAL[canonical_name])
-
-
-def string_to_emote2(input_str: str, bot) -> Optional[str]:
-    input_str = clean_emoji(input_str)
-    # Lowercase, remove ':' and '_'.
-    input_str = input_str.strip(':').lower().replace('_', '')
+    input_str = input_str.strip(':').lower().replace('_', '').replace(' ', '')
 
     if not input_str:
         raise ValueError('Input string too short')
@@ -191,14 +165,14 @@ def all_alts(input_str: str, bot):
     last_char = input_str[-1]
     if last_char.isdigit():
         input_str = input_str[:-1]
-    return ''.join([string_to_emote2(input_str + str(i), bot) for i in range(1, 9)])
+    return ''.join([string_to_emote(input_str + str(i), bot) for i in range(1, 9)])
 
 
 def all_emojis(bot) -> List[Tuple[str, str]]:
     ret = []
     for c_name, alts in CHARACTERS.items():
         if c_name.startswith('mii'):
-            ret.append((c_name, f'{string_to_emote2(c_name,bot)} AKA: {alts}'))
+            ret.append((c_name, f'{string_to_emote(c_name, bot)} AKA: {alts}'))
             continue
         ret.append((c_name, f'{all_alts(c_name,bot)} AKA: {alts}'))
     return ret
@@ -216,7 +190,7 @@ class Character:
             if char[-1].isdigit():
                 self.skin = char[-1]
             self.name = char
-            self.emoji = string_to_emote2(char, bot)
+            self.emoji = string_to_emote(char, bot)
         else:
             self.char = char
             self.emoji = char

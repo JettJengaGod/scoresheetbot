@@ -35,7 +35,7 @@ class CrewCache:
         service = build('sheets', 'v4', credentials=creds)
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
-        crew_info_range = 'Crew Information!A4:A216'
+        crew_info_range = 'Crew Information!A4:A2160'
         # Call the Sheets API
         sheet = service.spreadsheets()
         result = sheet.values().get(spreadsheetId=docs_id,

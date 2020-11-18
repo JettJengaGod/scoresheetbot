@@ -2,7 +2,7 @@
 import os
 import sys
 import traceback
-
+import time
 import discord
 import functools
 from discord.ext import commands
@@ -10,15 +10,22 @@ from dotenv import load_dotenv
 from typing import Dict, Optional, Union
 from battle import Battle, Character, StateError
 from help import help
-from character import string_to_emote, all_emojis, string_to_emote2, all_alts
-from helpers import split_on_length_and_separator, is_usable_emoji, check_roles
+from character import string_to_emote, all_emojis, string_to_emote, all_alts
 import roles
+from helpers import split_on_length_and_separator, is_usable_emoji, check_roles, split_embed
 
 Context = discord.ext.commands.context
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 cache = roles.CrewCache()
+OVERFLOW_CACHE_TIME = 1_000_000
+
+
+async def send_sheet(ctx: Context, battle: Battle):
+    embed_split = split_embed(embed=battle.embed(), length=2000)
+    for embed in embed_split:
+        await ctx.send(embed=embed)
 
 
 def ss_channel(func):
@@ -72,11 +79,18 @@ def is_lead(func):
 
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
+
         ctx = args[0]
-        user = ctx.author
-        if not (any(role.name in ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion'] for role in user.roles)):
-            await ctx.send('Only a leader or advisor or admin can run this command.')
-            return
+
+        battle = self.battle_map.get(str(ctx.guild) + str(ctx.channel))
+        mock = False
+        if battle and battle.mock:
+            mock = True
+        if not mock:
+            user = ctx.author
+            if not (any(role.name in ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion'] for role in user.roles)):
+                await ctx.send('Only a leader or advisor or admin can run this command.')
+                return
         return await func(self, *args, **kwargs)
 
     return wrapper
@@ -99,8 +113,16 @@ def is_streamer(func):
     return wrapper
 
 
-def crew(user: discord.Member) -> Optional[str]:
-    for role in user.roles:
+async def crew(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
+    roles = user.roles
+    if any((role.name == 'SCS Overflow Crew' for role in roles)):
+        if not bot.overflow_cache or time.time_ns() - bot.overflow_updated < OVERFLOW_CACHE_TIME:
+            bot.overflow_cache = await discord.utils.get(bot.bot.guilds, name='SCS Overflow Server').fetch_members(
+                limit=None).flatten()
+        overflow_user = discord.utils.get(bot.overflow_cache, id=user.id)
+        roles = overflow_user.roles
+
+    for role in roles:
         if role.name in cache.crews():
             return role.name
     return None
@@ -110,18 +132,22 @@ class ScoreSheetBot(commands.Cog):
     def __init__(self, bot: commands.bot):
         self.bot = bot
         self.battle_map: Dict[str, Battle] = {}
+        self.overflow_cache = None
+        self.overflow_updated = time.time_ns() - OVERFLOW_CACHE_TIME
 
     def _current(self, ctx) -> Battle:
         return self.battle_map[str(ctx.guild) + str(ctx.channel)]
 
-    def _battle_crew(self, ctx: Context, user: discord.member) -> Optional[str]:
-        for role in user.roles:
-            if role.name in (self._current(ctx).team1.name, self._current(ctx).team2.name):
-                return role.name
+    async def _battle_crew(self, ctx: Context, user: discord.member) -> Optional[str]:
+        crew_name = await crew(user, self)
+        if crew_name in (self._current(ctx).team1.name, self._current(ctx).team2.name):
+            return crew_name
         return None
 
-    def _reject_outsiders(self, ctx: Context):
-        if not self._battle_crew(ctx, ctx.author):
+    async def _reject_outsiders(self, ctx: Context):
+        if self._current(ctx).mock:
+            return
+        if not await self._battle_crew(ctx, ctx.author):
             raise Exception('You are not in this battle, stop trying to mess with it.')
 
     def _set_current(self, ctx: Context, battle: Battle):
@@ -130,7 +156,7 @@ class ScoreSheetBot(commands.Cog):
     def _clear_current(self, ctx):
         self.battle_map[str(ctx.guild) + str(ctx.channel)] = None
 
-    @commands.command(**help['battle'])
+    @commands.command(**help['battle'], aliases=['challenge'])
     @no_battle
     @is_lead
     @ss_channel
@@ -138,8 +164,8 @@ class ScoreSheetBot(commands.Cog):
         if size < 1:
             await ctx.send('Please enter a size greater than 0.')
             return
-        user_crew = crew(ctx.author)
-        opp_crew = crew(user)
+        user_crew = await crew(ctx.author, self)
+        opp_crew = await crew(user, self)
         if not user_crew:
             await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
                            f'They might be in an overflow crew or no crew. '
@@ -150,76 +176,105 @@ class ScoreSheetBot(commands.Cog):
                            f'They might be in an overflow crew or no crew. '
                            f'Please contact an admin if this is incorrect.')
             return
-        if crew(ctx.author) != crew(user):
-            self._set_current(ctx, Battle(crew(ctx.author), crew(user), size))
-            await ctx.send(embed=self._current(ctx).embed())
+        if user_crew != opp_crew:
+            self._set_current(ctx, Battle(user_crew, opp_crew, size))
+            await send_sheet(ctx=ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
+
+    @commands.command(**help['mock'])
+    @no_battle
+    @ss_channel
+    async def mock(self, ctx: Context, team1: str, team2: str, size: int):
+        if size < 1:
+            await ctx.send('Please enter a size greater than 0.')
+            return
+        self._set_current(ctx, Battle(team1, team2, size, mock=True))
+        await ctx.send(embed=self._current(ctx).embed())
 
     @commands.command(**help['send'])
     @has_sheet
     @ss_channel
     @is_lead
-    async def send(self, ctx: Context, user: discord.Member):
-        self._reject_outsiders(ctx)
-        current_crew = self._battle_crew(ctx, ctx.author)
-        if current_crew == self._battle_crew(ctx, user):
-            self._current(ctx).add_player(self._battle_crew(ctx, ctx.author), user.display_name)
-            await ctx.send(embed=self._current(ctx).embed())
+    async def send(self, ctx: Context, user: discord.Member, team: str = None):
+        if self._current(ctx).mock:
+            if team:
+                self._current(ctx).add_player(team, user.display_name)
+            else:
+                await ctx.send(f'During a mock you need to send with a teamname, like this'
+                               f' `,send @playername teamname`.')
+                return
         else:
-            await ctx.send(f'{user.display_name} is not on {current_crew} please choose someone else.')
+            await self._reject_outsiders(ctx)
+            current_crew = await self._battle_crew(ctx, ctx.author)
+            if current_crew == await self._battle_crew(ctx, user):
+                self._current(ctx).add_player(current_crew, user.display_name)
+            else:
+                await ctx.send(f'{user.display_name} is not on {current_crew} please choose someone else.')
+                return
+        await send_sheet(ctx=ctx, battle=self._current(ctx))
 
     @commands.command(**help['replace'])
     @has_sheet
     @ss_channel
     @is_lead
-    async def replace(self, ctx: Context, user: discord.Member):
-        self._reject_outsiders(ctx)
-        current_crew = self._battle_crew(ctx, ctx.author)
-        if current_crew == self._battle_crew(ctx, user):
-            self._current(ctx).replace_player(self._battle_crew(ctx, ctx.author), user.display_name)
-            await ctx.send(embed=self._current(ctx).embed())
+    async def replace(self, ctx: Context, user: discord.Member, team: str = None):
+        if self._current(ctx).mock:
+            if team:
+                self._current(ctx).add_player(team, user.display_name)
+            else:
+                await ctx.send(f'During a mock you need to replace with a teamname, like this'
+                               f' `,replace @playername teamname`.')
+                return
         else:
-            await ctx.send(f'{user.display_name} is not on {current_crew}, please choose someone else.')
+            await self._reject_outsiders(ctx)
+            current_crew = await self._battle_crew(ctx, ctx.author)
+            if current_crew == await self._battle_crew(ctx, user):
+                self._current(ctx).replace_player(current_crew, user.display_name)
+
+            else:
+                await ctx.send(f'{user.display_name} is not on {current_crew}, please choose someone else.')
+                return
+        await send_sheet(ctx=ctx, battle=self._current(ctx))
 
     @commands.command(**help['end'])
     @has_sheet
     @ss_channel
     async def end(self, ctx: Context, char1: Union[str, discord.Emoji], stocks1: int, char2: Union[str, discord.Emoji],
                   stocks2: int):
-        self._reject_outsiders(ctx)
+        await self._reject_outsiders(ctx)
 
         self._current(ctx).finish_match(stocks1, stocks2,
                                         Character(str(char1), self.bot, is_usable_emoji(char1, self.bot)),
                                         Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
-        await ctx.send(embed=self._current(ctx).embed())
+        await send_sheet(ctx=ctx, battle=self._current(ctx))
 
     @commands.command(**help['resize'])
     @is_lead
     @has_sheet
     @ss_channel
     async def resize(self, ctx: Context, new_size: int):
-        self._reject_outsiders(ctx)
+        await self._reject_outsiders(ctx)
         self._current(ctx).resize(new_size)
-        await ctx.send(embed=self._current(ctx).embed())
+        await send_sheet(ctx=ctx, battle=self._current(ctx))
 
-    @commands.command(**help['arena'])
+    @commands.command(**help['arena'], aliases=['id', 'arena_id', 'lobby'])
     @has_sheet
     @ss_channel
     async def arena(self, ctx: Context, id_str: str = ''):
-        if id_str and check_roles(ctx.author, ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion', 'Streamers',
-                                               'SCS Certified Streamer']):
+        if id_str and (check_roles(ctx.author, ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion', 'Streamers',
+                                                'SCS Certified Streamer']) or self._current(ctx).mock):
             self._current(ctx).id = id_str
             await ctx.send(f'Updated the id to {id_str}')
             return
         await ctx.send(f'The lobby id is {self._current(ctx).id}')
 
-    @commands.command(**help['stream'])
+    @commands.command(**help['stream'], aliases=['streamer', 'stream_link'])
     @has_sheet
     @ss_channel
     async def stream(self, ctx: Context, stream: str = ''):
-        if stream and check_roles(ctx.author, ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion', 'Streamers',
-                                               'SCS Certified Streamer']):
+        if stream and (check_roles(ctx.author, ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion', 'Streamers',
+                                                'SCS Certified Streamer']) or self._current(ctx).mock):
             if '/' not in stream:
                 stream = 'https://twitch.tv/' + stream
             self._current(ctx).stream = stream
@@ -232,25 +287,35 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def undo(self, ctx):
-        self._reject_outsiders(ctx)
+        await self._reject_outsiders(ctx)
         self._current(ctx).undo()
-        await ctx.send(embed=self._current(ctx).embed())
+        await send_sheet(ctx=ctx, battle=self._current(ctx))
 
     @commands.command(**help['confirm'])
     @has_sheet
     @ss_channel
     @is_lead
-    async def confirm(self, ctx):
-        self._reject_outsiders(ctx)
+    async def confirm(self, ctx: Context):
+        await self._reject_outsiders(ctx)
 
         if self._current(ctx).battle_over():
-            self._current(ctx).confirm(self._battle_crew(ctx, ctx.author))
-            await ctx.send(embed=self._current(ctx).embed())
-            if self._current(ctx).confirmed():
-                output_channel = discord.utils.get(ctx.guild.channels, name='scoresheet_output')
-                await output_channel.send(embed=self._current(ctx).embed())
-                await ctx.send(f'The battle has been confirmed by both sides and posted in {output_channel.mention}.')
+            if self._current(ctx).mock:
                 self._clear_current(ctx)
+                await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
+            else:
+                self._current(ctx).confirm(await self._battle_crew(ctx, ctx.author))
+                await send_sheet(ctx=ctx, battle=self._current(ctx))
+                if self._current(ctx).confirmed():
+                    output_channel = discord.utils.get(ctx.guild.channels, name='scoresheet_output')
+                    await output_channel.send(
+                        f'A {self._current(ctx).team1.num_players}v{self._current(ctx).team1.num_players} '
+                        f'battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
+                        f'has concluded in {ctx.channel.mention}.')
+                    await output_channel.send(embed=self._current(ctx).embed())
+                    await ctx.send(
+                        f'The battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
+                        f'has been confirmed by both sides and posted in {output_channel.mention}.')
+                    self._clear_current(ctx)
         else:
             ctx.send('The battle is not over yet, wait till then to confirm.')
 
@@ -260,17 +325,23 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     async def clear(self, ctx):
         if not any(role.name in ['v2 Minion', 'SCS Admin'] for role in ctx.author.roles):
-            self._reject_outsiders(ctx)
+            await self._reject_outsiders(ctx)
+        if self._current(ctx).mock:
+            await ctx.send('If you just cleared a crew battle to troll people, be warned this is a bannable offence.')
         self._clear_current(ctx)
-        await ctx.send('Cleared the crew battle.')
+        await ctx.send(f'{ctx.author.mention} cleared the crew battle.')
 
     @commands.command(**help['status'])
     @has_sheet
     @ss_channel
     async def status(self, ctx):
-        await ctx.send(embed=self._current(ctx).embed())
+        await send_sheet(ctx=ctx, battle=self._current(ctx))
 
-    """TESTING COMMANDS DON'T MODIFY """
+    @commands.command(**help['timer'])
+    @has_sheet
+    @ss_channel
+    async def timer(self, ctx):
+        await ctx.send(self._current(ctx).timer())
 
     @commands.command(**help['char'])
     @ss_channel
@@ -278,19 +349,21 @@ class ScoreSheetBot(commands.Cog):
         if is_usable_emoji(emoji, self.bot):
             await ctx.send(emoji)
         else:
-            await ctx.send(f'What you put: {string_to_emote2(emoji, self.bot)}')
-            await ctx.send(f'All other alts in order: {all_alts(emoji, self.bot)}')
+            await ctx.send(f'What you put: {string_to_emote(emoji, self.bot)}')
+            await ctx.send(f'All alts in order: {all_alts(emoji, self.bot)}')
 
     @commands.command(**help['crew'])
     @ss_channel
-    async def crew(self, ctx):
-        await ctx.send(crew(ctx.author))
+    async def crew(self, ctx, user: discord.Member = None):
+        if user:
+            await ctx.send(await crew(user, self))
+        else:
+            await ctx.send(await crew(ctx.author, self))
 
     @commands.command(**help['char'])
     @ss_channel
     async def who(self, ctx: Context, user: discord.Member):
-
-        await ctx.send(crew(user))
+        await ctx.send(await crew(user, self))
 
     @commands.command(**help['chars'])
     @ss_channel
@@ -304,6 +377,11 @@ class ScoreSheetBot(commands.Cog):
         out = split_on_length_and_separator(out, 1999, ']')
         for split in out:
             await ctx.send(split)
+
+    @commands.command(**help['guide'])
+    @ss_channel
+    async def guide(self, ctx):
+        await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):

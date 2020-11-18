@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Iterable
 from character import Character
 from discord import embeds, colour
+from datetime import datetime
 import random
 
 
@@ -130,7 +131,7 @@ class Match:
 
 
 class Battle:
-    def __init__(self, name1: str, name2: str, players: int):
+    def __init__(self, name1: str, name2: str, players: int, mock: bool = False):
         self.team1 = Team(name1, players, players * PLAYER_STOCKS)
         self.team2 = Team(name2, players, players * PLAYER_STOCKS)
         self.teams = (self.team1, self.team2)
@@ -139,6 +140,8 @@ class Battle:
         self.id = 'Not Set, use `,arena ID/PASS` to set '
         self.stream = 'Not Set, use `,stream STREAMLINKHERE` to set '
         self.color = colour.Color.from_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        self.time = datetime.now()
+        self.mock = mock
 
     def confirmed(self):
         return all(self.confirms)
@@ -187,7 +190,17 @@ class Battle:
         self.matches.append(match)
         self.team1.match_finish(taken2, taken1)
         self.team2.match_finish(taken1, taken2)
+        self.time = datetime.now()
         return match
+
+    def timer(self) -> str:
+
+        past = datetime.now() - self.time
+        mins = 's' if past.seconds >= 120 else ''
+        minutes = '' if past.seconds < 60 else f'{past.seconds // 60} minute{mins} and '
+        end = 'the match finished.' if len(self.matches) else 'the crew battle started.'
+        second = 'seconds' if past.seconds % 60 > 1 else 'second'
+        return f'It has been {minutes}{past.seconds % 60} {second} since {end}'
 
     def confirm(self, team: str) -> None:
         if team == self.team1.name:
@@ -213,10 +226,10 @@ class Battle:
         if new_size < max(len(self.team1.players), len(self.team2.players), 1):
             raise StateError(self, "You can't resize under the current amount of players.")
         current_size = self.team1.num_players
-        difference = new_size-current_size
+        difference = new_size - current_size
         for team in self.teams:
             team.num_players = new_size
-            team.stocks += difference*PLAYER_STOCKS
+            team.stocks += difference * PLAYER_STOCKS
 
     def undo(self):
         if not self.matches:
@@ -257,10 +270,13 @@ class Battle:
                       f'{self.loser().name}\n\n{self.team1.mvp_parse()}\n{self.team2.mvp_parse()}'
             if not all(self.confirms):
                 footer += '\nPlease confirm: '
-                if not self.confirms[0]:
-                    footer += f'{self.team1.name} '
-                if not self.confirms[1]:
-                    footer += f'{self.team2.name} '
+                if self.mock:
+                    footer += 'anyone can confirm or clear a mock.'
+                else:
+                    if not self.confirms[0]:
+                        footer += f'{self.team1.name} '
+                    if not self.confirms[1]:
+                        footer += f'{self.team2.name} '
         else:
             footer += f'Current score: {self.team1.name}[{self.team1.stocks}] - ' \
                       f'{self.team2.name}[{self.team2.stocks}] \n' \
