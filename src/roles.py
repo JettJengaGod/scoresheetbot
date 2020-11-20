@@ -48,6 +48,7 @@ class CrewCache:
             for row in values:
                 ret.add(row[0])
 
+        self.updated = time.time_ns()
         return ret
 
     def crews(self) -> set:
@@ -55,5 +56,4 @@ class CrewCache:
             return self.crew_set
         else:
             self.crew_set = self.init_crews()
-            self.updated = time.time_ns()
             return self.crew_set
