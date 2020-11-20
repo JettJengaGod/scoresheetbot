@@ -116,16 +116,17 @@ def is_streamer(func):
 async def crew(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
     roles = user.roles
     if any((role.name == 'SCS Overflow Crew' for role in roles)):
-        if not bot.overflow_cache or time.time_ns() - bot.overflow_updated < OVERFLOW_CACHE_TIME:
+        if not bot.overflow_cache or (time.time_ns() - bot.overflow_updated) > OVERFLOW_CACHE_TIME:
             bot.overflow_cache = await discord.utils.get(bot.bot.guilds, name='SCS Overflow Server').fetch_members(
                 limit=None).flatten()
+            bot.overflow_updated = time.time_ns()
         overflow_user = discord.utils.get(bot.overflow_cache, id=user.id)
         roles = overflow_user.roles
 
     for role in roles:
         if role.name in cache.crews():
             return role.name
-    return None
+    raise Exception(f'{user.mention} has no crew or something is wrong.')
 
 
 class ScoreSheetBot(commands.Cog):
@@ -344,7 +345,6 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(self._current(ctx).timer())
 
     @commands.command(**help['char'])
-    @ss_channel
     async def char(self, ctx: Context, emoji):
         if is_usable_emoji(emoji, self.bot):
             await ctx.send(emoji)
@@ -353,17 +353,24 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'All alts in order: {all_alts(emoji, self.bot)}')
 
     @commands.command(**help['crew'])
-    @ss_channel
     async def crew(self, ctx, user: discord.Member = None):
         if user:
             await ctx.send(await crew(user, self))
         else:
             await ctx.send(await crew(ctx.author, self))
 
-    @commands.command(**help['char'])
-    @ss_channel
+    @commands.command(**help['crew'])
     async def who(self, ctx: Context, user: discord.Member):
         await ctx.send(await crew(user, self))
+
+    @commands.command(**help['recache'])
+    async def recache(self, ctx: Context):
+        if check_roles(ctx.author, ['SCS Admin', 'v2 Minion']):
+            cache.init_crews()
+            self.overflow_updated = time.time_ns() - OVERFLOW_CACHE_TIME
+            await ctx.send('The cache has been cleared, everything should be updated now.')
+        else:
+            await ctx.send('You need to be an admin or minion to use this command.')
 
     @commands.command(**help['chars'])
     @ss_channel
@@ -379,7 +386,6 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(split)
 
     @commands.command(**help['guide'])
-    @ss_channel
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 

@@ -38,4 +38,5 @@ help = dict(
     stream=HelpDoc('Sets the stream if you are a streamer or leader, or prints it if you are not'),
     timer=HelpDoc('Prints the time since the last match ended'),
     guide=HelpDoc('Links to the guide'),
+    recache=HelpDoc('Updates the cache. Admin only'),
 )
