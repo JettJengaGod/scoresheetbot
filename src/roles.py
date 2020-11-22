@@ -13,6 +13,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 class CrewCache:
     def __init__(self):
         self.ranks_by_crew = {}
+        self.merit_by_crew = {}
         self.crew_set = self.init_crews()
         self.updated = time.time_ns()
 
@@ -59,17 +60,20 @@ class CrewCache:
             for row in values:
                 ret.add(row[0])
         ranks_by_crew = {}
+        merit_by_crew = {}
         if not legacy:
             raise ValueError('Legacy Sheet Not Found')
         else:
             for row in legacy:
-                ranks_by_crew[row[0]] = row[11]
+                merit_by_crew[row[0]] = row[2]
+                ranks_by_crew[row[0]] = f'{row[11]} (Legacy rank {row[10]})'
         if not rising:
             raise ValueError('Legacy Sheet Not Found')
         else:
             for row in rising:
-                ranks_by_crew[row[0]] = row[11]
-
+                merit_by_crew[row[0]] = row[2]
+                ranks_by_crew[row[0]] = f'{row[11]} (Rising rank {row[10]})'
+        self.merit_by_crew = merit_by_crew
         self.ranks_by_crew = ranks_by_crew
         self.updated = time.time_ns()
         return ret

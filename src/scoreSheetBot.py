@@ -381,7 +381,14 @@ class ScoreSheetBot(commands.Cog):
         user = user if user else ctx.author
         crew_name = await crew(user, self)
         crew_rank = cache.ranks_by_crew[crew_name]
-        await ctx.send(f'{user.display_name}\'s crew {crew_name} is rank {crew_rank}')
+        await ctx.send(f'{user.display_name}\'s crew {crew_name} is rank {crew_rank}.')
+
+    @commands.command(**help['merit'])
+    async def merit(self, ctx, user: discord.Member = None):
+        user = user if user else ctx.author
+        crew_name = await crew(user, self)
+        crew_rank = cache.merit_by_crew[crew_name]
+        await ctx.send(f'{user.display_name}\'s crew {crew_name} has {crew_rank} merit.')
 
     @commands.command(**help['crew'])
     async def who(self, ctx: Context, user: discord.Member):
