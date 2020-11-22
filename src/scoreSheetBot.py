@@ -8,7 +8,7 @@ import functools
 from datetime import date
 from discord.ext import commands
 from dotenv import load_dotenv
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, Iterable
 from battle import Battle, Character, StateError
 from help import help
 from character import all_emojis, string_to_emote, all_alts
