@@ -41,4 +41,5 @@ help = dict(
     recache=HelpDoc('Updates the cache. Admin only'),
     pending=HelpDoc('Prints pending battles. Admin only'),
     rank=HelpDoc('Find out a user\'s crew\'s rank'),
+    merit=HelpDoc('Find out a user\'s crew\'s merit'),
 )
