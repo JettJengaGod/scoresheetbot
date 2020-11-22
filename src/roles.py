@@ -12,6 +12,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 class CrewCache:
     def __init__(self):
+        self.ranks_by_crew = {}
         self.crew_set = self.init_crews()
         self.updated = time.time_ns()
 
@@ -36,18 +37,40 @@ class CrewCache:
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
         crew_info_range = 'Crew Information!A4:A2160'
+        legacy_range = 'Legacy Ladder!A4:L200'
+        rising_range = 'Rising Ladder!A4:L300'
         # Call the Sheets API
         sheet = service.spreadsheets()
         result = sheet.values().get(spreadsheetId=docs_id,
                                     range=crew_info_range).execute()
+
+        legacy = sheet.values().get(spreadsheetId=docs_id,
+                                    range=legacy_range).execute()
+        rising = sheet.values().get(spreadsheetId=docs_id,
+                                    range=rising_range).execute()
         values = result.get('values', [])
+
+        legacy = legacy.get('values', [])
+        rising = rising.get('values', [])
         ret = set()
         if not values:
             raise ValueError('Crews Sheet Not Found')
         else:
             for row in values:
                 ret.add(row[0])
+        ranks_by_crew = {}
+        if not legacy:
+            raise ValueError('Legacy Sheet Not Found')
+        else:
+            for row in legacy:
+                ranks_by_crew[row[0]] = row[11]
+        if not rising:
+            raise ValueError('Legacy Sheet Not Found')
+        else:
+            for row in rising:
+                ranks_by_crew[row[0]] = row[11]
 
+        self.ranks_by_crew = ranks_by_crew
         self.updated = time.time_ns()
         return ret
 

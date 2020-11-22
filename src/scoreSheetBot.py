@@ -5,6 +5,7 @@ import traceback
 import time
 import discord
 import functools
+from datetime import date
 from discord.ext import commands
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
@@ -41,7 +42,7 @@ def ss_channel(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        if 'scoresheet_bot' not in ctx.channel.name:
+        if 'ultimate_cb' not in ctx.channel.name and 'scoresheet_bot' not in ctx.channel.name:
             await ctx.send('Cannot use this bot in this channel, try a scoresheet_bot channel.')
             return
         return await func(self, *args, **kwargs)
@@ -318,11 +319,16 @@ class ScoreSheetBot(commands.Cog):
                 self._current(ctx).confirm(await self._battle_crew(ctx, ctx.author))
                 await send_sheet(ctx=ctx, battle=self._current(ctx))
                 if self._current(ctx).confirmed():
+                    today = date.today()
+
                     output_channel = discord.utils.get(ctx.guild.channels, name='scoresheet_output')
+                    winner = self._current(ctx).winner().name
+                    loser = self._current(ctx).loser().name
                     await output_channel.send(
-                        f'A {self._current(ctx).team1.num_players}v{self._current(ctx).team1.num_players} '
-                        f'battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
-                        f'has concluded in {ctx.channel.mention}.')
+                        f'**{today.strftime("%B %d, %Y")}- {winner} vs. {self._current(ctx).team2.name} **\n'
+                        f'{cache.ranks_by_crew[winner]} crew defeats {cache.ranks_by_crew[loser]} crew in a '
+                        f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
+                        f'from  {ctx.channel.mention}.')
                     await output_channel.send(embed=self._current(ctx).embed())
                     await ctx.send(
                         f'The battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
@@ -370,6 +376,13 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send(await crew(ctx.author, self))
 
+    @commands.command(**help['rank'])
+    async def rank(self, ctx, user: discord.Member = None):
+        user = user if user else ctx.author
+        crew_name = await crew(user, self)
+        crew_rank = cache.ranks_by_crew[crew_name]
+        await ctx.send(f'{user.display_name}\'s crew {crew_name} is rank {crew_rank}')
+
     @commands.command(**help['crew'])
     async def who(self, ctx: Context, user: discord.Member):
         await ctx.send(await crew(user, self))
@@ -379,7 +392,7 @@ class ScoreSheetBot(commands.Cog):
     async def overflow(self, ctx: Context):
         overflow_role = set()
         await ctx.send('This will take some time.')
-        overflow_members = await ctx.guild.fetch_members(limit=None).flatten()
+        overflow_members = ctx.guild.members
         for member in overflow_members:
             if check_roles(member, 'SCS Overflow Crew'):
                 if any((role.name in cache.crews() for role in member.roles)):
@@ -413,7 +426,7 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send('Printing all current battles.')
         for channel, battle in self.battle_map.items():
             if battle:
-                chan = discord.utils.get(ctx.guild.channels, name=channel[channel.index("|")+1:])
+                chan = discord.utils.get(ctx.guild.channels, name=channel[channel.index("|") + 1:])
                 await ctx.send(chan.mention)
                 await send_sheet(ctx, battle)
 
