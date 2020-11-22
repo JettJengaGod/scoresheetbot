@@ -5,12 +5,13 @@ import traceback
 import time
 import discord
 import functools
+from datetime import date
 from discord.ext import commands
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union
 from battle import Battle, Character, StateError
 from help import help
-from character import string_to_emote, all_emojis, string_to_emote, all_alts
+from character import all_emojis, string_to_emote, all_alts
 import roles
 from helpers import split_on_length_and_separator, is_usable_emoji, check_roles, split_embed
 
@@ -20,6 +21,13 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 cache = roles.CrewCache()
 OVERFLOW_CACHE_TIME = 1_000_000
+_LEADER = 'Leader'
+_MINION = 'v2 Minion'
+_ADMIN = 'SCS Admin'
+_ADVISOR = 'Advisor'
+_WATCHLIST = '! Watchlisted !'
+_CERTIFIED = 'SCS Certified Streamer'
+_STREAMER = 'Streamers'
 
 
 async def send_sheet(ctx: Context, battle: Battle):
@@ -34,7 +42,7 @@ def ss_channel(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        if 'scoresheet_bot' not in ctx.channel.name:
+        if 'ultimate_cb' not in ctx.channel.name and 'scoresheet_bot' not in ctx.channel.name:
             await ctx.send('Cannot use this bot in this channel, try a scoresheet_bot channel.')
             return
         return await func(self, *args, **kwargs)
@@ -48,7 +56,7 @@ def has_sheet(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        battle = self.battle_map.get(str(ctx.guild) + str(ctx.channel))
+        battle = self.battle_map.get(str(ctx.guild) + '|' + str(ctx.channel))
         if battle is None:
             await ctx.send('Battle is not started.')
             return
@@ -64,7 +72,7 @@ def no_battle(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        battle = self.battle_map.get(str(ctx.guild) + str(ctx.channel))
+        battle = self.battle_map.get(str(ctx.guild) + '|' + str(ctx.channel))
         if battle is not None:
             await ctx.send('A battle is already going in this channel.')
             return
@@ -82,7 +90,7 @@ def is_lead(func):
 
         ctx = args[0]
 
-        battle = self.battle_map.get(str(ctx.guild) + str(ctx.channel))
+        battle = self.battle_map.get(str(ctx.guild) + '|' + str(ctx.channel))
         mock = False
         if battle and battle.mock:
             mock = True
@@ -96,19 +104,19 @@ def is_lead(func):
     return wrapper
 
 
-def is_streamer(func):
-    """Decorator that ensures caller is streamer."""
+def role_call(required: Iterable):
+    """Decorator that checks if someone is in a roles list."""
 
-    @functools.wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        ctx = args[0]
-        user = ctx.author
-        if not (
-                any(role.name in ['SCS Admin', 'v2 Minion', 'SCS Certified Streamer', 'Streamers'] for role in
-                    user.roles)):
-            await ctx.send('Only a streamer or admin can run this command.')
-            return
-        return await func(self, *args, **kwargs)
+    def wrapper(func):
+        @functools.wraps(func)
+        async def wrapped_f(self, *args, **kwargs):
+            ctx = args[0]
+            if not check_roles(ctx.author, required):
+                await ctx.send(f'You need to be one of {required} to run this command')
+                return
+            return await func(self, *args, **kwargs)
+
+        return wrapped_f
 
     return wrapper
 
@@ -137,7 +145,7 @@ class ScoreSheetBot(commands.Cog):
         self.overflow_updated = time.time_ns() - OVERFLOW_CACHE_TIME
 
     def _current(self, ctx) -> Battle:
-        return self.battle_map[str(ctx.guild) + str(ctx.channel)]
+        return self.battle_map[str(ctx.guild) + '|' + str(ctx.channel)]
 
     async def _battle_crew(self, ctx: Context, user: discord.member) -> Optional[str]:
         crew_name = await crew(user, self)
@@ -152,10 +160,10 @@ class ScoreSheetBot(commands.Cog):
             raise Exception('You are not in this battle, stop trying to mess with it.')
 
     def _set_current(self, ctx: Context, battle: Battle):
-        self.battle_map[str(ctx.guild) + str(ctx.channel)] = battle
+        self.battle_map[str(ctx.guild) + '|' + str(ctx.channel)] = battle
 
     def _clear_current(self, ctx):
-        self.battle_map[str(ctx.guild) + str(ctx.channel)] = None
+        self.battle_map[str(ctx.guild) + '|' + str(ctx.channel)] = None
 
     @commands.command(**help['battle'], aliases=['challenge'])
     @no_battle
@@ -207,11 +215,15 @@ class ScoreSheetBot(commands.Cog):
                 return
         else:
             await self._reject_outsiders(ctx)
-            current_crew = await self._battle_crew(ctx, ctx.author)
-            if current_crew == await self._battle_crew(ctx, user):
-                self._current(ctx).add_player(current_crew, user.display_name)
+            author_crew = await self._battle_crew(ctx, ctx.author)
+            player_crew = await self._battle_crew(ctx, user)
+            if author_crew == player_crew:
+                if check_roles(user, [_WATCHLIST]):
+                    await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
+                    return
+                self._current(ctx).add_player(author_crew, user.display_name)
             else:
-                await ctx.send(f'{user.display_name} is not on {current_crew} please choose someone else.')
+                await ctx.send(f'{user.display_name} is not on {author_crew} please choose someone else.')
                 return
         await send_sheet(ctx=ctx, battle=self._current(ctx))
 
@@ -307,11 +319,16 @@ class ScoreSheetBot(commands.Cog):
                 self._current(ctx).confirm(await self._battle_crew(ctx, ctx.author))
                 await send_sheet(ctx=ctx, battle=self._current(ctx))
                 if self._current(ctx).confirmed():
+                    today = date.today()
+
                     output_channel = discord.utils.get(ctx.guild.channels, name='scoresheet_output')
+                    winner = self._current(ctx).winner().name
+                    loser = self._current(ctx).loser().name
                     await output_channel.send(
-                        f'A {self._current(ctx).team1.num_players}v{self._current(ctx).team1.num_players} '
-                        f'battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
-                        f'has concluded in {ctx.channel.mention}.')
+                        f'**{today.strftime("%B %d, %Y")}- {winner} vs. {self._current(ctx).team2.name} **\n'
+                        f'{cache.ranks_by_crew[winner]} crew defeats {cache.ranks_by_crew[loser]} crew in a '
+                        f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
+                        f'from  {ctx.channel.mention}.')
                     await output_channel.send(embed=self._current(ctx).embed())
                     await ctx.send(
                         f'The battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
@@ -325,7 +342,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def clear(self, ctx):
-        if not any(role.name in ['v2 Minion', 'SCS Admin'] for role in ctx.author.roles):
+        if not check_roles(ctx.author, [_MINION, _ADMIN]):
             await self._reject_outsiders(ctx)
         if self._current(ctx).mock:
             await ctx.send('If you just cleared a crew battle to troll people, be warned this is a bannable offence.')
@@ -359,18 +376,66 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send(await crew(ctx.author, self))
 
+    @commands.command(**help['rank'])
+    async def rank(self, ctx, user: discord.Member = None):
+        user = user if user else ctx.author
+        crew_name = await crew(user, self)
+        crew_rank = cache.ranks_by_crew[crew_name]
+        await ctx.send(f'{user.display_name}\'s crew {crew_name} is rank {crew_rank}')
+
     @commands.command(**help['crew'])
     async def who(self, ctx: Context, user: discord.Member):
         await ctx.send(await crew(user, self))
 
+    @commands.command(**help['crew'])
+    @role_call([_ADMIN, _MINION])
+    async def overflow(self, ctx: Context):
+        overflow_role = set()
+        await ctx.send('This will take some time.')
+        overflow_members = ctx.guild.members
+        for member in overflow_members:
+            if check_roles(member, 'SCS Overflow Crew'):
+                if any((role.name in cache.crews() for role in member.roles)):
+                    continue
+                print(member, len(overflow_role))
+                overflow_role.add(str(member))
+        other_set = set()
+        c = await crew(ctx.author, self)
+        other_members = self.overflow_cache
+        for member in other_members:
+            if any((role.name in cache.crews() for role in member.roles)):
+                other_set.add(str(member))
+
+                print(member, len(other_set))
+                continue
+        first = overflow_role - other_set
+        second = other_set - overflow_role
+        out = ['These members have the role, but are not in an overflow crew ']
+        for member in first:
+            out.append(f'{str(member)}')
+        out.append('These members are flaired in the overflow server, but have no role here')
+        for member in second:
+            out.append(f'{str(member)}')
+        output = split_on_length_and_separator('\n'.join(out), length=2000, separator='\n')
+        for put in output:
+            await ctx.send(put)
+
+    @commands.command(**help['pending'])
+    @role_call([_ADMIN, _MINION])
+    async def pending(self, ctx: Context):
+        await ctx.send('Printing all current battles.')
+        for channel, battle in self.battle_map.items():
+            if battle:
+                chan = discord.utils.get(ctx.guild.channels, name=channel[channel.index("|") + 1:])
+                await ctx.send(chan.mention)
+                await send_sheet(ctx, battle)
+
     @commands.command(**help['recache'])
+    @role_call([_ADMIN, _MINION])
     async def recache(self, ctx: Context):
-        if check_roles(ctx.author, ['SCS Admin', 'v2 Minion']):
-            cache.init_crews()
-            self.overflow_updated = time.time_ns() - OVERFLOW_CACHE_TIME
-            await ctx.send('The cache has been cleared, everything should be updated now.')
-        else:
-            await ctx.send('You need to be an admin or minion to use this command.')
+        cache.init_crews()
+        self.overflow_updated = time.time_ns() - OVERFLOW_CACHE_TIME
+        await ctx.send('The cache has been cleared, everything should be updated now.')
 
     @commands.command(**help['chars'])
     @ss_channel

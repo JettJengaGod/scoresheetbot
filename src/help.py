@@ -39,4 +39,6 @@ help = dict(
     timer=HelpDoc('Prints the time since the last match ended'),
     guide=HelpDoc('Links to the guide'),
     recache=HelpDoc('Updates the cache. Admin only'),
+    pending=HelpDoc('Prints pending battles. Admin only'),
+    rank=HelpDoc('Find out a user\'s crew\'s rank'),
 )
