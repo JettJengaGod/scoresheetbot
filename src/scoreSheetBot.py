@@ -321,18 +321,20 @@ class ScoreSheetBot(commands.Cog):
                 if self._current(ctx).confirmed():
                     today = date.today()
 
-                    output_channel = discord.utils.get(ctx.guild.channels, name='scoresheet_output')
+                    output_channels = [discord.utils.get(ctx.guild.channels, name='scoresheet_output'),
+                                       discord.utils.get(ctx.guild.channels, name='scs_docs_updates')]
                     winner = self._current(ctx).winner().name
                     loser = self._current(ctx).loser().name
-                    await output_channel.send(
-                        f'**{today.strftime("%B %d, %Y")}- {winner} vs. {self._current(ctx).team2.name} **\n'
-                        f'{cache.ranks_by_crew[winner]} crew defeats {cache.ranks_by_crew[loser]} crew in a '
-                        f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
-                        f'from  {ctx.channel.mention}.')
-                    await output_channel.send(embed=self._current(ctx).embed())
+                    for output_channel in output_channels:
+                        await output_channel.send(
+                            f'**{today.strftime("%B %d, %Y")}- {winner} vs. {self._current(ctx).team2.name} **\n'
+                            f'{cache.ranks_by_crew[winner]} crew defeats {cache.ranks_by_crew[loser]} crew in a '
+                            f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
+                            f'from  {ctx.channel.mention}.')
+                        await output_channel.send(embed=self._current(ctx).embed())
                     await ctx.send(
                         f'The battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
-                        f'has been confirmed by both sides and posted in {output_channel.mention}.')
+                        f'has been confirmed by both sides and posted in {output_channels[1].mention}.')
                     self._clear_current(ctx)
         else:
             ctx.send('The battle is not over yet, wait till then to confirm.')
