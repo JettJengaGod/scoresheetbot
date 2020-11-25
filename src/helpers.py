@@ -1,7 +1,6 @@
-from typing import List
+from typing import List, Iterable
 
 import discord
-from typing import Iterable
 
 
 def split_embed(embed: discord.Embed, length: int) -> List[discord.Embed]:
