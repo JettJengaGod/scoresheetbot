@@ -15,7 +15,7 @@ from src.character import all_emojis, string_to_emote, all_alts
 from src.helpers import split_on_length_and_separator, is_usable_emoji, check_roles, split_embed
 import src.roles
 
-Context = discord.ext.commands.context
+Context = discord.ext.commands.Context
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -30,10 +30,10 @@ _CERTIFIED = 'SCS Certified Streamer'
 _STREAMER = 'Streamers'
 
 
-async def send_sheet(ctx: Context, battle: Battle):
+async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battle):
     embed_split = split_embed(embed=battle.embed(), length=2000)
     for embed in embed_split:
-        await ctx.send(embed=embed)
+        await channel.send(embed=embed)
 
 
 def ss_channel(func):
@@ -187,7 +187,7 @@ class ScoreSheetBot(commands.Cog):
             return
         if user_crew != opp_crew:
             self._set_current(ctx, Battle(user_crew, opp_crew, size))
-            await send_sheet(ctx=ctx, battle=self._current(ctx))
+            await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
 
@@ -225,7 +225,7 @@ class ScoreSheetBot(commands.Cog):
             else:
                 await ctx.send(f'{user.display_name} is not on {author_crew} please choose someone else.')
                 return
-        await send_sheet(ctx=ctx, battle=self._current(ctx))
+        await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['replace'])
     @has_sheet
@@ -248,7 +248,7 @@ class ScoreSheetBot(commands.Cog):
             else:
                 await ctx.send(f'{user.display_name} is not on {current_crew}, please choose someone else.')
                 return
-        await send_sheet(ctx=ctx, battle=self._current(ctx))
+        await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['end'])
     @has_sheet
@@ -260,7 +260,7 @@ class ScoreSheetBot(commands.Cog):
         self._current(ctx).finish_match(stocks1, stocks2,
                                         Character(str(char1), self.bot, is_usable_emoji(char1, self.bot)),
                                         Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
-        await send_sheet(ctx=ctx, battle=self._current(ctx))
+        await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['resize'])
     @is_lead
@@ -269,7 +269,7 @@ class ScoreSheetBot(commands.Cog):
     async def resize(self, ctx: Context, new_size: int):
         await self._reject_outsiders(ctx)
         self._current(ctx).resize(new_size)
-        await send_sheet(ctx=ctx, battle=self._current(ctx))
+        await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['arena'], aliases=['id', 'arena_id', 'lobby'])
     @has_sheet
@@ -302,7 +302,7 @@ class ScoreSheetBot(commands.Cog):
     async def undo(self, ctx):
         await self._reject_outsiders(ctx)
         self._current(ctx).undo()
-        await send_sheet(ctx=ctx, battle=self._current(ctx))
+        await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['confirm'])
     @has_sheet
@@ -317,7 +317,7 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
             else:
                 self._current(ctx).confirm(await self._battle_crew(ctx, ctx.author))
-                await send_sheet(ctx=ctx, battle=self._current(ctx))
+                await send_sheet(ctx, battle=self._current(ctx))
                 if self._current(ctx).confirmed():
                     today = date.today()
 
@@ -331,13 +331,13 @@ class ScoreSheetBot(commands.Cog):
                             f'{cache.ranks_by_crew[winner]} crew defeats {cache.ranks_by_crew[loser]} crew in a '
                             f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
                             f'from  {ctx.channel.mention}.')
-                        await output_channel.send(embed=self._current(ctx).embed())
+                        await send_sheet(output_channel, self._current(ctx))
                     await ctx.send(
                         f'The battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[1].mention}.')
                     self._clear_current(ctx)
         else:
-            ctx.send('The battle is not over yet, wait till then to confirm.')
+            await ctx.send('The battle is not over yet, wait till then to confirm.')
 
     @commands.command(**help['clear'])
     @has_sheet
@@ -355,7 +355,7 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     async def status(self, ctx):
-        await send_sheet(ctx=ctx, battle=self._current(ctx))
+        await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['timer'])
     @has_sheet
@@ -516,7 +516,7 @@ class ScoreSheetBot(commands.Cog):
 
 
 def main():
-    bot = commands.Bot(command_prefix=',')
+    bot = commands.Bot(command_prefix=',', intents=discord.Intents.all())
     bot.add_cog(ScoreSheetBot(bot))
     bot.run(TOKEN)
 
