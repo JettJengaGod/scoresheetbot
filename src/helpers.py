@@ -1,6 +1,16 @@
-from typing import List, Iterable
+from typing import List, Iterable, Set
 
 import discord
+
+
+def escape(string: str, special: Set[str] = None) -> str:
+    if not special:
+        special = ['\\', '>', '`', '_', '*', '|']
+    out = string[:]
+    for char in special:
+        if char in out:
+            out = out.replace(char, '\\' + char)
+    return out
 
 
 def split_embed(embed: discord.Embed, length: int) -> List[discord.Embed]:
