@@ -13,7 +13,7 @@ from battle import Battle, Character, StateError
 from help import help
 from character import all_emojis, string_to_emote, all_alts
 import roles
-from src.helpers import 
+from helpers import * 
 
 Context = discord.ext.commands.Context
 
