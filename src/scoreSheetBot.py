@@ -457,7 +457,7 @@ class ScoreSheetBot(commands.Cog):
         out = "".join(out)
         out = split_on_length_and_separator(out, 1999, ']')
         for split in out:
-            await ctx.send(split)
+            await ctx.author.send(split)
 
     @commands.command(**help['guide'])
     async def guide(self, ctx):
