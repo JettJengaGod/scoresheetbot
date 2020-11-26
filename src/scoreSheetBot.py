@@ -13,7 +13,7 @@ from battle import Battle, Character, StateError
 from help import help
 from character import all_emojis, string_to_emote, all_alts
 import roles
-from helpers import split_on_length_and_separator, is_usable_emoji, check_roles, split_embed
+from src.helpers import 
 
 Context = discord.ext.commands.Context
 
@@ -208,7 +208,7 @@ class ScoreSheetBot(commands.Cog):
     async def send(self, ctx: Context, user: discord.Member, team: str = None):
         if self._current(ctx).mock:
             if team:
-                self._current(ctx).add_player(team, user.display_name)
+                self._current(ctx).add_player(team, escape(user.display_name))
             else:
                 await ctx.send(f'During a mock you need to send with a teamname, like this'
                                f' `,send @playername teamname`.')
@@ -221,9 +221,9 @@ class ScoreSheetBot(commands.Cog):
                 if check_roles(user, [_WATCHLIST]):
                     await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
                     return
-                self._current(ctx).add_player(author_crew, user.display_name)
+                self._current(ctx).add_player(author_crew, escape(user.display_name))
             else:
-                await ctx.send(f'{user.display_name} is not on {author_crew} please choose someone else.')
+                await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
@@ -234,7 +234,7 @@ class ScoreSheetBot(commands.Cog):
     async def replace(self, ctx: Context, user: discord.Member, team: str = None):
         if self._current(ctx).mock:
             if team:
-                self._current(ctx).add_player(team, user.display_name)
+                self._current(ctx).add_player(team, escape(user.display_name))
             else:
                 await ctx.send(f'During a mock you need to replace with a teamname, like this'
                                f' `,replace @playername teamname`.')
@@ -243,10 +243,10 @@ class ScoreSheetBot(commands.Cog):
             await self._reject_outsiders(ctx)
             current_crew = await self._battle_crew(ctx, ctx.author)
             if current_crew == await self._battle_crew(ctx, user):
-                self._current(ctx).replace_player(current_crew, user.display_name)
+                self._current(ctx).replace_player(current_crew, escape(user.display_name))
 
             else:
-                await ctx.send(f'{user.display_name} is not on {current_crew}, please choose someone else.')
+                await ctx.send(f'{escape(user.display_name)} is not on {current_crew}, please choose someone else.')
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
@@ -383,14 +383,14 @@ class ScoreSheetBot(commands.Cog):
         user = user if user else ctx.author
         crew_name = await crew(user, self)
         crew_rank = cache.ranks_by_crew[crew_name]
-        await ctx.send(f'{user.display_name}\'s crew {crew_name} is rank {crew_rank}.')
+        await ctx.send(f'{escape(user.display_name)}\'s crew {crew_name} is rank {crew_rank}.')
 
     @commands.command(**help['merit'])
     async def merit(self, ctx, user: discord.Member = None):
         user = user if user else ctx.author
         crew_name = await crew(user, self)
         crew_rank = cache.merit_by_crew[crew_name]
-        await ctx.send(f'{user.display_name}\'s crew {crew_name} has {crew_rank} merit.')
+        await ctx.send(f'{escape(user.display_name)}\'s crew {crew_name} has {crew_rank} merit.')
 
     @commands.command(**help['crew'])
     async def who(self, ctx: Context, user: discord.Member):
@@ -457,7 +457,7 @@ class ScoreSheetBot(commands.Cog):
         out = "".join(out)
         out = split_on_length_and_separator(out, 1999, ']')
         for split in out:
-            await ctx.send(split)
+            await ctx.author.send(split)
 
     @commands.command(**help['guide'])
     async def guide(self, ctx):
