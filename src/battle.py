@@ -43,6 +43,7 @@ class Team:
     num_players: int
     stocks: int
     players: list = field(default_factory=list)
+    leader: set = field(default_factory=set)
     current_player: Optional[Player] = None
 
     def add_player(self, player_name: str) -> None:
@@ -155,13 +156,15 @@ class Battle:
                 return team
         raise StateError(self, f"Team \"{team_name}\" does not exist.")
 
-    def add_player(self, team_name: str, player_name: str) -> None:
+    def add_player(self, team_name: str, player_name: str, leader: str) -> None:
         team = self.lookup(team_name)
         team.add_player(player_name)
+        team.leader.add(leader)
 
-    def replace_player(self, team_name: str, player_name: str) -> None:
+    def replace_player(self, team_name: str, player_name: str, leader: str) -> None:
         team = self.lookup(team_name)
         team.replace_current(player_name)
+        team.leader.add(leader)
 
     def finish_match(self, taken1: int, taken2: int, char1: Character, char2: Character) -> Match:
         if not self.match_ready():
@@ -274,9 +277,17 @@ class Battle:
                     footer += 'anyone can confirm or clear a mock.'
                 else:
                     if not self.confirms[0]:
-                        footer += f'{self.team1.name} '
+                        footer += f'\n {self.team1.name}: '
+                        for leader in self.team1.leader:
+                            footer += f'{leader}, '
+                        footer = footer[:-2]
+                        footer += ' please `,confirm`.'
                     if not self.confirms[1]:
-                        footer += f'{self.team2.name} '
+                        footer += f'\n {self.team2.name}: '
+                        for leader in self.team2.leader:
+                            footer += f'{leader}, '
+                        footer = footer[:-2]
+                        footer += ' please `,confirm`.'
         else:
             footer += f'Current score: {self.team1.name}[{self.team1.stocks}] - ' \
                       f'{self.team2.name}[{self.team2.stocks}] \n' \
