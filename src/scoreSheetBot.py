@@ -327,7 +327,7 @@ class ScoreSheetBot(commands.Cog):
                     loser = self._current(ctx).loser().name
                     for output_channel in output_channels:
                         await output_channel.send(
-                            f'**{today.strftime("%B %d, %Y")}- {winner} vs. {self._current(ctx).team2.name} **\n'
+                            f'**{today.strftime("%B %d, %Y")}- {winner} vs. {loser} **\n'
                             f'{cache.ranks_by_crew[winner]} crew defeats {cache.ranks_by_crew[loser]} crew in a '
                             f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
                             f'from  {ctx.channel.mention}.')
