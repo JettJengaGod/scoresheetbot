@@ -208,7 +208,7 @@ class ScoreSheetBot(commands.Cog):
     async def send(self, ctx: Context, user: discord.Member, team: str = None):
         if self._current(ctx).mock:
             if team:
-                self._current(ctx).add_player(team, escape(user.display_name))
+                self._current(ctx).add_player(team, escape(user.display_name), ctx.author.mention)
             else:
                 await ctx.send(f'During a mock you need to send with a teamname, like this'
                                f' `,send @playername teamname`.')
@@ -221,7 +221,7 @@ class ScoreSheetBot(commands.Cog):
                 if check_roles(user, [_WATCHLIST]):
                     await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
                     return
-                self._current(ctx).add_player(author_crew, escape(user.display_name))
+                self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention)
             else:
                 await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
                 return
@@ -234,7 +234,7 @@ class ScoreSheetBot(commands.Cog):
     async def replace(self, ctx: Context, user: discord.Member, team: str = None):
         if self._current(ctx).mock:
             if team:
-                self._current(ctx).add_player(team, escape(user.display_name))
+                self._current(ctx).add_player(team, escape(user.display_name), ctx.author.mention)
             else:
                 await ctx.send(f'During a mock you need to replace with a teamname, like this'
                                f' `,replace @playername teamname`.')
@@ -243,7 +243,7 @@ class ScoreSheetBot(commands.Cog):
             await self._reject_outsiders(ctx)
             current_crew = await self._battle_crew(ctx, ctx.author)
             if current_crew == await self._battle_crew(ctx, user):
-                self._current(ctx).replace_player(current_crew, escape(user.display_name))
+                self._current(ctx).replace_player(current_crew, escape(user.display_name), ctx.author.mention)
 
             else:
                 await ctx.send(f'{escape(user.display_name)} is not on {current_crew}, please choose someone else.')
@@ -327,7 +327,7 @@ class ScoreSheetBot(commands.Cog):
                     loser = self._current(ctx).loser().name
                     for output_channel in output_channels:
                         await output_channel.send(
-                            f'**{today.strftime("%B %d, %Y")}- {winner} vs. {self._current(ctx).team2.name} **\n'
+                            f'**{today.strftime("%B %d, %Y")}- {winner} vs. {loser} **\n'
                             f'{cache.ranks_by_crew[winner]} crew defeats {cache.ranks_by_crew[loser]} crew in a '
                             f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
                             f'from  {ctx.channel.mention}.')
