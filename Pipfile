@@ -43,6 +43,11 @@ six = ">=1.15.0"
 toml = ">=0.10.2"
 uritemplate = ">=3.0.1"
 urllib3 = ">=1.26.2"
+freezegun = "*"
 
 [requires]
 python_version = "3.8"
+
+[scripts]
+start = "python src/main.py"
+test = "coverage run -m unittest discover -s test"
