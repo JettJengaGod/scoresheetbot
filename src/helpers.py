@@ -4,9 +4,12 @@ import time
 import discord
 from discord.ext import commands
 from .battle import *
+from .scoreSheetBot import ScoreSheetBot
 
 Context = discord.ext.commands.Context
 OVERFLOW_CACHE_TIME = 1_000_000
+OVERFLOW_ROLE = 'SCS Overflow Crew'
+OVERFLOW_SERVER = 'SCS Overflow Server'
 
 
 def key_string(ctx: Context) -> str:
@@ -58,11 +61,13 @@ def is_usable_emoji(text: str, bot):
             text = text[:-1]
         name = text[:text.index(':')]
         emoji_id = text[text.index(':') + 1:]
-        return discord.utils.get(bot.emojis, name=name).available
+        emoji = discord.utils.get(bot.emojis, name=name)
+        if emoji:
+            return emoji.available
     return False
 
 
-def check_roles(user: discord.member, roles: Iterable) -> bool:
+def check_roles(user: discord.member, roles: Iterable[str]) -> bool:
     return any((role.name in roles for role in user.roles))
 
 
@@ -72,12 +77,11 @@ async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battl
         await channel.send(embed=embed)
 
 
-async def crew(user: discord.Member, bot) -> Optional[str]:
+def crew(user: discord.Member, bot: ScoreSheetBot) -> Optional[str]:
     roles = user.roles
-    if any((role.name == 'SCS Overflow Crew' for role in roles)):
+    if any((role.name == OVERFLOW_ROLE for role in roles)):
         if not bot.overflow_cache or (time.time_ns() - bot.overflow_updated) > OVERFLOW_CACHE_TIME:
-            bot.overflow_cache = await discord.utils.get(bot.bot.guilds, name='SCS Overflow Server').fetch_members(
-                limit=None).flatten()
+            bot.overflow_cache = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER).members
             bot.overflow_updated = time.time_ns()
         overflow_user = discord.utils.get(bot.overflow_cache, id=user.id)
         roles = overflow_user.roles

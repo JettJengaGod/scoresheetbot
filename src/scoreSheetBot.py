@@ -8,6 +8,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 import src.roles
+from src import helpers
 from .character import all_emojis, string_to_emote, all_alts
 from .decorators import *
 from .help import help
@@ -22,7 +23,8 @@ _ADVISOR = 'Advisor'
 _WATCHLIST = '! Watchlisted !'
 _CERTIFIED = 'SCS Certified Streamer'
 _STREAMER = 'Streamers'
-
+_OUTPUT = 'scoresheet_output'
+_DOCS_UPDATES = 'scs_docs_updates'
 
 class ScoreSheetBot(commands.Cog):
     def __init__(self, bot: commands.bot, cache: src.roles.CrewCache):
@@ -30,13 +32,13 @@ class ScoreSheetBot(commands.Cog):
         self.battle_map: Dict[str, Battle] = {}
         self.overflow_cache = None
         self.cache = cache
-        self.overflow_updated = time.time_ns() - OVERFLOW_CACHE_TIME
+        self.overflow_updated = time.time_ns() - helpers.OVERFLOW_CACHE_TIME
 
     def _current(self, ctx) -> Battle:
         return self.battle_map[key_string(ctx)]
 
     async def _battle_crew(self, ctx: Context, user: discord.member) -> Optional[str]:
-        crew_name = await crew(user, self)
+        crew_name = crew(user, self)
         if crew_name in (self._current(ctx).team1.name, self._current(ctx).team2.name):
             return crew_name
         return None
@@ -61,8 +63,8 @@ class ScoreSheetBot(commands.Cog):
         if size < 1:
             await ctx.send('Please enter a size greater than 0.')
             return
-        user_crew = await crew(ctx.author, self)
-        opp_crew = await crew(user, self)
+        user_crew = crew(ctx.author, self)
+        opp_crew = crew(user, self)
         if not user_crew:
             await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
                            f'They might be in an overflow crew or no crew. '
@@ -163,8 +165,8 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     async def arena(self, ctx: Context, id_str: str = ''):
-        if id_str and (check_roles(ctx.author, ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion', 'Streamers',
-                                                'SCS Certified Streamer']) or self._current(ctx).mock):
+        if id_str and (check_roles(ctx.author, [_LEADER, _ADVISOR, _ADMIN, _MINION, _STREAMER,_CERTIFIED]
+                                   ) or self._current(ctx).mock):
             self._current(ctx).id = id_str
             await ctx.send(f'Updated the id to {id_str}')
             return
@@ -174,8 +176,8 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     async def stream(self, ctx: Context, stream: str = ''):
-        if stream and (check_roles(ctx.author, ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion', 'Streamers',
-                                                'SCS Certified Streamer']) or self._current(ctx).mock):
+        if stream and (check_roles(ctx.author, [_LEADER, _ADVISOR, _ADMIN, _MINION, _STREAMER,_CERTIFIED]
+                                   ) or self._current(ctx).mock):
             if '/' not in stream:
                 stream = 'https://twitch.tv/' + stream
             self._current(ctx).stream = stream
@@ -209,8 +211,8 @@ class ScoreSheetBot(commands.Cog):
                 if self._current(ctx).confirmed():
                     today = date.today()
 
-                    output_channels = [discord.utils.get(ctx.guild.channels, name='scoresheet_output'),
-                                       discord.utils.get(ctx.guild.channels, name='scs_docs_updates')]
+                    output_channels = [discord.utils.get(ctx.guild.channels, name=_OUTPUT),
+                                       discord.utils.get(ctx.guild.channels, name=_DOCS_UPDATES)]
                     winner = self._current(ctx).winner().name
                     loser = self._current(ctx).loser().name
                     for output_channel in output_channels:
@@ -262,27 +264,27 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help['crew'])
     async def crew(self, ctx, user: discord.Member = None):
         if user:
-            await ctx.send(await crew(user, self))
+            await ctx.send(crew(user, self))
         else:
-            await ctx.send(await crew(ctx.author, self))
+            await ctx.send(crew(ctx.author, self))
 
     @commands.command(**help['rank'])
     async def rank(self, ctx, user: discord.Member = None):
         user = user if user else ctx.author
-        crew_name = await crew(user, self)
+        crew_name = crew(user, self)
         crew_rank = self.cache.ranks_by_crew[crew_name]
         await ctx.send(f'{escape(user.display_name)}\'s crew {crew_name} is rank {crew_rank}.')
 
     @commands.command(**help['merit'])
     async def merit(self, ctx, user: discord.Member = None):
         user = user if user else ctx.author
-        crew_name = await crew(user, self)
+        crew_name = crew(user, self)
         crew_rank = self.cache.merit_by_crew[crew_name]
         await ctx.send(f'{escape(user.display_name)}\'s crew {crew_name} has {crew_rank} merit.')
 
     @commands.command(**help['crew'])
     async def who(self, ctx: Context, user: discord.Member):
-        await ctx.send(await crew(user, self))
+        await ctx.send(crew(user, self))
 
     @commands.command(**help['crew'])
     @role_call([_ADMIN, _MINION])
@@ -297,7 +299,7 @@ class ScoreSheetBot(commands.Cog):
                 print(member, len(overflow_role))
                 overflow_role.add(str(member))
         other_set = set()
-        c = await crew(ctx.author, self)
+        c = crew(ctx.author, self)
         other_members = self.overflow_cache
         for member in other_members:
             if any((role.name in self.cache.crews() for role in member.roles)):

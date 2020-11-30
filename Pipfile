@@ -62,5 +62,3 @@ python_version = "3.8"
 [scripts]
 start = "python src/main.py"
 test = "coverage run -m unittest discover -s test"
-lint = "pre-commit run --all-files"
-precommit = "pre-commit install"

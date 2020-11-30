@@ -10,6 +10,8 @@ from aiohttp import ClientSession
 from discord.ext import commands
 from discord.ext.commands import Context
 
+from src.scoreSheetBot import ScoreSheetBot
+
 
 class EqualityComparable:
     __slots__ = ()
@@ -170,6 +172,11 @@ class MockGuild(CustomMockMixin, unittest.mock.Mock, HashableMixin):
 role_data = {'name': 'role', 'id': 1}
 role_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=role_data)
 
+leader_data = {'name': 'Leader', 'id': 2}
+leader_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=leader_data)
+crew1_data = {'name': 'Crew1', 'id': 3}
+crew1_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=crew1_data)
+
 
 class MockRole(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin):
     """
@@ -265,13 +272,30 @@ def _get_mock_loop() -> unittest.mock.Mock:
     return loop
 
 
+emoji_data = {'require_colons': True, 'managed': True, 'id': 1, 'name': 'hyperlemon'}
+emoji_instance = discord.Emoji(guild=MockGuild(), state=unittest.mock.MagicMock(), data=emoji_data)
+
+
+class MockEmoji(CustomMockMixin, unittest.mock.MagicMock):
+    """
+    A MagicMock subclass to mock Emoji objects.
+    Instances of this class will follow the specifications of `discord.Emoji` instances. For more
+    information, see the `MockGuild` docstring.
+    """
+    spec_set = emoji_instance
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.guild = kwargs.get('guild', MockGuild())
+
+
 class MockBot(CustomMockMixin, unittest.mock.MagicMock):
     """
     A MagicMock subclass to mock Bot objects.
     Instances of this class will follow the specifications of `discord.ext.commands.Bot` instances.
     For more information, see the `MockGuild` docstring.
     """
-    spec_set = commands.Bot(command_prefix=',')
+    spec_set = commands.Bot(command_prefix=',', guild=MockGuild(), emojis=MockEmoji())
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -397,23 +421,6 @@ class MockMessage(CustomMockMixin, unittest.mock.MagicMock):
         self.channel = kwargs.get('channel', MockTextChannel())
 
 
-emoji_data = {'require_colons': True, 'managed': True, 'id': 1, 'name': 'hyperlemon'}
-emoji_instance = discord.Emoji(guild=MockGuild(), state=unittest.mock.MagicMock(), data=emoji_data)
-
-
-class MockEmoji(CustomMockMixin, unittest.mock.MagicMock):
-    """
-    A MagicMock subclass to mock Emoji objects.
-    Instances of this class will follow the specifications of `discord.Emoji` instances. For more
-    information, see the `MockGuild` docstring.
-    """
-    spec_set = emoji_instance
-
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.guild = kwargs.get('guild', MockGuild())
-
-
 partial_emoji_instance = discord.PartialEmoji(animated=False, name='guido')
 
 
@@ -461,3 +468,26 @@ class MockAsyncWebhook(CustomMockMixin, unittest.mock.MagicMock):
     """
     spec_set = webhook_instance
     additional_spec_asyncs = ("send", "edit", "delete", "execute")
+
+
+fake_crews = ['Holy Knights', 'FSGood', 'Ballers', crew1_instance.name]
+fake_merit = ['0', '5', '10', '15']
+fake_rank = ['Good', 'Bad', 'Neither', 'Free']
+
+
+class FakeCache:
+    def __init__(self):
+        self.crew_set = set(fake_crews)
+        self.merit_by_crew = {name: merit for name in fake_crews for merit in fake_merit}
+        self.ranks_by_crew = {name: rank for name in fake_crews for rank in fake_rank}
+
+    def crews(self):
+        return self.crew_set
+
+
+class MockSSB(CustomMockMixin, unittest.mock.MagicMock):
+    spec_set = ScoreSheetBot(bot=MockBot(), cache=FakeCache())
+
+    def __init__(self, **kwargs) -> None:
+        default_kwargs = {'bot': MockBot(), 'cache': FakeCache()}
+        super().__init__(**collections.ChainMap(kwargs, default_kwargs))
