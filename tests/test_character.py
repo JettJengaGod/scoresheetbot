@@ -1,7 +1,6 @@
 import unittest
 from src.character import *
 
-# Tests
 input_and_expected = [
     ('pikachu', 'pikachu'),
     ('pikachu1', 'pikachu'),

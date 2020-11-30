@@ -4,7 +4,6 @@ import time
 import discord
 from discord.ext import commands
 from .battle import *
-from .scoreSheetBot import ScoreSheetBot
 
 Context = discord.ext.commands.Context
 OVERFLOW_CACHE_TIME = 1_000_000
@@ -18,9 +17,8 @@ def channel_from_key(key: str) -> str:
     return key[key.index("|") + 1:]
 
 
-def escape(string: str, special: Set[str] = None) -> str:
-    if not special:
-        special = ['\\', '>', '`', '_', '*', '|']
+def escape(string: str) -> str:
+    special = ['\\', '>', '`', '_', '*', '|']
     out = string[:]
     for char in special:
         if char in out:
@@ -74,7 +72,7 @@ async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battl
         await channel.send(embed=embed)
 
 
-async def crew(user: discord.Member, bot: ScoreSheetBot) -> Optional[str]:
+async def crew(user: discord.Member, bot) -> Optional[str]:
     roles = user.roles
     if any((role.name == 'SCS Overflow Crew' for role in roles)):
         if not bot.overflow_cache or (time.time_ns() - bot.overflow_updated) > OVERFLOW_CACHE_TIME:

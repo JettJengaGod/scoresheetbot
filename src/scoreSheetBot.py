@@ -1,19 +1,16 @@
-# scoreSheetBot.py
 import os
 import sys
 import traceback
 from datetime import date
-from typing import Dict, Optional, Union
+from typing import Dict
 
 from discord.ext import commands
 from dotenv import load_dotenv
 
 import src.roles
-from src.battle import Battle, Character, StateError
-from src.character import all_emojis, string_to_emote, all_alts
-from src.help import help
-from src.helpers import *
-from src.decorators import *
+from .character import all_emojis, string_to_emote, all_alts
+from .decorators import *
+from .help import help
 
 Context = discord.ext.commands.Context
 
@@ -218,7 +215,7 @@ class ScoreSheetBot(commands.Cog):
                     loser = self._current(ctx).loser().name
                     for output_channel in output_channels:
                         await output_channel.send(
-                            f'**{today.strftime("%B %d, %Y")}- {winner} vs. {self._current(ctx).team2.name} **\n'
+                            f'**{today.strftime("%B %d, %Y")}- {winner} vs. {loser} **\n'
                             f'{self.cache.ranks_by_crew[winner]} crew defeats {self.cache.ranks_by_crew[loser]} crew in a '
                             f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
                             f'from  {ctx.channel.mention}.')

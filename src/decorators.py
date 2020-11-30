@@ -1,5 +1,6 @@
 import functools
-
+from typing import Iterable
+from .helpers import *
 
 def ss_channel(func):
     """Decorator that errors if not in the correct channel."""

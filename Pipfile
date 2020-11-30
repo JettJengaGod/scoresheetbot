@@ -3,8 +3,6 @@ name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
 
-[dev-packages]
-
 [packages]
 requests = ">=2.25.0"
 pipenv = "*"
@@ -17,7 +15,6 @@ cachetools = ">=4.1.1"
 certifi = ">=2020.11.8"
 chardet = ">=3.0.4"
 colorama = ">=0.4.4"
-coverage = ">=5.3"
 "discord.py" = ">=1.5.1"
 google-api-core = ">=1.23.0"
 google-api-python-client = ">=1.12.8"
@@ -45,9 +42,25 @@ uritemplate = ">=3.0.1"
 urllib3 = ">=1.26.2"
 freezegun = "*"
 
+[dev-packages]
+coverage = ">=5.3"
+flake8 = "~=3.8"
+flake8-annotations = "~=2.0"
+flake8-bugbear = "~=20.1"
+flake8-docstrings = "~=1.4"
+flake8-import-order = "~=0.18"
+flake8-string-format = "~=0.2"
+flake8-tidy-imports = "~=4.0"
+flake8-todo = "~=0.7"
+pep8-naming = "~=0.9"
+pre-commit = "~=2.1"
+coveralls = "~=2.1"
+
 [requires]
 python_version = "3.8"
 
 [scripts]
 start = "python src/main.py"
 test = "coverage run -m unittest discover -s test"
+lint = "pre-commit run --all-files"
+precommit = "pre-commit install"
