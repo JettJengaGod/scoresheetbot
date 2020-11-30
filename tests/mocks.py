@@ -260,18 +260,6 @@ class MockUser(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin):
             self.mention = f"@{self.name}"
 
 
-def _get_mock_loop() -> unittest.mock.Mock:
-    """Return a mocked asyncio.AbstractEventLoop."""
-    loop = unittest.mock.create_autospec(spec=AbstractEventLoop, spec_set=True)
-
-    # Since calling `create_task` on our MockBot does not actually schedule the coroutine object
-    # as a task in the asyncio loop, this `side_effect` calls `close()` on the coroutine object
-    # to prevent "has not been awaited"-warnings.
-    loop.create_task.side_effect = lambda coroutine: coroutine.close()
-
-    return loop
-
-
 emoji_data = {'require_colons': True, 'managed': True, 'id': 1, 'name': 'hyperlemon'}
 emoji_instance = discord.Emoji(guild=MockGuild(), state=unittest.mock.MagicMock(), data=emoji_data)
 

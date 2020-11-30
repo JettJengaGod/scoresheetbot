@@ -53,17 +53,14 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(out[i].title, expected[i].title)
 
     def test_usable_emoji(self):
-        bot = mocks.MockBot()
         emoji = mocks.emoji_instance
-        bot.emojis = [emoji]
+        bot = mocks.MockBot(emojis = [emoji])
 
         self.assertTrue(is_usable_emoji(f'<:{emoji.name}:{emoji.id}>', bot))
 
     def test_unusable_emoji(self):
 
-        bot = mocks.MockBot()
-        emoji = mocks.emoji_instance
-        bot.emojis = [emoji]
+        bot = mocks.MockBot(emojis = [mocks.emoji_instance])
         self.assertFalse(is_usable_emoji('<:fake:123>', bot))
         self.assertFalse(is_usable_emoji('bad', bot))
 
@@ -86,27 +83,14 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
         channel.send.assert_called_once()
 
     def test_crew(self):
-        member = mocks.MockMember()
-        member.name = 'John'
-        member.id = 1
-        cache = mocks.FakeCache()
-        bot = mocks.MockSSB()
-        bot.overflow_updated = -1000000000
-        bot.cache = cache
+        member = mocks.MockMember(name='John', id=1)
         hk = mocks.fake_crews[0]
-        role = mocks.MockRole()
-        role.name = hk
-        overflow_role = mocks.MockRole()
-        overflow_role.name = OVERFLOW_ROLE
-        bot.bot = mocks.MockBot()
-        overflow_guild = mocks.MockGuild()
-        overflow_member = mocks.MockMember()
-        overflow_member.name = 'John'
-        overflow_member.id = 1
-        overflow_member.roles = [mocks.crew1_instance]
-        overflow_guild.members = [overflow_member]
-        overflow_guild.name = OVERFLOW_SERVER
-        bot.bot.guilds = [overflow_guild]
+        role = mocks.MockRole(name=hk)
+        overflow_role = mocks.MockRole(name=OVERFLOW_ROLE)
+        overflow_member = mocks.MockMember(name='John', id=1, roles=[mocks.crew1_instance])
+        overflow_guild = mocks.MockGuild(members=[overflow_member], name=OVERFLOW_SERVER)
+        bot = mocks.MockSSB(overflow_updated=-1000000000, cache=mocks.FakeCache(),
+                            bot=mocks.MockBot(guilds=[overflow_guild]))
         with self.subTest('Not on a crew.'):
             member.roles = []
             with self.assertRaises(Exception):

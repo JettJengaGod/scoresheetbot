@@ -244,7 +244,3 @@ class BattleBigTest(unittest.TestCase):
         battle.add_player(team_name=TEAM1_NAME, player_name=Players[4].name, leader=PLAYER1_NAME)
         battle.finish_match(2, 1, Chars[5], Chars[13])
         print(battle)
-
-
-if __name__ == '__main__':
-    unittest.main()
