@@ -2,6 +2,8 @@ from typing import List, Iterable, Set
 
 import discord
 
+TRACK = ['Track 1', 'Track 2', 'Move Locked']
+
 
 def escape(string: str, special: Set[str] = None) -> str:
     if not special:
@@ -49,5 +51,19 @@ def is_usable_emoji(text: str, bot):
     return False
 
 
-def check_roles(user: discord.member, roles: Iterable) -> bool:
+def check_roles(user: discord.Member, roles: Iterable) -> bool:
     return any((role.name in roles for role in user.roles))
+
+
+async def track_cycle(user: discord.Member, scs: discord.Guild) -> int:
+    track = -1
+    for i in range(len(TRACK)):
+        if check_roles(user, [TRACK[i]]):
+            track = i
+    if track >= 0:
+        old_track = discord.utils.get(scs.roles, name=TRACK[track])
+        await user.remove_roles(old_track, reason='Left a crew, moved up the track.')
+    if track < 2:
+        new_track = discord.utils.get(scs.roles, name=TRACK[track + 1])
+        await user.add_roles(new_track, reason='User left a crew, moved up the track.')
+    return track

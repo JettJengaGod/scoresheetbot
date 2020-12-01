@@ -28,6 +28,8 @@ _ADVISOR = 'Advisor'
 _WATCHLIST = '! Watchlisted !'
 _CERTIFIED = 'SCS Certified Streamer'
 _STREAMER = 'Streamers'
+_DOCS = 'Streamers'
+_SCS = 'Smash Crew Server'
 
 
 async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battle):
@@ -121,6 +123,27 @@ def role_call(required: Iterable):
     return wrapper
 
 
+async def compare_crew_and_power(author: discord.Member, target: discord.Member, bot: 'ScoreSheetBot'):
+    author_crew = await crew(author, bot)
+    target_crew = await crew(target, bot)
+    if await crew(author, bot) is not await crew(target, bot):
+        raise Exception(f'{author.display_name} on {author_crew} cannot unflair {target.display_name} on {target_crew}')
+
+    if check_roles(author, [_LEADER]):
+        if check_roles(target, [_LEADER]):
+            raise Exception(
+                f'A majority of leaders must approve this unflairing. Tag the Doc Keeper role for assistance.')
+        return
+
+    if check_roles(author, [_ADVISOR]):
+        if check_roles(target, [_LEADER, _ADVISOR]):
+            raise Exception(
+                f'{author.mention} does not have enough power to unflair {target.mention} from {author_crew}.')
+        return
+
+    raise Exception('You must be an advisor, leader or staff to unflair people.')
+
+
 async def crew(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
     roles = user.roles
     if any((role.name == 'SCS Overflow Crew' for role in roles)):
@@ -143,6 +166,9 @@ class ScoreSheetBot(commands.Cog):
         self.battle_map: Dict[str, Battle] = {}
         self.overflow_cache = None
         self.overflow_updated = time.time_ns() - OVERFLOW_CACHE_TIME
+
+    def set_overflow(self):
+        self.overflow = discord.utils.get(self.bot.guilds, name='SCS Overflow Server')
 
     def _current(self, ctx) -> Battle:
         return self.battle_map[str(ctx.guild) + '|' + str(ctx.channel)]
@@ -395,6 +421,52 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help['crew'])
     async def who(self, ctx: Context, user: discord.Member):
         await ctx.send(await crew(user, self))
+
+    @commands.command(**help['unflair'])
+    async def unflair(self, ctx: Context, member: discord.Member = None):
+        self.set_overflow()
+        if ctx.guild.name == _SCS:
+            if member:
+                if not check_roles(ctx.author, [_MINION, _ADMIN, _DOCS]):
+                    await compare_crew_and_power(ctx.author, member, self)
+            else:
+                member = ctx.author
+            user_crew = await crew(member, self)
+            if check_roles(member, ['SCS Overflow Crew']):
+                user = discord.utils.get(self.overflow.members, id=member.id)
+                await member.edit(nick=member.name)
+                role = discord.utils.get(self.overflow.roles, name=user_crew)
+                overflow_adv = discord.utils.get(self.overflow.roles, name=_ADVISOR)
+                overflow_leader = discord.utils.get(self.overflow.roles, name=_LEADER)
+                await user.remove_roles(role, overflow_adv, overflow_leader, reason=f'Unflaired by {ctx.author.name}')
+                overflow_role = discord.utils.get(ctx.guild.roles, name='SCS Overflow Crew')
+                await member.remove_roles(overflow_role, reason=f'Unflaired by {ctx.author.name}')
+            else:
+                role = discord.utils.get(ctx.guild.roles, name=user_crew)
+                await member.remove_roles(role, reason=f'Unflaired by {ctx.author.name}')
+            if await track_cycle(member, ctx.guild) == 2:
+                pepper = discord.utils.get(ctx.guild.members, id=456156481067286529)
+                await ctx.send(f'{pepper.mention} {member.mention} is locked on next join.')
+
+            adv = discord.utils.get(ctx.guild.roles, name=_ADVISOR)
+            leader = discord.utils.get(ctx.guild.roles, name=_LEADER)
+            await member.remove_roles(adv, leader, reason=f'Unflaired by {ctx.author.name}')
+            await ctx.send(f'{ctx.author.mention} sucessfully unflaired {member.mention} from {user_crew}.')
+        else:
+            await ctx.send('This command can only be run on the main SCS server.')
+
+    @commands.command(**help['unflair'])
+    async def flair(self, ctx: Context, user: discord.Member):
+        if ctx.guild.name == _SCS:
+            user_crew = await crew(ctx.author, self)
+            if check_roles(ctx.author, ['SCS Overflow Crew']):
+                role = discord.utils.get(ctx.guild.roles, name=user_crew)
+                await ctx.author.remove_roles(role, reason='Unflaired by themselves.')
+                await ctx.send(f'{ctx.author} sucessfully unflaired themselves from {user_crew}.')
+            else:
+                await ctx.send('Doesn\t work on overflow yet.')
+        else:
+            await ctx.send('This command can only be run on the main SCS server.')
 
     @commands.command(**help['crew'])
     @role_call([_ADMIN, _MINION])

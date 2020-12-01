@@ -42,4 +42,5 @@ help = dict(
     pending=HelpDoc('Prints pending battles. Admin only'),
     rank=HelpDoc('Find out a user\'s crew\'s rank'),
     merit=HelpDoc('Find out a user\'s crew\'s merit'),
+    unflair=HelpDoc('Unflairs you from your crew.'),
 )

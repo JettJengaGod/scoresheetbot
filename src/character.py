@@ -24,14 +24,14 @@ CHARACTERS = {
     'hero': [],
     'ice_climbers': ['ic', 'ics', 'icies', 'climbers', 'iceclimber'],
     'ike': [],
-    'incineroar': ['incin'],
+    'incineroar': ['incin', 'roar'],
     'inkling': ['ink'],
     'isabelle': ['isa'],
     'jigglypuff': ['jiggs', 'jigg', 'jiggly', 'puff'],
     'joker': [],
     'ken': [],
     'king_dedede': ['dedede', 'ddd'],
-    'king_k_rool': ['krool'],
+    'king_k_rool': ['krool', 'croc'],
     'kirby': [],
     'links': ['link'],
     'little_mac': ['mac'],
@@ -77,7 +77,7 @@ CHARACTERS = {
     'toon_link': ['tink'],
     'villager': ['villi', 'villy'],
     'wario': [],
-    'wii_fit_trainer': ['wiifit', 'wft'],
+    'wii_fit_trainer': ['wiifit', 'wft', 'wii'],
     'wolfs': ['wolf'],
     'yoshi': [],
     'young_link': ['yink'],
@@ -174,7 +174,7 @@ def all_emojis(bot) -> List[Tuple[str, str]]:
         if c_name.startswith('mii'):
             ret.append((c_name, f'{string_to_emote(c_name, bot)} AKA: {alts}'))
             continue
-        ret.append((c_name, f'{all_alts(c_name,bot)} AKA: {alts}'))
+        ret.append((c_name, f'{all_alts(c_name, bot)} AKA: {alts}'))
     return ret
 
 
