@@ -4,7 +4,7 @@ OVERFLOW_CACHE_TIME = 1_000_000
 OVERFLOW_ROLE = 'SCS Overflow Crew'
 OVERFLOW_SERVER = 'SCS Overflow Server'
 
-TRACK = ['Track 1', 'Track 2', 'Move Locked']
+TRACK = ['Track 1', 'Track 2', 'Move Locked Next Join']
 LEADER = 'Leader'
 MINION = 'v2 Minion'
 ADMIN = 'SCS Admin'

@@ -5,9 +5,9 @@ from discord.ext import commands
 from .battle import *
 from .scoreSheetBot import ScoreSheetBot
 import time
+from .constants import *
 
 Context = discord.ext.commands.Context
-from .constants import *
 
 
 def key_string(ctx: Context) -> str:
@@ -104,7 +104,7 @@ async def track_cycle(user: discord.Member, scs: discord.Guild) -> int:
     return track
 
 
-def compare_crew_and_power(author: discord.Member, target: discord.Member, bot: 'ScoreSheetBot'):
+def compare_crew_and_power(author: discord.Member, target: discord.Member, bot: 'ScoreSheetBot') -> None:
     author_crew = crew(author, bot)
     target_crew = crew(target, bot)
     if author_crew is not target_crew:
