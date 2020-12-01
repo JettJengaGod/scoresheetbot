@@ -234,7 +234,7 @@ class ScoreSheetBot(commands.Cog):
     async def replace(self, ctx: Context, user: discord.Member, team: str = None):
         if self._current(ctx).mock:
             if team:
-                self._current(ctx).add_player(team, escape(user.display_name), ctx.author.mention)
+                self._current(ctx).replace_player(team, escape(user.display_name), ctx.author.mention)
             else:
                 await ctx.send(f'During a mock you need to replace with a teamname, like this'
                                f' `,replace @playername teamname`.')
