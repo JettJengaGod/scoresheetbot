@@ -181,14 +181,9 @@ class Battle:
             raise StateError(self, f'Game ended incorrectly,\n'
                                    f' {p1.name} has {p1.left} stocks {p2.name} has {p2.left} stocks')
         winner = 1 if taken1 == p2.left else 2
-        if winner == 1:
-            if taken2 >= p1.left:
-                raise StateError(self, f'Both players can\'t win the game. Please try again. '
-                                       f' {p1.name} has {p1.left} stocks {p2.name} has {p2.left} stocks')
-        else:
-            if taken1 >= p2.left:
-                raise StateError(self, f'Both players can\'t win the game. Please try again. '
-                                       f' {p1.name} has {p1.left} stocks {p2.name} has {p2.left} stocks')
+        if taken2 >= p1.left and taken1 >= p2.left:
+            raise StateError(self, f'Both players can\'t win the game. Please try again. '
+                                   f' {p1.name} has {p1.left} stocks {p2.name} has {p2.left} stocks')
         match = Match(p1, p2, taken1, taken2, winner)
         self.matches.append(match)
         self.team1.match_finish(taken2, taken1)
@@ -202,7 +197,7 @@ class Battle:
         mins = 's' if past.seconds >= 120 else ''
         minutes = '' if past.seconds < 60 else f'{past.seconds // 60} minute{mins} and '
         end = 'the match finished.' if len(self.matches) else 'the crew battle started.'
-        second = 'seconds' if past.seconds % 60 > 1 else 'second'
+        second = 'second' if past.seconds % 60 == 1 else 'seconds'
         return f'It has been {minutes}{past.seconds % 60} {second} since {end}'
 
     def confirm(self, team: str) -> None:
