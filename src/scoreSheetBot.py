@@ -13,42 +13,12 @@ import src.roles
 from .character import all_emojis, string_to_emote, all_alts
 from .decorators import *
 from .help import help
+from .constants import *
 
 Context = discord.ext.commands.Context
 
+
 # Constants
-_LEADER = 'Leader'
-_MINION = 'v2 Minion'
-_ADMIN = 'SCS Admin'
-_ADVISOR = 'Advisor'
-_WATCHLIST = '! Watchlisted !'
-_CERTIFIED = 'SCS Certified Streamer'
-_STREAMER = 'Streamers'
-_DOCS = 'Streamers'
-_SCS = 'Smash Crew Server'
-_OUTPUT = 'scoresheet_output'
-_DOCS_UPDATES = 'scs_docs_updates'
-
-
-async def compare_crew_and_power(author: discord.Member, target: discord.Member, bot: 'ScoreSheetBot'):
-    author_crew = await crew(author, bot)
-    target_crew = await crew(target, bot)
-    if await crew(author, bot) is not await crew(target, bot):
-        raise Exception(f'{author.display_name} on {author_crew} cannot unflair {target.display_name} on {target_crew}')
-
-    if check_roles(author, [_LEADER]):
-        if check_roles(target, [_LEADER]):
-            raise Exception(
-                f'A majority of leaders must approve this unflairing. Tag the Doc Keeper role for assistance.')
-        return
-
-    if check_roles(author, [_ADVISOR]):
-        if check_roles(target, [_LEADER, _ADVISOR]):
-            raise Exception(
-                f'{author.mention} does not have enough power to unflair {target.mention} from {author_crew}.')
-        return
-
-    raise Exception('You must be an advisor, leader or staff to unflair people.')
 
 
 class ScoreSheetBot(commands.Cog):
@@ -57,7 +27,7 @@ class ScoreSheetBot(commands.Cog):
         self.battle_map: Dict[str, Battle] = {}
         self.overflow_cache = None
         self.cache = cache
-        self.overflow_updated = time.time_ns() - helpers.OVERFLOW_CACHE_TIME
+        self.overflow_updated = time.time_ns() - OVERFLOW_CACHE_TIME
 
     def set_overflow(self):
         self.overflow = discord.utils.get(self.bot.guilds, name='SCS Overflow Server')
@@ -136,7 +106,7 @@ class ScoreSheetBot(commands.Cog):
             author_crew = await self._battle_crew(ctx, ctx.author)
             player_crew = await self._battle_crew(ctx, user)
             if author_crew == player_crew:
-                if check_roles(user, [_WATCHLIST]):
+                if check_roles(user, [WATCHLIST]):
                     await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
                     return
                 self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention)
@@ -193,7 +163,7 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     async def arena(self, ctx: Context, id_str: str = ''):
-        if id_str and (check_roles(ctx.author, [_LEADER, _ADVISOR, _ADMIN, _MINION, _STREAMER,_CERTIFIED]
+        if id_str and (check_roles(ctx.author, [LEADER, ADVISOR, ADMIN, MINION, STREAMER, CERTIFIED]
                                    ) or self._current(ctx).mock):
             self._current(ctx).id = id_str
             await ctx.send(f'Updated the id to {id_str}')
@@ -204,7 +174,7 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     async def stream(self, ctx: Context, stream: str = ''):
-        if stream and (check_roles(ctx.author, [_LEADER, _ADVISOR, _ADMIN, _MINION, _STREAMER,_CERTIFIED]
+        if stream and (check_roles(ctx.author, [LEADER, ADVISOR, ADMIN, MINION, STREAMER, CERTIFIED]
                                    ) or self._current(ctx).mock):
             if '/' not in stream:
                 stream = 'https://twitch.tv/' + stream
@@ -239,8 +209,8 @@ class ScoreSheetBot(commands.Cog):
                 if self._current(ctx).confirmed():
                     today = date.today()
 
-                    output_channels = [discord.utils.get(ctx.guild.channels, name=_OUTPUT),
-                                       discord.utils.get(ctx.guild.channels, name=_DOCS_UPDATES)]
+                    output_channels = [discord.utils.get(ctx.guild.channels, name=OUTPUT),
+                                       discord.utils.get(ctx.guild.channels, name=DOCS_UPDATES)]
                     winner = self._current(ctx).winner().name
                     loser = self._current(ctx).loser().name
                     for output_channel in output_channels:
@@ -262,7 +232,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def clear(self, ctx):
-        if not check_roles(ctx.author, [_MINION, _ADMIN]):
+        if not check_roles(ctx.author, [MINION, ADMIN]):
             await self._reject_outsiders(ctx)
         if self._current(ctx).mock:
             await ctx.send('If you just cleared a crew battle to troll people, be warned this is a bannable offence.')
@@ -317,10 +287,10 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help['unflair'])
     async def unflair(self, ctx: Context, member: discord.Member = None):
         self.set_overflow()
-        if ctx.guild.name == _SCS:
+        if ctx.guild.name == SCS:
             if member:
-                if not check_roles(ctx.author, [_MINION, _ADMIN, _DOCS]):
-                    await compare_crew_and_power(ctx.author, member, self)
+                if not check_roles(ctx.author, [MINION, ADMIN, DOCS]):
+                    compare_crew_and_power(ctx.author, member, self)
             else:
                 member = ctx.author
             user_crew = await crew(member, self)
@@ -328,8 +298,8 @@ class ScoreSheetBot(commands.Cog):
                 user = discord.utils.get(self.overflow.members, id=member.id)
                 await member.edit(nick=member.name)
                 role = discord.utils.get(self.overflow.roles, name=user_crew)
-                overflow_adv = discord.utils.get(self.overflow.roles, name=_ADVISOR)
-                overflow_leader = discord.utils.get(self.overflow.roles, name=_LEADER)
+                overflow_adv = discord.utils.get(self.overflow.roles, name=ADVISOR)
+                overflow_leader = discord.utils.get(self.overflow.roles, name=LEADER)
                 await user.remove_roles(role, overflow_adv, overflow_leader, reason=f'Unflaired by {ctx.author.name}')
                 overflow_role = discord.utils.get(ctx.guild.roles, name='SCS Overflow Crew')
                 await member.remove_roles(overflow_role, reason=f'Unflaired by {ctx.author.name}')
@@ -340,8 +310,8 @@ class ScoreSheetBot(commands.Cog):
                 pepper = discord.utils.get(ctx.guild.members, id=456156481067286529)
                 await ctx.send(f'{pepper.mention} {member.mention} is locked on next join.')
 
-            adv = discord.utils.get(ctx.guild.roles, name=_ADVISOR)
-            leader = discord.utils.get(ctx.guild.roles, name=_LEADER)
+            adv = discord.utils.get(ctx.guild.roles, name=ADVISOR)
+            leader = discord.utils.get(ctx.guild.roles, name=LEADER)
             await member.remove_roles(adv, leader, reason=f'Unflaired by {ctx.author.name}')
             await ctx.send(f'{ctx.author.mention} sucessfully unflaired {member.mention} from {user_crew}.')
         else:
@@ -349,7 +319,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help['unflair'])
     async def flair(self, ctx: Context, user: discord.Member):
-        if ctx.guild.name == _SCS:
+        if ctx.guild.name == SCS:
             user_crew = await crew(ctx.author, self)
             if check_roles(ctx.author, ['SCS Overflow Crew']):
                 role = discord.utils.get(ctx.guild.roles, name=user_crew)
@@ -361,7 +331,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('This command can only be run on the main SCS server.')
 
     @commands.command(**help['crew'])
-    @role_call([_ADMIN, _MINION])
+    @role_call([ADMIN, MINION])
     async def overflow(self, ctx: Context):
         overflow_role = set()
         await ctx.send('This will take some time.')
@@ -394,7 +364,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(put)
 
     @commands.command(**help['pending'])
-    @role_call([_ADMIN, _MINION])
+    @role_call([ADMIN, MINION])
     async def pending(self, ctx: Context):
         await ctx.send('Printing all current battles.')
         for channel, battle in self.battle_map.items():
@@ -404,7 +374,7 @@ class ScoreSheetBot(commands.Cog):
                 await send_sheet(ctx, battle)
 
     @commands.command(**help['recache'])
-    @role_call([_ADMIN, _MINION])
+    @role_call([ADMIN, MINION])
     async def recache(self, ctx: Context):
         self.cache.init_crews()
         self.overflow_updated = time.time_ns() - OVERFLOW_CACHE_TIME

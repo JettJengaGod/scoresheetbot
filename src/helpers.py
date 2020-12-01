@@ -7,11 +7,7 @@ from .scoreSheetBot import ScoreSheetBot
 import time
 
 Context = discord.ext.commands.Context
-OVERFLOW_CACHE_TIME = 1_000_000
-OVERFLOW_ROLE = 'SCS Overflow Crew'
-OVERFLOW_SERVER = 'SCS Overflow Server'
-
-TRACK = ['Track 1', 'Track 2', 'Move Locked']
+from .constants import *
 
 
 def key_string(ctx: Context) -> str:
@@ -106,3 +102,24 @@ async def track_cycle(user: discord.Member, scs: discord.Guild) -> int:
         new_track = discord.utils.get(scs.roles, name=TRACK[track + 1])
         await user.add_roles(new_track, reason='User left a crew, moved up the track.')
     return track
+
+
+def compare_crew_and_power(author: discord.Member, target: discord.Member, bot: 'ScoreSheetBot'):
+    author_crew = crew(author, bot)
+    target_crew = crew(target, bot)
+    if author_crew is not target_crew:
+        raise Exception(f'{author.display_name} on {author_crew} cannot unflair {target.display_name} on {target_crew}')
+
+    if check_roles(author, [LEADER]):
+        if check_roles(target, [LEADER]):
+            raise Exception(
+                f'A majority of leaders must approve this unflairing. Tag the Doc Keeper role for assistance.')
+        return
+
+    if check_roles(author, [ADVISOR]):
+        if check_roles(target, [LEADER, ADVISOR]):
+            raise Exception(
+                f'{author.mention} does not have enough power to unflair {target.mention} from {author_crew}.')
+        return
+
+    raise Exception('You must be an advisor, leader or staff to unflair people.')
