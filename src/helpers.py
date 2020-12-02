@@ -103,7 +103,7 @@ async def track_cycle(user: discord.Member, scs: discord.Guild) -> int:
     if track < 2:
         new_track = discord.utils.get(scs.roles, name=TRACK[track + 1])
         await user.add_roles(new_track, reason='User left a crew, moved up the track.')
-    return track
+    return track+1
 
 
 def power_level(user: discord.Member):
@@ -219,6 +219,6 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
     if await track_cycle(member, bot.cache.scs) == 2:
         pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
         flairing_info = discord.utils.get(bot.cache.scs.channels, name='flairing_info')
-        await flairing_info(f'{pepper.mention} {member.mention} is locked on next join.')
+        await flairing_info.send(f'{pepper.mention} {member.mention} is locked on next join.')
     await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader,
                               reason=f'Unflaired by {author.name}')
