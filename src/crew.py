@@ -13,7 +13,7 @@ class Crew:
     leaders: List[str] = dataclasses.field(default_factory=list)
     advisors: List[str] = dataclasses.field(default_factory=list)
     overflow: bool = False
-    color: discord.Color = None
+    color: discord.Color = discord.Color.default()
 
     @property
     def embed(self) -> discord.Embed:
@@ -38,4 +38,4 @@ class Crew:
             description[-1] = description[-1][:-2]
             description.append('\n')
         description.append(f'Merit: {self.merit}')
-        return discord.Embed(title=title, description=''.join(description),color=self.color)
+        return discord.Embed(title=title, description=''.join(description), color=self.color)
