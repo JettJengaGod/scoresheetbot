@@ -39,10 +39,10 @@ class Cache:
             self.crews = self.crews_by_name.keys()
             self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
             self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
-            self.overflow_crews()
             self.roles = self.role_factory(self.scs)
             self.main_members = self.members_by_name(self.scs.members)
             self.overflow_members = self.members_by_name(self.overflow_server.members)
+            self.crew_populate()
             self.live = True
             self.timer = time.time_ns()
 
@@ -68,6 +68,13 @@ class Cache:
     def members_by_name(self, member_list: Iterable[discord.Member]):
         out = {}
         for member in member_list:
+            for role in member.roles:
+                if role.name in self.crews:
+                    for r2 in member.roles:
+                        if r2.name == LEADER:
+                            self.crews_by_name[role.name].leaders.append(str(member))
+                        if r2.name == ADVISOR:
+                            self.crews_by_name[role.name].advisers.append(str(member))
             if member.name:
                 out[strip_non_ascii(member.name)] = member
             if member.name != member.display_name and member.display_name:
@@ -94,7 +101,7 @@ class Cache:
         service = build('sheets', 'v4', credentials=creds)
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
-        crew_info_range = 'Crew Information!A4:B2160'
+        crew_info_range = 'Crew Information!A4:D2160'
         legacy_range = 'Legacy Ladder!A4:L200'
         rising_range = 'Rising Ladder!A4:L300'
         # Call the Sheets API
@@ -115,7 +122,7 @@ class Cache:
             raise ValueError('Crews Sheet Not Found')
         else:
             for row in values:
-                crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1])
+                crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=row[3])
         if not legacy:
             raise ValueError('Legacy Sheet Not Found')
         else:
@@ -138,7 +145,11 @@ class Cache:
                         f'There\'s an issue with {row[0]} on the docs, please tag a doc keeper to fix this.')
         return crews_by_name
 
-    def overflow_crews(self):
+    def crew_populate(self):
+        for role in self.scs.roles:
+            if role.name in self.crews_by_name.keys():
+                self.crews_by_name[role.name].color = role.color
         for role in self.overflow_server.roles:
             if role.name in self.crews_by_name.keys():
+                self.crews_by_name[role.name].color = role.color
                 self.crews_by_name[role.name].overflow = True

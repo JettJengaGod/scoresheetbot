@@ -270,11 +270,14 @@ class ScoreSheetBot(commands.Cog):
         if name:
             ambiguous = ambiguous_lookup(name, self)
             if isinstance(ambiguous, discord.Member):
-                await ctx.send(f'{ambiguous.display_name} is in {crew(ambiguous, self)}.')
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
             else:
-                await ctx.send(ambiguous.name)
+                actual_crew = ambiguous
         else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
             await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        await ctx.send(embed=actual_crew.embed)
 
     @commands.command(**help['rank'])
     @cache_update
@@ -366,10 +369,10 @@ class ScoreSheetBot(commands.Cog):
                                    f'must be unflaired for their current crew before they can be flaired. ')
                     return
             # if author_pl < 3:
-                # if ctx.channel.name != 'bot_flaring':
-                #     flairing_channel = discord.utils.get(ctx.guild.channels, name='bot_flaring')
-                #     await ctx.send(f'`,flair` can only be used in {flairing_channel.mention}.')
-                #     return
+            # if ctx.channel.name != 'bot_flaring':
+            #     flairing_channel = discord.utils.get(ctx.guild.channels, name='bot_flaring')
+            #     await ctx.send(f'`,flair` can only be used in {flairing_channel.mention}.')
+            #     return
             if flairing_crew.overflow and member.display_name not in self.cache.overflow_members.keys():
                 await ctx.send(
                     f'{member.display_name} is not in the ovevrflow server and '
