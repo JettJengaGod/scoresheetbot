@@ -2,7 +2,7 @@ from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
-from fuzzywuzzy import process
+from fuzzywuzzy import process, fuzz
 import discord
 from discord.ext import commands
 from .battle import *
@@ -147,7 +147,7 @@ def member_lookup(name: str, bot: 'ScoreSheetBot') -> Optional[discord.Member]:
         if user:
             return user
         raise ValueError(f'{name} doesn\'nt seem t obe on this server.')
-    true_name = process.extractOne(name, bot.cache.main_members.keys(), score_cutoff=70)
+    true_name = process.extractOne(name, bot.cache.main_members.keys(), scorer=fuzz.ratio, score_cutoff=30)
     if true_name:
         return bot.cache.main_members[true_name[0]]
     else:
@@ -169,8 +169,8 @@ def ambiguous_lookup(name: str, bot: 'ScoreSheetBot') -> Union[discord.Member, C
         if user:
             return user
         raise ValueError(f'{name} doesn\'nt seem t obe on this server.')
-    true_name = process.extractOne(name, bot.cache.main_members.keys())
-    true_crew = process.extractOne(name, bot.cache.crews_by_name.keys())
+    true_name = process.extractOne(name, bot.cache.main_members.keys(), scorer=fuzz.ratio)
+    true_crew = process.extractOne(name, bot.cache.crews_by_name.keys(), scorer=fuzz.ratio)
     if true_crew[1] >= true_name[1]:
         return bot.cache.crews_by_name[true_crew[0]]
     else:
