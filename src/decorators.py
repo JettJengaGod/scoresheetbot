@@ -17,6 +17,20 @@ def ss_channel(func):
     return wrapper
 
 
+def testing_only(func):
+    """Decorator that errors if not in the correct channel."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        if 'testing_grounds' not in ctx.channel.name:
+            await ctx.send('This is a testing only command. You can only run it in a testing_grounds channel.')
+            return
+        return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
 def has_sheet(func):
     """Decorator that errors if no battle has started."""
 
