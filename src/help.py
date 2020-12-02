@@ -42,8 +42,8 @@ help = dict(
     pending=HelpDoc('Prints pending battles. Admin only'),
     rank=HelpDoc('Find out a user\'s crew\'s rank'),
     merit=HelpDoc('Find out a user\'s crew\'s merit'),
-    unflair=HelpDoc('Unflairs you from your crew or a member from your crew if you are a leader '
-                    'if you are an admin, unflairs anyone.', '', 'Optional<Member>'),
-    flair=HelpDoc('Flairs someone for your crew or for a specific crew if you are an admin. ', '',
-                  'Member Optional<Crew>'),
+    # unflair=HelpDoc('Unflairs you from your crew or a member from your crew if you are a leader '
+    #                 'if you are an admin, unflairs anyone.', '', 'Optional<Member>'),
+    # flair=HelpDoc('Flairs someone for your crew or for a specific crew if you are an admin. ', '',
+    #               'Member Optional<Crew>'),
 )
