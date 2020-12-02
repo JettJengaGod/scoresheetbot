@@ -89,7 +89,7 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
         overflow_role = mocks.MockRole(name=OVERFLOW_ROLE)
         overflow_member = mocks.MockMember(name='John', id=1, roles=[mocks.crew1_instance])
         overflow_guild = mocks.MockGuild(members=[overflow_member], name=OVERFLOW_SERVER)
-        bot = mocks.MockSSB(overflow_updated=-1000000000, cache=mocks.FakeCache(),
+        bot = mocks.MockSSB(cache=mocks.FakeCache(),
                             bot=mocks.MockBot(guilds=[overflow_guild]))
         with self.subTest('Not on a crew.'):
             member.roles = []

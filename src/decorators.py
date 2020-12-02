@@ -2,6 +2,7 @@ import functools
 from typing import Iterable
 from .helpers import *
 
+
 def ss_channel(func):
     """Decorator that errors if not in the correct channel."""
 
@@ -83,5 +84,17 @@ def role_call(required: Iterable):
             return await func(self, *args, **kwargs)
 
         return wrapped_f
+
+    return wrapper
+
+
+def cache_update(func):
+    """Decorator that updates cache regularly."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        self.cache.update(self)
+        return await func(self, *args, **kwargs)
 
     return wrapper
