@@ -8,11 +8,11 @@ from .helpers import strip_non_ascii
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
-from .constants import *
+from constants import *
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-from .crew import *
+from crew import *
 
 # If modifying these scopes, delete the file token.pickle.
 

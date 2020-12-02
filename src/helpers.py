@@ -1,14 +1,14 @@
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .scoreSheetBot import ScoreSheetBot
+    from scoreSheetBot import ScoreSheetBot
 from fuzzywuzzy import process
 import discord
 from discord.ext import commands
-from .battle import *
+from battle import *
 import time
-from .constants import *
-from .crew import Crew
+from constants import *
+from crew import Crew
 
 Context = discord.ext.commands.Context
 

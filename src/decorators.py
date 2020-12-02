@@ -1,6 +1,6 @@
 import functools
 from typing import Iterable
-from .helpers import *
+from helpers import *
 
 
 def ss_channel(func):
