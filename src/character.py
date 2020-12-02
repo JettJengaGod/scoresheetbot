@@ -24,14 +24,14 @@ CHARACTERS = {
     'hero': [],
     'ice_climbers': ['ic', 'ics', 'icies', 'climbers', 'iceclimber'],
     'ike': [],
-    'incineroar': ['incin'],
+    'incineroar': ['incin', 'roar'],
     'inkling': ['ink'],
     'isabelle': ['isa'],
     'jigglypuff': ['jiggs', 'jigg', 'jiggly', 'puff'],
     'joker': [],
     'ken': [],
     'king_dedede': ['dedede', 'ddd'],
-    'king_k_rool': ['krool'],
+    'king_k_rool': ['krool', 'croc'],
     'kirby': [],
     'links': ['link'],
     'little_mac': ['mac'],
@@ -77,7 +77,7 @@ CHARACTERS = {
     'toon_link': ['tink'],
     'villager': ['villi', 'villy'],
     'wario': [],
-    'wii_fit_trainer': ['wiifit', 'wft'],
+    'wii_fit_trainer': ['wiifit', 'wft', 'wii'],
     'wolfs': ['wolf'],
     'yoshi': [],
     'young_link': ['yink'],
@@ -119,7 +119,7 @@ def clean_emoji(input_str: str) -> str:
 JR_LIST = ['bowser_jr', 'larry', 'royjr', 'wendy', 'iggy', 'morton', 'lemmy', 'ludwig']
 
 
-def string_to_emote(input_str: str, bot) -> Optional[str]:
+def string_to_canonical(input_str: str) -> Optional[str]:
     input_str = clean_emoji(input_str)
     # Lowercase, remove ':' and '_'.
     input_str = input_str.strip(':').lower().replace('_', '').replace(' ', '')
@@ -146,7 +146,7 @@ def string_to_emote(input_str: str, bot) -> Optional[str]:
         if alt_num > 1:
             canonical_name = JR_LIST[alt_num - 1]
             alt_num = 1
-        elif canonical_name != 'bowser_jr':
+        elif canonical_name != 'bowserjr':
             canonical_name = character
     if canonical_name == 'olimar':
         if alt_num > 4:
@@ -158,7 +158,15 @@ def string_to_emote(input_str: str, bot) -> Optional[str]:
             canonical_name = 'zombie'
         if alt_num == 8:
             canonical_name = 'enderman'
-    return str(discord.utils.get(bot.emojis, name='{}{}'.format(canonical_name, '' if alt_num == 1 else alt_num)))
+    return '{}{}'.format(canonical_name, '' if alt_num == 1 else alt_num)
+
+
+def canonical_to_emote(canonical: str, bot) -> str:
+    return str(discord.utils.get(bot.emojis, name=canonical))
+
+
+def string_to_emote(input_str: str, bot) -> Optional[str]:
+    return str(discord.utils.get(bot.emojis, name=string_to_canonical(input_str)))
 
 
 def all_alts(input_str: str, bot):
@@ -174,7 +182,7 @@ def all_emojis(bot) -> List[Tuple[str, str]]:
         if c_name.startswith('mii'):
             ret.append((c_name, f'{string_to_emote(c_name, bot)} AKA: {alts}'))
             continue
-        ret.append((c_name, f'{all_alts(c_name,bot)} AKA: {alts}'))
+        ret.append((c_name, f'{all_alts(c_name, bot)} AKA: {alts}'))
     return ret
 
 
@@ -189,8 +197,11 @@ class Character:
             char = clean_emoji(char)
             if char[-1].isdigit():
                 self.skin = char[-1]
-            self.name = char
-            self.emoji = string_to_emote(char, bot)
+            self.name = string_to_canonical(char)
+            if bot:
+                self.emoji = canonical_to_emote(self.name, bot)
+            else:
+                self.emoji = self.name
         else:
             self.char = char
             self.emoji = char
