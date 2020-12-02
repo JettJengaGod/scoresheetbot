@@ -320,7 +320,8 @@ class ScoreSheetBot(commands.Cog):
         out += f'{crew_name} is rank {crew_merit}.'
         await ctx.send(out)
 
-    @commands.command(**help['rank'])
+    @commands.command(**help['unflair'])
+    @testing_only
     @cache_update
     async def unflair(self, ctx: Context, *, user: str = None):
 
@@ -338,7 +339,8 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('This command can only be run on the main SCS server.')
 
-    @commands.command(**help['rank'])
+    @commands.command(**help['flair'])
+    @testing_only
     @cache_update
     async def flair(self, ctx: Context, user: str, *, new_crew: str = None):
         if ctx.guild.name == SCS:
@@ -363,11 +365,11 @@ class ScoreSheetBot(commands.Cog):
                     await ctx.send(f'{member.display_name} '
                                    f'must be unflaired for their current crew before they can be flaired. ')
                     return
-            if author_pl < 3:
-                if ctx.channel.name != 'bot_flaring':
-                    flairing_channel = discord.utils.get(ctx.guild.channels, name='bot_flaring')
-                    await ctx.send(f'`,flair` can only be used in {flairing_channel.mention}.')
-                    return
+            # if author_pl < 3:
+                # if ctx.channel.name != 'bot_flaring':
+                #     flairing_channel = discord.utils.get(ctx.guild.channels, name='bot_flaring')
+                #     await ctx.send(f'`,flair` can only be used in {flairing_channel.mention}.')
+                #     return
             if flairing_crew.overflow and member.display_name not in self.cache.overflow_members.keys():
                 await ctx.send(
                     f'{member.display_name} is not in the ovevrflow server and '
