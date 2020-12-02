@@ -325,7 +325,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help['unflair'])
     @cache_update
-    async def unflair(self, ctx: Context, *, user: str):
+    async def unflair(self, ctx: Context, *, user: str = None):
 
         if ctx.guild.name == SCS:
 
