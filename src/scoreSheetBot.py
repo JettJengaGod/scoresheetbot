@@ -320,7 +320,7 @@ class ScoreSheetBot(commands.Cog):
         out += f'{crew_name} is rank {crew_merit}.'
         await ctx.send(out)
 
-    @commands.command(**help['unflair'])
+    @commands.command(**help['rank'])
     @cache_update
     async def unflair(self, ctx: Context, *, user: str = None):
 
@@ -338,7 +338,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('This command can only be run on the main SCS server.')
 
-    @commands.command(**help['flair'])
+    @commands.command(**help['rank'])
     @cache_update
     async def flair(self, ctx: Context, user: str, *, new_crew: str = None):
         if ctx.guild.name == SCS:
