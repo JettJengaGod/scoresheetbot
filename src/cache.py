@@ -74,7 +74,7 @@ class Cache:
                         if r2.name == LEADER:
                             self.crews_by_name[role.name].leaders.append(str(member))
                         if r2.name == ADVISOR:
-                            self.crews_by_name[role.name].advisers.append(str(member))
+                            self.crews_by_name[role.name].advisors.append(str(member))
             if member.name:
                 out[strip_non_ascii(member.name)] = member
             if member.name != member.display_name and member.display_name:
