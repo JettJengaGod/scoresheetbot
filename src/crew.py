@@ -11,7 +11,7 @@ class Crew:
     rank: str = ''
     merit: int = 0
     leaders: List[str] = dataclasses.field(default_factory=list)
-    advisers: List[str] = dataclasses.field(default_factory=list)
+    advisors: List[str] = dataclasses.field(default_factory=list)
     overflow: bool = False
     color: discord.Color = None
 
@@ -31,9 +31,9 @@ class Crew:
                 description.append(f'{name}, ')
             description[-1] = description[-1][:-2]
             description.append('\n')
-        if self.advisers:
-            description.append(f'Advisers: ')
-            for name in self.advisers:
+        if self.advisors:
+            description.append(f'Advisors: ')
+            for name in self.advisors:
                 description.append(f'{name}, ')
             description[-1] = description[-1][:-2]
             description.append('\n')

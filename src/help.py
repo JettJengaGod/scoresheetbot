@@ -26,7 +26,8 @@ help = dict(
     resize=HelpDoc('Resize the crew battle', '', 'NewSize'),
     undo=HelpDoc('Undo the last match',
                  'Takes no parameters and undoes the last match that was played.'),
-    crew=HelpDoc('Outputs what crew a user is in or your crew if no user is sent.'),
+    crew=HelpDoc('If provided with an argument, will search for a user\'s crew or '
+                 'crew and output that, otherwise provides author\'s crew.', '', 'Optional<User/Crew>'),
     status=HelpDoc('Current status of the battle.'),
     chars=HelpDoc('Prints all characters names and their corresponding emojis'),
     clear=HelpDoc('Clears the current cb in the channel.'),
