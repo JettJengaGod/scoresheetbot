@@ -345,6 +345,10 @@ class ScoreSheetBot(commands.Cog):
     @cache_update
     async def flair(self, ctx: Context, user: str, *, new_crew: str = None):
         if ctx.guild.name == SCS:
+            author_pl = power_level(ctx.author)
+            if author_pl == 0:
+                await ctx.send('You cannot flair users unless you are an Advisor, Leader or Staff.')
+                return
             if new_crew:
                 flairing_crew = crew_lookup(new_crew, self)
             else:
@@ -354,7 +358,6 @@ class ScoreSheetBot(commands.Cog):
                 user_crew = crew(member, self)
             except ValueError:
                 user_crew = None
-            author_pl = power_level(ctx.author)
             if user_crew:
                 if author_pl == 3:
                     await unflair(member, ctx.author, self)
@@ -368,11 +371,11 @@ class ScoreSheetBot(commands.Cog):
                     flairing_channel = discord.utils.get(ctx.guild.channels, name='bot_flaring')
                     await ctx.send(f'`,flair` can only be used in {flairing_channel.mention}.')
                     return
-                if flairing_crew.overflow and member.display_name not in self.cache.overflow_members.keys():
-                    await ctx.send(
-                        f'{member.display_name} is not in the ovevrflow server and '
-                        f'{flairing_crew.name} is an overflow crew.')
-                    return
+            if flairing_crew.overflow and member.display_name not in self.cache.overflow_members.keys():
+                await ctx.send(
+                    f'{member.display_name} is not in the ovevrflow server and '
+                    f'{flairing_crew.name} is an overflow crew.')
+                return
             await flair(member, flairing_crew, self)
             await ctx.send(f'{ctx.author.mention} successfully flaired {member.mention} for {flairing_crew.name}.')
 
