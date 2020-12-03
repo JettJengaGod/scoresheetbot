@@ -297,7 +297,7 @@ class ScoreSheetBot(commands.Cog):
         crew_rank = self.cache.crews_by_name[crew_name].rank
         out = ''
         if user:
-            out += f'{escape(user.display_name)}\'s crew'
+            out += f'{escape(user.display_name)}\'s crew '
         out += f'{crew_name} is rank {crew_rank}.'
         await ctx.send(out)
 
@@ -319,8 +319,8 @@ class ScoreSheetBot(commands.Cog):
         crew_merit = self.cache.crews_by_name[crew_name].merit
         out = ''
         if user:
-            out += f'{escape(user.display_name)}\'s crew'
-        out += f'{crew_name} is rank {crew_merit}.'
+            out += f'{escape(user.display_name)}\'s crew '
+        out += f'{crew_name} has {crew_merit} merit.'
         await ctx.send(out)
 
     # @commands.command(**help['promote'])
