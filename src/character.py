@@ -13,6 +13,7 @@ CHARACTERS = {
     'corrin': [],
     'daisy': [],
     'dark_pit': [],
+    'dark_samus': ['damus', 'ds', 'darkus'],
     'diddy_kong': ['diddy'],
     'donkey_kong': ['dk'],
     'dr_mario': ['dr.mario', 'doc'],
