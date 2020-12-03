@@ -46,6 +46,7 @@ class ScoreSheetBot(commands.Cog):
         self.battle_map[key_string(ctx)] = None
 
     @commands.command(**help['battle'], aliases=['challenge'])
+    @main_only
     @no_battle
     @is_lead
     @ss_channel
@@ -73,6 +74,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('You can\'t battle your own crew.')
 
     @commands.command(**help['mock'])
+    @main_only
     @no_battle
     @ss_channel
     @cache_update
@@ -84,6 +86,7 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(embed=self._current(ctx).embed())
 
     @commands.command(**help['send'])
+    @main_only
     @has_sheet
     @ss_channel
     @is_lead
@@ -111,6 +114,7 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['replace'])
+    @main_only
     @has_sheet
     @ss_channel
     @is_lead
@@ -135,6 +139,7 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['end'])
+    @main_only
     @has_sheet
     @ss_channel
     @cache_update
@@ -148,6 +153,7 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['resize'])
+    @main_only
     @is_lead
     @has_sheet
     @ss_channel
@@ -158,6 +164,7 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['arena'], aliases=['id', 'arena_id', 'lobby'])
+    @main_only
     @has_sheet
     @ss_channel
     @cache_update
@@ -170,6 +177,7 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'The lobby id is {self._current(ctx).id}')
 
     @commands.command(**help['stream'], aliases=['streamer', 'stream_link'])
+    @main_only
     @has_sheet
     @ss_channel
     @cache_update
@@ -184,6 +192,7 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'The stream is {self._current(ctx).stream}')
 
     @commands.command(**help['undo'])
+    @main_only
     @has_sheet
     @ss_channel
     @is_lead
@@ -194,6 +203,7 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['confirm'])
+    @main_only
     @has_sheet
     @ss_channel
     @is_lead
@@ -231,6 +241,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
     @commands.command(**help['clear'])
+    @main_only
     @has_sheet
     @ss_channel
     @is_lead
@@ -244,6 +255,7 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'{ctx.author.mention} cleared the crew battle.')
 
     @commands.command(**help['status'])
+    @main_only
     @has_sheet
     @ss_channel
     @cache_update
@@ -251,6 +263,7 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['timer'])
+    @main_only
     @has_sheet
     @ss_channel
     async def timer(self, ctx):
@@ -265,6 +278,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'All alts in order: {all_alts(emoji, self.bot)}')
 
     @commands.command(**help['crew'])
+    @main_only
     @cache_update
     async def crew(self, ctx, *, name: str = None):
         if name:
@@ -280,6 +294,7 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(embed=actual_crew.embed)
 
     @commands.command(**help['rank'])
+    @main_only
     @cache_update
     async def rank(self, ctx, *, name: str = None):
         user = None
@@ -302,6 +317,7 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(out)
 
     @commands.command(**help['merit'])
+    @main_only
     @cache_update
     async def merit(self, ctx, *, name: str = None):
         user = None
@@ -344,6 +360,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help['unflair'])
     @testing_only
+    @main_only
     @cache_update
     async def unflair(self, ctx: Context, *, user: str = None):
 
@@ -406,6 +423,8 @@ class ScoreSheetBot(commands.Cog):
                 return
             await flair(member, flairing_crew, self)
             await ctx.send(f'{ctx.author.mention} successfully flaired {member.mention} for {flairing_crew.name}.')
+        else:
+            await ctx.send('This command can only be run on the main SCS server.')
 
     @commands.command(**help['crew'])
     @cache_update

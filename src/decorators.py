@@ -17,6 +17,20 @@ def ss_channel(func):
     return wrapper
 
 
+def main_only(func):
+    """Decorator that errors if not in the correct channel."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        if 'Smash Crew Server' not in ctx.guild.name:
+            await ctx.send('This command can only be used in the main SCS Server.')
+            return
+        return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
 def testing_only(func):
     """Decorator that errors if not in the correct channel."""
 
