@@ -323,6 +323,25 @@ class ScoreSheetBot(commands.Cog):
         out += f'{crew_name} is rank {crew_merit}.'
         await ctx.send(out)
 
+    # @commands.command(**help['promote'])
+    # @testing_only
+    # @cache_update
+    # async def promote(self, ctx: Context, *, user: str):
+    #
+    #     if ctx.guild.name == SCS:
+    #
+    #         member = ctx.author
+    #         if user:
+    #             if not check_roles(ctx.author, STAFF_LIST):
+    #                 member = member_lookup(user, self)
+    #                 compare_crew_and_power(ctx.author, member, self)
+    #             member = member_lookup(user, self)
+    #         user_crew = crew(member, self)
+    #         await unflair(member, ctx.author, self)
+    #         await ctx.send(f'{ctx.author.mention} successfully unflaired {member.mention} from {user_crew}.')
+    #     else:
+    #         await ctx.send('This command can only be run on the main SCS server.')
+
     @commands.command(**help['unflair'])
     @testing_only
     @cache_update
@@ -334,13 +353,17 @@ class ScoreSheetBot(commands.Cog):
             if user:
                 if not check_roles(ctx.author, STAFF_LIST):
                     member = member_lookup(user, self)
+                    if member.id == ctx.author.id:
+                        await ctx.send('You can unflair yourself by typing `,unflair` with nothing after it.')
+                        return
                     compare_crew_and_power(ctx.author, member, self)
                 member = member_lookup(user, self)
             user_crew = crew(member, self)
             await unflair(member, ctx.author, self)
-            await ctx.send(f'{ctx.author.mention} sucessfully unflaired {member.mention} from {user_crew}.')
+            await ctx.send(f'{ctx.author.mention} successfully unflaired {member.mention} from {user_crew}.')
         else:
             await ctx.send('This command can only be run on the main SCS server.')
+
 
     @commands.command(**help['flair'])
     @testing_only
@@ -352,6 +375,9 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send('You cannot flair users unless you are an Advisor, Leader or Staff.')
                 return
             if new_crew:
+                if not check_roles(ctx.author, STAFF_LIST):
+                    await ctx.send('You can\'t flair people for other crews unless you are Staff.')
+                    return
                 flairing_crew = crew_lookup(new_crew, self)
             else:
                 flairing_crew = crew_lookup(crew(ctx.author, self), self)
@@ -375,8 +401,8 @@ class ScoreSheetBot(commands.Cog):
             #     return
             if flairing_crew.overflow and member.display_name not in self.cache.overflow_members.keys():
                 await ctx.send(
-                    f'{member.display_name} is not in the ovevrflow server and '
-                    f'{flairing_crew.name} is an overflow crew.')
+                    f'{member.display_name} is not in the overflow server and '
+                    f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
                 return
             await flair(member, flairing_crew, self)
             await ctx.send(f'{ctx.author.mention} successfully flaired {member.mention} for {flairing_crew.name}.')

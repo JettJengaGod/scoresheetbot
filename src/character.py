@@ -146,7 +146,7 @@ def string_to_canonical(input_str: str) -> Optional[str]:
         if alt_num > 1:
             canonical_name = JR_LIST[alt_num - 1]
             alt_num = 1
-        elif canonical_name != 'bowserjr':
+        elif canonical_name != 'bowser_jr':
             canonical_name = character
     if canonical_name == 'olimar':
         if alt_num > 4:

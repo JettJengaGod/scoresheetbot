@@ -191,7 +191,7 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         overflow_crew = discord.utils.get(bot.cache.overflow_server.roles, name=flairing_crew.name)
         overflow_member = discord.utils.get(bot.cache.overflow_server.members, id=member.id)
         await overflow_member.add_roles(overflow_crew)
-        await member.edit(nick=f'{flairing_crew.abbr} | {member.name}')
+        await member.edit(nick=f'{flairing_crew.abbr} | {member.nick}')
     else:
         main_crew = discord.utils.get(bot.cache.scs.roles, name=flairing_crew.name)
         await member.add_roles(main_crew)
