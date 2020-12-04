@@ -81,7 +81,7 @@ async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battl
 def crew(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
     roles = user.roles
     if any((role.name == OVERFLOW_ROLE for role in roles)):
-        overflow_user = bot.cache.overflow_members[user.name]
+        overflow_user = bot.cache.overflow_members[strip_non_ascii(user.name)]
         roles = overflow_user.roles
 
     for role in roles:
@@ -103,7 +103,7 @@ async def track_cycle(user: discord.Member, scs: discord.Guild) -> int:
     if track < 2:
         new_track = discord.utils.get(scs.roles, name=TRACK[track + 1])
         await user.add_roles(new_track, reason='User left a crew, moved up the track.')
-    return track+1
+    return track + 1
 
 
 def power_level(user: discord.Member):
@@ -191,7 +191,8 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         overflow_crew = discord.utils.get(bot.cache.overflow_server.roles, name=flairing_crew.name)
         overflow_member = discord.utils.get(bot.cache.overflow_server.members, id=member.id)
         await overflow_member.add_roles(overflow_crew)
-        await member.edit(nick=f'{flairing_crew.abbr} | {member.nick}')
+        member_nick = member.nick if member.nick else member.name
+        await member.edit(nick=f'{flairing_crew.abbr} | {member_nick}')
     else:
         main_crew = discord.utils.get(bot.cache.scs.roles, name=flairing_crew.name)
         await member.add_roles(main_crew)
@@ -207,7 +208,8 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
     user_crew = crew(member, bot)
     if check_roles(member, [bot.cache.roles.overflow.name]):
         user = discord.utils.get(bot.cache.overflow_server.members, id=member.id)
-        await member.edit(nick=member.name)
+
+        await member.edit(nick=nick_without_prefix(member.display_name))
         role = discord.utils.get(bot.cache.overflow_server.roles, name=user_crew)
         overflow_adv = discord.utils.get(bot.cache.overflow_server.roles, name=ADVISOR)
         overflow_leader = discord.utils.get(bot.cache.overflow_server.roles, name=LEADER)
@@ -222,3 +224,10 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
         await flairing_info.send(f'{pepper.mention} {member.mention} is locked on next join.')
     await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader,
                               reason=f'Unflaired by {author.name}')
+
+
+def nick_without_prefix(nick: str):
+    if '|' in nick:
+        return nick[nick.index('|') + 1:]
+    else:
+        return nick
