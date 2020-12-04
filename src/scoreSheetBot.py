@@ -419,7 +419,7 @@ class ScoreSheetBot(commands.Cog):
             #     flairing_channel = discord.utils.get(ctx.guild.channels, name='bot_flaring')
             #     await ctx.send(f'`,flair` can only be used in {flairing_channel.mention}.')
             #     return
-            if flairing_crew.overflow and member.display_name not in self.cache.overflow_members.keys():
+            if flairing_crew.overflow and strip_non_ascii(member.name) not in self.cache.overflow_members.keys():
                 await ctx.send(
                     f'{member.display_name} is not in the overflow server and '
                     f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
