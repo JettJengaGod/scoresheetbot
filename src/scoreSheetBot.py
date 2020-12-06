@@ -27,7 +27,7 @@ class ScoreSheetBot(commands.Cog):
     def _current(self, ctx) -> Battle:
         return self.battle_map[key_string(ctx)]
 
-    async def _battle_crew(self, ctx: Context, user: discord.member) -> Optional[str]:
+    async def _battle_crew(self, ctx: Context, user: discord.Member) -> Optional[str]:
         crew_name = crew(user, self)
         if crew_name in (self._current(ctx).team1.name, self._current(ctx).team2.name):
             return crew_name
