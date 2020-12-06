@@ -81,7 +81,7 @@ async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battl
 def crew(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
     roles = user.roles
     if any((role.name == OVERFLOW_ROLE for role in roles)):
-        overflow_user = bot.cache.overflow_members[strip_non_ascii(user.name)]
+        overflow_user = bot.cache.overflow_server.get_member(user.id)
         roles = overflow_user.roles
 
     for role in roles:
@@ -141,12 +141,9 @@ def compare_crew_and_power(author: discord.Member, target: discord.Member, bot: 
 
 
 def member_lookup(name: str, bot: 'ScoreSheetBot') -> Optional[discord.Member]:
-    if name.startswith('<') and name.endswith('>'):
-        id = int(name[3:-1])
-        user = bot.cache.scs.get_member(id)
-        if user:
-            return user
-        raise ValueError(f'{name} doesn\'nt seem t obe on this server.')
+    if len(name) >= 17:
+        if (name.startswith('<') and name.endswith('>')) or name.isdigit():
+            return user_by_id(name, bot)
     true_name = process.extractOne(name, bot.cache.main_members.keys(), scorer=fuzz.ratio, score_cutoff=30)
     if true_name:
         return bot.cache.main_members[true_name[0]]
@@ -154,21 +151,27 @@ def member_lookup(name: str, bot: 'ScoreSheetBot') -> Optional[discord.Member]:
         raise Exception(f'{name} does not match any member in the server.')
 
 
-def crew_lookup(crew: str, bot: 'ScoreSheetBot') -> Optional[Crew]:
-    true_crew = process.extractOne(crew, bot.cache.crews_by_name.keys(), score_cutoff=70)
+def crew_lookup(crew_str: str, bot: 'ScoreSheetBot') -> Optional[Crew]:
+    true_crew = process.extractOne(crew_str, bot.cache.crews_by_name.keys(), score_cutoff=70)
     if true_crew:
         return bot.cache.crews_by_name[true_crew[0]]
     else:
-        raise Exception(f'{crew} does not match any crew in the server.')
+        raise Exception(f'{crew_str} does not match any crew in the server.')
+
+
+def user_by_id(name: str, bot: 'ScoreSheetBot') -> discord.Member:
+    id = int(name.strip("<!@>"))
+    user = bot.cache.scs.get_member(id)
+    if user:
+        return user
+    raise ValueError(f'{name} doesn\'nt seem to be on this server.')
 
 
 def ambiguous_lookup(name: str, bot: 'ScoreSheetBot') -> Union[discord.Member, Crew]:
-    if name.startswith('<') and name.endswith('>'):
-        id = int(name[3:-1])
-        user = bot.cache.scs.get_member(id)
-        if user:
-            return user
-        raise ValueError(f'{name} doesn\'nt seem t obe on this server.')
+    if len(name) >= 17:
+        if (name.startswith('<') and name.endswith('>')) or name.isdigit():
+            return user_by_id(name, bot)
+
     true_name = process.extractOne(name, bot.cache.main_members.keys(), scorer=fuzz.ratio)
     true_crew = process.extractOne(name, bot.cache.crews_by_name.keys(), scorer=fuzz.ratio)
     if true_crew[1] >= true_name[1]:
