@@ -152,7 +152,7 @@ def member_lookup(name: str, bot: 'ScoreSheetBot') -> Optional[discord.Member]:
 
 
 def crew_lookup(crew_str: str, bot: 'ScoreSheetBot') -> Optional[Crew]:
-    true_crew = process.extractOne(crew_str, bot.cache.crews_by_name.keys(), score_cutoff=70)
+    true_crew = process.extractOne(crew_str, bot.cache.crews_by_name.keys(), score_cutoff=40)
     if true_crew:
         return bot.cache.crews_by_name[true_crew[0]]
     else:

@@ -296,6 +296,25 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
         await ctx.send(embed=actual_crew.embed)
 
+    @commands.command(**help['non_crew'])
+    @main_only
+    @role_call(STAFF_LIST)
+    @cache_update
+    async def non_crew(self, ctx, *, name: str = None):
+        out = [f'```Main server non crew roles: \n']
+        for role in self.cache.non_crew_roles_main:
+            guess = crew_lookup(role, self)
+            out.append(f'\'{role}\' best guess from docs is \'{guess.name}\'')
+            out.append('\n')
+        out.append('Overflow server non crew roles: \n')
+        for role in self.cache.non_crew_roles_overflow:
+            guess = crew_lookup(role, self)
+            out.append(f'\'{role}\' best guess from docs is \'{guess.name}\'')
+            out.append('\n')
+        out.append('```')
+        await ctx.send(''.join(out))
+
+
     @commands.command(**help['rank'])
     @main_only
     @cache_update
