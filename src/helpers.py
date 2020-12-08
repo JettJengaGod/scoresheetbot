@@ -234,3 +234,22 @@ def nick_without_prefix(nick: str):
         return nick[nick.index('|') + 1:]
     else:
         return nick
+
+
+def role_change(before: List[discord.Role], after: List[discord.Role], changer: discord.Member,
+                changee: discord.Member) -> discord.Embed:
+    pre = {role.name for role in before}
+    post = {role.name for role in after}
+    added = post - pre
+    removed = pre - post
+    header = f'Flairing Change: {str(changee)}'
+    body = [f'Mention: {changee.mention}\n', f'ID: {changee.id}\n', 'Roles Removed: ']
+    for role in removed:
+        body.append(role)
+    body.append('\nRoles Added: ')
+    for role in added:
+        body.append(role)
+    body.append(f'\nChanges Made By: {changer.mention} {changer.id}')
+
+    return discord.Embed(title=header, description=''.join(body),color=changee.color)
+

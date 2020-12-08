@@ -15,6 +15,7 @@ DOCS = 'Doc Keeper'
 SCS = 'Smash Crew Server'
 OUTPUT = 'scoresheet_output'
 DOCS_UPDATES = 'scs_docs_updates'
+FLAIRING_LOGS = 'jettbot_flairing_logs'
 STAFF_LIST = [DOCS, MINION, ADMIN]
 EXPECTED_NON_CREW_ROLES = {
     LEADER,
