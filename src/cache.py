@@ -31,6 +31,8 @@ class Cache:
         self.roles = None
         self.channels = None
         self.timer = 0
+        self.non_crew_roles_main = []
+        self.non_crew_roles_overflow = []
 
     def update(self, bot: 'ScoreSheetBot'):
         current = time.time_ns()
@@ -146,10 +148,17 @@ class Cache:
         return crews_by_name
 
     def crew_populate(self):
+        self.non_crew_roles_main = []
+        self.non_crew_roles_overflow = []
+
         for role in self.scs.roles:
             if role.name in self.crews_by_name.keys():
                 self.crews_by_name[role.name].color = role.color
+            elif role.name not in EXPECTED_NON_CREW_ROLES:
+                self.non_crew_roles_main.append(role.name)
         for role in self.overflow_server.roles:
             if role.name in self.crews_by_name.keys():
                 self.crews_by_name[role.name].color = role.color
                 self.crews_by_name[role.name].overflow = True
+            elif role.name not in EXPECTED_NON_CREW_ROLES:
+                self.non_crew_roles_overflow.append(role.name)

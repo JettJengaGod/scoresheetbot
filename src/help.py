@@ -47,4 +47,5 @@ help = dict(
                     'if you are an admin, unflairs anyone.', '', 'Optional<Member>'),
     flair=HelpDoc('Flairs someone for your crew or for a specific crew if you are an admin. ', '',
                   'Member Optional<Crew>'),
+    non_crew=HelpDoc('Admin only, returns a list of roles which have differences from the docs.')
 )
