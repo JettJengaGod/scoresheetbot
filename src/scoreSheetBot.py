@@ -311,7 +311,6 @@ class ScoreSheetBot(commands.Cog):
         out.append('```')
         await ctx.send(''.join(out))
 
-
     @commands.command(**help['rank'])
     @main_only
     @cache_update
@@ -395,11 +394,14 @@ class ScoreSheetBot(commands.Cog):
                     compare_crew_and_power(ctx.author, member, self)
                 member = member_lookup(user, self)
             user_crew = crew(member, self)
+            before = member.roles
             await unflair(member, ctx.author, self)
             await ctx.send(f'{ctx.author.mention} successfully unflaired {member.mention} from {user_crew}.')
+            after = member.roles
+            flairing_logs = discord.utils.get(ctx.guild.channels, name=FLAIRING_LOGS)
+            await flairing_logs.send(embed=role_change(before, after, ctx.author, member))
         else:
             await ctx.send('This command can only be run on the main SCS server.')
-
 
     @commands.command(**help['flair'])
     @testing_only
@@ -440,8 +442,12 @@ class ScoreSheetBot(commands.Cog):
                     f'{member.display_name} is not in the overflow server and '
                     f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
                 return
+            before = member.roles
             await flair(member, flairing_crew, self)
             await ctx.send(f'{ctx.author.mention} successfully flaired {member.mention} for {flairing_crew.name}.')
+            after = member.roles
+            flairing_logs = discord.utils.get(ctx.guild.channels, name=FLAIRING_LOGS)
+            await flairing_logs.send(embed=role_change(before, after, ctx.author, member))
         else:
             await ctx.send('This command can only be run on the main SCS server.')
 
