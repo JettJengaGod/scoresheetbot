@@ -152,6 +152,8 @@ def member_lookup(name: str, bot: 'ScoreSheetBot') -> Optional[discord.Member]:
 
 
 def crew_lookup(crew_str: str, bot: 'ScoreSheetBot') -> Optional[Crew]:
+    if crew_str.lower() in bot.cache.crews_by_tag:
+        return bot.cache.crews_by_tag[crew_str.lower()]
     true_crew = process.extractOne(crew_str, bot.cache.crews_by_name.keys(), score_cutoff=40)
     if true_crew:
         return bot.cache.crews_by_name[true_crew[0]]
@@ -168,6 +170,8 @@ def user_by_id(name: str, bot: 'ScoreSheetBot') -> discord.Member:
 
 
 def ambiguous_lookup(name: str, bot: 'ScoreSheetBot') -> Union[discord.Member, Crew]:
+    if name.lower() in bot.cache.crews_by_tag:
+        return bot.cache.crews_by_tag[name.lower()]
     if len(name) >= 17:
         if (name.startswith('<') and name.endswith('>')) or name.isdigit():
             return user_by_id(name, bot)
@@ -189,6 +193,9 @@ def strip_non_ascii(text: str) -> str:
 async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot'):
     if check_roles(member, [TRUE_LOCKED]):
         raise ValueError(f'{member.display_name} cannot be flaired because they are {TRUE_LOCKED}.')
+
+    if check_roles(member, [FREE_AGENT]):
+        await member.remove_roles(bot.cache.roles.free_agent, reason=f'Flaired for {flairing_crew.name}')
     if flairing_crew.overflow:
         await member.add_roles(bot.cache.roles.overflow)
         overflow_crew = discord.utils.get(bot.cache.overflow_server.roles, name=flairing_crew.name)
@@ -236,20 +243,50 @@ def nick_without_prefix(nick: str):
         return nick
 
 
-def role_change(before: List[discord.Role], after: List[discord.Role], changer: discord.Member,
-                changee: discord.Member) -> discord.Embed:
-    pre = {role.name for role in before}
-    post = {role.name for role in after}
-    added = post - pre
-    removed = pre - post
+def role_change(before: Set[discord.Role], after: Set[discord.Role], changer: discord.Member,
+                changee: discord.Member, of_before: Optional[Set[discord.Role]] = None,
+                of_after: Optional[Set[discord.Role]] = None) -> discord.Embed:
+    removed = before - after
+    added = after - before
+    of_string = []
+    if of_before and of_after:
+        of_removed = of_before - of_after
+        of_added = of_after - of_before
+        for role in of_removed:
+            of_string.append(f'{role.name}, ')
+        if of_removed:
+            of_string[-1] = of_string[-1][:-2]  # Trim extra comma and space
+        of_string.append('\nRoles Added: ')
+        for role in of_added:
+            of_string.append(f'{role.name}, ')
+        if of_added:
+            of_string[-1] = of_string[-1][:-2]  # Trim extra comma and space
     header = f'Flairing Change: {str(changee)}'
     body = [f'Mention: {changee.mention}\n', f'ID: {changee.id}\n', 'Roles Removed: ']
     for role in removed:
-        body.append(role)
+        body.append(f'{role.name}, ')
+    if removed:
+        body[-1] = body[-1][:-2]  # Trim extra comma and space
     body.append('\nRoles Added: ')
     for role in added:
-        body.append(role)
-    body.append(f'\nChanges Made By: {changer.mention} {changer.id}')
+        body.append(f'{role.name}, ')
+    if added:
+        body[-1] = body[-1][:-2]  # Trim extra comma and space
+    body.extend(of_string)
+    body.append(f'\nChanges Made By: {str(changer)} {changer.id}')
 
-    return discord.Embed(title=header, description=''.join(body),color=changee.color)
+    return discord.Embed(title=header, description=''.join(body), color=changee.color)
 
+
+async def promote(member: discord.Member, bot: 'ScoreSheetBot') -> None:
+    if check_roles(member, [LEADER]):
+        return
+    if check_roles(member, [ADVISOR]):
+        await member.add_roles(bot.cache.roles.leader)
+        await member.remove_roles(bot.cache.roles.advisor)
+        return
+    await member.add_roles(bot.cache.roles.advisor)
+
+
+async def demote(member: discord.Member, bot: 'ScoreSheetBot') -> None:
+    await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader)

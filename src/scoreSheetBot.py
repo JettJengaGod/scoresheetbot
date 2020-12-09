@@ -360,99 +360,181 @@ class ScoreSheetBot(commands.Cog):
         out += f'{crew_name} has {crew_merit} merit.'
         await ctx.send(out)
 
-    # @commands.command(**help['promote'])
-    # @testing_only
-    # @cache_update
-    # async def promote(self, ctx: Context, *, user: str):
-    #
-    #     if ctx.guild.name == SCS:
-    #
-    #         member = ctx.author
-    #         if user:
-    #             if not check_roles(ctx.author, STAFF_LIST):
-    #                 member = member_lookup(user, self)
-    #                 compare_crew_and_power(ctx.author, member, self)
-    #             member = member_lookup(user, self)
-    #         user_crew = crew(member, self)
-    #         await unflair(member, ctx.author, self)
-    #         await ctx.send(f'{ctx.author.mention} successfully unflaired {member.mention} from {user_crew}.')
-    #     else:
-    #         await ctx.send('This command can only be run on the main SCS server.')
+    @commands.command(**help['promote'])
+    @testing_only
+    @main_only
+    @cache_update
+    async def promote(self, ctx: Context, *, user: str):
+        if not user:
+            await ctx.send('You can\'t promote yourself.')
+            return
+        member = member_lookup(user, self)
+        try:
+            target_crew = crew(member, self)
+        except ValueError:
+            await ctx.send(f'You can\'t promote someone who is not in a crew.')
+            return
+
+        if not check_roles(ctx.author, STAFF_LIST):
+            author_crew = crew(ctx.author, self)
+            if author_crew is not target_crew:
+                await ctx.send(
+                    f'{ctx.author.mention} can\'t promote {member.mention} because they are on different crews.')
+                return
+            if check_roles(member, [ADVISOR]):
+                await ctx.send(f'Only staff can promote to leader.')
+                return
+            if not check_roles(ctx.author, [LEADER]):
+                await ctx.send(f'Only leaders can make advisors on their crew.')
+                return
+        before = set(member.roles)
+        await promote(member, self)
+        after = set(ctx.guild.get_member(member.id).roles)
+        await ctx.send(f'{ctx.author.mention} successfully promoted {member.mention}.')
+        await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
+
+    @commands.command(**help['demote'])
+    @testing_only
+    @main_only
+    @cache_update
+    async def demote(self, ctx: Context, *, user: str):
+        if not user:
+            await ctx.send('You can\'t demote yourself.')
+            return
+        member = member_lookup(user, self)
+        if not check_roles(ctx.author, STAFF_LIST):
+            author_crew = crew(ctx.author, self)
+            target_crew = crew(member, self)
+            if author_crew is not target_crew:
+                await ctx.send(
+                    f'{ctx.author.mention} can\'t demote {member.mention} because they are on different crews.')
+                return
+            if check_roles(member, [LEADER]):
+                await ctx.send(f'Only staff can demote a leader.')
+                return
+            if not check_roles(ctx.author, [LEADER]):
+                await ctx.send(f'Only leaders can demote advisors on their crew.')
+                return
+        if not check_roles(member, [ADVISOR, LEADER]):
+            await ctx.send(f'{member.mention} can\'t be demoted as they do not hold a leadership role.')
+            return
+        before = set(member.roles)
+        await demote(member, self)
+        after = set(ctx.guild.get_member(member.id).roles)
+        await ctx.send(f'{ctx.author.mention} successfully demoted {member.mention}.')
+        await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
+
+    @commands.command(**help['make_lead'])
+    @testing_only
+    @main_only
+    @role_call(STAFF_LIST)
+    @cache_update
+    async def make_lead(self, ctx: Context, *, user: str):
+        if not user:
+            await ctx.send('You can\'t promote yourself.')
+            return
+        member = member_lookup(user, self)
+        try:
+            crew(member, self)
+        except ValueError:
+            await ctx.send(f'You can\'t promote someone who is not in a crew.')
+            return
+        if check_roles(member, [LEADER]):
+            await ctx.send(f'{member.mention} is already a leader.')
+            return
+        before = set(member.roles)
+        await promote(member, self)
+        await promote(member, self)
+        after = set(ctx.guild.get_member(member.id).roles)
+        await ctx.send(f'{ctx.author.mention} successfully made {member.mention} a leader.')
+        await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
     @commands.command(**help['unflair'])
     @testing_only
     @main_only
     @cache_update
     async def unflair(self, ctx: Context, *, user: str = None):
-
-        if ctx.guild.name == SCS:
-
-            member = ctx.author
-            if user:
-                if not check_roles(ctx.author, STAFF_LIST):
-                    member = member_lookup(user, self)
-                    if member.id == ctx.author.id:
-                        await ctx.send('You can unflair yourself by typing `,unflair` with nothing after it.')
-                        return
-                    compare_crew_and_power(ctx.author, member, self)
+        member = ctx.author
+        if user:
+            if not check_roles(ctx.author, STAFF_LIST):
                 member = member_lookup(user, self)
-            user_crew = crew(member, self)
-            before = member.roles
-            await unflair(member, ctx.author, self)
-            await ctx.send(f'{ctx.author.mention} successfully unflaired {member.mention} from {user_crew}.')
-            after = member.roles
-            flairing_logs = discord.utils.get(ctx.guild.channels, name=FLAIRING_LOGS)
-            await flairing_logs.send(embed=role_change(before, after, ctx.author, member))
-        else:
-            await ctx.send('This command can only be run on the main SCS server.')
+                if member.id == ctx.author.id:
+                    await ctx.send('You can unflair yourself by typing `,unflair` with nothing after it.')
+                    return
+                compare_crew_and_power(ctx.author, member, self)
+            member = member_lookup(user, self)
+        user_crew = crew_lookup(crew(member, self), self)
+        of_before, of_after = None, None
+        if user_crew.overflow:
+            of_user = self.cache.overflow_members[member.name]
+            of_before = set(of_user.roles)
+        before = set(member.roles)
+        await unflair(member, ctx.author, self)
+        await ctx.send(f'{ctx.author.mention} successfully unflaired {member.mention} from {user_crew.name}.')
+        after = set(ctx.guild.get_member(member.id).roles)
+        if user_crew.overflow:
+            overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
+            of_after = set(overflow_server.get_member(member.id).roles)
+        await self.cache.channels.flair_log.send(
+            embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
     @commands.command(**help['flair'])
     @testing_only
+    @main_only
     @cache_update
     async def flair(self, ctx: Context, user: str, *, new_crew: str = None):
-        if ctx.guild.name == SCS:
-            author_pl = power_level(ctx.author)
-            if author_pl == 0:
-                await ctx.send('You cannot flair users unless you are an Advisor, Leader or Staff.')
+        member = member_lookup(user, self)
+        author_pl = power_level(ctx.author)
+        if author_pl == 0:
+            await ctx.send('You cannot flair users unless you are an Advisor, Leader or Staff.')
+            return
+        if new_crew:
+            if not check_roles(ctx.author, STAFF_LIST):
+                await ctx.send('You can\'t flair people for other crews unless you are Staff.')
                 return
-            if new_crew:
-                if not check_roles(ctx.author, STAFF_LIST):
-                    await ctx.send('You can\'t flair people for other crews unless you are Staff.')
-                    return
-                flairing_crew = crew_lookup(new_crew, self)
-            else:
-                flairing_crew = crew_lookup(crew(ctx.author, self), self)
-            member = member_lookup(user, self)
-            try:
-                user_crew = crew(member, self)
-            except ValueError:
-                user_crew = None
-            if user_crew:
-                if author_pl == 3:
-                    await unflair(member, ctx.author, self)
-                    await ctx.send(f'Unflaired {member.mention} from {user_crew}.')
-                else:
-                    await ctx.send(f'{member.display_name} '
-                                   f'must be unflaired for their current crew before they can be flaired. ')
-                    return
-            # if author_pl < 3:
-            # if ctx.channel.name != 'bot_flaring':
-            #     flairing_channel = discord.utils.get(ctx.guild.channels, name='bot_flaring')
-            #     await ctx.send(f'`,flair` can only be used in {flairing_channel.mention}.')
-            #     return
-            if flairing_crew.overflow and strip_non_ascii(member.name) not in self.cache.overflow_members.keys():
-                await ctx.send(
-                    f'{member.display_name} is not in the overflow server and '
-                    f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
-                return
-            before = member.roles
-            await flair(member, flairing_crew, self)
-            await ctx.send(f'{ctx.author.mention} successfully flaired {member.mention} for {flairing_crew.name}.')
-            after = member.roles
-            flairing_logs = discord.utils.get(ctx.guild.channels, name=FLAIRING_LOGS)
-            await flairing_logs.send(embed=role_change(before, after, ctx.author, member))
+            flairing_crew = crew_lookup(new_crew, self)
         else:
-            await ctx.send('This command can only be run on the main SCS server.')
+            flairing_crew = crew_lookup(crew(ctx.author, self), self)
+        try:
+            user_crew = crew(member, self)
+        except ValueError:
+            user_crew = None
+
+        if member.id == ctx.author.id and user_crew == flairing_crew.name:
+            await ctx.send(f'{member.mention} stop flairing yourself, stop flairing yourself.')
+            return
+        if user_crew:
+            if author_pl == 3:
+                await unflair(member, ctx.author, self)
+                await ctx.send(f'Unflaired {member.mention} from {user_crew}.')
+            else:
+                await ctx.send(f'{member.display_name} '
+                               f'must be unflaired for their current crew before they can be flaired. ')
+                return
+        # if author_pl < 3:
+        # if ctx.channel.name != 'bot_flaring':
+        #     flairing_channel = discord.utils.get(ctx.guild.channels, name='bot_flaring')
+        #     await ctx.send(f'`,flair` can only be used in {flairing_channel.mention}.')
+        #     return
+        if flairing_crew.overflow and strip_non_ascii(member.name) not in self.cache.overflow_members.keys():
+            await ctx.send(
+                f'{member.display_name} is not in the overflow server and '
+                f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
+            return
+        of_before, of_after = None, None
+        if flairing_crew.overflow:
+            of_user = self.cache.overflow_members[member.name]
+            of_before = set(of_user.roles)
+        before = set(member.roles)
+        await flair(member, flairing_crew, self)
+        await ctx.send(f'{ctx.author.mention} successfully flaired {member.mention} for {flairing_crew.name}.')
+
+        after = set(ctx.guild.get_member(member.id).roles)
+        if flairing_crew.overflow:
+            overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
+            of_after = set(overflow_server.get_member(member.id).roles)
+        await self.cache.channels.flair_log.send(
+            embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
     @commands.command(**help['crew'])
     @cache_update
@@ -577,7 +659,7 @@ class ScoreSheetBot(commands.Cog):
 def main():
     load_dotenv()
     token = os.getenv('DISCORD_TOKEN')
-    bot = commands.Bot(command_prefix=',', intents=discord.Intents.all())
+    bot = commands.Bot(command_prefix=os.getenv('PREFIX'), intents=discord.Intents.all())
     cache = src.cache.Cache()
     bot.add_cog(ScoreSheetBot(bot, cache))
 
