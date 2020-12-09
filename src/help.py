@@ -47,5 +47,10 @@ help = dict(
                     'if you are an admin, unflairs anyone.', '', 'Optional<Member>'),
     flair=HelpDoc('Flairs someone for your crew or for a specific crew if you are an admin. ', '',
                   'Member Optional<Crew>'),
-    non_crew=HelpDoc('Admin only, returns a list of roles which have differences from the docs.')
+    non_crew=HelpDoc('Admin only, returns a list of roles which have differences from the docs.'),
+    promote=HelpDoc('Used by leaders to promote users to advoisrs or staff to promote to leaders.', '',
+                    'User'),
+    demote=HelpDoc('Used by leaders to demote advisors or staff to demote leaders.', '',
+                   'User'),
+    make_lead=HelpDoc('Staff Only: makes a user a leader.'),
 )

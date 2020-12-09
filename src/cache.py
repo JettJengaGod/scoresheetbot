@@ -33,15 +33,18 @@ class Cache:
         self.timer = 0
         self.non_crew_roles_main = []
         self.non_crew_roles_overflow = []
+        self.crews_by_tag = set()
 
     def update(self, bot: 'ScoreSheetBot'):
         current = time.time_ns()
         if current > self.timer + CACHE_TIME:
             self.crews_by_name = self.update_crews()
             self.crews = self.crews_by_name.keys()
+            self.crews_by_tag = {crew.abbr.lower(): crew for crew in self.crews_by_name.values()}
             self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
             self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
             self.roles = self.role_factory(self.scs)
+            self.channels = self.channel_factory(self.scs)
             self.main_members = self.members_by_name(self.scs.members)
             self.overflow_members = self.members_by_name(self.overflow_server.members)
             self.crew_populate()
@@ -64,14 +67,23 @@ class Cache:
             track2 = discord.utils.get(server.roles, name=TRACK[1])
             track3 = discord.utils.get(server.roles, name=TRACK[2])
             true_locked = discord.utils.get(server.roles, name=TRUE_LOCKED)
+            free_agent = discord.utils.get(server.roles, name=FREE_AGENT)
 
         return Roles
+
+    @staticmethod
+    def channel_factory(server):
+        class Channels:
+            flair_log = discord.utils.get(server.channels, name=FLAIRING_LOGS)
+
+        return Channels
 
     def members_by_name(self, member_list: Iterable[discord.Member]):
         out = {}
         for member in member_list:
             for role in member.roles:
                 if role.name in self.crews:
+                    self.crews_by_name[role.name].member_count += 1
                     for r2 in member.roles:
                         if r2.name == LEADER:
                             self.crews_by_name[role.name].leaders.append(str(member))
