@@ -21,22 +21,22 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 class Cache:
     def __init__(self):
-        self.live = False
-        self.crews_by_name = None
-        self.main_members = None
-        self.crews = None
-        self.overflow_members = None
-        self.scs = None
-        self.overflow_server = None
+        self.live: bool = False
+        self.crews_by_name: Dict[str, Crew] = {}
+        self.main_members: Iterable[discord.Member] = []
+        self.crews: Iterable[str] = []
+        self.overflow_members: Iterable[discord.Member] = []
+        self.scs: discord.Guild = None
+        self.overflow_server: discord.Guild = None
         self.roles = None
         self.channels = None
-        self.timer = 0
-        self.non_crew_roles_main = []
-        self.non_crew_roles_overflow = []
-        self.crews_by_tag = set()
-        self.flairing_allowed = True
+        self.timer: int = 0
+        self.non_crew_roles_main: List[str] = []
+        self.non_crew_roles_overflow: List[str] = []
+        self.crews_by_tag: Dict[str, Crew] = {}
+        self.flairing_allowed: bool = True
 
-    def update(self, bot: 'ScoreSheetBot'):
+    async def update(self, bot: 'ScoreSheetBot'):
         current = time.time_ns()
         if current > self.timer + CACHE_TIME:
             self.crews_by_name = self.update_crews()
@@ -51,6 +51,7 @@ class Cache:
             self.crew_populate()
             self.live = True
             self.timer = time.time_ns()
+            await self.join_cd_parse(bot)
 
     @staticmethod
     def role_factory(server):
@@ -69,6 +70,7 @@ class Cache:
             track3 = discord.utils.get(server.roles, name=TRACK[2])
             true_locked = discord.utils.get(server.roles, name=TRUE_LOCKED)
             free_agent = discord.utils.get(server.roles, name=FREE_AGENT)
+            join_cd = discord.utils.get(server.roles, name=JOIN_CD)
 
         return Roles
 
@@ -178,3 +180,21 @@ class Cache:
 
     def flairing_toggle(self):
         self.flairing_allowed = not self.flairing_allowed
+
+    async def join_cd_parse(self, bot: 'ScoreSheetBot'):
+        try:
+            with open(TEMP_ROLES_FILE, 'r') as file:
+                lines = file.readlines()
+            with open(TEMP_ROLES_FILE, 'w') as file:
+                for line in lines:
+                    if len(line) > 17:
+                        member_id = int(line[:line.index(' ')])
+                        reset = float(line[line.index(' ') + 1:-1])
+                        if reset < time.time():
+                            member = bot.cache.scs.get_member(member_id)
+                            await member.remove_roles(self.roles.join_cd)
+                            await self.channels.flair_log.send(f'{member.display_name}\'s join cooldown ended.')
+                        else:
+                            file.write(line)
+        except FileNotFoundError:
+            open(TEMP_ROLES_FILE, 'w+')

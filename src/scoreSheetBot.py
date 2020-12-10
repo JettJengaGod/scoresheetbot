@@ -107,6 +107,11 @@ class ScoreSheetBot(commands.Cog):
                 if check_roles(user, [WATCHLIST]):
                     await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
                     return
+                if check_roles(user, [JOIN_CD]):
+                    await ctx.send(
+                        f'{user.mention} joined this crew less than '
+                        f'24 hours ago and must wait to play ranked battles.')
+                    return
                 self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention)
             else:
                 await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
@@ -595,7 +600,7 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def recache(self, ctx: Context):
         self.cache.timer = 0
-        self.cache.update(self)
+        await self.cache.update(self)
         await ctx.send('The cache has been cleared, everything should be updated now.')
 
     @commands.command(**help['chars'])

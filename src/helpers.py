@@ -190,6 +190,11 @@ def strip_non_ascii(text: str) -> str:
     return decode_string
 
 
+def add_join_cd(member: discord.Member):
+    file = open(TEMP_ROLES_FILE, 'a')
+    file.write(f'{member.id} {time.time() + COOLDOW_TIME_SECONDS}\n')
+
+
 async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot'):
     if check_roles(member, [TRUE_LOCKED]):
         raise ValueError(f'{member.display_name} cannot be flaired because they are {TRUE_LOCKED}.')
@@ -212,6 +217,8 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
         flairing_info = discord.utils.get(bot.cache.scs.channels, name='flairing_info')
         await flairing_info.send(f'{pepper.mention} {member.mention} is {TRUE_LOCKED}.')
+    await member.add_roles(bot.cache.roles.join_cd)
+    add_join_cd(member)
 
 
 async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreSheetBot'):

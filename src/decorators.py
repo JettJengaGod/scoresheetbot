@@ -122,7 +122,7 @@ def cache_update(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        self.cache.update(self)
+        await self.cache.update(self)
         return await func(self, *args, **kwargs)
 
     return wrapper

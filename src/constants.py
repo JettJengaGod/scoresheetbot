@@ -16,7 +16,10 @@ FREE_AGENT = 'Free Agent'
 SCS = 'Smash Crew Server'
 OUTPUT = 'scoresheet_output'
 DOCS_UPDATES = 'scs_docs_updates'
+JOIN_CD = '24h Join Cooldown'
 FLAIRING_LOGS = 'jettbot_flairing_logs'
+COOLDOW_TIME_SECONDS = 60 * 60 * 24  # 24 Hours
+TEMP_ROLES_FILE = 'temp_roles.txt'
 STAFF_LIST = [DOCS, MINION, ADMIN]
 EXPECTED_NON_CREW_ROLES = {
     LEADER,
