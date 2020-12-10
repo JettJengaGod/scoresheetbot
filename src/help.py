@@ -53,4 +53,6 @@ help = dict(
     demote=HelpDoc('Used by leaders to demote advisors or staff to demote leaders.', '',
                    'User'),
     make_lead=HelpDoc('Staff Only: makes a user a leader.'),
+    flairing_off=HelpDoc('Emergency flairing off switch.'),
+    flairing_on=HelpDoc('Emergency flairing off switch.'),
 )

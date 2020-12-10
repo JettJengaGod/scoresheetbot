@@ -126,3 +126,16 @@ def cache_update(func):
         return await func(self, *args, **kwargs)
 
     return wrapper
+
+def flairing_required(func):
+    """Decorator that updates cache regularly."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        if not self.cache.flairing_allowed:
+            await ctx.send(f'Flaring is currently disabled, please wait for a mod to re-enable it.')
+            return
+        return await func(self, *args, **kwargs)
+
+    return wrapper
