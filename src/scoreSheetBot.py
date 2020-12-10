@@ -360,12 +360,12 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help['promote'])
     @testing_only
     @main_only
+    @flairing_required
     @cache_update
-    async def promote(self, ctx: Context, *, user: str):
-        if not user:
+    async def promote(self, ctx: Context, member: discord.Member):
+        if not member:
             await ctx.send('You can\'t promote yourself.')
             return
-        member = member_lookup(user, self)
         try:
             target_crew = crew(member, self)
         except ValueError:
@@ -393,12 +393,12 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help['demote'])
     @testing_only
     @main_only
+    @flairing_required
     @cache_update
-    async def demote(self, ctx: Context, *, user: str):
-        if not user:
+    async def demote(self, ctx: Context, member: discord.Member):
+        if not member:
             await ctx.send('You can\'t demote yourself.')
             return
-        member = member_lookup(user, self)
         if not check_roles(ctx.author, STAFF_LIST):
             author_crew = crew(ctx.author, self)
             target_crew = crew(member, self)
@@ -424,13 +424,13 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help['make_lead'])
     @testing_only
     @main_only
+    @flairing_required
     @role_call(STAFF_LIST)
     @cache_update
-    async def make_lead(self, ctx: Context, *, user: str):
-        if not user:
+    async def make_lead(self, ctx: Context, member: discord.Member):
+        if not member:
             await ctx.send('You can\'t promote yourself.')
             return
-        member = member_lookup(user, self)
         try:
             crew(member, self)
         except ValueError:
@@ -449,17 +449,17 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help['unflair'])
     @testing_only
     @main_only
+    @flairing_required
     @cache_update
-    async def unflair(self, ctx: Context, *, user: str = None):
-        member = ctx.author
-        if user:
+    async def unflair(self, ctx: Context, member: Optional[discord.Member]):
+        if member:
             if not check_roles(ctx.author, STAFF_LIST):
-                member = member_lookup(user, self)
                 if member.id == ctx.author.id:
                     await ctx.send('You can unflair yourself by typing `,unflair` with nothing after it.')
                     return
                 compare_crew_and_power(ctx.author, member, self)
-            member = member_lookup(user, self)
+        else:
+            member = ctx.author
         user_crew = crew_lookup(crew(member, self), self)
         of_before, of_after = None, None
         if user_crew.overflow:
@@ -478,9 +478,9 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help['flair'])
     @testing_only
     @main_only
+    @flairing_required
     @cache_update
-    async def flair(self, ctx: Context, user: str, *, new_crew: str = None):
-        member = member_lookup(user, self)
+    async def flair(self, ctx: Context, member: discord.Member, *, new_crew: str = None):
         author_pl = power_level(ctx.author)
         if author_pl == 0:
             await ctx.send('You cannot flair users unless you are an Advisor, Leader or Staff.')
@@ -565,6 +565,20 @@ class ScoreSheetBot(commands.Cog):
         output = split_on_length_and_separator('\n'.join(out), length=2000, separator='\n')
         for put in output:
             await ctx.send(put)
+
+    @commands.command(**help['flairing_off'])
+    @cache_update
+    @role_call(STAFF_LIST)
+    async def flairing_off(self, ctx: Context):
+        self.cache.flairing_allowed = False
+        await ctx.send('Flairing has been disabled for the time being.')
+
+    @commands.command(**help['flairing_on'])
+    @cache_update
+    @role_call(STAFF_LIST)
+    async def flairing_on(self, ctx: Context):
+        self.cache.flairing_allowed = True
+        await ctx.send('Flairing has been re-enabled.')
 
     @commands.command(**help['pending'])
     @cache_update

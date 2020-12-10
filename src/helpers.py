@@ -252,6 +252,7 @@ def role_change(before: Set[discord.Role], after: Set[discord.Role], changer: di
     if of_before and of_after:
         of_removed = of_before - of_after
         of_added = of_after - of_before
+        of_string.append('\nOverflow:\nRoles Removed: ')
         for role in of_removed:
             of_string.append(f'{role.name}, ')
         if of_removed:

@@ -34,6 +34,7 @@ class Cache:
         self.non_crew_roles_main = []
         self.non_crew_roles_overflow = []
         self.crews_by_tag = set()
+        self.flairing_allowed = True
 
     def update(self, bot: 'ScoreSheetBot'):
         current = time.time_ns()
@@ -174,3 +175,6 @@ class Cache:
                 self.crews_by_name[role.name].overflow = True
             elif role.name not in EXPECTED_NON_CREW_ROLES:
                 self.non_crew_roles_overflow.append(role.name)
+
+    def flairing_toggle(self):
+        self.flairing_allowed = not self.flairing_allowed
