@@ -166,7 +166,7 @@ def user_by_id(name: str, bot: 'ScoreSheetBot') -> discord.Member:
     user = bot.cache.scs.get_member(id)
     if user:
         return user
-    raise ValueError(f'{name} doesn\'nt seem to be on this server.')
+    raise ValueError(f'{name} doesn\'t seem to be on this server.')
 
 
 def ambiguous_lookup(name: str, bot: 'ScoreSheetBot') -> Union[discord.Member, Crew]:
