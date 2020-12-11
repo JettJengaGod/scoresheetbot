@@ -452,7 +452,7 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @flairing_required
     @cache_update
-    async def unflair(self, ctx: Context, member: discord.Member):
+    async def unflair(self, ctx: Context, member: Optional[discord.Member]):
         if member:
             if not check_roles(ctx.author, STAFF_LIST):
                 if member.id == ctx.author.id:
