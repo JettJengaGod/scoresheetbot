@@ -455,7 +455,7 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @flairing_required
     @cache_update
-    async def unflair(self, ctx: Context, member: Optional[discord.Member]):
+    async def unflair(self, ctx: Context, member: discord.Member):
         if member:
             if not check_roles(ctx.author, STAFF_LIST):
                 if member.id == ctx.author.id:
@@ -467,7 +467,7 @@ class ScoreSheetBot(commands.Cog):
         user_crew = crew_lookup(crew(member, self), self)
         of_before, of_after = None, None
         if user_crew.overflow:
-            of_user = self.cache.overflow_members[member.name]
+            of_user = self.cache.overflow_server.get_member(member.id)
             of_before = set(of_user.roles)
         before = set(member.roles)
         await unflair(member, ctx.author, self)
@@ -505,7 +505,7 @@ class ScoreSheetBot(commands.Cog):
             return
         of_before, of_after = None, None
         if flairing_crew.overflow:
-            of_user = self.cache.overflow_members[member.name]
+            of_user = self.cache.overflow_server.get_member(member.id)
             of_before = set(of_user.roles)
         before = set(member.roles)
         if user_crew:
