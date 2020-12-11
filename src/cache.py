@@ -23,9 +23,9 @@ class Cache:
     def __init__(self):
         self.live: bool = False
         self.crews_by_name: Dict[str, Crew] = {}
-        self.main_members: Iterable[discord.Member] = []
+        self.main_members: Dict[str, discord.Member] = {}
         self.crews: Iterable[str] = []
-        self.overflow_members: Iterable[discord.Member] = []
+        self.overflow_members: Dict[str, discord.Member] = {}
         self.scs: discord.Guild = None
         self.overflow_server: discord.Guild = None
         self.roles = None
@@ -81,7 +81,7 @@ class Cache:
 
         return Channels
 
-    def members_by_name(self, member_list: Iterable[discord.Member]):
+    def members_by_name(self, member_list: Iterable[discord.Member]) -> Dict[str, discord.Member]:
         out = {}
         for member in member_list:
             for role in member.roles:

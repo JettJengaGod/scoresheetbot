@@ -199,6 +199,9 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
     if check_roles(member, [TRUE_LOCKED]):
         raise ValueError(f'{member.display_name} cannot be flaired because they are {TRUE_LOCKED}.')
 
+    if check_roles(member, [JOIN_CD]):
+        raise ValueError(f'{member.display_name} cannot be flaired because they have {JOIN_CD}.')
+
     if check_roles(member, [FREE_AGENT]):
         await member.remove_roles(bot.cache.roles.free_agent, reason=f'Flaired for {flairing_crew.name}')
     if flairing_crew.overflow:

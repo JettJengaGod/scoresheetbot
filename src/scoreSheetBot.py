@@ -508,6 +508,11 @@ class ScoreSheetBot(commands.Cog):
         if member.id == ctx.author.id and user_crew == flairing_crew.name:
             await ctx.send(f'{member.mention} stop flairing yourself, stop flairing yourself.')
             return
+        of_before, of_after = None, None
+        if flairing_crew.overflow:
+            of_user = self.cache.overflow_members[member.name]
+            of_before = set(of_user.roles)
+        before = set(member.roles)
         if user_crew:
             if author_pl == 3:
                 await unflair(member, ctx.author, self)
@@ -526,11 +531,7 @@ class ScoreSheetBot(commands.Cog):
                 f'{member.display_name} is not in the overflow server and '
                 f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
             return
-        of_before, of_after = None, None
-        if flairing_crew.overflow:
-            of_user = self.cache.overflow_members[member.name]
-            of_before = set(of_user.roles)
-        before = set(member.roles)
+
         await flair(member, flairing_crew, self)
         await ctx.send(f'{ctx.author.mention} successfully flaired {member.mention} for {flairing_crew.name}.')
 
@@ -541,35 +542,28 @@ class ScoreSheetBot(commands.Cog):
         await self.cache.channels.flair_log.send(
             embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
-    @commands.command(**help['crew'])
+    @commands.command(**help['overflow'])
     @cache_update
     @role_call([ADMIN, MINION])
     async def overflow(self, ctx: Context):
         overflow_role = set()
-        await ctx.send('This will take some time.')
-        overflow_members = ctx.guild.members
-        for member in overflow_members:
-            if check_roles(member, 'SCS Overflow Crew'):
-                if any((role.name in self.cache.crews for role in member.roles)):
-                    continue
-                print(member, len(overflow_role))
-                overflow_role.add(str(member))
+        for member in self.cache.scs.members:
+            if check_roles(member, OVERFLOW_ROLE):
+                overflow_role.add(f'{str(member)} {member.id}')
         other_set = set()
-        other_members = self.cache.overflow_members
+        other_members = self.cache.overflow_server.members
         for member in other_members:
             if any((role.name in self.cache.crews for role in member.roles)):
-                other_set.add(str(member))
-
-                print(member, len(other_set))
+                other_set.add(f'{str(member)} {member.id}')
                 continue
         first = overflow_role - other_set
         second = other_set - overflow_role
-        out = ['These members have the role, but are not in an overflow crew ']
+        out = ['These members have the role, but are not in an overflow crew.']
         for member in first:
-            out.append(f'{str(member)}')
+            out.append(f'> {member}')
         out.append('These members are flaired in the overflow server, but have no role here')
         for member in second:
-            out.append(f'{str(member)}')
+            out.append(f'> {member}')
         output = split_on_length_and_separator('\n'.join(out), length=2000, separator='\n')
         for put in output:
             await ctx.send(put)
