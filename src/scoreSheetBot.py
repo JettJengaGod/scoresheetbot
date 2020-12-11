@@ -366,7 +366,6 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(out)
 
     @commands.command(**help['promote'])
-    @testing_only
     @main_only
     @flairing_required
     @cache_update
@@ -399,7 +398,6 @@ class ScoreSheetBot(commands.Cog):
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
     @commands.command(**help['demote'])
-    @testing_only
     @main_only
     @flairing_required
     @cache_update
@@ -430,7 +428,6 @@ class ScoreSheetBot(commands.Cog):
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
     @commands.command(**help['make_lead'])
-    @testing_only
     @main_only
     @flairing_required
     @role_call(STAFF_LIST)
@@ -455,7 +452,6 @@ class ScoreSheetBot(commands.Cog):
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
     @commands.command(**help['unflair'])
-    @testing_only
     @main_only
     @flairing_required
     @cache_update
@@ -484,7 +480,6 @@ class ScoreSheetBot(commands.Cog):
             embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
     @commands.command(**help['flair'])
-    @testing_only
     @main_only
     @flairing_required
     @cache_update
@@ -521,11 +516,6 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(f'{member.display_name} '
                                f'must be unflaired for their current crew before they can be flaired. ')
                 return
-        # if author_pl < 3:
-        # if ctx.channel.name != 'bot_flaring':
-        #     flairing_channel = discord.utils.get(ctx.guild.channels, name='bot_flaring')
-        #     await ctx.send(f'`,flair` can only be used in {flairing_channel.mention}.')
-        #     return
         if flairing_crew.overflow and strip_non_ascii(member.name) not in self.cache.overflow_members.keys():
             await ctx.send(
                 f'{member.display_name} is not in the overflow server and '

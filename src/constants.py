@@ -20,6 +20,7 @@ JOIN_CD = '24h Join Cooldown'
 FLAIRING_LOGS = 'jettbot_flairing_logs'
 COOLDOW_TIME_SECONDS = 60 * 60 * 24  # 24 Hours
 TEMP_ROLES_FILE = 'temp_roles.txt'
+FLAIRING_CHANNEL_NAME = 'bot_flairing'
 STAFF_LIST = [DOCS, MINION, ADMIN]
 EXPECTED_NON_CREW_ROLES = {
     LEADER,
