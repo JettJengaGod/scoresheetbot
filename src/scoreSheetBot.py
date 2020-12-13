@@ -500,6 +500,11 @@ class ScoreSheetBot(commands.Cog):
         if member.id == ctx.author.id and user_crew == flairing_crew.name:
             await ctx.send(f'{member.mention} stop flairing yourself, stop flairing yourself.')
             return
+        if flairing_crew.overflow and strip_non_ascii(member.name) not in self.cache.overflow_members.keys():
+            await ctx.send(
+                f'{member.display_name} is not in the overflow server and '
+                f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
+            return
         of_before, of_after = None, None
         if flairing_crew.overflow:
             of_user = self.cache.overflow_server.get_member(member.id)
@@ -513,11 +518,7 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(f'{member.display_name} '
                                f'must be unflaired for their current crew before they can be flaired. ')
                 return
-        if flairing_crew.overflow and strip_non_ascii(member.name) not in self.cache.overflow_members.keys():
-            await ctx.send(
-                f'{member.display_name} is not in the overflow server and '
-                f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
-            return
+
 
         await flair(member, flairing_crew, self)
         await ctx.send(f'{ctx.author.mention} successfully flaired {member.mention} for {flairing_crew.name}.')
