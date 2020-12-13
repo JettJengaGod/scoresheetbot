@@ -126,7 +126,7 @@ def compare_crew_and_power(author: discord.Member, target: discord.Member, bot: 
     if author_pl == 3:
         return
     if author_pl == 2:
-        if target_pl == author_pl:
+        if check_roles(target, [LEADER]):
             raise Exception(
                 f'A majority of leaders must approve this unflairing. Tag the Doc Keeper role for assistance.')
         return

@@ -2,7 +2,7 @@ import pickle
 import os.path
 import time
 import discord
-from typing import Dict, Iterable, TYPE_CHECKING
+from typing import Dict, Iterable, TYPE_CHECKING, Optional
 
 from .helpers import strip_non_ascii
 
@@ -87,11 +87,6 @@ class Cache:
             for role in member.roles:
                 if role.name in self.crews:
                     self.crews_by_name[role.name].member_count += 1
-                    for r2 in member.roles:
-                        if r2.name == LEADER:
-                            self.crews_by_name[role.name].leaders.append(str(member))
-                        if r2.name == ADVISOR:
-                            self.crews_by_name[role.name].advisors.append(str(member))
             if member.name:
                 out[strip_non_ascii(member.name)] = member
             if member.name != member.display_name and member.display_name:
@@ -165,7 +160,14 @@ class Cache:
     def crew_populate(self):
         self.non_crew_roles_main = []
         self.non_crew_roles_overflow = []
-
+        for member in self.scs.members:
+            crew = self._crew(member)
+            if crew:
+                for r2 in member.roles:
+                    if r2.name == LEADER:
+                        self.crews_by_name[crew].leaders.append(str(member))
+                    if r2.name == ADVISOR:
+                        self.crews_by_name[crew].advisors.append(str(member))
         for role in self.scs.roles:
             if role.name in self.crews_by_name.keys():
                 self.crews_by_name[role.name].color = role.color
@@ -198,3 +200,17 @@ class Cache:
                             file.write(line)
         except FileNotFoundError:
             open(TEMP_ROLES_FILE, 'w+')
+
+    def _crew(self, user: discord.Member) -> Optional[str]:
+        roles = user.roles
+        if any((role.name == OVERFLOW_ROLE for role in roles)):
+            overflow_user = self.overflow_server.get_member(user.id)
+            if overflow_user:
+                roles = overflow_user.roles
+            else:
+                return None
+
+        for role in roles:
+            if role.name in self.crews:
+                return role.name
+        return None
