@@ -162,11 +162,16 @@ def crew_lookup(crew_str: str, bot: 'ScoreSheetBot') -> Optional[Crew]:
 
 
 def user_by_id(name: str, bot: 'ScoreSheetBot') -> discord.Member:
-    id = int(name.strip("<!@>"))
+    if len(name) < 17:
+        raise ValueError(f'{name} is not a mention or an id. Try again.')
+    try:
+        id = int(name.strip("<!@>"))
+    except ValueError:
+        raise ValueError(f'{name} is not a mention or an id. Try again.')
     user = bot.cache.scs.get_member(id)
     if user:
         return user
-    raise ValueError(f'{name} doesn\'t seem to be on this server.')
+    raise ValueError(f'{name} doesn\'t seem to be on this server or your input is malformed. Try @user.')
 
 
 def ambiguous_lookup(name: str, bot: 'ScoreSheetBot') -> Union[discord.Member, Crew]:

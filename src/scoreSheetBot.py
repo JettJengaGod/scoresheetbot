@@ -452,8 +452,9 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @flairing_required
     @cache_update
-    async def unflair(self, ctx: Context, member: Optional[discord.Member]):
-        if member:
+    async def unflair(self, ctx: Context, user: Optional[str]):
+        if user:
+            member = user_by_id(user, self)
             if not check_roles(ctx.author, STAFF_LIST):
                 if member.id == ctx.author.id:
                     await ctx.send('You can unflair yourself by typing `,unflair` with nothing after it.')
@@ -518,7 +519,6 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(f'{member.display_name} '
                                f'must be unflaired for their current crew before they can be flaired. ')
                 return
-
 
         await flair(member, flairing_crew, self)
         await ctx.send(f'{ctx.author.mention} successfully flaired {member.mention} for {flairing_crew.name}.')
