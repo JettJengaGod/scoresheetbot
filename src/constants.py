@@ -1,4 +1,4 @@
-CACHE_TIME = 1_000_000_000_000  # 1000 seconds
+CACHE_TIME = 600_000_000_000  # 1000 seconds
 OVERFLOW_SERVER = 'SCS Overflow Server'
 
 TRACK = ['Track 1', 'Track 2', 'Move Locked Next Join']
