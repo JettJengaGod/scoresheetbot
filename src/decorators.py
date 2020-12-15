@@ -134,11 +134,11 @@ def flairing_required(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        if not (check_roles(ctx.author, STAFF_LIST)):
-            if ctx.channel.name != FLAIRING_CHANNEL_NAME:
-                flairing_channel = discord.utils.get(ctx.guild.channels, name=FLAIRING_CHANNEL_NAME)
-                await ctx.send(f'Flairing commands can only be used in {flairing_channel.mention}.')
-                return
+        # if not (check_roles(ctx.author, STAFF_LIST)):
+        #     if ctx.channel.name != FLAIRING_CHANNEL_NAME:
+        #         flairing_channel = discord.utils.get(ctx.guild.channels, name=FLAIRING_CHANNEL_NAME)
+        #         await ctx.send(f'Flairing commands can only be used in {flairing_channel.mention}.')
+        #         return
         if not self.cache.flairing_allowed:
             await ctx.send(f'Flaring is currently disabled, please wait for a mod to re-enable it.')
             return
