@@ -294,15 +294,21 @@ def role_change(before: Set[discord.Role], after: Set[discord.Role], changer: di
     return discord.Embed(title=header, description=''.join(body), color=changee.color)
 
 
-async def promote(member: discord.Member, bot: 'ScoreSheetBot') -> None:
+async def promote(member: discord.Member, bot: 'ScoreSheetBot') -> str:
     if check_roles(member, [LEADER]):
-        return
+        return 'Leader'
     if check_roles(member, [ADVISOR]):
         await member.add_roles(bot.cache.roles.leader)
         await member.remove_roles(bot.cache.roles.advisor)
-        return
+        return 'Leader'
     await member.add_roles(bot.cache.roles.advisor)
+    return 'Advisor'
 
 
 async def demote(member: discord.Member, bot: 'ScoreSheetBot') -> None:
     await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader)
+
+
+async def response_message(ctx: Context, msg: str):
+    await ctx.send(f'{ctx.author.mention}: {msg}')
+    await ctx.message.delete(delay=1)

@@ -78,6 +78,7 @@ class Cache:
     def channel_factory(server):
         class Channels:
             flair_log = discord.utils.get(server.channels, name=FLAIRING_LOGS)
+            flairing_questions = discord.utils.get(server.channels, id=FLAIRING_QUESTIONS_ID)
 
         return Channels
 
