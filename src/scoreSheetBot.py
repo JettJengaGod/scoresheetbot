@@ -429,9 +429,9 @@ class ScoreSheetBot(commands.Cog):
             await response_message(ctx, f'{member.mention} can\'t be demoted as they do not hold a leadership role.')
             return
         before = set(member.roles)
-        await demote(member, self)
+        result = await demote(member, self)
         after = set(ctx.guild.get_member(member.id).roles)
-        await response_message(ctx, f'Successfully demoted {member.mention}.')
+        await response_message(ctx, f'Successfully demoted {member.mention} from {result}.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
     @commands.command(**help['make_lead'])

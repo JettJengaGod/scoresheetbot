@@ -10,7 +10,9 @@ from aiohttp import ClientSession
 from discord.ext import commands
 from discord.ext.commands import Context
 
+from src.cache import Cache
 from src.scoreSheetBot import ScoreSheetBot
+from src.crew import Crew
 
 
 class EqualityComparable:
@@ -461,21 +463,38 @@ class MockAsyncWebhook(CustomMockMixin, unittest.mock.MagicMock):
 fake_crews = ['Holy Knights', 'FSGood', 'Ballers', crew1_instance.name]
 fake_merit = ['0', '5', '10', '15']
 fake_rank = ['Good', 'Bad', 'Neither', 'Free']
+HK = Crew(
+    name='Holy Knights',
+    abbr='HK',
+    merit=100,
+    member_count=10,
+    leaders=['Meli'],
+    advisors=['Bob']
+)
+FSGood = Crew(
+    name='FSGood',
+    abbr='FSG',
+    merit=-100,
+    member_count=10,
+    leaders=['Cowy'],
+    advisors=['Kip']
+)
+Ballers = Crew(
+    name='Ballers',
+    abbr='BAL',
+    merit=-100,
+    member_count=10,
+    leaders=['Cowy'],
+    advisors=['Kip'],
+    overflow=True
+)
 
-
-class FakeCache:
-    def __init__(self):
-        self.crew_set = set(fake_crews)
-        self.merit_by_crew = {name: merit for name in fake_crews for merit in fake_merit}
-        self.ranks_by_crew = {name: rank for name in fake_crews for rank in fake_rank}
-
-    def crews(self):
-        return self.crew_set
+fake_cache = Cache()
 
 
 class MockSSB(CustomMockMixin, unittest.mock.MagicMock):
-    spec_set = ScoreSheetBot(bot=MockBot(), cache=FakeCache())
+    spec_set = ScoreSheetBot(bot=MockBot(), cache=fake_cache)
 
     def __init__(self, **kwargs) -> None:
-        default_kwargs = {'bot': MockBot(), 'cache': FakeCache()}
+        default_kwargs = {'bot': MockBot(), 'cache': Cache}
         super().__init__(**collections.ChainMap(kwargs, default_kwargs))
