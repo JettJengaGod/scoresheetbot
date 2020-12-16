@@ -174,11 +174,6 @@ class MockGuild(CustomMockMixin, unittest.mock.Mock, HashableMixin):
 role_data = {'name': 'role', 'id': 1}
 role_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=role_data)
 
-leader_data = {'name': 'Leader', 'id': 2}
-leader_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=leader_data)
-crew1_data = {'name': 'Crew1', 'id': 3}
-crew1_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=crew1_data)
-
 
 class MockRole(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin):
     """
@@ -460,9 +455,6 @@ class MockAsyncWebhook(CustomMockMixin, unittest.mock.MagicMock):
     additional_spec_asyncs = ("send", "edit", "delete", "execute")
 
 
-fake_crews = ['Holy Knights', 'FSGood', 'Ballers', crew1_instance.name]
-fake_merit = ['0', '5', '10', '15']
-fake_rank = ['Good', 'Bad', 'Neither', 'Free']
 HK = Crew(
     name='Holy Knights',
     abbr='HK',
@@ -488,8 +480,34 @@ Ballers = Crew(
     advisors=['Kip'],
     overflow=True
 )
+leader_data = {'name': 'Leader', 'id': 2}
+leader_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=leader_data)
+overflow_role = {'name': Ballers.name, 'id': 3}
+overflow_role_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=overflow_role)
 
 fake_cache = Cache()
+crews_by_name = {
+    HK.name: HK,
+    FSGood.name: FSGood,
+    Ballers.name: Ballers
+}
+fake_cache.crews_by_name = crews_by_name
+fake_cache.crews = crews_by_name.keys()
+
+
+class MockCache(CustomMockMixin, unittest.mock.MagicMock):
+    """
+    A MagicMock subclass to mock Cache objects.
+    Instances of this class will follow the specifications of `src.Cache` instances. For more
+    information, see the `MockGuild` docstring.
+    """
+    spec_set = message_instance
+
+    def __init__(self, **kwargs) -> None:
+        default_kwargs = {'attachments': []}
+        super().__init__(**collections.ChainMap(kwargs, default_kwargs))
+        self.author = kwargs.get('author', MockMember())
+        self.channel = kwargs.get('channel', MockTextChannel())
 
 
 class MockSSB(CustomMockMixin, unittest.mock.MagicMock):
