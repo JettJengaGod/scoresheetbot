@@ -305,8 +305,15 @@ async def promote(member: discord.Member, bot: 'ScoreSheetBot') -> str:
     return 'Advisor'
 
 
-async def demote(member: discord.Member, bot: 'ScoreSheetBot') -> None:
-    await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader)
+async def demote(member: discord.Member, bot: 'ScoreSheetBot') -> str:
+    if check_roles(member, [LEADER]):
+        await member.remove_roles(bot.cache.roles.leader)
+        await member.add_roles(bot.cache.roles.advisor)
+        return 'Leader to Advisor'
+    if check_roles(member, [ADVISOR]):
+        await member.remove_roles(bot.cache.roles.advisor)
+        return 'Advisor to Member'
+    return ''
 
 
 async def response_message(ctx: Context, msg: str):
