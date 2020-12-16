@@ -70,10 +70,10 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
             member.roles = [mocks.role_instance]
             self.assertFalse(check_roles(member, [mocks.leader_instance.name]))
         with self.subTest('One equal'):
-            member.roles = [mocks.leader_instance, mocks.crew1_instance]
+            member.roles = [mocks.leader_instance, mocks.overflow_role_instance]
             self.assertTrue(check_roles(member, [mocks.leader_instance.name]))
         with self.subTest('Both equal'):
-            member.roles = [mocks.crew1_instance, mocks.leader_instance]
+            member.roles = [mocks.overflow_role_instance, mocks.leader_instance]
             self.assertTrue(check_roles(member, [mocks.leader_instance.name, mocks.role_instance.name]))
 
     async def test_send_sheet(self):
@@ -84,20 +84,21 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
 
     def test_crew(self):
         member = mocks.MockMember(name='John', id=1)
-        hk = mocks.fake_crews[0]
-        role = mocks.MockRole(name=hk)
+        hk = mocks.HK
+        role = mocks.MockRole(name=hk.name)
         overflow_role = mocks.MockRole(name=OVERFLOW_ROLE)
-        overflow_member = mocks.MockMember(name='John', id=1, roles=[mocks.crew1_instance])
+        overflow_member = mocks.MockMember(name='John', id=1, roles=[mocks.overflow_role_instance])
         overflow_guild = mocks.MockGuild(members=[overflow_member], name=OVERFLOW_SERVER)
-        bot = mocks.MockSSB(cache=mocks.FakeCache(),
+        bot = mocks.MockSSB(cache=mocks.fake_cache,
                             bot=mocks.MockBot(guilds=[overflow_guild]))
+        bot.cache.overflow_server = overflow_guild
         with self.subTest('Not on a crew.'):
             member.roles = []
             with self.assertRaises(Exception):
                 crew(member, bot)
         with self.subTest('On a crew.'):
             member.roles = [role]
-            self.assertEqual(hk, crew(member, bot))
+            self.assertEqual(hk.name, crew(member, bot))
         with self.subTest('On overflow crew.'):
             member.roles = [overflow_role]
-            self.assertEqual(mocks.crew1_instance.name, crew(member, bot))
+            self.assertEqual(mocks.Ballers.name, crew(member, bot))
