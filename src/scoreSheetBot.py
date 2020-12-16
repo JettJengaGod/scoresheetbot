@@ -493,15 +493,15 @@ class ScoreSheetBot(commands.Cog):
     @cache_update
     async def flair(self, ctx: Context, member: discord.Member, *, new_crew: str = None):
         if check_roles(member, [BOT]):
-            await response_message(ctx, 'You can\'t flair a bot!', ctx)
+            await response_message(ctx, 'You can\'t flair a bot!')
             return
         author_pl = power_level(ctx.author)
         if author_pl == 0:
-            await response_message(ctx, 'You cannot flair users unless you are an Advisor, Leader or Staff.', ctx)
+            await response_message(ctx, 'You cannot flair users unless you are an Advisor, Leader or Staff.')
             return
         if new_crew:
             if not check_roles(ctx.author, STAFF_LIST):
-                await response_message(ctx, 'You can\'t flair people for other crews unless you are Staff.', ctx)
+                await response_message(ctx, 'You can\'t flair people for other crews unless you are Staff.')
                 return
             flairing_crew = crew_lookup(new_crew, self)
         else:
@@ -512,7 +512,7 @@ class ScoreSheetBot(commands.Cog):
             user_crew = None
 
         if member.id == ctx.author.id and user_crew == flairing_crew.name:
-            await response_message(ctx, f'Stop flairing yourself, stop flairing yourself.', ctx)
+            await response_message(ctx, f'Stop flairing yourself, stop flairing yourself.')
             return
         overflow_mem = discord.utils.get(self.cache.overflow_server.members, id=member.id)
         if flairing_crew.overflow and not overflow_mem:
