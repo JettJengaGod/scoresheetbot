@@ -23,7 +23,7 @@ input_and_expected = [
     ('banjo kazooie', 'banjo_and_kazooie'),
     ('bowser_jr2', 'larry'),
     ('ludwig8', 'ludwig'),
-    ('ludwig', 'ludwig'),
+    ('ludwig', 'bowser_jr'),
     ('olimar5', 'alph5'),
     ('fox', 'foxs'),
     ('foxs7', 'fox7'),
