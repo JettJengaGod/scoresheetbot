@@ -464,12 +464,20 @@ class ScoreSheetBot(commands.Cog):
     @cache_update
     async def unflair(self, ctx: Context, user: Optional[str]):
         if user:
-            member = user_by_id(user, self)
+            try:
+                member = user_by_id(user, self)
+            except ValueError as e:
+                await response_message(ctx, str(e))
+                return
             if not check_roles(ctx.author, STAFF_LIST):
                 if member.id == ctx.author.id:
                     await response_message(ctx, 'You can unflair yourself by typing `,unflair` with nothing after it.')
                     return
-                compare_crew_and_power(ctx.author, member, self)
+                try:
+                    compare_crew_and_power(ctx.author, member, self)
+                except ValueError as e:
+                    await response_message(ctx, str(e))
+                    return
         else:
             member = ctx.author
         user_crew = crew_lookup(crew(member, self), self)

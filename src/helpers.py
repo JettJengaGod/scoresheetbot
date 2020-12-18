@@ -120,24 +120,25 @@ def compare_crew_and_power(author: discord.Member, target: discord.Member, bot: 
     author_crew = crew(author, bot)
     target_crew = crew(target, bot)
     if author_crew is not target_crew:
-        raise Exception(f'{author.display_name} on {author_crew} cannot unflair {target.display_name} on {target_crew}')
+        raise ValueError(
+            f'{author.display_name} on {author_crew} cannot unflair {target.display_name} on {target_crew}')
     author_pl = power_level(author)
     target_pl = power_level(target)
     if author_pl == 3:
         return
     if author_pl == 2:
         if check_roles(target, [LEADER]):
-            raise Exception(
-                f'A majority of leaders must approve this unflairing. Tag the Doc Keeper role for assistance.')
+            raise ValueError(
+                f'A majority of leaders must approve unflairing leader{target.mention}. Tag the Doc Keeper role for assistance.')
         return
 
     if author_pl == 1:
         if target_pl >= author_pl:
-            raise Exception(
-                f'{author.mention} does not have enough power to unflair {target.mention} from {author_crew}.')
+            raise ValueError(
+                f'{author.mention} is not an advisor or leader on {author_crew} and cannot unflair {target.mention}.')
         return
 
-    raise Exception('You must be an advisor, leader or staff to unflair people.')
+    raise ValueError('You must be an advisor, leader or staff to unflair people.')
 
 
 def member_lookup(name: str, bot: 'ScoreSheetBot') -> Optional[discord.Member]:
