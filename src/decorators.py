@@ -107,7 +107,7 @@ def role_call(required: Iterable):
         async def wrapped_f(self, *args, **kwargs):
             ctx = args[0]
             if not check_roles(ctx.author, required):
-                await ctx.send(f'You need to be one of {required} to run this command')
+                await response_message(ctx, f'You need to be one of {required} to run {ctx.command.name}')
                 return
             return await func(self, *args, **kwargs)
 
