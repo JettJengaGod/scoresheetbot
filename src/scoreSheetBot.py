@@ -684,7 +684,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('The google sheets API isn\'t responding, wait 60 seconds and try again')
         else:
             # All other Errors not returned come here. And we can just print the default TraceBack.
-            await ctx.send(str(error))
+            await ctx.send(f'{ctx.command.name} failed because:{str(error)}.')
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
 
