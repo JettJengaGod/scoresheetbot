@@ -631,6 +631,27 @@ class ScoreSheetBot(commands.Cog):
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
+    @commands.command(**help['guide'])
+    @cache_update
+    @role_call(STAFF_LIST)
+    async def cooldown(self, ctx):
+        with open(TEMP_ROLES_FILE, 'r') as file:
+            lines = file.readlines()
+            out = []
+            current = time.time()
+            for line in lines:
+                if len(line) > 17:
+                    member_id = int(line[:line.index(' ')])
+                    reset = float(line[line.index(' ') + 1:-1])
+                    member = self.cache.scs.get_member(member_id)
+                    diff = reset - current
+                    hours = int(diff // 3600)
+                    minutes = int((diff % 3600) // 60)
+                    seconds = int(diff % 60)
+                    out.append(f'{str(member)} has {hours} hours, {minutes} minutes, {seconds} seconds'
+                               f'  left on their join cooldown.')
+        await ctx.send('\n'.join(out))
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):
         """The event triggered when an error is raised while invoking a command.
@@ -681,7 +702,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('The google sheets API isn\'t responding, wait 60 seconds and try again')
         else:
             # All other Errors not returned come here. And we can just print the default TraceBack.
-            await ctx.send(str(error))
+            await ctx.send(f'{ctx.command.name} failed because:{str(error)}.')
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
 

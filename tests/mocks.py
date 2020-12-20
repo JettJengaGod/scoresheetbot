@@ -169,6 +169,9 @@ class MockGuild(CustomMockMixin, unittest.mock.Mock, HashableMixin):
         if roles:
             self.roles.extend(roles)
 
+    def get_member(self, user_id: int) -> discord.Member:
+        return discord.utils.get(self.members, id=user_id)
+
 
 # Create a Role instance to get a realistic Mock of `discord.Role`
 role_data = {'name': 'role', 'id': 1}
