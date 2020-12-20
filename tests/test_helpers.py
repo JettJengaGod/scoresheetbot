@@ -102,3 +102,6 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
         with self.subTest('On overflow crew.'):
             member.roles = [overflow_role]
             self.assertEqual(mocks.Ballers.name, crew(member, bot))
+
+    def test_track_cycle(self):
+        pass
