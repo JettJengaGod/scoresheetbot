@@ -163,7 +163,7 @@ def member_lookup(name: str, bot: 'ScoreSheetBot') -> Optional[discord.Member]:
     if true_name:
         return bot.cache.main_members[true_name[0]]
     else:
-        raise Exception(f'{name} does not match any member in the server.')
+        raise ValueError(f'{name} does not match any member in the server.')
 
 
 def crew_lookup(crew_str: str, bot: 'ScoreSheetBot') -> Optional[Crew]:
@@ -173,7 +173,7 @@ def crew_lookup(crew_str: str, bot: 'ScoreSheetBot') -> Optional[Crew]:
     if true_crew:
         return bot.cache.crews_by_name[true_crew[0]]
     else:
-        raise Exception(f'{crew_str} does not match any crew in the server.')
+        raise ValueError(f'{crew_str} does not match any crew in the server.')
 
 
 def ambiguous_lookup(name: str, bot: 'ScoreSheetBot') -> Union[discord.Member, Crew]:

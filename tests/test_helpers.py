@@ -197,4 +197,66 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
             self.assertIsNone(compare_crew_and_power(author, target, bot))
 
     def test_user_by_id(self):
-        pass
+        bot = mocks.MockSSB(cache=mocks.fake_cache)
+        with self.subTest('Too short'):
+            with self.assertRaises(ValueError) as ve:
+                name = 'too short'
+                user_by_id(name, bot)
+            self.assertEqual(str(ve.exception), f'{name} is not a mention or an id. Try again.')
+        with self.subTest('Non int'):
+            with self.assertRaises(ValueError) as ve:
+                name = 'Abcdefghijklmnopqrstuvwxyz'
+                user_by_id(name, bot)
+            self.assertEqual(str(ve.exception), f'{name} is not a mention or an id. Try again.')
+        with self.subTest('Not on server'):
+            with self.assertRaises(ValueError) as ve:
+                name = '1234567891011121314'
+                user_by_id(name, bot)
+            self.assertEqual(str(ve.exception), f'{name} doesn\'t seem to be on '
+                                                f'this server or your input is malformed. Try @user.')
+
+    def test_member_lookup(self):
+        bot = mocks.MockSSB(cache=mocks.fake_cache)
+        with self.subTest('Mention'):
+            self.assertEqual(mocks.bob, member_lookup(mocks.bob.mention, bot))
+        with self.subTest('Exact match'):
+            self.assertEqual(mocks.bob, member_lookup(mocks.bob.name, bot))
+        with self.subTest('Close'):
+            self.assertEqual(mocks.bob, member_lookup('Bobbert', bot))
+        with self.subTest('Not here'):
+            name = 'Lalalalala'
+            with self.assertRaises(ValueError) as ve:
+                member_lookup(name, bot)
+            self.assertEqual(str(ve.exception), f'{name} does not match any member in the server.')
+
+    def test_crew_lookup(self):
+        bot = mocks.MockSSB(cache=mocks.fake_cache)
+        with self.subTest('Tag'):
+            self.assertEqual(mocks.HK, crew_lookup(mocks.HK.abbr, bot))
+
+        with self.subTest('Actual name'):
+            self.assertEqual(mocks.HK, crew_lookup(mocks.HK.name, bot))
+
+        with self.subTest('Close name'):
+            self.assertEqual(mocks.HK, crew_lookup(f'{mocks.HK.name} extr', bot))
+
+        with self.subTest('No similar'):
+            not_close = 'Random name that isn\'nt close'
+            with self.assertRaises(ValueError) as ve:
+                crew_lookup(not_close, bot)
+            self.assertEqual(str(ve.exception), f'{not_close} does not match any crew in the server.')
+
+    def test_ambiguous_lookup(self):
+
+        bot = mocks.MockSSB(cache=mocks.fake_cache)
+        with self.subTest('Tag'):
+            self.assertEqual(mocks.HK, ambiguous_lookup(mocks.HK.abbr, bot))
+        with self.subTest('Mention'):
+            self.assertEqual(mocks.bob, ambiguous_lookup(mocks.bob.mention, bot))
+        with self.subTest('Crew'):
+            self.assertEqual(mocks.HK, ambiguous_lookup(mocks.HK.name, bot))
+        with self.subTest('Member'):
+            self.assertEqual(mocks.bob, ambiguous_lookup(mocks.bob.name, bot))
+        with self.subTest('Member close'):
+            self.assertEqual(mocks.bob, ambiguous_lookup(f'{mocks.bob.name} suffix', bot))
+

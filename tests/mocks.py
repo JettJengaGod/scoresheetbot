@@ -247,9 +247,6 @@ class MockMember(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin
         if roles:
             self.roles.extend(roles)
 
-        if 'mention' not in kwargs:
-            self.mention = f"@{self.name}"
-
     async def add_roles(self, *roles: discord.Role, reason=None):
         for role in roles:
             if role not in self.roles:
@@ -260,8 +257,13 @@ class MockMember(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin
             if role in self.roles:
                 self.roles.remove(role)
 
+    @property
+    def mention(self) -> str:
+        return f'<@!{self.id}>'
 
-# Create a User instance to get a realistic Mock of `discord.User`
+    # Create a User instance to get a realistic Mock of `discord.User`
+
+
 user_instance = discord.User(data=unittest.mock.MagicMock(), state=unittest.mock.MagicMock())
 
 
@@ -511,6 +513,7 @@ overflow_role_instance = discord.Role(guild=guild_instance, state=unittest.mock.
 hk_role = MockRole(name=HK.name)
 fsg_role = MockRole(name=FSGood.name)
 fake_cache = Cache()
+fake_cache.scs = MockGuild()
 crews_by_name = {
     HK.name: HK,
     FSGood.name: FSGood,
@@ -518,6 +521,11 @@ crews_by_name = {
 }
 fake_cache.crews_by_name = crews_by_name
 fake_cache.crews = crews_by_name.keys()
+fake_cache.crews_by_tag = {crew.abbr.lower(): crew for crew in fake_cache.crews_by_name.values()}
+bob = MockMember(name='Bob#0001', id=int('1' * 17), display_name='Bob')
+joe = MockMember(name='Joe#1234', id=int('2' * 17), display_name='Joe')
+fake_cache.scs.members = [bob, joe]
+fake_cache.main_members = fake_cache.members_by_name(fake_cache.scs.members)
 
 
 class MockCache(CustomMockMixin, unittest.mock.MagicMock):
