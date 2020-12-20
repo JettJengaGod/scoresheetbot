@@ -657,10 +657,10 @@ class ScoreSheetBot(commands.Cog):
                                f'  left on their join cooldown.')
         output = split_on_length_and_separator('\n'.join(out), length=2000, separator='\n')
         for person in self.cache.scs.members:
-            if JOIN_CD in person.roles:
+            if check_roles(person, [JOIN_CD]):
                 if person.id not in current_cooldown:
-                    await member.remove_roles(self.cache.roles.join_cd)
-                    await self.cache.channels.flair_log.send(f'{member.display_name}\'s join cooldown ended.')
+                    await person.remove_roles(self.cache.roles.join_cd)
+                    await self.cache.channels.flair_log.send(f'{person.display_name}\'s join cooldown ended.')
 
         for put in output:
             await ctx.send(put)
