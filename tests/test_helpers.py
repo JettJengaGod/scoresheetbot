@@ -54,13 +54,13 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
 
     def test_usable_emoji(self):
         emoji = mocks.emoji_instance
-        bot = mocks.MockBot(emojis = [emoji])
+        bot = mocks.MockBot(emojis=[emoji])
 
         self.assertTrue(is_usable_emoji(f'<:{emoji.name}:{emoji.id}>', bot))
 
     def test_unusable_emoji(self):
 
-        bot = mocks.MockBot(emojis = [mocks.emoji_instance])
+        bot = mocks.MockBot(emojis=[mocks.emoji_instance])
         self.assertFalse(is_usable_emoji('<:fake:123>', bot))
         self.assertFalse(is_usable_emoji('bad', bot))
 
@@ -103,5 +103,98 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
             member.roles = [overflow_role]
             self.assertEqual(mocks.Ballers.name, crew(member, bot))
 
-    def test_track_cycle(self):
+    async def test_track_cycle(self):
+        member = mocks.MockMember()
+        scs = mocks.MockGuild(roles=mocks.tracks)
+        with self.subTest('No track'):
+            res = await track_cycle(member, scs)
+            self.assertEqual(0, res)
+            self.assertIn(mocks.track1, member.roles)
+
+        with self.subTest('Track 1->2'):
+            member.roles = [mocks.track1]
+            res = await track_cycle(member, scs)
+            self.assertEqual(1, res)
+            self.assertIn(mocks.track2, member.roles)
+            self.assertNotIn(mocks.track1, member.roles)
+
+        with self.subTest('Track 2->3'):
+            member.roles = [mocks.track2]
+            res = await track_cycle(member, scs)
+            self.assertEqual(2, res)
+            self.assertIn(mocks.track3, member.roles)
+            self.assertNotIn(mocks.track2, member.roles)
+
+        with self.subTest('Track 3'):
+            member.roles = [mocks.track3]
+            res = await track_cycle(member, scs)
+            self.assertEqual(3, res)
+
+        with self.subTest('full'):
+            member.roles = [mocks.true_locked]
+            res = await track_cycle(member, scs)
+            self.assertEqual(3, res)
+
+    def test_power_level(self):
+        member = mocks.MockMember()
+        with self.subTest('No power'):
+            self.assertEqual(0, power_level(member))
+        with self.subTest('Advisor'):
+            member.roles = [mocks.advisor]
+            self.assertEqual(1, power_level(member))
+        with self.subTest('Leader'):
+            member.roles = [mocks.advisor, mocks.leader]
+            self.assertEqual(2, power_level(member))
+        with self.subTest('Admin'):
+            member.roles = [mocks.advisor, mocks.leader, mocks.admin]
+            self.assertEqual(3, power_level(member))
+
+    def test_compare_crew_and_power(self):
+        author = mocks.MockMember(display_name='Bob')
+        target = mocks.MockMember(display_name='Joe')
+        bot = mocks.MockSSB(cache=mocks.fake_cache)
+        with self.subTest('Different crews'):
+            author.roles = [mocks.hk_role]
+            target.roles = [mocks.fsg_role]
+            with self.assertRaises(ValueError) as ve:
+                compare_crew_and_power(author, target, bot)
+            self.assertEqual(str(ve.exception), f'{author.display_name} on {mocks.hk_role.name} '
+                                                f'cannot unflair {target.display_name} on {mocks.fsg_role.name}')
+        with self.subTest('Admin'):
+            author.roles = [mocks.admin]
+            target.roles = [mocks.fsg_role]
+            self.assertIsNone(compare_crew_and_power(author, target, bot))
+        with self.subTest('Leader:Leader'):
+            author.roles = [mocks.hk_role, mocks.leader]
+            target.roles = [mocks.hk_role, mocks.leader]
+            with self.assertRaises(ValueError) as ve:
+                compare_crew_and_power(author, target, bot)
+            self.assertEqual(str(ve.exception), f'A majority of leaders must approve unflairing leader{target.mention}.'
+                                                f' Tag the Doc Keeper role for assistance.')
+        with self.subTest('Advisor:Advisor'):
+            author.roles = [mocks.hk_role, mocks.advisor]
+            target.roles = [mocks.hk_role, mocks.advisor]
+            with self.assertRaises(ValueError) as ve:
+                compare_crew_and_power(author, target, bot)
+            self.assertEqual(str(ve.exception), f' cannot unflair {target.mention} as you are not powerful enough.')
+        with self.subTest('No power.'):
+            author.roles = [mocks.hk_role]
+            target.roles = [mocks.hk_role]
+            with self.assertRaises(ValueError) as ve:
+                compare_crew_and_power(author, target, bot)
+            self.assertEqual(str(ve.exception), 'You must be an advisor, leader or staff to unflair others.')
+        with self.subTest('Leader:Advisor'):
+            author.roles = [mocks.hk_role, mocks.leader]
+            target.roles = [mocks.hk_role, mocks.advisor]
+            self.assertIsNone(compare_crew_and_power(author, target, bot))
+        with self.subTest('Leader:Nothing'):
+            author.roles = [mocks.hk_role, mocks.leader]
+            target.roles = [mocks.hk_role]
+            self.assertIsNone(compare_crew_and_power(author, target, bot))
+        with self.subTest('Advisor:Nothing'):
+            author.roles = [mocks.hk_role, mocks.advisor]
+            target.roles = [mocks.hk_role]
+            self.assertIsNone(compare_crew_and_power(author, target, bot))
+
+    def test_user_by_id(self):
         pass

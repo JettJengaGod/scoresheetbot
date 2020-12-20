@@ -13,6 +13,7 @@ from discord.ext.commands import Context
 from src.cache import Cache
 from src.scoreSheetBot import ScoreSheetBot
 from src.crew import Crew
+from src.constants import *
 
 
 class EqualityComparable:
@@ -214,6 +215,16 @@ class MockRole(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin):
         return self.position >= other.position
 
 
+# Roles
+track1 = MockRole(name=TRACK[0])
+track2 = MockRole(name=TRACK[1])
+track3 = MockRole(name=TRACK[2])
+true_locked = MockRole(name=TRUE_LOCKED)
+tracks = [track1, track2, track3, true_locked]
+advisor = MockRole(name=ADVISOR)
+leader = MockRole(name=LEADER)
+admin = MockRole(name=ADMIN)
+
 # Create a Member instance to get a realistic Mock of `discord.Member`
 member_data = {'user': 'lemon', 'roles': [1]}
 state_mock = unittest.mock.MagicMock()
@@ -238,6 +249,16 @@ class MockMember(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin
 
         if 'mention' not in kwargs:
             self.mention = f"@{self.name}"
+
+    async def add_roles(self, *roles: discord.Role, reason=None):
+        for role in roles:
+            if role not in self.roles:
+                self.roles.append(role)
+
+    async def remove_roles(self, *roles: discord.Role, reason=None):
+        for role in roles:
+            if role in self.roles:
+                self.roles.remove(role)
 
 
 # Create a User instance to get a realistic Mock of `discord.User`
@@ -487,7 +508,8 @@ leader_data = {'name': 'Leader', 'id': 2}
 leader_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=leader_data)
 overflow_role = {'name': Ballers.name, 'id': 3}
 overflow_role_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=overflow_role)
-
+hk_role = MockRole(name=HK.name)
+fsg_role = MockRole(name=FSGood.name)
 fake_cache = Cache()
 crews_by_name = {
     HK.name: HK,

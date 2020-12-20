@@ -117,28 +117,42 @@ def power_level(user: discord.Member):
 
 
 def compare_crew_and_power(author: discord.Member, target: discord.Member, bot: 'ScoreSheetBot') -> None:
+    author_pl = power_level(author)
+    if author_pl == 3:
+        return
     author_crew = crew(author, bot)
     target_crew = crew(target, bot)
     if author_crew is not target_crew:
         raise ValueError(
             f'{author.display_name} on {author_crew} cannot unflair {target.display_name} on {target_crew}')
-    author_pl = power_level(author)
     target_pl = power_level(target)
-    if author_pl == 3:
-        return
     if author_pl == 2:
         if check_roles(target, [LEADER]):
             raise ValueError(
-                f'A majority of leaders must approve unflairing leader{target.mention}. Tag the Doc Keeper role for assistance.')
+                f'A majority of leaders must approve unflairing leader{target.mention}.'
+                f' Tag the Doc Keeper role for assistance.')
         return
 
     if author_pl == 1:
         if target_pl >= author_pl:
             raise ValueError(
-                f'{author.mention} is not an advisor or leader on {author_crew} and cannot unflair {target.mention}.')
+                f' cannot unflair {target.mention} as you are not powerful enough.')
         return
 
-    raise ValueError('You must be an advisor, leader or staff to unflair people.')
+    raise ValueError('You must be an advisor, leader or staff to unflair others.')
+
+
+def user_by_id(name: str, bot: 'ScoreSheetBot') -> discord.Member:
+    if len(name) < 17:
+        raise ValueError(f'{name} is not a mention or an id. Try again.')
+    try:
+        id = int(name.strip("<!@>"))
+    except ValueError:
+        raise ValueError(f'{name} is not a mention or an id. Try again.')
+    user = bot.cache.scs.get_member(id)
+    if user:
+        return user
+    raise ValueError(f'{name} doesn\'t seem to be on this server or your input is malformed. Try @user.')
 
 
 def member_lookup(name: str, bot: 'ScoreSheetBot') -> Optional[discord.Member]:
@@ -160,19 +174,6 @@ def crew_lookup(crew_str: str, bot: 'ScoreSheetBot') -> Optional[Crew]:
         return bot.cache.crews_by_name[true_crew[0]]
     else:
         raise Exception(f'{crew_str} does not match any crew in the server.')
-
-
-def user_by_id(name: str, bot: 'ScoreSheetBot') -> discord.Member:
-    if len(name) < 17:
-        raise ValueError(f'{name} is not a mention or an id. Try again.')
-    try:
-        id = int(name.strip("<!@>"))
-    except ValueError:
-        raise ValueError(f'{name} is not a mention or an id. Try again.')
-    user = bot.cache.scs.get_member(id)
-    if user:
-        return user
-    raise ValueError(f'{name} doesn\'t seem to be on this server or your input is malformed. Try @user.')
 
 
 def ambiguous_lookup(name: str, bot: 'ScoreSheetBot') -> Union[discord.Member, Crew]:
