@@ -713,7 +713,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'"{ctx.command}" did not work because:{error.message}')
         elif isinstance(error, discord.ext.commands.errors.MemberNotFound):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} failed because:{str(error)}\n'
-                           f'Try using {ctx.command.name} @Member.')
+                           f'Try using `{self.bot.command_prefix}{ctx.command.name} @Member`.')
         elif str(error) == 'The read operation timed out':
             await ctx.send('The google sheets API isn\'t responding, wait 60 seconds and try again')
         else:
