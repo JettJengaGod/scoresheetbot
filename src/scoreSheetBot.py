@@ -638,6 +638,7 @@ class ScoreSheetBot(commands.Cog):
     @cache_update
     @role_call(STAFF_LIST)
     async def cooldown(self, ctx):
+        current_cooldown = set()
         with open(TEMP_ROLES_FILE, 'r') as file:
             lines = file.readlines()
             out = []
@@ -647,6 +648,7 @@ class ScoreSheetBot(commands.Cog):
                     member_id = int(line[:line.index(' ')])
                     reset = float(line[line.index(' ') + 1:-1])
                     member = self.cache.scs.get_member(member_id)
+                    current_cooldown.add(member_id)
                     diff = reset - current
                     hours = int(diff // 3600)
                     minutes = int((diff % 3600) // 60)
@@ -654,6 +656,12 @@ class ScoreSheetBot(commands.Cog):
                     out.append(f'{str(member)} has {hours} hours, {minutes} minutes, {seconds} seconds'
                                f'  left on their join cooldown.')
         output = split_on_length_and_separator('\n'.join(out), length=2000, separator='\n')
+        for person in self.cache.scs.members:
+            if JOIN_CD in person.roles:
+                if person.id not in current_cooldown:
+                    await member.remove_roles(self.cache.roles.join_cd)
+                    await self.cache.channels.flair_log.send(f'{member.display_name}\'s join cooldown ended.')
+
         for put in output:
             await ctx.send(put)
 
