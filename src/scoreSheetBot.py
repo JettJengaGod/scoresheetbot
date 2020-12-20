@@ -650,7 +650,9 @@ class ScoreSheetBot(commands.Cog):
                     seconds = int(diff % 60)
                     out.append(f'{str(member)} has {hours} hours, {minutes} minutes, {seconds} seconds'
                                f'  left on their join cooldown.')
-        await ctx.send('\n'.join(out))
+        output = split_on_length_and_separator('\n'.join(out), length=2000, separator='\n')
+        for put in output:
+            await ctx.send(put)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):
