@@ -1,4 +1,4 @@
-from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING
+from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
@@ -197,9 +197,8 @@ def strip_non_ascii(text: str) -> str:
     return decode_string
 
 
-def add_join_cd(member: discord.Member):
-    file = open(TEMP_ROLES_FILE, 'a')
-    file.write(f'{member.id} {time.time() + COOLDOW_TIME_SECONDS}\n')
+def add_join_cd(member: discord.Member, file: TextIO):
+    file.write(f'{member.id} {time.time() + COOLDOWN_TIME_SECONDS}\n')
 
 
 async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot'):
@@ -225,10 +224,10 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         await member.remove_roles(bot.cache.roles.track3)
         await member.add_roles(bot.cache.roles.true_locked)
         pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
-        flairing_info = discord.utils.get(bot.cache.scs.channels, name='flairing_info')
+        flairing_info = bot.cache.channels.flair_log
         await flairing_info.send(f'{pepper.mention} {member.mention} is {TRUE_LOCKED}.')
     await member.add_roles(bot.cache.roles.join_cd)
-    add_join_cd(member)
+    add_join_cd(member, open(TEMP_ROLES_FILE, 'a'))
 
 
 async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreSheetBot'):

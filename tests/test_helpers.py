@@ -1,6 +1,8 @@
 import unittest
 from src.helpers import *
 from tests import mocks
+from io import StringIO
+from freezegun import freeze_time
 
 
 class HelpersTest(unittest.IsolatedAsyncioTestCase):
@@ -83,15 +85,10 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
         channel.send.assert_called_once()
 
     def test_crew(self):
-        member = mocks.MockMember(name='John', id=1)
+        member = mocks.MockMember(name='Steve', id=int('4' * 17))
         hk = mocks.HK
         role = mocks.MockRole(name=hk.name)
-        overflow_role = mocks.MockRole(name=OVERFLOW_ROLE)
-        overflow_member = mocks.MockMember(name='John', id=1, roles=[mocks.overflow_role_instance])
-        overflow_guild = mocks.MockGuild(members=[overflow_member], name=OVERFLOW_SERVER)
-        bot = mocks.MockSSB(cache=mocks.fake_cache,
-                            bot=mocks.MockBot(guilds=[overflow_guild]))
-        bot.cache.overflow_server = overflow_guild
+        bot = mocks.MockSSB(cache=mocks.cache())
         with self.subTest('Not on a crew.'):
             member.roles = []
             with self.assertRaises(Exception):
@@ -100,7 +97,9 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
             member.roles = [role]
             self.assertEqual(hk.name, crew(member, bot))
         with self.subTest('On overflow crew.'):
-            member.roles = [overflow_role]
+            member.roles = [bot.cache.roles.overflow]
+            of_member = mocks.MockMember(name='Steve', id=int('4' * 17), roles=[mocks.ballers_role])
+            bot.cache.overflow_server.members.append(of_member)
             self.assertEqual(mocks.Ballers.name, crew(member, bot))
 
     async def test_track_cycle(self):
@@ -152,7 +151,7 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
     def test_compare_crew_and_power(self):
         author = mocks.MockMember(display_name='Bob')
         target = mocks.MockMember(display_name='Joe')
-        bot = mocks.MockSSB(cache=mocks.fake_cache)
+        bot = mocks.MockSSB(cache=mocks.cache())
         with self.subTest('Different crews'):
             author.roles = [mocks.hk_role]
             target.roles = [mocks.fsg_role]
@@ -197,7 +196,7 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
             self.assertIsNone(compare_crew_and_power(author, target, bot))
 
     def test_user_by_id(self):
-        bot = mocks.MockSSB(cache=mocks.fake_cache)
+        bot = mocks.MockSSB(cache=mocks.cache())
         with self.subTest('Too short'):
             with self.assertRaises(ValueError) as ve:
                 name = 'too short'
@@ -216,7 +215,7 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
                                                 f'this server or your input is malformed. Try @user.')
 
     def test_member_lookup(self):
-        bot = mocks.MockSSB(cache=mocks.fake_cache)
+        bot = mocks.MockSSB(cache=mocks.cache())
         with self.subTest('Mention'):
             self.assertEqual(mocks.bob, member_lookup(mocks.bob.mention, bot))
         with self.subTest('Exact match'):
@@ -230,7 +229,7 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(str(ve.exception), f'{name} does not match any member in the server.')
 
     def test_crew_lookup(self):
-        bot = mocks.MockSSB(cache=mocks.fake_cache)
+        bot = mocks.MockSSB(cache=mocks.cache())
         with self.subTest('Tag'):
             self.assertEqual(mocks.HK, crew_lookup(mocks.HK.abbr, bot))
 
@@ -248,7 +247,7 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
 
     def test_ambiguous_lookup(self):
 
-        bot = mocks.MockSSB(cache=mocks.fake_cache)
+        bot = mocks.MockSSB(cache=mocks.cache())
         with self.subTest('Tag'):
             self.assertEqual(mocks.HK, ambiguous_lookup(mocks.HK.abbr, bot))
         with self.subTest('Mention'):
@@ -260,3 +259,50 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
         with self.subTest('Member close'):
             self.assertEqual(mocks.bob, ambiguous_lookup(f'{mocks.bob.name} suffix', bot))
 
+    @freeze_time(datetime(year=1, month=7, day=12,
+                          hour=15, minute=6, second=3))
+    def test_add_join_cd(self):
+        outfile = StringIO()
+        add_join_cd(mocks.bob, outfile)
+        outfile.seek(0)
+        content = outfile.read()
+        self.assertEqual(content, f'{mocks.bob.id} {time.time() + COOLDOWN_TIME_SECONDS}\n')
+
+    async def test_flair(self):
+        bot = mocks.MockSSB(cache=mocks.cache())
+        bob = mocks.MockMember(name='bob', id=1)
+        with self.subTest('True Locked'):
+            bob.roles = [mocks.MockRole(name=TRUE_LOCKED)]
+            with self.assertRaises(ValueError) as ve:
+                await flair(bob, mocks.HK, bot)
+            self.assertEqual(str(ve.exception),
+                             f'{bob.display_name} cannot be flaired because they are {TRUE_LOCKED}.')
+        with self.subTest('Join CD'):
+            bob.roles = [mocks.MockRole(name=JOIN_CD)]
+            with self.assertRaises(ValueError) as ve:
+                await flair(bob, mocks.HK, bot)
+            self.assertEqual(str(ve.exception),
+                             f'{bob.display_name} cannot be flaired because they have {JOIN_CD}.')
+        with self.subTest('Free Agent non overflow.'):
+            bob.roles = [bot.cache.roles.free_agent]
+            await flair(bob, mocks.HK, bot)
+            after = set(bob.roles)
+            expected = {mocks.hk_role, bot.cache.roles.join_cd}
+            self.assertEqual(expected, after)
+        with self.subTest('Track 2 non overflow.'):
+            bob.roles = [bot.cache.roles.track3]
+            await flair(bob, mocks.HK, bot)
+            after = set(bob.roles)
+            expected = {mocks.hk_role, bot.cache.roles.join_cd, bot.cache.roles.true_locked}
+            self.assertEqual(expected, after)
+        with self.subTest('Overflow.'):
+            overflow_bob = mocks.MockMember(name='bob', id=1)
+            bob.roles = [bot.cache.roles.overflow]
+            bot.cache.overflow_server.members = [overflow_bob]
+            await flair(bob, mocks.Ballers, bot)
+            after_main = set(bob.roles)
+            expected_main = {bot.cache.roles.join_cd, bot.cache.roles.overflow}
+            self.assertEqual(expected_main, after_main)
+            after_overflow = set(overflow_bob.roles)
+
+            self.assertIn(mocks.ballers_role, after_overflow)
