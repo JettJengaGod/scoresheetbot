@@ -9,8 +9,8 @@ def ss_channel(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        if 'ultimate_cb' not in ctx.channel.name and 'scoresheet_bot' not in ctx.channel.name:
-            await ctx.send('Cannot use this bot in this channel, try a scoresheet_bot channel.')
+        if '⚔' not in ctx.channel.name:
+            await ctx.send('Cannot use this bot in this channel, try a channel with `⚔` in the channel name.')
             return
         return await func(self, *args, **kwargs)
 
