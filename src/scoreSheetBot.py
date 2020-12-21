@@ -477,6 +477,18 @@ class ScoreSheetBot(commands.Cog):
                     return
         else:
             member = ctx.author
+        if check_roles(member, [OVERFLOW_ROLE]):
+            before = set(member.roles)
+            await member.edit(nick=nick_without_prefix(member.display_name))
+            await member.remove_roles(self.cache.roles.overflow)
+            await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader)
+            await track_cycle(member, self.cache.scs)
+            after = set(ctx.guild.get_member(member.id).roles)
+            await response_message(ctx, f'Successfully unflaired {member.mention} from an overflow crew, '
+                                        f'but they have left the overflow server so it\'s unclear which.')
+            await self.cache.channels.flair_log.send(
+                embed=role_change(before, after, ctx.author, member))
+            return
         user_crew = crew_lookup(crew(member, self), self)
         of_before, of_after = None, None
         if user_crew.overflow:
