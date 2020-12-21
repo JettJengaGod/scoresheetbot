@@ -504,17 +504,17 @@ class ScoreSheetBot(commands.Cog):
         if author_pl == 0:
             await response_message(ctx, 'You cannot flair users unless you are an Advisor, Leader or Staff.')
             return
-        if new_crew:
-            if not check_roles(ctx.author, STAFF_LIST):
-                await response_message(ctx, 'You can\'t flair people for other crews unless you are Staff.')
-                return
-            flairing_crew = crew_lookup(new_crew, self)
-        else:
-            flairing_crew = crew_lookup(crew(ctx.author, self), self)
         try:
             user_crew = crew(member, self)
         except ValueError:
             user_crew = None
+        if new_crew:
+            flairing_crew = crew_lookup(new_crew, self)
+            if flairing_crew.name != user_crew and not check_roles(ctx.author, STAFF_LIST):
+                await response_message(ctx, 'You can\'t flair people for other crews unless you are Staff.')
+                return
+        else:
+            flairing_crew = crew_lookup(crew(ctx.author, self), self)
 
         if member.id == ctx.author.id and user_crew == flairing_crew.name:
             await response_message(ctx, f'Stop flairing yourself, stop flairing yourself.')

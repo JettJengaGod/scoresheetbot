@@ -1,4 +1,4 @@
-from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING
+from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO
 
 if TYPE_CHECKING:
     from scoreSheetBot import ScoreSheetBot
@@ -117,49 +117,29 @@ def power_level(user: discord.Member):
 
 
 def compare_crew_and_power(author: discord.Member, target: discord.Member, bot: 'ScoreSheetBot') -> None:
+    author_pl = power_level(author)
+    if author_pl == 3:
+        return
     author_crew = crew(author, bot)
     target_crew = crew(target, bot)
     if author_crew is not target_crew:
         raise ValueError(
             f'{author.display_name} on {author_crew} cannot unflair {target.display_name} on {target_crew}')
-    author_pl = power_level(author)
     target_pl = power_level(target)
-    if author_pl == 3:
-        return
     if author_pl == 2:
         if check_roles(target, [LEADER]):
             raise ValueError(
-                f'A majority of leaders must approve unflairing leader{target.mention}. Tag the Doc Keeper role for assistance.')
+                f'A majority of leaders must approve unflairing leader{target.mention}.'
+                f' Tag the Doc Keeper role for assistance.')
         return
 
     if author_pl == 1:
         if target_pl >= author_pl:
             raise ValueError(
-                f'{author.mention} is not an advisor or leader on {author_crew} and cannot unflair {target.mention}.')
+                f' cannot unflair {target.mention} as you are not powerful enough.')
         return
 
-    raise ValueError('You must be an advisor, leader or staff to unflair people.')
-
-
-def member_lookup(name: str, bot: 'ScoreSheetBot') -> Optional[discord.Member]:
-    if len(name) >= 17:
-        if (name.startswith('<') and name.endswith('>')) or name.isdigit():
-            return user_by_id(name, bot)
-    true_name = process.extractOne(name, bot.cache.main_members.keys(), scorer=fuzz.ratio, score_cutoff=30)
-    if true_name:
-        return bot.cache.main_members[true_name[0]]
-    else:
-        raise Exception(f'{name} does not match any member in the server.')
-
-
-def crew_lookup(crew_str: str, bot: 'ScoreSheetBot') -> Optional[Crew]:
-    if crew_str.lower() in bot.cache.crews_by_tag:
-        return bot.cache.crews_by_tag[crew_str.lower()]
-    true_crew = process.extractOne(crew_str, bot.cache.crews_by_name.keys(), score_cutoff=40)
-    if true_crew:
-        return bot.cache.crews_by_name[true_crew[0]]
-    else:
-        raise Exception(f'{crew_str} does not match any crew in the server.')
+    raise ValueError('You must be an advisor, leader or staff to unflair others.')
 
 
 def user_by_id(name: str, bot: 'ScoreSheetBot') -> discord.Member:
@@ -173,6 +153,27 @@ def user_by_id(name: str, bot: 'ScoreSheetBot') -> discord.Member:
     if user:
         return user
     raise ValueError(f'{name} doesn\'t seem to be on this server or your input is malformed. Try @user.')
+
+
+def member_lookup(name: str, bot: 'ScoreSheetBot') -> Optional[discord.Member]:
+    if len(name) >= 17:
+        if (name.startswith('<') and name.endswith('>')) or name.isdigit():
+            return user_by_id(name, bot)
+    true_name = process.extractOne(name, bot.cache.main_members.keys(), scorer=fuzz.ratio, score_cutoff=30)
+    if true_name:
+        return bot.cache.main_members[true_name[0]]
+    else:
+        raise ValueError(f'{name} does not match any member in the server.')
+
+
+def crew_lookup(crew_str: str, bot: 'ScoreSheetBot') -> Optional[Crew]:
+    if crew_str.lower() in bot.cache.crews_by_tag:
+        return bot.cache.crews_by_tag[crew_str.lower()]
+    true_crew = process.extractOne(crew_str, bot.cache.crews_by_name.keys(), score_cutoff=40)
+    if true_crew:
+        return bot.cache.crews_by_name[true_crew[0]]
+    else:
+        raise ValueError(f'{crew_str} does not match any crew in the server.')
 
 
 def ambiguous_lookup(name: str, bot: 'ScoreSheetBot') -> Union[discord.Member, Crew]:
@@ -196,9 +197,8 @@ def strip_non_ascii(text: str) -> str:
     return decode_string
 
 
-def add_join_cd(member: discord.Member):
-    file = open(TEMP_ROLES_FILE, 'a')
-    file.write(f'{member.id} {time.time() + COOLDOW_TIME_SECONDS}\n')
+def add_join_cd(member: discord.Member, file: TextIO):
+    file.write(f'{member.id} {time.time() + COOLDOWN_TIME_SECONDS}\n')
 
 
 async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot'):
@@ -224,10 +224,10 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         await member.remove_roles(bot.cache.roles.track3)
         await member.add_roles(bot.cache.roles.true_locked)
         pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
-        flairing_info = discord.utils.get(bot.cache.scs.channels, name='flairing_info')
+        flairing_info = bot.cache.channels.flair_log
         await flairing_info.send(f'{pepper.mention} {member.mention} is {TRUE_LOCKED}.')
     await member.add_roles(bot.cache.roles.join_cd)
-    add_join_cd(member)
+    add_join_cd(member, open(TEMP_ROLES_FILE, 'a'))
 
 
 async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreSheetBot'):
