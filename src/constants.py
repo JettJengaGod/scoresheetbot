@@ -19,10 +19,14 @@ BOT = 'Bots'
 DOCS_UPDATES = 'scs_docs_updates'
 JOIN_CD = '24h Join Cooldown'
 FLAIRING_LOGS = 'jettbot_flairing_logs'
+POWER_MERGE = '! Verify Power Merges !'
+FLAIR_VERIFY = '! Verify Flair Change !'
+PLAYOFF_LIMITED = 'Playoff Limited'
 FLAIRING_QUESTIONS_ID = 786842350822490122
 COOLDOWN_TIME_SECONDS = 60 * 60 * 24  # 24 Hours
 TEMP_ROLES_FILE = 'temp_roles.txt'
 FLAIRING_CHANNEL_NAME = 'crew_flairing'
+FLAIRING_INFO = 'flairing_info'
 STAFF_LIST = [DOCS, MINION, ADMIN]
 EXPECTED_NON_CREW_ROLES = {
     LEADER,

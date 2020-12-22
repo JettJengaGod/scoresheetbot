@@ -71,6 +71,7 @@ class Cache:
             true_locked = discord.utils.get(server.roles, name=TRUE_LOCKED)
             free_agent = discord.utils.get(server.roles, name=FREE_AGENT)
             join_cd = discord.utils.get(server.roles, name=JOIN_CD)
+            playoff = discord.utils.get(server.roles, name=PLAYOFF_LIMITED)
 
         return Roles
 
@@ -79,6 +80,7 @@ class Cache:
         class Channels:
             flair_log = discord.utils.get(server.channels, name=FLAIRING_LOGS)
             flairing_questions = discord.utils.get(server.channels, id=FLAIRING_QUESTIONS_ID)
+            flairing_info = discord.utils.get(server.channels, name=FLAIRING_INFO)
 
         return Channels
 
