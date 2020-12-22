@@ -282,6 +282,10 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'What you put: {string_to_emote(emoji, self.bot)}')
             await ctx.send(f'All alts in order: {all_alts(emoji, self.bot)}')
 
+    @commands.command()
+    async def thank(self, ctx: Context):
+        await ctx.send(f'Thanks for all the work you do on the bot alexjett!')
+
     @commands.command(**help['crew'])
     @main_only
     @cache_update
@@ -298,11 +302,11 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
         await ctx.send(embed=actual_crew.embed)
 
-    @commands.command(**help['non_crew'])
+    @commands.command()
     @main_only
     @role_call(STAFF_LIST)
     @cache_update
-    async def non_crew(self, ctx, *, name: str = None):
+    async def non_crew(self, ctx):
         out = [f'```Main server non crew roles: \n']
         for role in self.cache.non_crew_roles_main:
             guess = crew_lookup(role, self)
@@ -557,8 +561,11 @@ class ScoreSheetBot(commands.Cog):
                 await response_message(ctx, f'{member.display_name} '
                                             f'must be unflaired for their current crew before they can be flaired. ')
                 return
-
-        await flair(member, flairing_crew, self)
+        try:
+            await flair(member, flairing_crew, self)
+        except ValueError as ve:
+            await response_message(ctx, str(ve))
+            return
         await response_message(ctx, f'Successfully flaired {member.mention} for {flairing_crew.name}.')
 
         after = set(ctx.guild.get_member(member.id).roles)
@@ -568,7 +575,7 @@ class ScoreSheetBot(commands.Cog):
         await self.cache.channels.flair_log.send(
             embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
-    @commands.command(**help['overflow'])
+    @commands.command()
     @cache_update
     @role_call([ADMIN, MINION])
     async def overflow(self, ctx: Context):
@@ -618,6 +625,37 @@ class ScoreSheetBot(commands.Cog):
                 chan = discord.utils.get(ctx.guild.channels, name=channel_from_key(channel))
                 await ctx.send(chan.mention)
                 await send_sheet(ctx, battle)
+
+    @commands.command()
+    @cache_update
+    @role_call([LEADER, ADMIN, MINION, ADVISOR, DOCS])
+    async def playoffs(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+        allowed = []
+        disallowed = []
+        for member in self.cache.scs.members:
+            try:
+                cr = crew(member, self)
+            except ValueError:
+                cr = None
+            if cr == actual_crew.name:
+                if check_roles(member, [PLAYOFF_LIMITED]):
+                    disallowed.append(member.mention)
+                else:
+                    allowed.append(member.mention)
+        desc = [f'Allowed players ({len(allowed)}):', ','.join(allowed), f'Disallowed players ({len(disallowed)}):',
+                ','.join(disallowed)]
+        out = discord.Embed(title=f'Eligibility of {actual_crew.name} players for playoffs',
+                            description='\n'.join(desc), color=actual_crew.color)
+
+        await ctx.send(embed=out)
 
     @commands.command(**help['recache'])
     @role_call(STAFF_LIST)

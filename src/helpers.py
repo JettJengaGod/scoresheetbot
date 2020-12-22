@@ -82,7 +82,8 @@ def crew(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
     roles = user.roles
     if any((role.name == OVERFLOW_ROLE for role in roles)):
         overflow_user = bot.cache.overflow_server.get_member(user.id)
-        roles = overflow_user.roles
+        if overflow_user:
+            roles = overflow_user.roles
 
     for role in roles:
         if role.name in bot.cache.crews:
@@ -203,10 +204,19 @@ def add_join_cd(member: discord.Member, file: TextIO):
 
 async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot'):
     if check_roles(member, [TRUE_LOCKED]):
-        raise ValueError(f'{member.display_name} cannot be flaired because they are {TRUE_LOCKED}.')
+        raise ValueError(f'{member.mention} cannot be flaired because they are {TRUE_LOCKED}.')
 
     if check_roles(member, [JOIN_CD]):
-        raise ValueError(f'{member.display_name} cannot be flaired because they have {JOIN_CD}.')
+        raise ValueError(f'{member.mention} cannot be flaired because they have {JOIN_CD}.')
+
+    if check_roles(member, [POWER_MERGE]):
+        raise ValueError(f'{member.mention} cannot be flaired because they are a potential power merge.\n'
+                         f'Please tag the Doc Keeper role in '
+                         f'{bot.cache.channels.flairing_questions.mention} to confirm.')
+    if check_roles(member, [FLAIR_VERIFY]):
+        raise ValueError(f'{member.mention} needs to be verified before flairing. \n'
+                         f'Please tag the Doc Keeper role in '
+                         f'{bot.cache.channels.flairing_questions.mention} to confirm.')
 
     if check_roles(member, [FREE_AGENT]):
         await member.remove_roles(bot.cache.roles.free_agent, reason=f'Flaired for {flairing_crew.name}')
@@ -224,9 +234,10 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         await member.remove_roles(bot.cache.roles.track3)
         await member.add_roles(bot.cache.roles.true_locked)
         pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
-        flairing_info = bot.cache.channels.flair_log
+        flairing_info = bot.cache.channels.flairing_info
         await flairing_info.send(f'{pepper.mention} {member.mention} is {TRUE_LOCKED}.')
     await member.add_roles(bot.cache.roles.join_cd)
+    await member.add_roles(bot.cache.roles.playoff)
     add_join_cd(member, open(TEMP_ROLES_FILE, 'a'))
 
 
@@ -246,7 +257,7 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
         await member.remove_roles(role, reason=f'Unflaired by {author.name}')
     if await track_cycle(member, bot.cache.scs) == 2:
         pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
-        flairing_info = discord.utils.get(bot.cache.scs.channels, name='flairing_info')
+        flairing_info = bot.cache.channels.flairing_info
         await flairing_info.send(f'{pepper.mention} {member.mention} is locked on next join.')
     await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader,
                               reason=f'Unflaired by {author.name}')
