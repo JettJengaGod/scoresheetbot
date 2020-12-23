@@ -45,6 +45,8 @@ class ScoreSheetBot(commands.Cog):
     def _clear_current(self, ctx):
         self.battle_map[key_string(ctx)] = None
 
+    ''' **********************************CB COMMANDS ******************************************'''
+
     @commands.command(**help['battle'], aliases=['challenge'])
     @main_only
     @no_battle
@@ -282,43 +284,20 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'What you put: {string_to_emote(emoji, self.bot)}')
             await ctx.send(f'All alts in order: {all_alts(emoji, self.bot)}')
 
-    @commands.command()
-    async def thank(self, ctx: Context):
-        await ctx.send(f'Thanks for all the work you do on the bot alexjett!')
+    @commands.command(**help['chars'])
+    @ss_channel
+    async def chars(self, ctx):
+        emojis = all_emojis(self.bot)
+        out = []
+        for emoji in emojis:
+            out.append(f'{emoji[0]}: {emoji[1]}\n')
 
-    @commands.command(**help['crew'])
-    @main_only
-    @cache_update
-    async def crew(self, ctx, *, name: str = None):
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
-        await ctx.send(embed=actual_crew.embed)
+        out = "".join(out)
+        out = split_on_length_and_separator(out, 1999, ']')
+        for split in out:
+            await ctx.author.send(split)
 
-    @commands.command()
-    @main_only
-    @role_call(STAFF_LIST)
-    @cache_update
-    async def non_crew(self, ctx):
-        out = [f'```Main server non crew roles: \n']
-        for role in self.cache.non_crew_roles_main:
-            guess = crew_lookup(role, self)
-            out.append(f'\'{role}\' best guess from docs is \'{guess.name}\'')
-            out.append('\n')
-        out.append('Overflow server non crew roles: \n')
-        for role in self.cache.non_crew_roles_overflow:
-            guess = crew_lookup(role, self)
-            out.append(f'\'{role}\' best guess from docs is \'{guess.name}\'')
-            out.append('\n')
-        out.append('```')
-        await ctx.send(''.join(out))
+    ''' *************************************** CREW COMMANDS ********************************************'''
 
     @commands.command(**help['rank'])
     @main_only
@@ -365,6 +344,55 @@ class ScoreSheetBot(commands.Cog):
             out += f'{escape(user.display_name)}\'s crew '
         out += f'{crew_name} has {crew_merit} merit.'
         await ctx.send(out)
+
+    @commands.command(**help['crew'])
+    @main_only
+    @cache_update
+    async def crew(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        await ctx.send(embed=actual_crew.embed)
+
+    @commands.command()
+    @cache_update
+    @role_call([LEADER, ADMIN, MINION, ADVISOR, DOCS])
+    async def playoffs(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+        allowed = []
+        disallowed = []
+        for member in self.cache.scs.members:
+            try:
+                cr = crew(member, self)
+            except ValueError:
+                cr = None
+            if cr == actual_crew.name:
+                if check_roles(member, [PLAYOFF_LIMITED]):
+                    disallowed.append(member.mention)
+                else:
+                    allowed.append(member.mention)
+        desc = [f'Allowed players ({len(allowed)}):', ','.join(allowed), f'Disallowed players ({len(disallowed)}):',
+                ','.join(disallowed)]
+        out = discord.Embed(title=f'Eligibility of {actual_crew.name} players for playoffs',
+                            description='\n'.join(desc), color=actual_crew.color)
+
+        await ctx.send(embed=out)
+
+    ''' ************************************FLAIRING COMMANDS ********************************************'''
 
     @commands.command(**help['promote'])
     @main_only
@@ -578,193 +606,9 @@ class ScoreSheetBot(commands.Cog):
         await self.cache.channels.flair_log.send(
             embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
-    @commands.command()
-    @cache_update
-    @role_call([ADMIN, MINION])
-    async def overflow(self, ctx: Context):
-        overflow_role = set()
-        for member in self.cache.scs.members:
-            if check_roles(member, OVERFLOW_ROLE):
-                overflow_role.add(f'{member.id}')
-        other_set = set()
-        other_members = self.cache.overflow_server.members
-        for member in other_members:
-            if any((role.name in self.cache.crews for role in member.roles)):
-                other_set.add(f'{member.id}')
-                continue
-        first = overflow_role - other_set
-        second = other_set - overflow_role
-        out = ['These members have the role, but are not in an overflow crew.\n']
-        for member in first:
-            out.append(f'{member}\n')
-        out.append('These members are flaired in the overflow server, but have no role here\n')
-        for member in second:
-            out.append(f'> {member}\n')
-        embed = discord.Embed(description=out, title="Overflow Anomalies")
-        output = split_embed(embed, length=2000)
-        for put in output:
-            await ctx.send(embed=put)
+    ''' ***********************************STAFF COMMANDS ************************************************'''
 
-    @commands.command(**help['flairing_off'])
-    @cache_update
-    @role_call(STAFF_LIST)
-    async def flairing_off(self, ctx: Context):
-        self.cache.flairing_allowed = False
-        await ctx.send('Flairing has been disabled for the time being.')
-
-    @commands.command(**help['flairing_on'])
-    @cache_update
-    @role_call(STAFF_LIST)
-    async def flairing_on(self, ctx: Context):
-        self.cache.flairing_allowed = True
-        await ctx.send('Flairing has been re-enabled.')
-
-    @commands.command(**help['pending'])
-    @cache_update
-    @role_call(STAFF_LIST)
-    async def pending(self, ctx: Context):
-        await ctx.send('Printing all current battles.')
-        for channel, battle in self.battle_map.items():
-            if battle:
-                chan = discord.utils.get(ctx.guild.channels, name=channel_from_key(channel))
-                await ctx.send(chan.mention)
-                await send_sheet(ctx, battle)
-
-    @commands.command()
-    @cache_update
-    @role_call([LEADER, ADMIN, MINION, ADVISOR, DOCS])
-    async def playoffs(self, ctx, *, name: str = None):
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-        allowed = []
-        disallowed = []
-        for member in self.cache.scs.members:
-            try:
-                cr = crew(member, self)
-            except ValueError:
-                cr = None
-            if cr == actual_crew.name:
-                if check_roles(member, [PLAYOFF_LIMITED]):
-                    disallowed.append(member.mention)
-                else:
-                    allowed.append(member.mention)
-        desc = [f'Allowed players ({len(allowed)}):', ','.join(allowed), f'Disallowed players ({len(disallowed)}):',
-                ','.join(disallowed)]
-        out = discord.Embed(title=f'Eligibility of {actual_crew.name} players for playoffs',
-                            description='\n'.join(desc), color=actual_crew.color)
-
-        await ctx.send(embed=out)
-
-    @commands.command()
-    @cache_update
-    @role_call(STAFF_LIST)
-    async def preview_disband(self, ctx, *, name: str = None):
-        if name:
-            dis_crew = crew_lookup(name, self)
-        else:
-            await ctx.send('You must send in a crew name.')
-            return
-        if not dis_crew.overflow:
-            await ctx.send('You can only disband overflow crews like this')
-            return
-        crew_members = []
-        for member in self.cache.scs.members:
-            try:
-                cr = crew(member, self)
-            except ValueError:
-                cr = None
-            if cr == dis_crew.name:
-                crew_members.append(member)
-
-        desc = [f'({len(crew_members)}):', ','.join([str(mem) for mem in crew_members])]
-        out = discord.Embed(title=f'{dis_crew.name} disband preview.',
-                            description='\n'.join(desc), color=dis_crew.color)
-
-        output = split_embed(out, 2000)
-        for put in output:
-            await ctx.send(embed=put)
-
-    @commands.command()
-    @cache_update
-    @role_call(STAFF_LIST)
-    async def disband(self, ctx, *, name: str = None):
-        if name:
-            dis_crew = crew_lookup(name, self)
-        else:
-            await ctx.send('You must send in a crew name.')
-            return
-        if not dis_crew.overflow:
-            await ctx.send('You can only disband overflow crews like this')
-            return
-        crew_members = []
-        for member in self.cache.scs.members:
-            try:
-                cr = crew(member, self)
-            except ValueError:
-                cr = None
-            if cr == dis_crew.name:
-                crew_members.append(member)
-
-        desc = [f'({len(crew_members)}):', ','.join([str(mem) for mem in crew_members])]
-        out = discord.Embed(title=f'{dis_crew.name} is disbanding, here is their players:',
-                            description='\n'.join(desc), color=dis_crew.color)
-
-        output = split_embed(out, 2000)
-        for put in output:
-            await self.cache.channels.doc_keeper.send(embed=put)
-        for member in crew_members:
-            if check_roles(member, [self.cache.roles.overflow.name]):
-                user = discord.utils.get(self.cache.overflow_server.members, id=member.id)
-                await member.remove_roles(self.cache.roles.overflow,
-                                          reason=f'Unflaired in disband by {ctx.author.name}')
-                if not user:
-                    continue
-                await member.edit(nick=nick_without_prefix(member.display_name))
-                role = discord.utils.get(self.cache.overflow_server.roles, name=dis_crew.name)
-                overflow_adv = discord.utils.get(self.cache.overflow_server.roles, name=ADVISOR)
-                overflow_leader = discord.utils.get(self.cache.overflow_server.roles, name=LEADER)
-                await user.remove_roles(role, overflow_adv, overflow_leader, reason=f'Unflaired by {ctx.author.name}')
-
-            await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader,
-                                      reason=f'Unflaired in disband by {ctx.author.name}')
-        response_embed = discord.Embed(title=f'{dis_crew.name} has been disbanded',
-                                       description='\n'.join([mem.mention for mem in crew_members]),
-                                       color=dis_crew.color)
-        output = split_embed(response_embed, 2000)
-        for put in output:
-            await ctx.send(embed=put)
-
-    @commands.command(**help['recache'])
-    @role_call(STAFF_LIST)
-    async def recache(self, ctx: Context):
-        self.cache.timer = 0
-        await self.cache.update(self)
-        await ctx.send('The cache has been cleared, everything should be updated now.')
-
-    @commands.command(**help['chars'])
-    @ss_channel
-    async def chars(self, ctx):
-        emojis = all_emojis(self.bot)
-        out = []
-        for emoji in emojis:
-            out.append(f'{emoji[0]}: {emoji[1]}\n')
-
-        out = "".join(out)
-        out = split_on_length_and_separator(out, 1999, ']')
-        for split in out:
-            await ctx.author.send(split)
-
-    @commands.command(**help['guide'])
-    async def guide(self, ctx):
-        await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
-
-    @commands.command(**help['guide'])
+    @commands.command(hidden=True)
     @cache_update
     @role_call(STAFF_LIST)
     async def cooldown(self, ctx):
@@ -794,6 +638,189 @@ class ScoreSheetBot(commands.Cog):
 
         for put in output:
             await ctx.send(put)
+
+    @commands.command(hidden=True)
+    @main_only
+    @role_call(STAFF_LIST)
+    @cache_update
+    async def non_crew(self, ctx):
+        out = [f'```Main server non crew roles: \n']
+        for role in self.cache.non_crew_roles_main:
+            guess = crew_lookup(role, self)
+            out.append(f'\'{role}\' best guess from docs is \'{guess.name}\'')
+            out.append('\n')
+        out.append('Overflow server non crew roles: \n')
+        for role in self.cache.non_crew_roles_overflow:
+            guess = crew_lookup(role, self)
+            out.append(f'\'{role}\' best guess from docs is \'{guess.name}\'')
+            out.append('\n')
+        out.append('```')
+        await ctx.send(''.join(out))
+
+    @commands.command(hidden=True)
+    @cache_update
+    @role_call([ADMIN, MINION])
+    async def overflow(self, ctx: Context):
+        overflow_role = set()
+        for member in self.cache.scs.members:
+            if check_roles(member, OVERFLOW_ROLE):
+                overflow_role.add(f'{member.id}')
+        other_set = set()
+        other_members = self.cache.overflow_server.members
+        for member in other_members:
+            if any((role.name in self.cache.crews for role in member.roles)):
+                other_set.add(f'{member.id}')
+                continue
+        first = overflow_role - other_set
+        second = other_set - overflow_role
+        out = ['These members have the role, but are not in an overflow crew.\n']
+        for member in first:
+            out.append(f'{member}\n')
+        out.append('These members are flaired in the overflow server, but have no role here\n')
+        for member in second:
+            out.append(f'> {member}\n')
+        embed = discord.Embed(description=out, title="Overflow Anomalies")
+        output = split_embed(embed, length=2000)
+        for put in output:
+            await ctx.send(embed=put)
+
+    @commands.command(**help['flairing_off'], hidden=True)
+    @cache_update
+    @role_call(STAFF_LIST)
+    async def flairing_off(self, ctx: Context):
+        self.cache.flairing_allowed = False
+        await ctx.send('Flairing has been disabled for the time being.')
+
+    @commands.command(**help['flairing_on'], hidden=True)
+    @cache_update
+    @role_call(STAFF_LIST)
+    async def flairing_on(self, ctx: Context):
+        self.cache.flairing_allowed = True
+        await ctx.send('Flairing has been re-enabled.')
+
+    @commands.command(**help['pending'], hidden=True)
+    @cache_update
+    @role_call(STAFF_LIST)
+    async def pending(self, ctx: Context):
+        await ctx.send('Printing all current battles.')
+        for channel, battle in self.battle_map.items():
+            if battle:
+                chan = discord.utils.get(ctx.guild.channels, name=channel_from_key(channel))
+                await ctx.send(chan.mention)
+                await send_sheet(ctx, battle)
+
+    @commands.command(hidden=True)
+    @cache_update
+    @role_call(STAFF_LIST)
+    async def preview_disband(self, ctx, *, name: str = None):
+        if name:
+            dis_crew = crew_lookup(name, self)
+        else:
+            await ctx.send('You must send in a crew name.')
+            return
+        if not dis_crew.overflow:
+            await ctx.send('You can only disband overflow crews like this')
+            return
+
+        members = crew_members(dis_crew, self)
+
+        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
+        out = discord.Embed(title=f'{dis_crew.name} these players will have all crew roles stripped.',
+                            description='\n'.join(desc), color=dis_crew.color)
+
+        output = split_embed(out, 2000)
+        for put in output:
+            await ctx.send(embed=put)
+
+    @commands.command(hidden=True)
+    @cache_update
+    @role_call(STAFF_LIST)
+    async def disband(self, ctx, *, name: str = None):
+        if name:
+            dis_crew = crew_lookup(name, self)
+        else:
+            await ctx.send('You must send in a crew name.')
+            return
+        if not dis_crew.overflow:
+            await ctx.send('You can only disband overflow crews like this')
+            return
+
+        members = crew_members(dis_crew, self)
+
+        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
+        out = discord.Embed(title=f'{dis_crew.name} is disbanding, here is their players:',
+                            description='\n'.join(desc), color=dis_crew.color)
+
+        output = split_embed(out, 2000)
+        for put in output:
+            await self.cache.channels.doc_keeper.send(embed=put)
+        for member in members:
+            if check_roles(member, [self.cache.roles.overflow.name]):
+                user = discord.utils.get(self.cache.overflow_server.members, id=member.id)
+                await member.remove_roles(self.cache.roles.overflow,
+                                          reason=f'Unflaired in disband by {ctx.author.name}')
+                if not user:
+                    continue
+                await member.edit(nick=nick_without_prefix(member.display_name))
+                role = discord.utils.get(self.cache.overflow_server.roles, name=dis_crew.name)
+                overflow_adv = discord.utils.get(self.cache.overflow_server.roles, name=ADVISOR)
+                overflow_leader = discord.utils.get(self.cache.overflow_server.roles, name=LEADER)
+                await user.remove_roles(role, overflow_adv, overflow_leader, reason=f'Unflaired by {ctx.author.name}')
+
+            await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader,
+                                      reason=f'Unflaired in disband by {ctx.author.name}')
+        response_embed = discord.Embed(title=f'{dis_crew.name} has been disbanded',
+                                       description='\n'.join([mem.mention for mem in members]),
+                                       color=dis_crew.color)
+        output = split_embed(response_embed, 2000)
+        for put in output:
+            await ctx.send(embed=put)
+
+    @commands.command(**help['recache'], hidden=True)
+    @role_call(STAFF_LIST)
+    async def recache(self, ctx: Context):
+        self.cache.timer = 0
+        await self.cache.update(self)
+        await ctx.send('The cache has been cleared, everything should be updated now.')
+
+    @commands.command(hidden=True)
+    @cache_update
+    @role_call(STAFF_LIST)
+    async def retag(self, ctx, *, name: str = None):
+        if name:
+            dis_crew = crew_lookup(name, self)
+        else:
+            await ctx.send('You must send in a crew name.')
+            return
+        if not dis_crew.overflow:
+            await ctx.send('You can only retag overflow crews like this')
+            return
+        members = crew_members(dis_crew, self)
+        name_change = []
+        for member in members:
+            before = member.nick if member.nick else member.name
+            member_nick = nick_without_prefix(member.nick) if member.nick else nick_without_prefix(member.name)
+            await member.edit(nick=f'{dis_crew.abbr} | {member_nick}')
+            after = member.nick
+            name_change.append(f'{before} -> {after}')
+
+        desc = [f'({len(members)}):', '\n'.join(name_change)]
+        out = discord.Embed(title=f'{dis_crew.name} these player\'s nicknames have been updated.',
+                            description='\n'.join(desc), color=dis_crew.color)
+
+        output = split_embed(out, 2000)
+        for put in output:
+            await ctx.send(embed=put)
+
+    ''' ******************************* HELP AND MISC COMMANDS ******************************************'''
+
+    @commands.command(cog_name='Misc')
+    async def thank(self, ctx: Context):
+        await ctx.send(f'Thanks for all the work you do on the bot alexjett!')
+
+    @commands.command(**help['guide'], cog_name='Misc')
+    async def guide(self, ctx):
+        await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):
