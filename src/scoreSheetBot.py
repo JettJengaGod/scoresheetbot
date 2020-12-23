@@ -724,16 +724,10 @@ class ScoreSheetBot(commands.Cog):
         if not dis_crew.overflow:
             await ctx.send('You can only disband overflow crews like this')
             return
-        crew_members = []
-        for member in self.cache.scs.members:
-            try:
-                cr = crew(member, self)
-            except ValueError:
-                cr = None
-            if cr == dis_crew.name:
-                crew_members.append(member)
 
-        desc = [f'({len(crew_members)}):', '\n'.join([str(mem) for mem in crew_members])]
+        members = crew_members(dis_crew, self)
+
+        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
         out = discord.Embed(title=f'{dis_crew.name} these players will have all crew roles stripped.',
                             description='\n'.join(desc), color=dis_crew.color)
 
@@ -753,23 +747,17 @@ class ScoreSheetBot(commands.Cog):
         if not dis_crew.overflow:
             await ctx.send('You can only disband overflow crews like this')
             return
-        crew_members = []
-        for member in self.cache.scs.members:
-            try:
-                cr = crew(member, self)
-            except ValueError:
-                cr = None
-            if cr == dis_crew.name:
-                crew_members.append(member)
 
-        desc = [f'({len(crew_members)}):', '\n'.join([str(mem) for mem in crew_members])]
+        members = crew_members(dis_crew, self)
+
+        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
         out = discord.Embed(title=f'{dis_crew.name} is disbanding, here is their players:',
                             description='\n'.join(desc), color=dis_crew.color)
 
         output = split_embed(out, 2000)
         for put in output:
             await self.cache.channels.doc_keeper.send(embed=put)
-        for member in crew_members:
+        for member in members:
             if check_roles(member, [self.cache.roles.overflow.name]):
                 user = discord.utils.get(self.cache.overflow_server.members, id=member.id)
                 await member.remove_roles(self.cache.roles.overflow,
@@ -785,7 +773,7 @@ class ScoreSheetBot(commands.Cog):
             await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader,
                                       reason=f'Unflaired in disband by {ctx.author.name}')
         response_embed = discord.Embed(title=f'{dis_crew.name} has been disbanded',
-                                       description='\n'.join([mem.mention for mem in crew_members]),
+                                       description='\n'.join([mem.mention for mem in members]),
                                        color=dis_crew.color)
         output = split_embed(response_embed, 2000)
         for put in output:
@@ -797,6 +785,35 @@ class ScoreSheetBot(commands.Cog):
         self.cache.timer = 0
         await self.cache.update(self)
         await ctx.send('The cache has been cleared, everything should be updated now.')
+
+    @commands.command(hidden=True)
+    @cache_update
+    @role_call(STAFF_LIST)
+    async def retag(self, ctx, *, name: str = None):
+        if name:
+            dis_crew = crew_lookup(name, self)
+        else:
+            await ctx.send('You must send in a crew name.')
+            return
+        if not dis_crew.overflow:
+            await ctx.send('You can only retag overflow crews like this')
+            return
+        members = crew_members(dis_crew, self)
+        name_change = []
+        for member in members:
+            before = member.nick if member.nick else member.name
+            member_nick = nick_without_prefix(member.nick) if member.nick else nick_without_prefix(member.name)
+            await member.edit(nick=f'{dis_crew.abbr} | {member_nick}')
+            after = member.nick
+            name_change.append(f'{before} -> {after}')
+
+        desc = [f'({len(members)}):', '\n'.join(name_change)]
+        out = discord.Embed(title=f'{dis_crew.name} these player\'s nicknames have been updated.',
+                            description='\n'.join(desc), color=dis_crew.color)
+
+        output = split_embed(out, 2000)
+        for put in output:
+            await ctx.send(embed=put)
 
     ''' ******************************* HELP AND MISC COMMANDS ******************************************'''
 

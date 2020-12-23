@@ -225,7 +225,7 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         overflow_crew = discord.utils.get(bot.cache.overflow_server.roles, name=flairing_crew.name)
         overflow_member = discord.utils.get(bot.cache.overflow_server.members, id=member.id)
         await overflow_member.add_roles(overflow_crew)
-        member_nick = member.nick if member.nick else member.name
+        member_nick = nick_without_prefix(member.nick) if member.nick else nick_without_prefix(member.name)
         await member.edit(nick=f'{flairing_crew.abbr} | {member_nick}')
     else:
         main_crew = discord.utils.get(bot.cache.scs.roles, name=flairing_crew.name)
@@ -263,9 +263,9 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
                               reason=f'Unflaired by {author.name}')
 
 
-def nick_without_prefix(nick: str):
+def nick_without_prefix(nick: str) -> str:
     if '|' in nick:
-        return nick[nick.index('|') + 1:]
+        return nick[nick.rindex('|') + 1:]
     else:
         return nick
 
@@ -331,3 +331,15 @@ async def demote(member: discord.Member, bot: 'ScoreSheetBot') -> str:
 async def response_message(ctx: Context, msg: str):
     await ctx.send(f'{ctx.author.mention}: {msg}')
     await ctx.message.delete(delay=1)
+
+
+def crew_members(crew_input: Crew, bot: 'ScoreSheetBot') -> List[discord.Member]:
+    members = []
+    for member in bot.cache.scs.members:
+        try:
+            cr = crew(member, bot)
+        except ValueError:
+            cr = None
+        if cr == crew_input.name:
+            members.append(member)
+    return members
