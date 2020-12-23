@@ -385,11 +385,11 @@ class ScoreSheetBot(commands.Cog):
                 cr = None
             if cr == actual_crew.name:
                 if check_roles(member, [PLAYOFF_LIMITED]):
-                    disallowed.append(member.mention)
+                    disallowed.append(f'<@!{member.id}>')
                 else:
-                    allowed.append(member.mention)
-        desc = [f'Allowed players ({len(allowed)}):', ','.join(allowed), f'Disallowed players ({len(disallowed)}):',
-                ','.join(disallowed)]
+                    allowed.append(f'<@!{member.id}>')
+        desc = [f'Allowed players ({len(allowed)}):', ', '.join(allowed), f'Disallowed players ({len(disallowed)}):',
+                ', '.join(disallowed)]
         out = discord.Embed(title=f'Eligibility of {actual_crew.name} players for playoffs',
                             description='\n'.join(desc), color=actual_crew.color)
 
@@ -676,13 +676,14 @@ class ScoreSheetBot(commands.Cog):
                 continue
         first = overflow_role - other_set
         second = other_set - overflow_role
-        out = ['These members have the role, but are not in an overflow crew.\n']
+        out = ['These members have the role, but are not in an overflow crew.']
         for member in first:
-            out.append(f'{member}\n')
-        out.append('These members are flaired in the overflow server, but have no role here\n')
+            out.append(f'> {member}')
+        out.append('These members are flaired in the overflow server, but have no role here')
         for member in second:
-            out.append(f'> {member}\n')
-        embed = discord.Embed(description=out, title="Overflow Anomalies")
+            out.append(f'> {member}')
+        out_str = '\n'.join(out)
+        embed = discord.Embed(description=out_str, title="Overflow Anomalies")
         output = split_embed(embed, length=2000)
         for put in output:
             await ctx.send(embed=put)
@@ -824,6 +825,11 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help['guide'], cog_name='Misc')
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
+
+    @commands.command(hidden=True)
+    async def overlap(self, *, two_roles: str = None):
+        pass
+        # TODO
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):
