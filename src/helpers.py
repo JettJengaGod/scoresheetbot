@@ -1,4 +1,4 @@
-from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO
+from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple
 
 if TYPE_CHECKING:
     from scoreSheetBot import ScoreSheetBot
@@ -343,3 +343,16 @@ def crew_members(crew_input: Crew, bot: 'ScoreSheetBot') -> List[discord.Member]
         if cr == crew_input.name:
             members.append(member)
     return members
+
+
+def split_posibilites(two_things: str, sep: Optional[str] = ' ') -> List[Tuple[str, str]]:
+    split = two_things.split(sep)
+    out = []
+    for i in range(len(split)):
+        out.append((' '.join(split[:i]), (' '.join(split[i:]))))
+    return out
+
+
+def search_roles_including_crews():
+    pass
+# TODO

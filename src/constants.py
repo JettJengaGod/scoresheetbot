@@ -96,5 +96,11 @@ EXPECTED_NON_CREW_ROLES = {
     'Floof Bot',
     'SCS Violations Committee',
     'v2 Minion',
-    'SCS Admin'
+    'SCS Admin',
+    PLAYOFF_LIMITED,
+    POWER_MERGE,
+    JOIN_CD,
+    'BetaJettBot',
+    'EVIL',
+    'Special Pass'
 }
