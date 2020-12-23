@@ -568,7 +568,7 @@ class ScoreSheetBot(commands.Cog):
                                             f'must be unflaired for their current crew before they can be flaired. ')
                 return
         try:
-            await flair(member, flairing_crew, self)
+            await flair(member, flairing_crew, self, check_roles(ctx.author, STAFF_LIST))
         except ValueError as ve:
             await response_message(ctx, str(ve))
             return
