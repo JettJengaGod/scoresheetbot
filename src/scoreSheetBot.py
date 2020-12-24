@@ -561,7 +561,7 @@ class ScoreSheetBot(commands.Cog):
             user_crew = None
         if new_crew:
             flairing_crew = crew_lookup(new_crew, self)
-            if flairing_crew.name != user_crew and not check_roles(ctx.author, STAFF_LIST):
+            if flairing_crew.name != crew(ctx.author, self) and not check_roles(ctx.author, STAFF_LIST):
                 await response_message(ctx, 'You can\'t flair people for other crews unless you are Staff.')
                 return
         else:
