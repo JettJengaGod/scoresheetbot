@@ -385,15 +385,16 @@ class ScoreSheetBot(commands.Cog):
                 cr = None
             if cr == actual_crew.name:
                 if check_roles(member, [PLAYOFF_LIMITED]):
-                    disallowed.append(f'<@!{member.id}>')
+                    disallowed.append(f'> {str(member)} {member.mention}')
                 else:
-                    allowed.append(f'<@!{member.id}>')
-        desc = [f'Allowed players ({len(allowed)}):', ', '.join(allowed), f'Disallowed players ({len(disallowed)}):',
-                ', '.join(disallowed)]
+                    allowed.append(f'> {str(member)} {member.mention}')
+        desc = [f'Allowed players ({len(allowed)}):', '\n'.join(allowed), f'Disallowed players ({len(disallowed)}):',
+                '\n'.join(disallowed)]
         out = discord.Embed(title=f'Eligibility of {actual_crew.name} players for playoffs',
                             description='\n'.join(desc), color=actual_crew.color)
-
-        await ctx.send(embed=out)
+        output = split_embed(out, length=2000)
+        for put in output:
+            await ctx.send(embed=put)
 
     ''' ************************************FLAIRING COMMANDS ********************************************'''
 
@@ -667,12 +668,12 @@ class ScoreSheetBot(commands.Cog):
         overflow_role = set()
         for member in self.cache.scs.members:
             if check_roles(member, OVERFLOW_ROLE):
-                overflow_role.add(f'{member.id}')
+                overflow_role.add(f'{str(member)} | {member.id}')
         other_set = set()
         other_members = self.cache.overflow_server.members
         for member in other_members:
             if any((role.name in self.cache.crews for role in member.roles)):
-                other_set.add(f'{member.id}')
+                other_set.add(f'{str(member)} | {member.id}')
                 continue
         first = overflow_role - other_set
         second = other_set - overflow_role
