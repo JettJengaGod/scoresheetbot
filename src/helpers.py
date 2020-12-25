@@ -372,6 +372,11 @@ def best_of_possibilities(combined: str, bot: 'ScoreSheetBot'):
     all_role_names = set.union(set(bot.cache.crews), all_role_names)
     best = ['', '', 0]
     for sep in pos:
+        if sep[0].lower() in bot.cache.crews_by_tag:
+            sep = (bot.cache.crews_by_tag[sep[0].lower()].name, sep[1])
+
+        if sep[1].lower() in bot.cache.crews_by_tag:
+            sep = (sep[0], bot.cache.crews_by_tag[sep[1].lower()].name)
         first, second = search_two_roles_in_list(sep[0], sep[1], all_role_names)
         value = first[1] + second[1]
         if value > best[2]:
