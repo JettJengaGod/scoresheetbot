@@ -28,6 +28,8 @@ TEMP_ROLES_FILE = 'temp_roles.txt'
 FLAIRING_CHANNEL_NAME = 'crew_flairing'
 FLAIRING_INFO = 'flairing_info'
 DOC_KEEPER_CHAT = 'scs_doc_keepers'
+YES = '✅'
+NO = '🚫'
 STAFF_LIST = [DOCS, MINION, ADMIN]
 EXPECTED_NON_CREW_ROLES = {
     LEADER,

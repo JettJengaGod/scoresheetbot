@@ -3,6 +3,7 @@ from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
 from fuzzywuzzy import process, fuzz
+import asyncio
 import discord
 from discord.ext import commands
 from .battle import *
@@ -53,6 +54,18 @@ def split_on_length_and_separator(string: str, length: int, separator: str) -> L
         string = string[idx + 1:]
     ret.append(string)
     return ret
+
+
+async def send_long(ctx: Context, message: str, sep: str):
+    output = split_on_length_and_separator(message, length=2000, separator=sep)
+    for put in output:
+        await ctx.send(put)
+
+
+async def send_long_embed(ctx: Context, message: discord.Embed):
+    output = split_embed(message, length=2000)
+    for put in output:
+        await ctx.send(embed=put)
 
 
 def is_usable_emoji(text: str, bot):
@@ -345,7 +358,7 @@ def crew_members(crew_input: Crew, bot: 'ScoreSheetBot') -> List[discord.Member]
     return members
 
 
-def split_posibilites(two_things: str, sep: Optional[str] = ' ') -> List[Tuple[str, str]]:
+def split_possibilities(two_things: str, sep: Optional[str] = ' ') -> List[Tuple[str, str]]:
     split = two_things.split(sep)
     out = []
     for i in range(len(split)):
@@ -353,6 +366,68 @@ def split_posibilites(two_things: str, sep: Optional[str] = ' ') -> List[Tuple[s
     return out
 
 
-def search_roles_including_crews():
-    pass
-# TODO
+def best_of_possibilities(combined: str, bot: 'ScoreSheetBot'):
+    pos = split_possibilities(combined)
+    all_role_names = {role.name for role in bot.cache.scs.roles}
+    all_role_names = set.union(set(bot.cache.crews), all_role_names)
+    best = ['', '', 0]
+    for sep in pos:
+        first, second = search_two_roles_in_list(sep[0], sep[1], all_role_names)
+        value = first[1] + second[1]
+        if value > best[2]:
+            best = [first[0], second[0], value]
+    return best
+
+
+def search_two_roles_in_list(first_role: str, second_role: str, everything):
+    first = process.extractOne(first_role, everything)
+    second = process.extractOne(second_role, everything)
+    return first, second
+
+
+def overlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[discord.Member]:
+    crew_role = None
+    other_role = None
+    if first in bot.cache.crews:
+        if second in bot.cache.crews:
+            raise ValueError('You can\'t have members on two crews!')
+        crew_role = first
+        other_role = second
+    if second in bot.cache.crews:
+        crew_role = second
+        other_role = first
+    out = []
+    if crew_role:
+        for member in bot.cache.scs.members:
+            try:
+                if crew(member, bot) == crew_role:
+                    for role in member.roles:
+                        if role.name == other_role:
+                            out.append(member)
+            except ValueError:
+                continue
+    else:
+        for member in bot.cache.scs.members:
+            role_names = {role.name for role in member.roles}
+            if first in role_names and second in role_names:
+                out.append(member)
+    return out
+
+
+async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
+                                       message: discord.Message, author: discord.Member, bot: discord.Client) -> bool:
+    await message.add_reaction(confirm)
+    await message.add_reaction(cancel)
+
+    def check(reaction, user):
+        return user == author and str(reaction.emoji) == confirm or cancel
+
+    while True:
+        try:
+            react, reactor = await bot.wait_for('reaction_add', timeout=30.0, check=check)
+        except asyncio.TimeoutError:
+            return False
+        if str(react.emoji) == confirm and reactor == author:
+            return True
+        elif str(react.emoji) == cancel and reactor == author:
+            return False

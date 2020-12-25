@@ -55,5 +55,6 @@ help = dict(
     make_lead=HelpDoc('Staff Only: makes a user a leader.'),
     flairing_off=HelpDoc('Emergency flairing off switch.'),
     flairing_on=HelpDoc('Emergency flairing off switch.'),
-    overflow=HelpDoc('Staff only, don\'t touch.')
+    overlap=HelpDoc('Find the overlap between two roles.',
+                    'Send in the two role names separated by spaces, it will try to find the best match.', 'role1 role2')
 )
