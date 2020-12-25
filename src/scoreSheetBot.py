@@ -389,9 +389,7 @@ class ScoreSheetBot(commands.Cog):
                 '\n'.join(disallowed)]
         out = discord.Embed(title=f'Eligibility of {actual_crew.name} players for playoffs',
                             description='\n'.join(desc), color=actual_crew.color)
-        output = split_embed(out, length=2000)
-        for put in output:
-            await ctx.send(embed=put)
+        await send_long_embed(ctx, out)
 
     ''' ************************************FLAIRING COMMANDS ********************************************'''
 
@@ -630,15 +628,12 @@ class ScoreSheetBot(commands.Cog):
                     seconds = int(diff % 60)
                     out.append(f'{str(member)} has {hours} hours, {minutes} minutes, {seconds} seconds'
                                f'  left on their join cooldown.')
-        output = split_on_length_and_separator('\n'.join(out), length=2000, separator='\n')
+        await send_long(ctx, '\n'.join(out), '\n')
         for person in self.cache.scs.members:
             if check_roles(person, [JOIN_CD]):
                 if person.id not in current_cooldown:
                     await person.remove_roles(self.cache.roles.join_cd)
                     await self.cache.channels.flair_log.send(f'{person.display_name}\'s join cooldown ended.')
-
-        for put in output:
-            await ctx.send(put)
 
     @commands.command(hidden=True)
     @main_only
@@ -682,9 +677,7 @@ class ScoreSheetBot(commands.Cog):
             out.append(f'> {member}')
         out_str = '\n'.join(out)
         embed = discord.Embed(description=out_str, title="Overflow Anomalies")
-        output = split_embed(embed, length=2000)
-        for put in output:
-            await ctx.send(embed=put)
+        await send_long_embed(ctx, embed)
 
     @commands.command(**help['flairing_off'], hidden=True)
     @cache_update
@@ -711,28 +704,7 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(chan.mention)
                 await send_sheet(ctx, battle)
 
-    @commands.command(hidden=True)
-    @cache_update
-    @role_call(STAFF_LIST)
-    async def preview_disband(self, ctx, *, name: str = None):
-        if name:
-            dis_crew = crew_lookup(name, self)
-        else:
-            await ctx.send('You must send in a crew name.')
-            return
-        if not dis_crew.overflow:
-            await ctx.send('You can only disband overflow crews like this')
-            return
 
-        members = crew_members(dis_crew, self)
-
-        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
-        out = discord.Embed(title=f'{dis_crew.name} these players will have all crew roles stripped.',
-                            description='\n'.join(desc), color=dis_crew.color)
-
-        output = split_embed(out, 2000)
-        for put in output:
-            await ctx.send(embed=put)
 
     @commands.command(hidden=True)
     @cache_update
@@ -748,6 +720,17 @@ class ScoreSheetBot(commands.Cog):
             return
 
         members = crew_members(dis_crew, self)
+        message = f'{ctx.author.mention}: You are attempting to disband {dis_crew.name}, all {len(members)} members' \
+                  f' will have their crew roles stripped, are you sure?'
+        msg = await ctx.send(message)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
+        out = discord.Embed(title=f'{dis_crew.name} these players will have all crew roles stripped.',
+                            description='\n'.join(desc), color=dis_crew.color)
+
+        await send_long_embed(ctx, out)
 
         desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
         out = discord.Embed(title=f'{dis_crew.name} is disbanding, here is their players:',
@@ -774,9 +757,7 @@ class ScoreSheetBot(commands.Cog):
         response_embed = discord.Embed(title=f'{dis_crew.name} has been disbanded',
                                        description='\n'.join([mem.mention for mem in members]),
                                        color=dis_crew.color)
-        output = split_embed(response_embed, 2000)
-        for put in output:
-            await ctx.send(embed=put)
+        await send_long_embed(ctx, response_embed)
 
     @commands.command(**help['recache'], hidden=True)
     @role_call(STAFF_LIST)
@@ -798,6 +779,11 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('You can only retag overflow crews like this')
             return
         members = crew_members(dis_crew, self)
+        message = f'{ctx.author.mention}: Really retag all {len(members)} members of {dis_crew.name}?'
+        msg = await ctx.send(message)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
         name_change = []
         for member in members:
             before = member.nick if member.nick else member.name
@@ -809,10 +795,7 @@ class ScoreSheetBot(commands.Cog):
         desc = [f'({len(members)}):', '\n'.join(name_change)]
         out = discord.Embed(title=f'{dis_crew.name} these player\'s nicknames have been updated.',
                             description='\n'.join(desc), color=dis_crew.color)
-
-        output = split_embed(out, 2000)
-        for put in output:
-            await ctx.send(embed=put)
+        await send_long_embed(ctx, out)
 
     ''' ******************************* HELP AND MISC COMMANDS ******************************************'''
 
@@ -824,10 +807,34 @@ class ScoreSheetBot(commands.Cog):
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
+    @commands.command(**help['overlap'])
+    @cache_update
+    async def overlap(self, ctx, *, two_roles: str = None):
+        if 'everyone' in two_roles:
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `.list_roles`.')
+        best = best_of_possibilities(two_roles, self)
+        mems = overlap_members(best[0], best[1], self)
+        out = [escape(str(mem)) for mem in mems]
+
+        await send_long(ctx, (', '.join(out)), ',')
+
     @commands.command(hidden=True)
-    async def overlap(self, *, two_roles: str = None):
-        pass
-        # TODO
+    @role_call(STAFF_LIST)
+    @cache_update
+    async def overlap_ping(self, ctx, *, two_roles: str = None):
+        if 'everyone' in two_roles:
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `.list_roles`.')
+        best = best_of_possibilities(two_roles, self)
+        mems = overlap_members(best[0], best[1], self)
+        if len(mems) > 10:
+            resp = f'You are attempting to ping the overlap between {best[0]} and {best[1]} this ' \
+                   f'is {len(mems)} members, are you sure?'
+            msg = await ctx.send(resp)
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+        out = [str(mem) for mem in mems]
+        await send_long(ctx, (', '.join(out)), ',')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):
