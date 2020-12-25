@@ -817,9 +817,9 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `.list_roles`.')
         best = best_of_possibilities(two_roles, self)
         mems = overlap_members(best[0], best[1], self)
-        out = [escape(str(mem)) for mem in mems]
+        out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([escape(str(mem)) for mem in mems])
 
-        await send_long(ctx, (', '.join(out)), ',')
+        await send_long(ctx, out, ',')
 
     @commands.command(hidden=True)
     @role_call(STAFF_LIST)
@@ -836,7 +836,7 @@ class ScoreSheetBot(commands.Cog):
             if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
                 await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
-        out = [str(mem) for mem in mems]
+        out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([mem.mention for mem in mems])
         await send_long(ctx, (', '.join(out)), ',')
 
     @commands.Cog.listener()
