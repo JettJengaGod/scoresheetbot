@@ -26,6 +26,7 @@ help = dict(
     resize=HelpDoc('Resize the crew battle', '', 'NewSize'),
     undo=HelpDoc('Undo the last match',
                  'Takes no parameters and undoes the last match that was played.'),
+    timer_stock=HelpDoc('Lose a stock to the timer.'),
     crew=HelpDoc('If provided with an argument, will search for a user\'s crew or '
                  'crew and output that, otherwise provides author\'s crew.', '', 'Optional<User/Crew>'),
     status=HelpDoc('Current status of the battle.'),
@@ -39,6 +40,8 @@ help = dict(
     stream=HelpDoc('Sets the stream if you are a streamer or leader, or prints it if you are not'),
     timer=HelpDoc('Prints the time since the last match ended'),
     guide=HelpDoc('Links to the guide'),
+    use_ext=HelpDoc('Uses your teams time extension in a crew battle.'),
+    ext=HelpDoc('Prints out extension status.'),
     recache=HelpDoc('Updates the cache. Admin only'),
     pending=HelpDoc('Prints pending battles. Admin only'),
     rank=HelpDoc('Find out a user\'s crew\'s rank'),
@@ -47,14 +50,10 @@ help = dict(
                     'if you are an admin, unflairs anyone.', '', 'Optional<Member>'),
     flair=HelpDoc('Flairs someone for your crew or for a specific crew if you are an admin. ', '',
                   'Member Optional<Crew>'),
-    non_crew=HelpDoc('Admin only, returns a list of roles which have differences from the docs.'),
     promote=HelpDoc('Used by leaders to promote users to advoisrs or staff to promote to leaders.', '',
                     'User'),
     demote=HelpDoc('Used by leaders to demote advisors or staff to demote leaders.', '',
                    'User'),
-    make_lead=HelpDoc('Staff Only: makes a user a leader.'),
-    flairing_off=HelpDoc('Emergency flairing off switch.'),
-    flairing_on=HelpDoc('Emergency flairing off switch.'),
     overlap=HelpDoc('Find the overlap between two roles.',
                     'Send in the two role names separated by spaces, it will try to find the best match.', 'role1 role2')
 )

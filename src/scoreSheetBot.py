@@ -120,6 +120,42 @@ class ScoreSheetBot(commands.Cog):
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
+    @commands.command(**help['use_ext'])
+    @main_only
+    @has_sheet
+    @ss_channel
+    @is_lead
+    @cache_update
+    async def use_ext(self, ctx: Context, team: str = None):
+        if self._current(ctx).mock:
+            if team:
+                if self._current(ctx).ext_used(team):
+                    await ctx.send(f'{team} has already used their extension.')
+                    return
+            else:
+                await ctx.send(f'During a mock you need to use your extension, like this'
+                               f' `,ext teamname`.')
+                return
+        else:
+            await self._reject_outsiders(ctx)
+            author_crew = await self._battle_crew(ctx, ctx.author)
+
+            if self._current(ctx).ext_used(author_crew):
+                await ctx.send(f'{team} has already used their extension.')
+                return
+            else:
+                await ctx.send(f'{author_crew} just used their extension. '
+                               f'They now get 5 more minutes for their next player to be in the arena.')
+                return
+        await send_sheet(ctx, battle=self._current(ctx))
+
+    @commands.command(**help['ext'])
+    @main_only
+    @has_sheet
+    @ss_channel
+    async def ext(self, ctx):
+        await ctx.send(self._current(ctx).ext_str())
+
     @commands.command(**help['replace'])
     @main_only
     @has_sheet
@@ -206,7 +242,10 @@ class ScoreSheetBot(commands.Cog):
     @cache_update
     async def undo(self, ctx):
         await self._reject_outsiders(ctx)
-        self._current(ctx).undo()
+        if not self._current(ctx).undo():
+            await ctx.send('Note: undoing a replace on the scoresheet doesn\'t actually undo the replace, '
+                           'you need to use `,replace @player` with the original player to do that.')
+
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['confirm'])
@@ -275,6 +314,27 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     async def timer(self, ctx):
         await ctx.send(self._current(ctx).timer())
+
+    @commands.command(**help['timer_stock'])
+    @main_only
+    @has_sheet
+    @ss_channel
+    @is_lead
+    @cache_update
+    async def timer_stock(self, ctx, team: str = None):
+        if self._current(ctx).mock:
+            if team:
+                self._current(ctx).timer_stock(team, ctx.author.mention)
+            else:
+                await ctx.send(f'During a mock you need to take a timer_stock with a teamname, like this'
+                               f' `,timer_stock teamname`.')
+                return
+        else:
+            await self._reject_outsiders(ctx)
+            current_crew = await self._battle_crew(ctx, ctx.author)
+            self._current(ctx).timer_stock(current_crew, ctx.author.mention)
+
+        await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help['char'])
     async def char(self, ctx: Context, emoji):
@@ -462,7 +522,7 @@ class ScoreSheetBot(commands.Cog):
         await response_message(ctx, f'Successfully demoted {member.mention} from {result}.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
-    @commands.command(**help['make_lead'])
+    @commands.command(hidden=True)
     @main_only
     @flairing_required
     @role_call(STAFF_LIST)
@@ -679,21 +739,21 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(description=out_str, title="Overflow Anomalies")
         await send_long_embed(ctx, embed)
 
-    @commands.command(**help['flairing_off'], hidden=True)
+    @commands.command(hidden=True)
     @cache_update
     @role_call(STAFF_LIST)
     async def flairing_off(self, ctx: Context):
         self.cache.flairing_allowed = False
         await ctx.send('Flairing has been disabled for the time being.')
 
-    @commands.command(**help['flairing_on'], hidden=True)
+    @commands.command(hidden=True)
     @cache_update
     @role_call(STAFF_LIST)
     async def flairing_on(self, ctx: Context):
         self.cache.flairing_allowed = True
         await ctx.send('Flairing has been re-enabled.')
 
-    @commands.command(**help['pending'], hidden=True)
+    @commands.command(hidden=True)
     @cache_update
     @role_call(STAFF_LIST)
     async def pending(self, ctx: Context):
@@ -703,8 +763,6 @@ class ScoreSheetBot(commands.Cog):
                 chan = discord.utils.get(ctx.guild.channels, name=channel_from_key(channel))
                 await ctx.send(chan.mention)
                 await send_sheet(ctx, battle)
-
-
 
     @commands.command(hidden=True)
     @cache_update
