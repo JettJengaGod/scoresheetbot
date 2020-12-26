@@ -147,7 +147,7 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(f'{team} has already used their extension.')
                 return
             else:
-                await ctx.send(f'{team} just used their extension. '
+                await ctx.send(f'{author_crew} just used their extension. '
                                f'They now get 5 more minutes for their next player to be in the arena.')
                 return
         await send_sheet(ctx, battle=self._current(ctx))
