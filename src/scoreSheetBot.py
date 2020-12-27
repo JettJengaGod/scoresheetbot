@@ -1034,12 +1034,7 @@ def main():
     load_dotenv()
     token = os.getenv('DISCORD_TOKEN')
     bot = commands.Bot(command_prefix=os.getenv('PREFIX'), intents=discord.Intents.all())
-<<<<<<< HEAD
     cache = Cache()
-=======
-    bot.remove_command('help')
-    cache = src.cache.Cache()
->>>>>>> master
     bot.add_cog(ScoreSheetBot(bot, cache))
 
     bot.run(token)
