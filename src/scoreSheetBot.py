@@ -895,7 +895,7 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
         out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([mem.mention for mem in mems])
-        await send_long(ctx, (', '.join(out)), ',')
+        await send_long(ctx, out, ',')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):
