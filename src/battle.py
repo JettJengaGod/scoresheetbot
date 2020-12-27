@@ -72,6 +72,9 @@ class Team:
             if self.current_player.left == 0:
                 raise ValueError('You can\'t lose a stock to the timer if you don\'t have any left.')
             self.current_player.left -= 1
+            self.stocks -= 1
+            if self.current_player.left == 0:
+                self.current_player = None
         else:
             raise ValueError('No current player.')
 
@@ -152,12 +155,12 @@ class InfoMatch(Match):
 
 
 class TimerMatch(Match):
-    def __init__(self, player: Player, team: Team):
-        self.player = player
+    def __init__(self, player: str, team: Team):
+        self.player_name = player
         self.team = team
 
     def __str__(self):
-        return f'{self.player.name} on {self.team.name} lost a stock to the timer.'
+        return f'{self.player_name} on {self.team.name} lost a stock to the timer.'
 
 
 class Battle:
@@ -212,9 +215,10 @@ class Battle:
 
     def timer_stock(self, team_name: str, leader: str) -> None:
         team = self.lookup(team_name)
+        player_name = team.current_player.name
         team.timer_stock()
         team.leader.add(leader)
-        self.matches.append(TimerMatch(player=team.current_player, team=team))
+        self.matches.append(TimerMatch(player=player_name, team=team))
 
     def finish_match(self, taken1: int, taken2: int, char1: Character, char2: Character) -> Match:
         if not self.match_ready():
