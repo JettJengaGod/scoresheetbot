@@ -395,7 +395,8 @@ def overlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[disco
     other_role = None
     if first in bot.cache.crews:
         if second in bot.cache.crews:
-            raise ValueError('You can\'t have members on two crews!')
+            raise ValueError(f'Interpreted as {first} and {second}. '
+                             f'You can\'t have members on two crews! Try to be more specific.')
         crew_role = first
         other_role = second
     if second in bot.cache.crews:

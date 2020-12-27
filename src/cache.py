@@ -141,10 +141,11 @@ class Cache:
         if not legacy:
             raise ValueError('Legacy Sheet Not Found')
         else:
-            for row in legacy:
+            for pos, row in enumerate(legacy):
                 if row[0] in crews_by_name.keys():
                     crews_by_name[row[0]].merit = row[2]
                     crews_by_name[row[0]].rank = f'{row[11]} (Legacy rank {row[10]})'
+                    crews_by_name[row[0]].ladder = f'({pos+1}/{len(legacy)})'
                 elif row[0] != 'Pending Crew':
                     raise Exception(
                         f'There\'s an issue with {row[0]} on the docs, please tag a doc keeper to fix this.')
