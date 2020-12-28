@@ -10,7 +10,10 @@ from aiohttp import ClientSession
 from discord.ext import commands
 from discord.ext.commands import Context
 
+from src.cache import Cache
 from src.scoreSheetBot import ScoreSheetBot
+from src.crew import Crew
+from src.constants import *
 
 
 class EqualityComparable:
@@ -167,15 +170,13 @@ class MockGuild(CustomMockMixin, unittest.mock.Mock, HashableMixin):
         if roles:
             self.roles.extend(roles)
 
+    def get_member(self, user_id: int) -> discord.Member:
+        return discord.utils.get(self.members, id=user_id)
+
 
 # Create a Role instance to get a realistic Mock of `discord.Role`
 role_data = {'name': 'role', 'id': 1}
 role_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=role_data)
-
-leader_data = {'name': 'Leader', 'id': 2}
-leader_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=leader_data)
-crew1_data = {'name': 'Crew1', 'id': 3}
-crew1_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=crew1_data)
 
 
 class MockRole(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin):
@@ -214,6 +215,16 @@ class MockRole(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin):
         return self.position >= other.position
 
 
+# Roles
+track1 = MockRole(name=TRACK[0])
+track2 = MockRole(name=TRACK[1])
+track3 = MockRole(name=TRACK[2])
+true_locked = MockRole(name=TRUE_LOCKED)
+tracks = [track1, track2, track3, true_locked]
+advisor = MockRole(name=ADVISOR)
+leader = MockRole(name=LEADER)
+admin = MockRole(name=ADMIN)
+
 # Create a Member instance to get a realistic Mock of `discord.Member`
 member_data = {'user': 'lemon', 'roles': [1]}
 state_mock = unittest.mock.MagicMock()
@@ -236,11 +247,23 @@ class MockMember(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin
         if roles:
             self.roles.extend(roles)
 
-        if 'mention' not in kwargs:
-            self.mention = f"@{self.name}"
+    async def add_roles(self, *roles: discord.Role, reason=None):
+        for role in roles:
+            if role not in self.roles:
+                self.roles.append(role)
+
+    async def remove_roles(self, *roles: discord.Role, reason=None):
+        for role in roles:
+            if role in self.roles:
+                self.roles.remove(role)
+
+    @property
+    def mention(self) -> str:
+        return f'<@!{self.id}>'
+
+    # Create a User instance to get a realistic Mock of `discord.User`
 
 
-# Create a User instance to get a realistic Mock of `discord.User`
 user_instance = discord.User(data=unittest.mock.MagicMock(), state=unittest.mock.MagicMock())
 
 
@@ -458,24 +481,109 @@ class MockAsyncWebhook(CustomMockMixin, unittest.mock.MagicMock):
     additional_spec_asyncs = ("send", "edit", "delete", "execute")
 
 
-fake_crews = ['Holy Knights', 'FSGood', 'Ballers', crew1_instance.name]
-fake_merit = ['0', '5', '10', '15']
-fake_rank = ['Good', 'Bad', 'Neither', 'Free']
+HK = Crew(
+    name='Holy Knights',
+    abbr='HK',
+    merit=100,
+    member_count=10,
+    leaders=['Meli'],
+    advisors=['Bob']
+)
+FSGood = Crew(
+    name='FSGood',
+    abbr='FSG',
+    merit=-100,
+    member_count=10,
+    leaders=['Cowy'],
+    advisors=['Kip']
+)
+Ballers = Crew(
+    name='Ballers',
+    abbr='BAL',
+    merit=-100,
+    member_count=10,
+    leaders=['Cowy'],
+    advisors=['Kip'],
+    overflow=True
+)
+leader_data = {'name': 'Leader', 'id': 2}
+leader_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=leader_data)
+overflow_role = {'name': Ballers.name, 'id': 3}
+
+overflow_role_instance = discord.Role(guild=guild_instance, state=unittest.mock.MagicMock(), data=overflow_role)
+ballers_role = MockRole(name=Ballers.name)
+hk_role = MockRole(name=HK.name)
+fsg_role = MockRole(name=FSGood.name)
+
+bob = MockMember(name='Bob#0001', id=int('1' * 17), display_name='Bob')
+joe = MockMember(name='Joe#1234', id=int('2' * 17), display_name='Joe')
+steve = MockMember(name='Steve#5678', id=int('3' * 17), display_name='Steve')
+pepper = MockMember(name='pepper', id=456156481067286529, display_name='pepper')
+
+def cache() -> Cache:
+    fake_cache = Cache()
+    fake_cache.scs = MockGuild()
+    fake_cache.overflow_server = MockGuild()
+    crews_by_name = {
+        HK.name: HK,
+        FSGood.name: FSGood,
+        Ballers.name: Ballers
+    }
+    fake_cache.crews_by_name = crews_by_name
+    fake_cache.crews = crews_by_name.keys()
+    fake_cache.crews_by_tag = {crew.abbr.lower(): crew for crew in fake_cache.crews_by_name.values()}
+
+    fake_cache.scs.members = [bob, joe, steve, pepper]
+    fake_cache.overflow_server.members = [steve]
+    fake_cache.scs.roles = [
+        MockRole(name=LEADER),
+        MockRole(name=MINION),
+        MockRole(name=ADMIN),
+        MockRole(name=ADVISOR),
+        MockRole(name=WATCHLIST),
+        MockRole(name=STREAMER),
+        MockRole(name=DOCS),
+        MockRole(name=CERTIFIED),
+        MockRole(name=OVERFLOW_ROLE),
+        MockRole(name=TRACK[0]),
+        MockRole(name=TRACK[1]),
+        MockRole(name=TRACK[2]),
+        MockRole(name=TRUE_LOCKED),
+        MockRole(name=FREE_AGENT),
+        MockRole(name=JOIN_CD),
+        hk_role,
+        fsg_role
+    ]
+    fake_cache.overflow_server.roles = [
+        MockRole(name=LEADER),
+        MockRole(name=ADVISOR),
+        ballers_role,
+    ]
+    fake_cache.scs.channels = [MockTextChannel(name=FLAIRING_LOGS)]
+    fake_cache.channels = fake_cache.channel_factory(fake_cache.scs)
+    fake_cache.roles = fake_cache.role_factory(fake_cache.scs)
+    fake_cache.main_members = fake_cache.members_by_name(fake_cache.scs.members)
+    return fake_cache
 
 
-class FakeCache:
-    def __init__(self):
-        self.crew_set = set(fake_crews)
-        self.merit_by_crew = {name: merit for name in fake_crews for merit in fake_merit}
-        self.ranks_by_crew = {name: rank for name in fake_crews for rank in fake_rank}
+class MockCache(CustomMockMixin, unittest.mock.MagicMock):
+    """
+    A MagicMock subclass to mock Cache objects.
+    Instances of this class will follow the specifications of `src.Cache` instances. For more
+    information, see the `MockGuild` docstring.
+    """
+    spec_set = message_instance
 
-    def crews(self):
-        return self.crew_set
+    def __init__(self, **kwargs) -> None:
+        default_kwargs = {'attachments': []}
+        super().__init__(**collections.ChainMap(kwargs, default_kwargs))
+        self.author = kwargs.get('author', MockMember())
+        self.channel = kwargs.get('channel', MockTextChannel())
 
 
 class MockSSB(CustomMockMixin, unittest.mock.MagicMock):
-    spec_set = ScoreSheetBot(bot=MockBot(), cache=FakeCache())
+    spec_set = ScoreSheetBot(bot=MockBot(), cache=cache())
 
     def __init__(self, **kwargs) -> None:
-        default_kwargs = {'bot': MockBot(), 'cache': FakeCache()}
+        default_kwargs = {'bot': MockBot(), 'cache': Cache}
         super().__init__(**collections.ChainMap(kwargs, default_kwargs))

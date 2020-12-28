@@ -45,6 +45,7 @@ class Team:
     players: list = field(default_factory=list)
     leader: set = field(default_factory=set)
     current_player: Optional[Player] = None
+    ext_used: bool = False
 
     def add_player(self, player_name: str) -> None:
         if self.current_player:
@@ -55,13 +56,27 @@ class Team:
         self.current_player = Player(name=player_name, team_name=self.name)
         self.players.append(self.current_player)
 
-    def replace_current(self, player_name: str) -> None:
+    def replace_current(self, player_name: str) -> str:
         current_stocks = PLAYER_STOCKS
+        current = ''
         if self.current_player:
             current_stocks = self.current_player.left
+            current = self.current_player.name
             self.players.pop()
         self.current_player = Player(name=player_name, team_name=self.name, left=current_stocks)
         self.players.append(self.current_player)
+        return f'{self.name} subbed {current}  with {player_name} with {current_stocks} stocks left.'
+
+    def timer_stock(self):
+        if self.current_player:
+            if self.current_player.left == 0:
+                raise ValueError('You can\'t lose a stock to the timer if you don\'t have any left.')
+            self.current_player.left -= 1
+            self.stocks -= 1
+            if self.current_player.left == 0:
+                self.current_player = None
+        else:
+            raise ValueError('No current player.')
 
     def match_finish(self, lost: int, took: int):
         self.current_player.left -= lost
@@ -131,6 +146,23 @@ class Match:
                )
 
 
+class InfoMatch(Match):
+    def __init__(self, info: str):
+        self.info: str = info
+
+    def __str__(self):
+        return self.info
+
+
+class TimerMatch(Match):
+    def __init__(self, player: Player, team: Team):
+        self.player = player
+        self.team = team
+
+    def __str__(self):
+        return f'{self.player.name} on {self.team.name} lost a stock to the timer.'
+
+
 class Battle:
     def __init__(self, name1: str, name2: str, players: int, mock: bool = False):
         self.team1 = Team(name1, players, players * PLAYER_STOCKS)
@@ -161,10 +193,32 @@ class Battle:
         team.add_player(player_name)
         team.leader.add(leader)
 
+    def ext_used(self, team_name: str) -> bool:
+        team = self.lookup(team_name)
+        ext = team.ext_used
+        if ext:
+            return True
+        else:
+            team.ext_used = True
+            return False
+
+    def ext_str(self) -> str:
+        return f'Teams extension status:\n' \
+               f'{self.team1.name} Extension used: {self.team1.ext_used}\n' \
+               f'{self.team2.name} Extension used: {self.team2.ext_used}'
+
     def replace_player(self, team_name: str, player_name: str, leader: str) -> None:
         team = self.lookup(team_name)
-        team.replace_current(player_name)
+        info = team.replace_current(player_name)
         team.leader.add(leader)
+        self.matches.append(InfoMatch(info=info))
+
+    def timer_stock(self, team_name: str, leader: str) -> None:
+        team = self.lookup(team_name)
+        player = team.current_player
+        team.timer_stock()
+        team.leader.add(leader)
+        self.matches.append(TimerMatch(player=player, team=team))
 
     def finish_match(self, taken1: int, taken2: int, char1: Character, char2: Character) -> Match:
         if not self.match_ready():
@@ -229,12 +283,25 @@ class Battle:
             team.num_players = new_size
             team.stocks += difference * PLAYER_STOCKS
 
-    def undo(self):
+    def undo(self) -> bool:
         if not self.matches:
             raise StateError(self, "You can't undo a match when there are no matches!")
         last = self.matches.pop()
+        if isinstance(last, InfoMatch):
+            return False
+        if isinstance(last, TimerMatch):
+            if not last.team.current_player:
+                last.team.current_player = last.team.players[-1]
+            elif last.team.current_player != last.player:
+                last.team.players.pop()
+                last.team.current_player = last.team.players[-1]
+
+            last.team.current_player.left += 1
+            last.team.stocks += 1
+            return True
         self.team1.undo_match(last.p2_taken, last.p1_taken, last.p1)
         self.team2.undo_match(last.p1_taken, last.p2_taken, last.p2)
+        return True
 
     def __str__(self):
         out = f'{self.team1.name} vs {self.team2.name}\n' \

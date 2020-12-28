@@ -1,6 +1,8 @@
 import unittest
 from src.helpers import *
 from tests import mocks
+from io import StringIO
+from freezegun import freeze_time
 
 
 class HelpersTest(unittest.IsolatedAsyncioTestCase):
@@ -54,13 +56,13 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
 
     def test_usable_emoji(self):
         emoji = mocks.emoji_instance
-        bot = mocks.MockBot(emojis = [emoji])
+        bot = mocks.MockBot(emojis=[emoji])
 
         self.assertTrue(is_usable_emoji(f'<:{emoji.name}:{emoji.id}>', bot))
 
     def test_unusable_emoji(self):
 
-        bot = mocks.MockBot(emojis = [mocks.emoji_instance])
+        bot = mocks.MockBot(emojis=[mocks.emoji_instance])
         self.assertFalse(is_usable_emoji('<:fake:123>', bot))
         self.assertFalse(is_usable_emoji('bad', bot))
 
@@ -70,10 +72,10 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
             member.roles = [mocks.role_instance]
             self.assertFalse(check_roles(member, [mocks.leader_instance.name]))
         with self.subTest('One equal'):
-            member.roles = [mocks.leader_instance, mocks.crew1_instance]
+            member.roles = [mocks.leader_instance, mocks.overflow_role_instance]
             self.assertTrue(check_roles(member, [mocks.leader_instance.name]))
         with self.subTest('Both equal'):
-            member.roles = [mocks.crew1_instance, mocks.leader_instance]
+            member.roles = [mocks.overflow_role_instance, mocks.leader_instance]
             self.assertTrue(check_roles(member, [mocks.leader_instance.name, mocks.role_instance.name]))
 
     async def test_send_sheet(self):
@@ -83,21 +85,224 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
         channel.send.assert_called_once()
 
     def test_crew(self):
-        member = mocks.MockMember(name='John', id=1)
-        hk = mocks.fake_crews[0]
-        role = mocks.MockRole(name=hk)
-        overflow_role = mocks.MockRole(name=OVERFLOW_ROLE)
-        overflow_member = mocks.MockMember(name='John', id=1, roles=[mocks.crew1_instance])
-        overflow_guild = mocks.MockGuild(members=[overflow_member], name=OVERFLOW_SERVER)
-        bot = mocks.MockSSB(cache=mocks.FakeCache(),
-                            bot=mocks.MockBot(guilds=[overflow_guild]))
+        member = mocks.MockMember(name='Steve', id=int('4' * 17))
+        hk = mocks.HK
+        role = mocks.MockRole(name=hk.name)
+        bot = mocks.MockSSB(cache=mocks.cache())
         with self.subTest('Not on a crew.'):
             member.roles = []
             with self.assertRaises(Exception):
                 crew(member, bot)
         with self.subTest('On a crew.'):
             member.roles = [role]
-            self.assertEqual(hk, crew(member, bot))
+            self.assertEqual(hk.name, crew(member, bot))
         with self.subTest('On overflow crew.'):
-            member.roles = [overflow_role]
-            self.assertEqual(mocks.crew1_instance.name, crew(member, bot))
+            member.roles = [bot.cache.roles.overflow]
+            of_member = mocks.MockMember(name='Steve', id=int('4' * 17), roles=[mocks.ballers_role])
+            bot.cache.overflow_server.members.append(of_member)
+            self.assertEqual(mocks.Ballers.name, crew(member, bot))
+
+    async def test_track_cycle(self):
+        member = mocks.MockMember()
+        scs = mocks.MockGuild(roles=mocks.tracks)
+        with self.subTest('No track'):
+            res = await track_cycle(member, scs)
+            self.assertEqual(0, res)
+            self.assertIn(mocks.track1, member.roles)
+
+        with self.subTest('Track 1->2'):
+            member.roles = [mocks.track1]
+            res = await track_cycle(member, scs)
+            self.assertEqual(1, res)
+            self.assertIn(mocks.track2, member.roles)
+            self.assertNotIn(mocks.track1, member.roles)
+
+        with self.subTest('Track 2->3'):
+            member.roles = [mocks.track2]
+            res = await track_cycle(member, scs)
+            self.assertEqual(2, res)
+            self.assertIn(mocks.track3, member.roles)
+            self.assertNotIn(mocks.track2, member.roles)
+
+        with self.subTest('Track 3'):
+            member.roles = [mocks.track3]
+            res = await track_cycle(member, scs)
+            self.assertEqual(3, res)
+
+        with self.subTest('full'):
+            member.roles = [mocks.true_locked]
+            res = await track_cycle(member, scs)
+            self.assertEqual(3, res)
+
+    def test_power_level(self):
+        member = mocks.MockMember()
+        with self.subTest('No power'):
+            self.assertEqual(0, power_level(member))
+        with self.subTest('Advisor'):
+            member.roles = [mocks.advisor]
+            self.assertEqual(1, power_level(member))
+        with self.subTest('Leader'):
+            member.roles = [mocks.advisor, mocks.leader]
+            self.assertEqual(2, power_level(member))
+        with self.subTest('Admin'):
+            member.roles = [mocks.advisor, mocks.leader, mocks.admin]
+            self.assertEqual(3, power_level(member))
+
+    def test_compare_crew_and_power(self):
+        author = mocks.MockMember(display_name='Bob')
+        target = mocks.MockMember(display_name='Joe')
+        bot = mocks.MockSSB(cache=mocks.cache())
+        with self.subTest('Different crews'):
+            author.roles = [mocks.hk_role]
+            target.roles = [mocks.fsg_role]
+            with self.assertRaises(ValueError) as ve:
+                compare_crew_and_power(author, target, bot)
+            self.assertEqual(str(ve.exception), f'{author.display_name} on {mocks.hk_role.name} '
+                                                f'cannot unflair {target.display_name} on {mocks.fsg_role.name}')
+        with self.subTest('Admin'):
+            author.roles = [mocks.admin]
+            target.roles = [mocks.fsg_role]
+            self.assertIsNone(compare_crew_and_power(author, target, bot))
+        with self.subTest('Leader:Leader'):
+            author.roles = [mocks.hk_role, mocks.leader]
+            target.roles = [mocks.hk_role, mocks.leader]
+            with self.assertRaises(ValueError) as ve:
+                compare_crew_and_power(author, target, bot)
+            self.assertEqual(str(ve.exception), f'A majority of leaders must approve unflairing leader{target.mention}.'
+                                                f' Tag the Doc Keeper role for assistance.')
+        with self.subTest('Advisor:Advisor'):
+            author.roles = [mocks.hk_role, mocks.advisor]
+            target.roles = [mocks.hk_role, mocks.advisor]
+            with self.assertRaises(ValueError) as ve:
+                compare_crew_and_power(author, target, bot)
+            self.assertEqual(str(ve.exception), f' cannot unflair {target.mention} as you are not powerful enough.')
+        with self.subTest('No power.'):
+            author.roles = [mocks.hk_role]
+            target.roles = [mocks.hk_role]
+            with self.assertRaises(ValueError) as ve:
+                compare_crew_and_power(author, target, bot)
+            self.assertEqual(str(ve.exception), 'You must be an advisor, leader or staff to unflair others.')
+        with self.subTest('Leader:Advisor'):
+            author.roles = [mocks.hk_role, mocks.leader]
+            target.roles = [mocks.hk_role, mocks.advisor]
+            self.assertIsNone(compare_crew_and_power(author, target, bot))
+        with self.subTest('Leader:Nothing'):
+            author.roles = [mocks.hk_role, mocks.leader]
+            target.roles = [mocks.hk_role]
+            self.assertIsNone(compare_crew_and_power(author, target, bot))
+        with self.subTest('Advisor:Nothing'):
+            author.roles = [mocks.hk_role, mocks.advisor]
+            target.roles = [mocks.hk_role]
+            self.assertIsNone(compare_crew_and_power(author, target, bot))
+
+    def test_user_by_id(self):
+        bot = mocks.MockSSB(cache=mocks.cache())
+        with self.subTest('Too short'):
+            with self.assertRaises(ValueError) as ve:
+                name = 'too short'
+                user_by_id(name, bot)
+            self.assertEqual(str(ve.exception), f'{name} is not a mention or an id. Try again.')
+        with self.subTest('Non int'):
+            with self.assertRaises(ValueError) as ve:
+                name = 'Abcdefghijklmnopqrstuvwxyz'
+                user_by_id(name, bot)
+            self.assertEqual(str(ve.exception), f'{name} is not a mention or an id. Try again.')
+        with self.subTest('Not on server'):
+            with self.assertRaises(ValueError) as ve:
+                name = '1234567891011121314'
+                user_by_id(name, bot)
+            self.assertEqual(str(ve.exception), f'{name} doesn\'t seem to be on '
+                                                f'this server or your input is malformed. Try @user.')
+
+    def test_member_lookup(self):
+        bot = mocks.MockSSB(cache=mocks.cache())
+        with self.subTest('Mention'):
+            self.assertEqual(mocks.bob, member_lookup(mocks.bob.mention, bot))
+        with self.subTest('Exact match'):
+            self.assertEqual(mocks.bob, member_lookup(mocks.bob.name, bot))
+        with self.subTest('Close'):
+            self.assertEqual(mocks.bob, member_lookup('Bobbert', bot))
+        with self.subTest('Not here'):
+            name = 'Lalalalala'
+            with self.assertRaises(ValueError) as ve:
+                member_lookup(name, bot)
+            self.assertEqual(str(ve.exception), f'{name} does not match any member in the server.')
+
+    def test_crew_lookup(self):
+        bot = mocks.MockSSB(cache=mocks.cache())
+        with self.subTest('Tag'):
+            self.assertEqual(mocks.HK, crew_lookup(mocks.HK.abbr, bot))
+
+        with self.subTest('Actual name'):
+            self.assertEqual(mocks.HK, crew_lookup(mocks.HK.name, bot))
+
+        with self.subTest('Close name'):
+            self.assertEqual(mocks.HK, crew_lookup(f'{mocks.HK.name} extr', bot))
+
+        with self.subTest('No similar'):
+            not_close = 'Random name that isn\'nt close'
+            with self.assertRaises(ValueError) as ve:
+                crew_lookup(not_close, bot)
+            self.assertEqual(str(ve.exception), f'{not_close} does not match any crew in the server.')
+
+    def test_ambiguous_lookup(self):
+
+        bot = mocks.MockSSB(cache=mocks.cache())
+        with self.subTest('Tag'):
+            self.assertEqual(mocks.HK, ambiguous_lookup(mocks.HK.abbr, bot))
+        with self.subTest('Mention'):
+            self.assertEqual(mocks.bob, ambiguous_lookup(mocks.bob.mention, bot))
+        with self.subTest('Crew'):
+            self.assertEqual(mocks.HK, ambiguous_lookup(mocks.HK.name, bot))
+        with self.subTest('Member'):
+            self.assertEqual(mocks.bob, ambiguous_lookup(mocks.bob.name, bot))
+        with self.subTest('Member close'):
+            self.assertEqual(mocks.bob, ambiguous_lookup(f'{mocks.bob.name} suffix', bot))
+
+    @freeze_time(datetime(year=1, month=7, day=12,
+                          hour=15, minute=6, second=3))
+    def test_add_join_cd(self):
+        outfile = StringIO()
+        add_join_cd(mocks.bob, outfile)
+        outfile.seek(0)
+        content = outfile.read()
+        self.assertEqual(content, f'{mocks.bob.id} {time.time() + COOLDOWN_TIME_SECONDS}\n')
+
+    async def test_flair(self):
+        bot = mocks.MockSSB(cache=mocks.cache())
+        bob = mocks.MockMember(name='bob', id=1)
+        with self.subTest('True Locked'):
+            bob.roles = [mocks.MockRole(name=TRUE_LOCKED)]
+            with self.assertRaises(ValueError) as ve:
+                await flair(bob, mocks.HK, bot)
+            self.assertEqual(str(ve.exception),
+                             f'{bob.display_name} cannot be flaired because they are {TRUE_LOCKED}.')
+        with self.subTest('Join CD'):
+            bob.roles = [mocks.MockRole(name=JOIN_CD)]
+            with self.assertRaises(ValueError) as ve:
+                await flair(bob, mocks.HK, bot)
+            self.assertEqual(str(ve.exception),
+                             f'{bob.display_name} cannot be flaired because they have {JOIN_CD}.')
+        with self.subTest('Free Agent non overflow.'):
+            bob.roles = [bot.cache.roles.free_agent]
+            await flair(bob, mocks.HK, bot)
+            after = set(bob.roles)
+            expected = {mocks.hk_role, bot.cache.roles.join_cd}
+            self.assertEqual(expected, after)
+        with self.subTest('Track 2 non overflow.'):
+            bob.roles = [bot.cache.roles.track3]
+            await flair(bob, mocks.HK, bot)
+            after = set(bob.roles)
+            expected = {mocks.hk_role, bot.cache.roles.join_cd, bot.cache.roles.true_locked}
+            self.assertEqual(expected, after)
+        with self.subTest('Overflow.'):
+            overflow_bob = mocks.MockMember(name='bob', id=1)
+            bob.roles = [bot.cache.roles.overflow]
+            bot.cache.overflow_server.members = [overflow_bob]
+            await flair(bob, mocks.Ballers, bot)
+            after_main = set(bob.roles)
+            expected_main = {bot.cache.roles.join_cd, bot.cache.roles.overflow}
+            self.assertEqual(expected_main, after_main)
+            after_overflow = set(overflow_bob.roles)
+
+            self.assertIn(mocks.ballers_role, after_overflow)

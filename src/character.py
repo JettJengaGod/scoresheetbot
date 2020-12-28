@@ -13,6 +13,7 @@ CHARACTERS = {
     'corrin': [],
     'daisy': [],
     'dark_pit': [],
+    'dark_samus': ['damus', 'ds', 'darkus'],
     'diddy_kong': ['diddy'],
     'donkey_kong': ['dk'],
     'dr_mario': ['dr.mario', 'doc'],
@@ -48,8 +49,8 @@ CHARACTERS = {
     'mii_gunner': ['gunner'],
     'mii_swordfighter': ['swordfighter', 'msf'],
     'min_min': ['min'],
-    'mr_game_and_watch': ['gnw', 'g&w', 'gameandwatch', 'game&watch'],
-    'ness': [],
+    'mr_game_and_watch': ['gnw', 'g&w', 'gameandwatch', 'game&watch', 'gw', 'mgw'],
+    'ness': ['wide', 'thicc'],
     'olimar': ['oli', 'alph'],
     'pac_man': ['pac'],
     'palutena': ['palu'],
@@ -67,6 +68,7 @@ CHARACTERS = {
     'roy': [],
     'ryu': [],
     'samus': [],
+    'sephiroth': ['seph'],
     'sheik': ['shiek'],
     'shulk': [],
     'simon': [],
@@ -146,7 +148,7 @@ def string_to_canonical(input_str: str) -> Optional[str]:
         if alt_num > 1:
             canonical_name = JR_LIST[alt_num - 1]
             alt_num = 1
-        elif canonical_name != 'bowserjr':
+        elif canonical_name != 'bowser_jr':
             canonical_name = character
     if canonical_name == 'olimar':
         if alt_num > 4:
@@ -179,7 +181,7 @@ def all_alts(input_str: str, bot):
 def all_emojis(bot) -> List[Tuple[str, str]]:
     ret = []
     for c_name, alts in CHARACTERS.items():
-        if c_name.startswith('mii'):
+        if c_name.startswith('mii') or c_name.startswith('seph'):
             ret.append((c_name, f'{string_to_emote(c_name, bot)} AKA: {alts}'))
             continue
         ret.append((c_name, f'{all_alts(c_name, bot)} AKA: {alts}'))

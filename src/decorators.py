@@ -9,8 +9,36 @@ def ss_channel(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        if 'ultimate_cb' not in ctx.channel.name and 'scoresheet_bot' not in ctx.channel.name:
-            await ctx.send('Cannot use this bot in this channel, try a scoresheet_bot channel.')
+        if '⚔' not in ctx.channel.name:
+            await ctx.send('Cannot use this bot in this channel, try a channel with `⚔` in the channel name.')
+            return
+        return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def main_only(func):
+    """Decorator that errors if not in the correct channel."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        if 'Smash Crew Server' not in ctx.guild.name:
+            await ctx.send('This command can only be used in the main SCS Server.')
+            return
+        return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def testing_only(func):
+    """Decorator that errors if not in the correct channel."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        if 'testing_grounds' not in ctx.channel.name:
+            await ctx.send('This is a testing only command. You can only run it in a testing_grounds channel.')
             return
         return await func(self, *args, **kwargs)
 
@@ -79,7 +107,7 @@ def role_call(required: Iterable):
         async def wrapped_f(self, *args, **kwargs):
             ctx = args[0]
             if not check_roles(ctx.author, required):
-                await ctx.send(f'You need to be one of {required} to run this command')
+                await response_message(ctx, f'You need to be one of {required} to run {ctx.command.name}')
                 return
             return await func(self, *args, **kwargs)
 
@@ -94,7 +122,26 @@ def cache_update(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        self.cache.update(self)
+        await self.cache.update(self)
+        return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def flairing_required(func):
+    """Decorator that updates cache regularly."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        if not (check_roles(ctx.author, STAFF_LIST)):
+            if ctx.channel.name != FLAIRING_CHANNEL_NAME:
+                flairing_channel = discord.utils.get(ctx.guild.channels, name=FLAIRING_CHANNEL_NAME)
+                await ctx.send(f'Flairing commands can only be used in {flairing_channel.mention}.')
+                return
+        if not self.cache.flairing_allowed:
+            await ctx.send(f'Flaring is currently disabled, please wait for a mod to re-enable it.')
+            return
         return await func(self, *args, **kwargs)
 
     return wrapper
