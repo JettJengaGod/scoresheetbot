@@ -82,6 +82,7 @@ help_doc = dict(
                   'Retags an overflow crew making all members have the proper tag. (requires confirm)',
                   usage='CrewName or Tag'),
     thank=HelpDoc(Categories.misc, 'Thanks alexjett'),
+    thankboard=HelpDoc(Categories.misc, 'Returns the thanking leaderboard'),
     make_lead=HelpDoc(Categories.staff, 'Makes a user a leader on their crew', '', 'User'),
 
     pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),

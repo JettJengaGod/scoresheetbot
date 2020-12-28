@@ -8,7 +8,7 @@ from datetime import date
 from discord.ext import commands
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
-from src import helpers
+from src import helpers, db_helpers
 import src.cache
 from .character import all_emojis, string_to_emote, all_alts
 from .decorators import *
@@ -944,8 +944,17 @@ class ScoreSheetBot(commands.Cog):
         await self.help(ctx, 'misc')
 
     @commands.command(**help_doc['thank'])
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def thank(self, ctx: Context):
-        await ctx.send(f'Thanks for all the work you do on the bot alexjett!')
+
+        await ctx.send(f'Thanks for all the hard work you do on the bot alexjett!\n'
+                       f'{db_helpers.add_thanks(ctx.author)}')
+
+    @commands.command(**help_doc['thankboard'])
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    async def thankboard(self, ctx: Context):
+
+        await ctx.send(embed=db_helpers.thank_board(ctx.author))
 
     @commands.command(**help_doc['guide'])
     async def guide(self, ctx):
