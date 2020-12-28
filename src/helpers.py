@@ -362,8 +362,9 @@ async def demote(member: discord.Member, bot: 'ScoreSheetBot') -> str:
 
 
 async def response_message(ctx: Context, msg: str):
-    await ctx.send(f'{ctx.author.mention}: {msg}')
+    msg = await ctx.send(f'{ctx.author.mention}: {msg}')
     await ctx.message.delete(delay=1)
+    return msg
 
 
 def crew_members(crew_input: Crew, bot: 'ScoreSheetBot') -> List[discord.Member]:

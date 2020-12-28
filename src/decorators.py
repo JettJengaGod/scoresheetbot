@@ -123,7 +123,9 @@ def banned_channels(disallowed: Iterable):
         async def wrapped_f(self, *args, **kwargs):
             ctx = args[0]
             if ctx.channel.name in disallowed:
-                await response_message(ctx, f'{ctx.command.name} is banned in this channel.')
+                message = await response_message(ctx, f'{ctx.command.name} is banned in this channel.')
+
+                await message.delete(delay=5)
                 return
             return await func(self, *args, **kwargs)
 
