@@ -87,6 +87,26 @@ def check_roles(user: discord.Member, roles: Iterable) -> bool:
 
 async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battle):
     embed_split = split_embed(embed=battle.embed(), length=2000)
+    if battle.battle_over():
+        if not all(battle.confirms):
+            footer = ''
+            footer += '\nPlease confirm: '
+            if battle.mock:
+                footer += 'anyone can confirm or clear a mock.'
+            else:
+                if not battle.confirms[0]:
+                    footer += f'\n {battle.team1.name}: '
+                    for leader in battle.team1.leader:
+                        footer += f'{leader}, '
+                    footer = footer[:-2]
+                    footer += ' please `,confirm`.'
+                if not battle.confirms[1]:
+                    footer += f'\n {battle.team2.name}: '
+                    for leader in battle.team2.leader:
+                        footer += f'{leader}, '
+                    footer = footer[:-2]
+                    footer += ' please `,confirm`.'
+            await channel.send(footer)
     for embed in embed_split:
         await channel.send(embed=embed)
 
