@@ -36,7 +36,7 @@ help_doc = dict(
     resize=HelpDoc(Categories.cb, 'Resize the crew battle', '', 'NewSize'),
     undo=HelpDoc(Categories.cb, 'Undo the last match',
                  'Takes no parameters and undoes the last match that was played'),
-    timer_stock=HelpDoc(Categories.cb, 'Lose a stock to the timer'),
+    timer_stock=HelpDoc(Categories.cb, 'Your current player will lose a stock to the timer'),
     crew=HelpDoc(Categories.crews, 'If provided with an argument, will search for a user\'s crew or '
                                    'crew and output that, otherwise provides author\'s crew', '',
                  'Optional<User/Crew>'),
