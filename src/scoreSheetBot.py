@@ -959,7 +959,7 @@ class ScoreSheetBot(commands.Cog):
 
         await send_long(ctx, out, ',')
 
-    @commands.command(hidden=True, help_doc['pingoverlap'])
+    @commands.command(hidden=True, **help_doc['pingoverlap'])
     @role_call(STAFF_LIST)
     @cache_update
     async def pingoverlap(self, ctx, *, two_roles: str = None):
