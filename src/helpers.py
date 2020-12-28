@@ -101,7 +101,7 @@ def crew(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
     for role in roles:
         if role.name in bot.cache.crews:
             return role.name
-    raise ValueError(f'{user.mention} has no crew or something is wrong.')
+    raise ValueError(f'{str(user)} has no crew or something is wrong.')
 
 
 async def track_cycle(user: discord.Member, scs: discord.Guild) -> int:
@@ -143,8 +143,8 @@ def compare_crew_and_power(author: discord.Member, target: discord.Member, bot: 
     if author_pl == 2:
         if check_roles(target, [LEADER]):
             raise ValueError(
-                f'A majority of leaders must approve unflairing leader{target.mention}.'
-                f' Tag the Doc Keeper role for assistance.')
+                f'A majority of leaders must approve unflairing leader {target.mention}.'
+                f' Tag the Doc Keeper role in {bot.cache.channels.flairing_questions} for assistance.')
         return
 
     if author_pl == 1:
