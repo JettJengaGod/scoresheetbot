@@ -169,7 +169,7 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(ValueError) as ve:
                 compare_crew_and_power(author, target, bot)
             self.assertEqual(str(ve.exception), f'A majority of leaders must approve unflairing leader{target.mention}.'
-                                                f' Tag the Doc Keeper role for assistance.')
+                                                f' Tag the Doc Keeper role in {bot.cache.channels.flairing_questions} for assistance.')
         with self.subTest('Advisor:Advisor'):
             author.roles = [mocks.hk_role, mocks.advisor]
             target.roles = [mocks.hk_role, mocks.advisor]
