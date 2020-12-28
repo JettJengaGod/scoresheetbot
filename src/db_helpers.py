@@ -5,12 +5,12 @@ import discord
 
 def add_thanks(user: discord.Member) -> str:
     """ insert a new vendor into the vendors table """
-    add = """INSERT into thank (count, userid, username)
+    add = """INSERT into public.thank (count, userid, username)
      values(%s, %s, %s) ON CONFLICT DO NOTHING;"""
-    update = """UPDATE thank set count = count +1
+    update = """UPDATE public.thank set count = count +1
     where userid = %s;"""
-    find = """SELECT count, username from thank where userid = %s;"""
-    total = """SELECT SUM(count) from thank;"""
+    find = """SELECT count, username from public.thank where userid = %s;"""
+    total = """SELECT SUM(count) from public.thank;"""
     conn = None
     ret = ''
     try:
@@ -69,4 +69,4 @@ def thank_board(user: discord.Member) -> discord.Embed:
     finally:
         if conn is not None:
             conn.close()
-    return discord.Embed(title='Top thankers!', color=discord.Color.gold(), description='\n'.join(desc))
+    return discord.Embed(title='Top Thankers!', color=discord.Color.gold(), description='\n'.join(desc))
