@@ -62,7 +62,8 @@ class Team:
         if self.current_player:
             current_stocks = self.current_player.left
             current = self.current_player.name
-            self.players.pop()
+            if self.current_player.left == 0 and self.current_player.taken == 0:
+                self.players.pop()
         self.current_player = Player(name=player_name, team_name=self.name, left=current_stocks)
         self.players.append(self.current_player)
         return f'{self.name} subbed {current}  with {player_name} with {current_stocks} stocks left.'
