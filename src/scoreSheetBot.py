@@ -9,6 +9,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
 from helpers import *
+from db_helpers import *
 from battle import Battle
 from cache import Cache
 from character import all_emojis, string_to_emote, all_alts
@@ -941,8 +942,17 @@ class ScoreSheetBot(commands.Cog):
         await self.help(ctx, 'misc')
 
     @commands.command(**help_doc['thank'])
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def thank(self, ctx: Context):
-        await ctx.send(f'Thanks for all the work you do on the bot alexjett!')
+
+        await ctx.send(f'Thanks for all the hard work you do on the bot alexjett!\n'
+                       f'{add_thanks(ctx.author)}')
+
+    @commands.command(**help_doc['thankboard'])
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    async def thankboard(self, ctx: Context):
+
+        await ctx.send(embed=thank_board(ctx.author))
 
     @commands.command(**help_doc['guide'])
     async def guide(self, ctx):

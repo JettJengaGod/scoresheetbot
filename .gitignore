@@ -3,3 +3,4 @@
 /.idea/
 /credentials.json
 /token.pickle
+/database.ini

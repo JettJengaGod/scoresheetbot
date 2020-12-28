@@ -43,6 +43,7 @@ urllib3 = ">=1.26.2"
 freezegun = "*"
 python-levenshtein = "*"
 fuzzywuzzy = "*"
+psycopg2 = "*"
 
 [dev-packages]
 coverage = ">=5.3"
