@@ -942,6 +942,7 @@ class ScoreSheetBot(commands.Cog):
         await self.help(ctx, 'misc')
 
     @commands.command(**help_doc['thank'])
+    @banned_channels(['crew_flairing', 'scs_docs_updates'])
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def thank(self, ctx: Context):
 
@@ -949,6 +950,7 @@ class ScoreSheetBot(commands.Cog):
                        f'{add_thanks(ctx.author)}')
 
     @commands.command(**help_doc['thankboard'])
+    @banned_channels(['crew_flairing', 'scs_docs_updates'])
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def thankboard(self, ctx: Context):
 

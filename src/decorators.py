@@ -115,6 +115,22 @@ def role_call(required: Iterable):
 
     return wrapper
 
+def banned_channels(disallowed: Iterable):
+    """Decorator that checks if someone is in a roles list."""
+
+    def wrapper(func):
+        @functools.wraps(func)
+        async def wrapped_f(self, *args, **kwargs):
+            ctx = args[0]
+            if ctx.channel.name in disallowed:
+                await response_message(ctx, f'{ctx.command.name} is banned in this channel.')
+                return
+            return await func(self, *args, **kwargs)
+
+        return wrapped_f
+
+    return wrapper
+
 
 def cache_update(func):
     """Decorator that updates cache regularly."""
