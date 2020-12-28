@@ -5,9 +5,9 @@ import discord
 
 def add_thanks(user: discord.Member) -> str:
     """ insert a new vendor into the vendors table """
-    add = """INSERT into beta.public.thank (count, userid, username)
+    add = """INSERT into thank (count, userid, username)
      values(%s, %s, %s) ON CONFLICT DO NOTHING;"""
-    update = """UPDATE beta.public.thank set count = count +1
+    update = """UPDATE thank set count = count +1
     where userid = %s;"""
     find = """SELECT count, username from thank where userid = %s;"""
     total = """SELECT SUM(count) from thank;"""
