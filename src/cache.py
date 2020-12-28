@@ -4,7 +4,7 @@ import time
 import discord
 from typing import Dict, Iterable, TYPE_CHECKING, Optional
 
-from .helpers import strip_non_ascii
+from helpers import strip_non_ascii
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot

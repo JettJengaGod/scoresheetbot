@@ -19,7 +19,7 @@ from constants import *
 Context = discord.ext.commands.Context
 
 class ScoreSheetBot(commands.Cog):
-    def __init__(self, bot: commands.bot, cache: src.cache.Cache):
+    def __init__(self, bot: commands.bot, cache: Cache):
         self.bot = bot
         self.battle_map: Dict[str, Battle] = {}
         self.cache = cache
@@ -1043,7 +1043,6 @@ def main():
     bot.add_cog(ScoreSheetBot(bot, cache))
 
     bot.run(token)
-
 
 if __name__ == '__main__':
     main()
