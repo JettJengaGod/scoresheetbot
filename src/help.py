@@ -36,7 +36,7 @@ help_doc = dict(
     resize=HelpDoc(Categories.cb, 'Resize the crew battle', '', 'NewSize'),
     undo=HelpDoc(Categories.cb, 'Undo the last match',
                  'Takes no parameters and undoes the last match that was played'),
-    timer_stock=HelpDoc(Categories.cb, 'Your current player will lose a stock to the timer'),
+    timerstock=HelpDoc(Categories.cb, 'Your current player will lose a stock to the timer'),
     crew=HelpDoc(Categories.crews, 'If provided with an argument, will search for a user\'s crew or '
                                    'crew and output that, otherwise provides author\'s crew', '',
                  'Optional<User/Crew>'),
@@ -82,4 +82,7 @@ help_doc = dict(
                   'Retags an overflow crew making all members have the proper tag. (requires confirm)',
                   usage='CrewName or Tag'),
     thank=HelpDoc(Categories.misc, 'Thanks alexjett'),
+    make_lead=HelpDoc(Categories.staff, 'Makes a user a leader on their crew', '', 'User'),
+
+    pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),
 )

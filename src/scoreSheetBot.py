@@ -385,13 +385,13 @@ class ScoreSheetBot(commands.Cog):
     async def timer(self, ctx):
         await ctx.send(self._current(ctx).timer())
 
-    @commands.command(**help_doc['timer_stock'])
+    @commands.command(**help_doc['timerstock'])
     @main_only
     @has_sheet
     @ss_channel
     @is_lead
     @cache_update
-    async def timer_stock(self, ctx, team: str = None):
+    async def timerstock(self, ctx, team: str = None):
         if self._current(ctx).mock:
             if team:
                 self._current(ctx).timer_stock(team, ctx.author.mention)
@@ -962,10 +962,10 @@ class ScoreSheetBot(commands.Cog):
 
         await send_long(ctx, out, ',')
 
-    @commands.command(hidden=True)
+    @commands.command(hidden=True, help_doc['pingoverlap'])
     @role_call(STAFF_LIST)
     @cache_update
-    async def overlap_ping(self, ctx, *, two_roles: str = None):
+    async def pingoverlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `.list_roles`.')
         best = best_of_possibilities(two_roles, self)

@@ -156,11 +156,11 @@ class InfoMatch(Match):
 
 class TimerMatch(Match):
     def __init__(self, player: Player, team: Team):
-        self.player_name = player.name
+        self.player = player
         self.team = team
 
     def __str__(self):
-        return f'{self.player_name} on {self.team.name} lost a stock to the timer.'
+        return f'{self.player.name} on {self.team.name} lost a stock to the timer.'
 
 
 class Battle:
@@ -290,12 +290,13 @@ class Battle:
         if isinstance(last, InfoMatch):
             return False
         if isinstance(last, TimerMatch):
-            if last.team.current_player == last.player_name:
-                last.team.current_player.left += 1
-            else:
+            if not last.team.current_player:
                 last.team.current_player = last.team.players[-1]
-                last.team.current_player.left += 1
+            elif last.team.current_player != last.player:
+                last.team.players.pop()
+                last.team.current_player = last.team.players[-1]
 
+            last.team.current_player.left += 1
             last.team.stocks += 1
             return True
         self.team1.undo_match(last.p2_taken, last.p1_taken, last.p1)
