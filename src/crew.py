@@ -11,7 +11,6 @@ class Crew:
     rank: str = ''
     merit: int = 0
     member_count: int = 0
-    ladder: str = ''
     leaders: List[str] = dataclasses.field(default_factory=list)
     advisors: List[str] = dataclasses.field(default_factory=list)
     overflow: bool = False
@@ -25,9 +24,6 @@ class Crew:
         if self.rank:
             title += f' {self.rank}'
         description = [f'Tag: {self.abbr}\n', f'Total Members: {self.member_count}\n']
-
-        if self.ladder:
-            description.append(f'Legacy Current Placement: {self.ladder}\n')
         if self.social:
             description.append(f'Social: {self.social}\n')
         if self.leaders:
