@@ -12,6 +12,11 @@
 1. Install dependencies with `pipenv install`
     * You may need to install Visual Studio Build Tools from [here](https://visualstudio.microsoft.com/downloads/) for some dependencies.
 
+### Google Credentials Setup
+
+1. Go to https://developers.google.com/sheets/api/quickstart/python and enable the Google Sheets API
+1. Move `credentials.json` to the project folder
+
 ### Discord Bot Setup
 
 1. Create an application at https://discord.com/developers/applications

@@ -3,3 +3,5 @@
 /.idea/
 /database.ini
 /src/__pycache__/
+credentials.json
+token.pickle
