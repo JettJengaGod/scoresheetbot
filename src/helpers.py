@@ -458,3 +458,29 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
             return True
         elif str(react.emoji) == cancel and reactor == author:
             return False
+
+
+async def cooldown_process(bot: 'ScoreSheetBot') -> List[str]:
+    current_cooldown = set()
+    with open(TEMP_ROLES_FILE, 'r') as file:
+        lines = file.readlines()
+        out = []
+        current = time.time()
+        for line in lines:
+            if len(line) > 17:
+                member_id = int(line[:line.index(' ')])
+                reset = float(line[line.index(' ') + 1:-1])
+                member = bot.cache.scs.get_member(member_id)
+                current_cooldown.add(member_id)
+                diff = reset - current
+                hours = int(diff // 3600)
+                minutes = int((diff % 3600) // 60)
+                seconds = int(diff % 60)
+                out.append(f'{str(member)} has {hours} hours, {minutes} minutes, {seconds} seconds'
+                           f'  left on their join cooldown.')
+    for person in bot.cache.scs.members:
+        if check_roles(person, [JOIN_CD]):
+            if person.id not in current_cooldown:
+                await person.remove_roles(bot.cache.roles.join_cd)
+                await bot.cache.channels.flair_log.send(f'{person.display_name}\'s join cooldown ended.')
+    return out

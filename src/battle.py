@@ -332,7 +332,7 @@ class Battle:
         footer = '\n'
         if self.battle_over():
             footer += '--------------------------------------------\n' \
-                      f'{self.winner().name} wins {self.winner().stocks} - 0 over ,se' \
+                      f'{self.winner().name} wins {self.winner().stocks} - 0 over ' \
                       f'{self.loser().name}\n\n{self.team1.mvp_parse()}\n{self.team2.mvp_parse()}'
         else:
             footer += f'Current score: {self.team1.name}[{self.team1.stocks}] - ' \
