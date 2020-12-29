@@ -2,3 +2,4 @@
 /venv/
 /.idea/
 /database.ini
+/src/__pycache__/

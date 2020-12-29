@@ -1,11 +1,16 @@
 # Score Sheet Bot
 
+## Usage
+
+
+
 ## Development
 
 ### Python Setup
 
 1. Optional: Create `venv`, and activate via `venv/Scripts/activate`
 1. Install dependencies with `pipenv install`
+    * You may need to install Visual Studio Build Tools from [here](https://visualstudio.microsoft.com/downloads/) for some dependencies.
 
 ### Discord Bot Setup
 
