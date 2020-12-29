@@ -12,6 +12,7 @@
 
 1. Go to https://developers.google.com/sheets/api/quickstart/python and enable the Google Sheets API.
 1. Move `credentials.json` to the project folder.
+   * This will be used on the first command run that needs access to the spreadsheet. You may grant access from the url redirect, and verify the app you created via the 'advanced' option on the bottom left.
 
 ### Discord Bot Setup
 
