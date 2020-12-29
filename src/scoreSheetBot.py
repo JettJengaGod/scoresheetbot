@@ -5,7 +5,7 @@ import time
 import discord
 import functools
 from datetime import date
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
 from helpers import *
@@ -24,6 +24,7 @@ class ScoreSheetBot(commands.Cog):
         self.bot = bot
         self.battle_map: Dict[str, Battle] = {}
         self.cache = cache
+        self.auto_cache.start()
 
     def _current(self, ctx) -> Battle:
         return self.battle_map[key_string(ctx)]
@@ -46,8 +47,21 @@ class ScoreSheetBot(commands.Cog):
     def _clear_current(self, ctx):
         self.battle_map[key_string(ctx)] = None
 
+    def cog_unload(self):
+        self.auto_cache.cancel()
+
+    @tasks.loop(seconds=CACHE_TIME_SECONDS)
+    async def auto_cache(self):
+        self.cache.timer = 0
+        await self.cache.update(self)
+        if os.getenv('VERSION') != 'BETA':
+            await cooldown_process(self)
+
+    @auto_cache.before_loop
+    async def wait_for_bot(self):
+        await self.bot.wait_until_ready()
+
     @commands.command(help='Shows this command')
-    @cache_update
     async def help(self, ctx, *group):
         """Gets all categories and commands of mine."""
         main_user = self.cache.scs.get_member(ctx.author.id)
@@ -120,7 +134,6 @@ class ScoreSheetBot(commands.Cog):
     @no_battle
     @is_lead
     @ss_channel
-    @cache_update
     async def battle(self, ctx: Context, user: discord.Member, size: int):
         if size < 1:
             await ctx.send('Please enter a size greater than 0.')
@@ -147,7 +160,6 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @no_battle
     @ss_channel
-    @cache_update
     async def mock(self, ctx: Context, team1: str, team2: str, size: int):
         if size < 1:
             await ctx.send('Please enter a size greater than 0.')
@@ -160,7 +172,6 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     @is_lead
-    @cache_update
     async def send(self, ctx: Context, user: discord.Member, team: str = None):
         if self._current(ctx).mock:
             if team:
@@ -193,7 +204,6 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     @is_lead
-    @cache_update
     async def use_ext(self, ctx: Context, team: str = None):
         if self._current(ctx).mock:
             if team:
@@ -229,7 +239,6 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     @is_lead
-    @cache_update
     async def replace(self, ctx: Context, user: discord.Member, team: str = None):
         if self._current(ctx).mock:
             if team:
@@ -253,7 +262,6 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @has_sheet
     @ss_channel
-    @cache_update
     async def end(self, ctx: Context, char1: Union[str, discord.Emoji], stocks1: int, char2: Union[str, discord.Emoji],
                   stocks2: int):
         await self._reject_outsiders(ctx)
@@ -268,7 +276,6 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     @has_sheet
     @ss_channel
-    @cache_update
     async def resize(self, ctx: Context, new_size: int):
         await self._reject_outsiders(ctx)
         self._current(ctx).resize(new_size)
@@ -278,7 +285,6 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @has_sheet
     @ss_channel
-    @cache_update
     async def arena(self, ctx: Context, id_str: str = ''):
         if id_str and (check_roles(ctx.author, [LEADER, ADVISOR, ADMIN, MINION, STREAMER, CERTIFIED]
                                    ) or self._current(ctx).mock):
@@ -291,7 +297,6 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @has_sheet
     @ss_channel
-    @cache_update
     async def stream(self, ctx: Context, stream: str = ''):
         if stream and (check_roles(ctx.author, [LEADER, ADVISOR, ADMIN, MINION, STREAMER, CERTIFIED]
                                    ) or self._current(ctx).mock):
@@ -307,7 +312,6 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     @is_lead
-    @cache_update
     async def undo(self, ctx):
         await self._reject_outsiders(ctx)
         if not self._current(ctx).undo():
@@ -321,7 +325,6 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     @is_lead
-    @cache_update
     async def confirm(self, ctx: Context):
         await self._reject_outsiders(ctx)
 
@@ -359,7 +362,6 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     @is_lead
-    @cache_update
     async def clear(self, ctx):
         if not check_roles(ctx.author, STAFF_LIST):
             await self._reject_outsiders(ctx)
@@ -372,7 +374,6 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @has_sheet
     @ss_channel
-    @cache_update
     async def status(self, ctx):
         await send_sheet(ctx, battle=self._current(ctx))
 
@@ -388,7 +389,6 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     @is_lead
-    @cache_update
     async def timerstock(self, ctx, team: str = None):
         if self._current(ctx).mock:
             if team:
@@ -433,7 +433,6 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['rank'])
     @main_only
-    @cache_update
     async def rank(self, ctx, *, name: str = None):
         user = None
         if name:
@@ -456,7 +455,6 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['merit'])
     @main_only
-    @cache_update
     async def merit(self, ctx, *, name: str = None):
         user = None
         if name:
@@ -479,7 +477,6 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['crew'])
     @main_only
-    @cache_update
     async def crew(self, ctx, *, name: str = None):
         if name:
             ambiguous = ambiguous_lookup(name, self)
@@ -494,7 +491,6 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(embed=actual_crew.embed)
 
     @commands.command()
-    @cache_update
     @role_call([LEADER, ADMIN, MINION, ADVISOR, DOCS])
     async def playoffs(self, ctx, *, name: str = None):
         if name:
@@ -532,7 +528,6 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['promote'])
     @main_only
     @flairing_required
-    @cache_update
     async def promote(self, ctx: Context, member: discord.Member):
         if not member:
             await response_message(ctx, 'You can\'t promote yourself.')
@@ -568,7 +563,6 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['demote'])
     @main_only
     @flairing_required
-    @cache_update
     async def demote(self, ctx: Context, member: discord.Member):
         if not member:
             await response_message(ctx, 'You can\'t demote yourself.')
@@ -602,7 +596,6 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @flairing_required
     @role_call(STAFF_LIST)
-    @cache_update
     async def make_lead(self, ctx: Context, member: discord.Member):
         if not member:
             await response_message(ctx, 'You can\'t promote yourself.')
@@ -625,7 +618,6 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['unflair'])
     @main_only
     @flairing_required
-    @cache_update
     async def unflair(self, ctx: Context, user: Optional[str]):
         if user:
             try:
@@ -677,7 +669,6 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['flair'])
     @main_only
     @flairing_required
-    @cache_update
     async def flair(self, ctx: Context, member: discord.Member, *, new_crew: str = None):
         if check_roles(member, [BOT]):
             await response_message(ctx, 'You can\'t flair a bot!')
@@ -748,37 +739,13 @@ class ScoreSheetBot(commands.Cog):
         await self.help(ctx, 'staff')
 
     @commands.command(**help_doc['cooldown'], hidden=True)
-    @cache_update
     @role_call(STAFF_LIST)
     async def cooldown(self, ctx):
-        current_cooldown = set()
-        with open(TEMP_ROLES_FILE, 'r') as file:
-            lines = file.readlines()
-            out = []
-            current = time.time()
-            for line in lines:
-                if len(line) > 17:
-                    member_id = int(line[:line.index(' ')])
-                    reset = float(line[line.index(' ') + 1:-1])
-                    member = self.cache.scs.get_member(member_id)
-                    current_cooldown.add(member_id)
-                    diff = reset - current
-                    hours = int(diff // 3600)
-                    minutes = int((diff % 3600) // 60)
-                    seconds = int(diff % 60)
-                    out.append(f'{str(member)} has {hours} hours, {minutes} minutes, {seconds} seconds'
-                               f'  left on their join cooldown.')
-        await send_long(ctx, '\n'.join(out), '\n')
-        for person in self.cache.scs.members:
-            if check_roles(person, [JOIN_CD]):
-                if person.id not in current_cooldown:
-                    await person.remove_roles(self.cache.roles.join_cd)
-                    await self.cache.channels.flair_log.send(f'{person.display_name}\'s join cooldown ended.')
+        await send_long(ctx, '\n'.join(await cooldown_process(self)), '\n')
 
     @commands.command(**help_doc['non_crew'], hidden=True)
     @main_only
     @role_call(STAFF_LIST)
-    @cache_update
     async def non_crew(self, ctx):
         out = [f'```Main server non crew roles: \n']
         for role in self.cache.non_crew_roles_main:
@@ -794,7 +761,6 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(''.join(out))
 
     @commands.command(**help_doc['overflow'], hidden=True)
-    @cache_update
     @role_call([ADMIN, MINION])
     async def overflow(self, ctx: Context):
         overflow_role = set()
@@ -820,21 +786,18 @@ class ScoreSheetBot(commands.Cog):
         await send_long_embed(ctx, embed)
 
     @commands.command(**help_doc['flairing_off'], hidden=True)
-    @cache_update
     @role_call(STAFF_LIST)
     async def flairing_off(self, ctx: Context):
         self.cache.flairing_allowed = False
         await ctx.send('Flairing has been disabled for the time being.')
 
     @commands.command(**help_doc['flairing_on'], hidden=True)
-    @cache_update
     @role_call(STAFF_LIST)
     async def flairing_on(self, ctx: Context):
         self.cache.flairing_allowed = True
         await ctx.send('Flairing has been re-enabled.')
 
     @commands.command(**help_doc['pending'], hidden=True)
-    @cache_update
     @role_call(STAFF_LIST)
     async def pending(self, ctx: Context):
         await ctx.send('Printing all current battles.')
@@ -845,7 +808,6 @@ class ScoreSheetBot(commands.Cog):
                 await send_sheet(ctx, battle)
 
     @commands.command(**help_doc['disband'], hidden=True)
-    @cache_update
     @role_call(STAFF_LIST)
     async def disband(self, ctx, *, name: str = None):
         if name:
@@ -905,7 +867,6 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send('The cache has been cleared, everything should be updated now.')
 
     @commands.command(**help_doc['retag'], hidden=True)
-    @cache_update
     @role_call(STAFF_LIST)
     async def retag(self, ctx, *, name: str = None):
         if name:
@@ -961,7 +922,6 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
     @commands.command(**help_doc['overlap'])
-    @cache_update
     async def overlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `.list_roles`.')
@@ -973,7 +933,6 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(hidden=True, **help_doc['pingoverlap'])
     @role_call(STAFF_LIST)
-    @cache_update
     async def pingoverlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `.list_roles`.')
