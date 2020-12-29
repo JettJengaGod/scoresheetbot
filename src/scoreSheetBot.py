@@ -47,7 +47,7 @@ class ScoreSheetBot(commands.Cog):
         self.battle_map[key_string(ctx)] = battle
 
     def _clear_current(self, ctx):
-        self.battle_map[key_string(ctx)] = None
+        self.battle_map.pop(key_string(ctx), None)
 
     def cog_unload(self):
         self.auto_cache.cancel()
