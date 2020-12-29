@@ -1,9 +1,5 @@
 # Score Sheet Bot
 
-## Usage
-
-
-
 ## Development
 
 ### Python Setup
@@ -23,3 +19,7 @@
 1. Under the app, create a Bot
 1. Copy `.envexample` to `.env`, and add the token from the Bot page
 1. Invite your bot to your test server via `https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&permissions=519232&scope=bot`, where the client id is found in your General Information page
+
+### Run Bot
+
+You may run the bot via `pipenv run start`, or `python src/main.py`
