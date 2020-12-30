@@ -1,3 +1,4 @@
+import os
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple
 
 if TYPE_CHECKING:
@@ -495,3 +496,13 @@ async def cooldown_process(bot: 'ScoreSheetBot') -> List[str]:
                 await person.remove_roles(bot.cache.roles.join_cd)
                 await bot.cache.channels.flair_log.send(f'{person.display_name}\'s join cooldown ended.')
     return out
+
+
+async def cache_process(bot: 'ScoreSheetBot'):
+    await bot.cache.update(bot)
+    if os.getenv('VERSION') == 'PROD':
+        await cooldown_process(bot)
+    for key in bot.battle_map:
+        channel = bot.cache.scs.get_channel(channel_id_from_key(key))
+        if bot.battle_map[key]:
+            await update_channel_open(NO, channel)

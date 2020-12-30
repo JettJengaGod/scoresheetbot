@@ -23,7 +23,7 @@ def main_only(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        if 'Smash Crew Server' not in ctx.guild.name:
+        if SCS not in ctx.guild.name:
             await ctx.send('This command can only be used in the main SCS Server.')
             return
         return await func(self, *args, **kwargs)

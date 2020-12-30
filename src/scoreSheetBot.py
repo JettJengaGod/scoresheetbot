@@ -18,9 +18,6 @@ from .constants import *
 Context = discord.ext.commands.Context
 
 
-# Constants
-
-
 class ScoreSheetBot(commands.Cog):
     def __init__(self, bot: commands.bot, cache: src.cache.Cache):
         self.bot = bot
@@ -47,23 +44,15 @@ class ScoreSheetBot(commands.Cog):
         self.battle_map[key_string(ctx)] = battle
 
     async def _clear_current(self, ctx):
-        self.battle_map[key_string(ctx)] = None
+        self.battle_map.pop(key_string(ctx), None)
+        await update_channel_open(YES, ctx.channel)
 
     def cog_unload(self):
         self.auto_cache.cancel()
 
     @tasks.loop(seconds=CACHE_TIME_SECONDS)
     async def auto_cache(self):
-        self.cache.timer = 0
-        await self.cache.update(self)
-        if os.getenv('VERSION') != 'BETA':
-            await cooldown_process(self)
-        for key in self.battle_map:
-            channel = self.cache.scs.get_channel(channel_id_from_key(key))
-            if self.battle_map[key]:
-                await update_channel_open(NO, channel)
-            else:
-                await update_channel_open(YES, channel)
+        await cache_process(self)
 
     @auto_cache.before_loop
     async def wait_for_bot(self):
@@ -915,7 +904,8 @@ class ScoreSheetBot(commands.Cog):
                 await member.edit(nick=nick_without_prefix(member.display_name))
                 overflow_adv = discord.utils.get(self.cache.overflow_server.roles, name=ADVISOR)
                 overflow_leader = discord.utils.get(self.cache.overflow_server.roles, name=LEADER)
-                await user.remove_roles(of_role, overflow_adv, overflow_leader, reason=f'Unflaired by {ctx.author.name}')
+                await user.remove_roles(of_role, overflow_adv, overflow_leader,
+                                        reason=f'Unflaired by {ctx.author.name}')
                 await member.add_roles(new_role)
 
         await of_role.delete()
@@ -928,16 +918,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['recache'], hidden=True)
     @role_call(STAFF_LIST)
     async def recache(self, ctx: Context):
-        self.cache.timer = 0
-        await self.cache.update(self)
-        if os.getenv('VERSION') != 'BETA':
-            await cooldown_process(self)
-        for key in self.battle_map:
-            channel = self.cache.scs.get_channel(channel_id_from_key(key))
-            if self.battle_map[key]:
-                await update_channel_open(NO, channel)
-            else:
-                await update_channel_open(YES, channel)
+        await cache_process(self)
         await ctx.send('The cache has been reset, everything should be updated now.')
 
     @commands.command(**help_doc['retag'], hidden=True)
@@ -1086,7 +1067,6 @@ def main():
     bot.remove_command('help')
     cache = src.cache.Cache()
     bot.add_cog(ScoreSheetBot(bot, cache))
-
     bot.run(token)
 
 
