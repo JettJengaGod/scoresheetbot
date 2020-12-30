@@ -893,6 +893,7 @@ class ScoreSheetBot(commands.Cog):
         of_role = discord.utils.get(self.cache.overflow_server.roles, name=dis_crew.name)
         new_role = await self.cache.scs.create_role(
             hoist=True, name=dis_crew.name, color=of_role.color,
+            permissions=discord.Permissions(permissions=37080640)
         )
         for member in members:
             if check_roles(member, [self.cache.roles.overflow.name]):
@@ -910,7 +911,7 @@ class ScoreSheetBot(commands.Cog):
 
         await of_role.delete()
         response_embed = discord.Embed(title=f'{dis_crew.name} has been moved to the main server.',
-                                       description='\n'.join([mem.mention for mem in members]),
+                                       description='\n'.join([f'{mem.display_name} |{mem.mention}' for mem in members]),
                                        color=dis_crew.color)
         await ctx.send(f'{ctx.author.mention} don\'t forget to move the crew role in the list!')
         await send_long_embed(ctx, response_embed)
