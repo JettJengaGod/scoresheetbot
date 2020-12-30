@@ -1,5 +1,5 @@
 CACHE_TIME = 600_000_000_000  # 6000 seconds
-CACHE_TIME_SECONDS = 600
+CACHE_TIME_SECONDS = 120
 OVERFLOW_SERVER = 'SCS Overflow Server'
 
 TRACK = ['Track 1', 'Track 2', 'Move Locked Next Join']
@@ -30,7 +30,7 @@ FLAIRING_CHANNEL_NAME = 'crew_flairing'
 FLAIRING_INFO = 'flairing_info'
 DOC_KEEPER_CHAT = 'scs_doc_keepers'
 YES = '✅'
-NO = '🚫'
+NO = '⛔'
 STAFF_LIST = [DOCS, MINION, ADMIN]
 EXPECTED_NON_CREW_ROLES = {
     LEADER,
