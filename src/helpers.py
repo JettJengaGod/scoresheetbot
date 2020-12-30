@@ -1,3 +1,4 @@
+import os
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple
 
 if TYPE_CHECKING:
@@ -15,11 +16,22 @@ Context = discord.ext.commands.Context
 
 
 def key_string(ctx: Context) -> str:
-    return str(ctx.guild) + '|' + str(ctx.channel)
+    return str(ctx.guild) + '|' + str(ctx.channel.id)
 
 
-def channel_from_key(key: str) -> str:
-    return key[key.index("|") + 1:]
+def channel_id_from_key(key: str) -> int:
+    return int(key[key.index("|") + 1:])
+
+
+async def update_channel_open(prefix: str, channel: discord.TextChannel):
+    if channel.name.startswith(YES) or channel.name.startswith(NO):
+        new_name = prefix + channel.name[1:]
+    else:
+        new_name = prefix + channel.name
+    try:
+        await asyncio.wait_for(channel.edit(name=new_name), timeout=2)
+    except asyncio.TimeoutError:
+        return
 
 
 def escape(string: str) -> str:
@@ -484,3 +496,13 @@ async def cooldown_process(bot: 'ScoreSheetBot') -> List[str]:
                 await person.remove_roles(bot.cache.roles.join_cd)
                 await bot.cache.channels.flair_log.send(f'{person.display_name}\'s join cooldown ended.')
     return out
+
+
+async def cache_process(bot: 'ScoreSheetBot'):
+    await bot.cache.update(bot)
+    if os.getenv('VERSION') == 'PROD':
+        await cooldown_process(bot)
+    for key in bot.battle_map:
+        channel = bot.cache.scs.get_channel(channel_id_from_key(key))
+        if bot.battle_map[key]:
+            await update_channel_open(NO, channel)

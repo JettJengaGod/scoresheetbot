@@ -1,3 +1,4 @@
 # Rename this to ".env" and remove this line after putting your token
 DISCORD_TOKEN={PUT TOKEN HERE}
 PREFIX=,
+VERSION=BETA

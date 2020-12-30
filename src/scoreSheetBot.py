@@ -18,9 +18,6 @@ from .constants import *
 Context = discord.ext.commands.Context
 
 
-# Constants
-
-
 class ScoreSheetBot(commands.Cog):
     def __init__(self, bot: commands.bot, cache: src.cache.Cache):
         self.bot = bot
@@ -43,21 +40,19 @@ class ScoreSheetBot(commands.Cog):
         if not await self._battle_crew(ctx, ctx.author):
             raise Exception('You are not in this battle, stop trying to mess with it.')
 
-    def _set_current(self, ctx: Context, battle: Battle):
+    async def _set_current(self, ctx: Context, battle: Battle):
         self.battle_map[key_string(ctx)] = battle
 
-    def _clear_current(self, ctx):
+    async def _clear_current(self, ctx):
         self.battle_map.pop(key_string(ctx), None)
+        await update_channel_open(YES, ctx.channel)
 
     def cog_unload(self):
         self.auto_cache.cancel()
 
     @tasks.loop(seconds=CACHE_TIME_SECONDS)
     async def auto_cache(self):
-        self.cache.timer = 0
-        await self.cache.update(self)
-        if os.getenv('VERSION') != 'BETA':
-            await cooldown_process(self)
+        await cache_process(self)
 
     @auto_cache.before_loop
     async def wait_for_bot(self):
@@ -153,7 +148,7 @@ class ScoreSheetBot(commands.Cog):
                            f'Please contact an admin if this is incorrect.')
             return
         if user_crew != opp_crew:
-            self._set_current(ctx, Battle(user_crew, opp_crew, size))
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -166,7 +161,7 @@ class ScoreSheetBot(commands.Cog):
         if size < 1:
             await ctx.send('Please enter a size greater than 0.')
             return
-        self._set_current(ctx, Battle(team1, team2, size, mock=True))
+        await self._set_current(ctx, Battle(team1, team2, size, mock=True))
         await ctx.send(embed=self._current(ctx).embed())
 
     @commands.command(**help_doc['send'])
@@ -332,7 +327,7 @@ class ScoreSheetBot(commands.Cog):
 
         if self._current(ctx).battle_over():
             if self._current(ctx).mock:
-                self._clear_current(ctx)
+                await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
             else:
                 self._current(ctx).confirm(await self._battle_crew(ctx, ctx.author))
@@ -355,7 +350,7 @@ class ScoreSheetBot(commands.Cog):
                     await ctx.send(
                         f'The battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[1].mention}.')
-                    self._clear_current(ctx)
+                    await self._clear_current(ctx)
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
@@ -369,7 +364,7 @@ class ScoreSheetBot(commands.Cog):
             await self._reject_outsiders(ctx)
         if self._current(ctx).mock:
             await ctx.send('If you just cleared a crew battle to troll people, be warned this is a bannable offence.')
-        self._clear_current(ctx)
+        await self._clear_current(ctx)
         await ctx.send(f'{ctx.author.mention} cleared the crew battle.')
 
     @commands.command(**help_doc['status'])
@@ -514,7 +509,7 @@ class ScoreSheetBot(commands.Cog):
                 if check_roles(member, [PLAYOFF_LIMITED]):
                     disallowed.append(f'> {str(member)} {member.mention}')
                 else:
-                    allowed.append(f'> {str(member)} {member.mention}')
+                    allowed.append(f'> {escape(str(member))} {member.mention}')
         desc = [f'Allowed players ({len(allowed)}):', '\n'.join(allowed), f'Disallowed players ({len(disallowed)}):',
                 '\n'.join(disallowed)]
         out = discord.Embed(title=f'Eligibility of {actual_crew.name} players for playoffs',
@@ -803,9 +798,9 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def pending(self, ctx: Context):
         await ctx.send('Printing all current battles.')
-        for channel, battle in self.battle_map.items():
+        for key, battle in self.battle_map.items():
             if battle:
-                chan = discord.utils.get(ctx.guild.channels, name=channel_from_key(channel))
+                chan = discord.utils.get(ctx.guild.channels, id=channel_id_from_key(key))
                 await ctx.send(chan.mention)
                 await send_sheet(ctx, battle)
 
@@ -861,12 +856,70 @@ class ScoreSheetBot(commands.Cog):
                                        color=dis_crew.color)
         await send_long_embed(ctx, response_embed)
 
+    @commands.command(**help_doc['tomain'], hidden=True)
+    @role_call(STAFF_LIST)
+    async def tomain(self, ctx, *, name: str = None):
+        if name:
+            dis_crew = crew_lookup(name, self)
+        else:
+            await ctx.send('You must send in a crew name.')
+            return
+        if not dis_crew.overflow:
+            await ctx.send('You can only move overflow crews like this')
+            return
+
+        members = crew_members(dis_crew, self)
+        message = f'{ctx.author.mention}: You are attempting to move {dis_crew.name} to main, ' \
+                  f'this crew has {len(members)} members.' \
+                  f' The overflow crew will be deleted, are you sure?'
+        msg = await ctx.send(message)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
+        out = discord.Embed(title=f'{dis_crew.name} this crew is moving to main.',
+                            description='\n'.join(desc), color=dis_crew.color)
+
+        await send_long_embed(ctx, out)
+
+        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
+        out = discord.Embed(title=f'{dis_crew.name} is moving to main, here is their players:',
+                            description='\n'.join(desc), color=dis_crew.color)
+
+        output = split_embed(out, 2000)
+        for put in output:
+            await self.cache.channels.doc_keeper.send(embed=put)
+
+        of_role = discord.utils.get(self.cache.overflow_server.roles, name=dis_crew.name)
+        new_role = await self.cache.scs.create_role(
+            hoist=True, name=dis_crew.name, color=of_role.color,
+        )
+        for member in members:
+            if check_roles(member, [self.cache.roles.overflow.name]):
+                user = discord.utils.get(self.cache.overflow_server.members, id=member.id)
+                await member.remove_roles(self.cache.roles.overflow,
+                                          reason=f'Moved to main by {ctx.author.name}')
+                if not user:
+                    continue
+                await member.edit(nick=nick_without_prefix(member.display_name))
+                overflow_adv = discord.utils.get(self.cache.overflow_server.roles, name=ADVISOR)
+                overflow_leader = discord.utils.get(self.cache.overflow_server.roles, name=LEADER)
+                await user.remove_roles(of_role, overflow_adv, overflow_leader,
+                                        reason=f'Unflaired by {ctx.author.name}')
+                await member.add_roles(new_role)
+
+        await of_role.delete()
+        response_embed = discord.Embed(title=f'{dis_crew.name} has been moved to the main server.',
+                                       description='\n'.join([mem.mention for mem in members]),
+                                       color=dis_crew.color)
+        await ctx.send(f'{ctx.author.mention} don\'t forget to move the crew role in the list!')
+        await send_long_embed(ctx, response_embed)
+
     @commands.command(**help_doc['recache'], hidden=True)
     @role_call(STAFF_LIST)
     async def recache(self, ctx: Context):
-        self.cache.timer = 0
-        await self.cache.update(self)
-        await ctx.send('The cache has been cleared, everything should be updated now.')
+        await cache_process(self)
+        await ctx.send('The cache has been reset, everything should be updated now.')
 
     @commands.command(**help_doc['retag'], hidden=True)
     @role_call(STAFF_LIST)
@@ -1014,7 +1067,6 @@ def main():
     bot.remove_command('help')
     cache = src.cache.Cache()
     bot.add_cog(ScoreSheetBot(bot, cache))
-
     bot.run(token)
 
 
