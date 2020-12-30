@@ -15,11 +15,22 @@ Context = discord.ext.commands.Context
 
 
 def key_string(ctx: Context) -> str:
-    return str(ctx.guild) + '|' + str(ctx.channel)
+    return str(ctx.guild) + '|' + str(ctx.channel.id)
 
 
-def channel_from_key(key: str) -> str:
-    return key[key.index("|") + 1:]
+def channel_id_from_key(key: str) -> int:
+    return int(key[key.index("|") + 1:])
+
+
+async def update_channel_open(prefix: str, channel: discord.TextChannel):
+    if channel.name.startswith(YES) or channel.name.startswith(NO):
+        new_name = prefix + channel.name[1:]
+    else:
+        new_name = prefix + channel.name
+    try:
+        await asyncio.wait_for(channel.edit(name=new_name), timeout=2)
+    except asyncio.TimeoutError:
+        return
 
 
 def escape(string: str) -> str:

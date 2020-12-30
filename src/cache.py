@@ -39,13 +39,13 @@ class Cache:
     async def update(self, bot: 'ScoreSheetBot'):
         current = time.time_ns()
         if current > self.timer + CACHE_TIME:
-            self.crews_by_name = self.update_crews()
+            self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
+            self.channels = self.channel_factory(self.scs)
+            self.roles = self.role_factory(self.scs)
+            self.crews_by_name = await self.update_crews()
             self.crews = self.crews_by_name.keys()
             self.crews_by_tag = {crew.abbr.lower(): crew for crew in self.crews_by_name.values()}
-            self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
             self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
-            self.roles = self.role_factory(self.scs)
-            self.channels = self.channel_factory(self.scs)
             self.main_members = self.members_by_name(self.scs.members)
             self.overflow_members = self.members_by_name(self.overflow_server.members)
             self.crew_populate()
@@ -96,7 +96,7 @@ class Cache:
                 out[strip_non_ascii(member.display_name)] = member
         return out
 
-    def update_crews(self) -> Dict[str, Crew]:
+    async def update_crews(self) -> Dict[str, Crew]:
         creds = None
         if os.path.exists('token.pickle'):
             with open('token.pickle', 'rb') as token:
@@ -107,7 +107,7 @@ class Cache:
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    '../credentials.json', SCOPES)
+                    'credentials.json', SCOPES)
                 creds = flow.run_local_server(port=0)
             # Save the credentials for the next run
             with open('token.pickle', 'wb') as token:
@@ -133,6 +133,7 @@ class Cache:
         legacy = legacy.get('values', [])
         rising = rising.get('values', [])
         crews_by_name = {}
+        issues = []
         if not values:
             raise ValueError('Crews Sheet Not Found')
         else:
@@ -147,8 +148,7 @@ class Cache:
                     crews_by_name[row[0]].rank = f'{row[11]} (Legacy rank {row[10]})'
                     crews_by_name[row[0]].ladder = f'({pos+1}/{len(legacy)})'
                 elif row[0] != 'Pending Crew':
-                    raise Exception(
-                        f'There\'s an issue with {row[0]} on the docs, please tag a doc keeper to fix this.')
+                    issues.append(row[0])
         if not rising:
             raise ValueError('Rising Sheet Not Found')
         else:
@@ -157,8 +157,11 @@ class Cache:
                     crews_by_name[row[0]].merit = row[2]
                     crews_by_name[row[0]].rank = f'{row[11]} (Rising rank {row[10]})'
                 elif row[0] != 'Pending Crew':
-                    raise Exception(
-                        f'There\'s an issue with {row[0]} on the docs, please tag a doc keeper to fix this.')
+                    issues.append(row[0])
+        if issues:
+            issue_string = '\n'.join(issues)
+            await self.channels.doc_keeper.send(f'{self.roles.docs.mention}, there is is an issue with these crews in the docs'
+                                                f', please fix asap:\n ```{issue_string}```')
         return crews_by_name
 
     def crew_populate(self):

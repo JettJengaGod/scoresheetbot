@@ -51,7 +51,7 @@ def has_sheet(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        battle = self.battle_map.get(str(ctx.guild) + '|' + str(ctx.channel))
+        battle = self.battle_map.get(key_string(ctx))
         if battle is None:
             await ctx.send('Battle is not started.')
             return

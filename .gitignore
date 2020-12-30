@@ -5,3 +5,6 @@
 /token.pickle
 /database.ini
 /temproles.txt
+/src/__pycache__/
+credentials.json
+token.pickle
