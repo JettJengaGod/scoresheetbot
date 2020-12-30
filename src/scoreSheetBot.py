@@ -867,6 +867,64 @@ class ScoreSheetBot(commands.Cog):
                                        color=dis_crew.color)
         await send_long_embed(ctx, response_embed)
 
+    @commands.command(**help_doc['tomain'], hidden=True)
+    @role_call(STAFF_LIST)
+    async def tomain(self, ctx, *, name: str = None):
+        if name:
+            dis_crew = crew_lookup(name, self)
+        else:
+            await ctx.send('You must send in a crew name.')
+            return
+        if not dis_crew.overflow:
+            await ctx.send('You can only move overflow crews like this')
+            return
+
+        members = crew_members(dis_crew, self)
+        message = f'{ctx.author.mention}: You are attempting to move {dis_crew.name} to main, ' \
+                  f'this crew has {len(members)} members.' \
+                  f' The overflow crew will be deleted, are you sure?'
+        msg = await ctx.send(message)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
+        out = discord.Embed(title=f'{dis_crew.name} this crew is moving to main.',
+                            description='\n'.join(desc), color=dis_crew.color)
+
+        await send_long_embed(ctx, out)
+
+        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
+        out = discord.Embed(title=f'{dis_crew.name} is moving to main, here is their players:',
+                            description='\n'.join(desc), color=dis_crew.color)
+
+        output = split_embed(out, 2000)
+        for put in output:
+            await self.cache.channels.doc_keeper.send(embed=put)
+
+        of_role = discord.utils.get(self.cache.overflow_server.roles, name=dis_crew.name)
+        new_role = await self.cache.scs.create_role(
+            hoist=True, name=dis_crew.name, color=of_role.color,
+        )
+        for member in members:
+            if check_roles(member, [self.cache.roles.overflow.name]):
+                user = discord.utils.get(self.cache.overflow_server.members, id=member.id)
+                await member.remove_roles(self.cache.roles.overflow,
+                                          reason=f'Moved to main by {ctx.author.name}')
+                if not user:
+                    continue
+                await member.edit(nick=nick_without_prefix(member.display_name))
+                overflow_adv = discord.utils.get(self.cache.overflow_server.roles, name=ADVISOR)
+                overflow_leader = discord.utils.get(self.cache.overflow_server.roles, name=LEADER)
+                await user.remove_roles(of_role, overflow_adv, overflow_leader, reason=f'Unflaired by {ctx.author.name}')
+                await member.add_roles(new_role)
+
+        await of_role.delete()
+        response_embed = discord.Embed(title=f'{dis_crew.name} has been moved to the main server.',
+                                       description='\n'.join([mem.mention for mem in members]),
+                                       color=dis_crew.color)
+        await ctx.send(f'{ctx.author.mention} don\'t forget to move the crew role in the list!')
+        await send_long_embed(ctx, response_embed)
+
     @commands.command(**help_doc['recache'], hidden=True)
     @role_call(STAFF_LIST)
     async def recache(self, ctx: Context):
@@ -877,9 +935,9 @@ class ScoreSheetBot(commands.Cog):
         for key in self.battle_map:
             channel = self.cache.scs.get_channel(channel_id_from_key(key))
             if self.battle_map[key]:
-                await update_channel_open(YES, channel)
-            else:
                 await update_channel_open(NO, channel)
+            else:
+                await update_channel_open(YES, channel)
         await ctx.send('The cache has been reset, everything should be updated now.')
 
     @commands.command(**help_doc['retag'], hidden=True)
