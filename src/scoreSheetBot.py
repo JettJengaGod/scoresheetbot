@@ -691,7 +691,6 @@ class ScoreSheetBot(commands.Cog):
             return
         overflow_mem = discord.utils.get(self.cache.overflow_server.members, id=member.id)
         if flairing_crew.overflow and not overflow_mem:
-            self.cache.timer = 0
             await self.cache.update(self)
             overflow_mem = discord.utils.get(self.cache.overflow_server.members, id=member.id)
             if not overflow_mem:
