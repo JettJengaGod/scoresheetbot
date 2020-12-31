@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Optional, Iterable
 from character import Character
+from typing import Optional, Set, List
 from discord import embeds, colour
 from datetime import datetime
 import random
@@ -42,8 +42,8 @@ class Team:
     name: str
     num_players: int
     stocks: int
-    players: list = field(default_factory=list)
-    leader: set = field(default_factory=set)
+    players: List[Player] = field(default_factory=list)
+    leader: Set[str] = field(default_factory=set)
     current_player: Optional[Player] = None
     ext_used: bool = False
 
@@ -96,13 +96,13 @@ class Team:
         self.current_player.taken -= took
         self.stocks += lost
 
-    def mvp(self) -> Optional[Iterable]:
+    def mvp(self) -> List[Player]:
         highest = 0
         ret = []
         for player in self.players:
             if player.taken > highest:
                 ret = [player]
-                highest = max(highest, player.taken)
+                highest = player.taken
             elif player.taken == highest:
                 ret.append(player)
         return ret
@@ -177,7 +177,7 @@ class Battle:
         self.time = datetime.now()
         self.mock = mock
 
-    def confirmed(self):
+    def confirmed(self) -> bool:
         return all(self.confirms)
 
     def match_ready(self) -> bool:
