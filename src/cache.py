@@ -116,7 +116,7 @@ class Cache:
         service = build('sheets', 'v4', credentials=creds)
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
-        crew_info_range = 'Crew Information!A4:D2160'
+        crew_info_range = 'Crew Information!A4:E2160'
         legacy_range = 'Legacy Ladder!A4:L200'
         rising_range = 'Rising Ladder!A4:L300'
         # Call the Sheets API
@@ -139,6 +139,8 @@ class Cache:
         else:
             for row in values:
                 crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=row[3])
+                if len(row) == 5:
+                    crews_by_name[row[0]].icon = row[4]
         if not legacy:
             raise ValueError('Legacy Sheet Not Found')
         else:
