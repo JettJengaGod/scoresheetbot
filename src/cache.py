@@ -21,7 +21,6 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 class Cache:
     def __init__(self):
-        self.live: bool = False
         self.crews_by_name: Dict[str, Crew] = {}
         self.main_members: Dict[str, discord.Member] = {}
         self.crews: Iterable[str] = []
@@ -30,28 +29,23 @@ class Cache:
         self.overflow_server: discord.Guild = None
         self.roles = None
         self.channels = None
-        self.timer: int = 0
         self.non_crew_roles_main: List[str] = []
         self.non_crew_roles_overflow: List[str] = []
         self.crews_by_tag: Dict[str, Crew] = {}
         self.flairing_allowed: bool = True
 
     async def update(self, bot: 'ScoreSheetBot'):
-        current = time.time_ns()
-        if current > self.timer + CACHE_TIME:
-            self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
-            self.channels = self.channel_factory(self.scs)
-            self.roles = self.role_factory(self.scs)
-            self.crews_by_name = await self.update_crews()
-            self.crews = self.crews_by_name.keys()
-            self.crews_by_tag = {crew.abbr.lower(): crew for crew in self.crews_by_name.values()}
-            self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
-            self.main_members = self.members_by_name(self.scs.members)
-            self.overflow_members = self.members_by_name(self.overflow_server.members)
-            self.crew_populate()
-            self.live = True
-            self.timer = time.time_ns()
-            await self.join_cd_parse(bot)
+        self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
+        self.channels = self.channel_factory(self.scs)
+        self.roles = self.role_factory(self.scs)
+        self.crews_by_name = await self.update_crews()
+        self.crews = self.crews_by_name.keys()
+        self.crews_by_tag = {crew.abbr.lower(): crew for crew in self.crews_by_name.values()}
+        self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
+        self.main_members = self.members_by_name(self.scs.members)
+        self.overflow_members = self.members_by_name(self.overflow_server.members)
+        self.crew_populate()
+        await self.join_cd_parse(bot)
 
     @staticmethod
     def role_factory(server):
