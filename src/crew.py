@@ -12,6 +12,7 @@ class Crew:
     merit: int = 0
     member_count: int = 0
     ladder: str = ''
+    icon: str = ''
     leaders: List[str] = dataclasses.field(default_factory=list)
     advisors: List[str] = dataclasses.field(default_factory=list)
     overflow: bool = False
@@ -42,4 +43,7 @@ class Crew:
             description[-1] = description[-1][:-2]
             description.append('\n')
         description.append(f'Merit: {self.merit}')
-        return discord.Embed(title=title, description=''.join(description), color=self.color)
+        embed = discord.Embed(title=title, description=''.join(description), color=self.color)
+        if self.icon:
+            embed.set_thumbnail(url=self.icon)
+        return embed
