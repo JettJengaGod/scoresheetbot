@@ -2,7 +2,7 @@ import os
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict
 
 from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
-    remove_expired_cooldown
+    remove_expired_cooldown, cooldown_current
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
@@ -482,7 +482,7 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
 async def cache_process(bot: 'ScoreSheetBot'):
     await bot.cache.update(bot)
     crew_update(bot)
-    if os.getenv('VERSION') == 'PROD':
+    if True: #os.getenv('VERSION') == 'PROD':
         await cooldown_handle(bot)
     for key in bot.battle_map:
         channel = bot.cache.scs.get_channel(channel_id_from_key(key))
@@ -521,10 +521,16 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
     for user_id in cooldown_finished():
         member = bot.cache.scs.get_member(user_id)
         if check_roles(member, ['24h Join Cooldown']):
-            member.remove_roles(bot.cache.roles.join_cd)
+            await member.remove_roles(bot.cache.roles.join_cd)
             await bot.cache.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
         else:
             remove_expired_cooldown(user_id)
+
+    uids = {item[0] for item in cooldown_current()}
+    for member in bot.cache.scs.members:
+        if check_roles(member, ['24h Join Cooldown']) and member.id not in uids:
+            await member.remove_roles(bot.cache.roles.join_cd)
+            await bot.cache.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
 
 
 def strfdelta(tdelta, fmt):
