@@ -29,6 +29,7 @@ class Player:
     taken: int = 0
     left: int = PLAYER_STOCKS
     char: Character = Character('', bot=None)
+    id: int = 0
 
     def set_char(self, char: Character) -> None:
         self.char = char
@@ -47,16 +48,15 @@ class Team:
     current_player: Optional[Player] = None
     ext_used: bool = False
 
-    def add_player(self, player_name: str) -> None:
+    def add_player(self, player_name: str, player_id: Optional[int]) -> None:
         if self.current_player:
             raise StateError(None,
                              f"This team already has a current player, {self.current_player.name}, use \",replace\" "
                              f"to replace them")
-            # TODO add role checks here to make sure the player is on their team
-        self.current_player = Player(name=player_name, team_name=self.name)
+        self.current_player = Player(name=player_name, team_name=self.name, id=player_id)
         self.players.append(self.current_player)
 
-    def replace_current(self, player_name: str) -> str:
+    def replace_current(self, player_name: str, player_id: Optional[int] = 0) -> str:
         current_stocks = PLAYER_STOCKS
         current = ''
         if self.current_player:
@@ -64,7 +64,7 @@ class Team:
             current = self.current_player.name
             if self.current_player.left == 0 and self.current_player.taken == 0:
                 self.players.pop()
-        self.current_player = Player(name=player_name, team_name=self.name, left=current_stocks)
+        self.current_player = Player(name=player_name, team_name=self.name, left=current_stocks, id=player_id)
         self.players.append(self.current_player)
         return f'{self.name} subbed {current}  with {player_name} with {current_stocks} stocks left.'
 
@@ -139,11 +139,11 @@ class Match:
 
     def __eq__(self, other):
         return (
-                   self.p1.name, self.p2.name, self.p1_taken, self.p2_taken, self.winner, self.p1.char.name,
-                   self.p2.char.name
+                   self.p1.name, self.p2.name, self.p1_taken, self.p2_taken, self.winner, self.p1.char.emoji,
+                   self.p2.char.emoji
                ) == (
-                   other.p1.name, other.p2.name, other.p1_taken, other.p2_taken, other.winner, other.p1.char.name,
-                   other.p2.char.name
+                   other.p1.name, other.p2.name, other.p1_taken, other.p2_taken, other.winner, other.p1.char.emoji,
+                   other.p2.char.emoji
                )
 
 
@@ -189,9 +189,9 @@ class Battle:
                 return team
         raise StateError(self, f"Team \"{team_name}\" does not exist.")
 
-    def add_player(self, team_name: str, player_name: str, leader: str) -> None:
+    def add_player(self, team_name: str, player_name: str, leader: str, player_id: Optional[int] = 0) -> None:
         team = self.lookup(team_name)
-        team.add_player(player_name)
+        team.add_player(player_name, player_id)
         team.leader.add(leader)
 
     def ext_used(self, team_name: str) -> bool:
@@ -208,7 +208,7 @@ class Battle:
                f'{self.team1.name} Extension used: {self.team1.ext_used}\n' \
                f'{self.team2.name} Extension used: {self.team2.ext_used}'
 
-    def replace_player(self, team_name: str, player_name: str, leader: str) -> None:
+    def replace_player(self, team_name: str, player_name: str, leader: str, player_id: Optional[int] = 0) -> None:
         team = self.lookup(team_name)
         info = team.replace_current(player_name)
         team.leader.add(leader)
