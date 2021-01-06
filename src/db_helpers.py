@@ -1,6 +1,7 @@
 from typing import List, Tuple
 import traceback
 import psycopg2
+import sys
 import os
 from src.battle import Battle
 from src.crew import Crew
@@ -53,6 +54,7 @@ def add_thanks(user: discord.Member) -> str:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
 
     finally:
@@ -84,6 +86,7 @@ def thank_board(user: discord.Member) -> discord.Embed:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -112,6 +115,7 @@ def add_member_and_roles(member: discord.Member) -> None:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -166,6 +170,7 @@ def update_member_roles(member: discord.Member) -> None:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -211,6 +216,7 @@ def add_member_and_crew(member: discord.Member, crew: Crew, role: discord.Role) 
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -238,6 +244,7 @@ def find_member_roles(member: discord.Member) -> List[str]:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -269,6 +276,7 @@ def add_character(name: str):
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -321,6 +329,7 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> None:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -351,6 +360,7 @@ def crew_correct(member: discord.Member, current: str) -> bool:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -373,6 +383,7 @@ def all_crews() -> List[List]:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -406,6 +417,7 @@ def update_crew(crew: Crew) -> None:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -439,6 +451,7 @@ def update_crew_tomain(crew: Crew, new_role_id: int) -> None:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -468,6 +481,7 @@ def update_member_crew(member: discord.Member, new_crew: str) -> None:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -494,6 +508,7 @@ def cooldown_finished() -> List[int]:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -519,6 +534,7 @@ def cooldown_current() -> List[Tuple[int, datetime.timedelta]]:
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:
@@ -541,6 +557,7 @@ def remove_expired_cooldown(user_id: int):
     except (Exception, psycopg2.DatabaseError) as error:
         lf = logfile()
         traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
         lf.close()
     finally:
         if conn is not None:

@@ -1096,6 +1096,7 @@ class ScoreSheetBot(commands.Cog):
                 append_write = 'w'  # make a new file if not
             lf = open(logfilename, append_write)
             traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+            traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
             lf.close()
 
 
