@@ -36,16 +36,21 @@ class Cache:
 
     async def update(self, bot: 'ScoreSheetBot'):
         self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
+        self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
         self.channels = self.channel_factory(self.scs)
         self.roles = self.role_factory(self.scs)
         self.crews_by_name = await self.update_crews()
         self.crews = self.crews_by_name.keys()
         self.crews_by_tag = {crew.abbr.lower(): crew for crew in self.crews_by_name.values()}
-        self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
         self.main_members = self.members_by_name(self.scs.members)
         self.overflow_members = self.members_by_name(self.overflow_server.members)
         self.crew_populate()
-        await self.join_cd_parse(bot)
+
+    def minor_update(self, bot: 'ScoreSheetBot'):
+        self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
+        self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
+        self.main_members = self.members_by_name(self.scs.members)
+        self.overflow_members = self.members_by_name(self.overflow_server.members)
 
     @staticmethod
     def role_factory(server):
@@ -174,35 +179,19 @@ class Cache:
         for role in self.scs.roles:
             if role.name in self.crews_by_name.keys():
                 self.crews_by_name[role.name].color = role.color
+                self.crews_by_name[role.name].role_id = role.id
             elif role.name not in EXPECTED_NON_CREW_ROLES:
                 self.non_crew_roles_main.append(role.name)
         for role in self.overflow_server.roles:
             if role.name in self.crews_by_name.keys():
                 self.crews_by_name[role.name].color = role.color
+                self.crews_by_name[role.name].role_id = role.id
                 self.crews_by_name[role.name].overflow = True
             elif role.name not in EXPECTED_NON_CREW_ROLES:
                 self.non_crew_roles_overflow.append(role.name)
 
     def flairing_toggle(self):
         self.flairing_allowed = not self.flairing_allowed
-
-    async def join_cd_parse(self, bot: 'ScoreSheetBot'):
-        try:
-            with open(TEMP_ROLES_FILE, 'r') as file:
-                lines = file.readlines()
-            with open(TEMP_ROLES_FILE, 'w') as file:
-                for line in lines:
-                    if len(line) > 17:
-                        member_id = int(line[:line.index(' ')])
-                        reset = float(line[line.index(' ') + 1:-1])
-                        if reset < time.time():
-                            member = bot.cache.scs.get_member(member_id)
-                            await member.remove_roles(self.roles.join_cd)
-                            await self.channels.flair_log.send(f'{member.display_name}\'s join cooldown ended.')
-                        else:
-                            file.write(line)
-        except FileNotFoundError:
-            open(TEMP_ROLES_FILE, 'w+')
 
     def _crew(self, user: discord.Member) -> Optional[str]:
         roles = user.roles

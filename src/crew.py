@@ -16,6 +16,7 @@ class Crew:
     leaders: List[str] = dataclasses.field(default_factory=list)
     advisors: List[str] = dataclasses.field(default_factory=list)
     overflow: bool = False
+    role_id: int = -1
     color: discord.Color = discord.Color.default()
 
     @property

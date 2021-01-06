@@ -1,5 +1,8 @@
 import os
-from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple
+from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict
+
+from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
+    remove_expired_cooldown
 
 if TYPE_CHECKING:
     from scoreSheetBot import ScoreSheetBot
@@ -119,8 +122,13 @@ async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battl
                     footer = footer[:-2]
                     footer += ' please `,confirm`.'
             await channel.send(footer)
+    first = None
     for embed in embed_split:
-        await channel.send(embed=embed)
+        if not first:
+            first = await channel.send(embed=embed)
+        else:
+            await channel.send(embed=embed)
+    return first
 
 
 def crew(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
@@ -283,7 +291,6 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         await flairing_info.send(f'{pepper.mention} {member.mention} is {TRUE_LOCKED}.')
     await member.add_roles(bot.cache.roles.join_cd)
     await member.add_roles(bot.cache.roles.playoff)
-    add_join_cd(member, open(TEMP_ROLES_FILE, 'a'))
 
 
 async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreSheetBot'):
@@ -471,37 +478,56 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
             return False
 
 
-async def cooldown_process(bot: 'ScoreSheetBot') -> List[str]:
-    current_cooldown = set()
-    with open(TEMP_ROLES_FILE, 'r') as file:
-        lines = file.readlines()
-        out = []
-        current = time.time()
-        for line in lines:
-            if len(line) > 17:
-                member_id = int(line[:line.index(' ')])
-                reset = float(line[line.index(' ') + 1:-1])
-                member = bot.cache.scs.get_member(member_id)
-                current_cooldown.add(member_id)
-                diff = reset - current
-                hours = int(diff // 3600)
-                minutes = int((diff % 3600) // 60)
-                seconds = int(diff % 60)
-                out.append(f'{str(member)} has {hours} hours, {minutes} minutes, {seconds} seconds'
-                           f'  left on their join cooldown.')
-    for person in bot.cache.scs.members:
-        if check_roles(person, [JOIN_CD]):
-            if person.id not in current_cooldown:
-                await person.remove_roles(bot.cache.roles.join_cd)
-                await bot.cache.channels.flair_log.send(f'{person.display_name}\'s join cooldown ended.')
-    return out
-
-
 async def cache_process(bot: 'ScoreSheetBot'):
     await bot.cache.update(bot)
+    crew_update(bot)
     if os.getenv('VERSION') == 'PROD':
-        await cooldown_process(bot)
+        await cooldown_handle(bot)
     for key in bot.battle_map:
         channel = bot.cache.scs.get_channel(channel_id_from_key(key))
         if bot.battle_map[key]:
             await update_channel_open(NO, channel)
+
+
+def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
+    try:
+        crew_str = crew(member, bot)
+    except ValueError:
+        return
+    member_crew = crew_lookup(crew_str, bot)
+    server = bot.cache.overflow_server if member_crew.overflow else bot.cache.scs
+    crew_role = discord.utils.get(server.roles, name=member_crew.name)
+    if not crew_correct(member, crew_str):
+        add_member_and_crew(member, member_crew, crew_role)
+
+
+def crew_update(bot: 'ScoreSheetBot'):
+    cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache.crews_by_name.values()}
+    db_crews = all_crews()
+    missing = []
+    for db_crew in db_crews:
+        if db_crew[0] in cached_crews:
+            cached = cached_crews.pop(db_crew[0])
+        else:
+            missing.append(db_crew)
+            continue
+        formatted = (cached.role_id, cached.abbr, cached.name, None, cached.overflow)
+        if formatted != db_crew:
+            update_crew(cached)
+
+
+async def cooldown_handle(bot: 'ScoreSheetBot'):
+    for user_id in cooldown_finished():
+        member = bot.cache.scs.get_member(user_id)
+        if check_roles(member, ['24h Join Cooldown']):
+            member.remove_roles(bot.cache.roles.join_cd)
+            await bot.cache.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
+        else:
+            remove_expired_cooldown(user_id)
+
+
+def strfdelta(tdelta, fmt):
+    d = {"days": tdelta.days}
+    d["hours"], rem = divmod(tdelta.seconds, 3600)
+    d["minutes"], d["seconds"] = divmod(rem, 60)
+    return fmt.format(**d)
