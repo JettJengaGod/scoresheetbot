@@ -317,7 +317,10 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
 
 def nick_without_prefix(nick: str) -> str:
     if '|' in nick:
-        return nick[nick.rindex('|') + 1:]
+        index = nick.rindex('|') + 1
+        while nick[index] == ' ':
+            index += 1
+        return nick[index:]
     else:
         return nick
 
@@ -482,7 +485,7 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
 async def cache_process(bot: 'ScoreSheetBot'):
     await bot.cache.update(bot)
     crew_update(bot)
-    if True: #os.getenv('VERSION') == 'PROD':
+    if os.getenv('VERSION') == 'PROD':
         await cooldown_handle(bot)
     for key in bot.battle_map:
         channel = bot.cache.scs.get_channel(channel_id_from_key(key))

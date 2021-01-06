@@ -965,7 +965,18 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('You can only retag overflow crews like this')
             return
         members = crew_members(dis_crew, self)
+        preview = []
+        for member in members:
+            before = member.nick if member.nick else member.name
+            member_nick = nick_without_prefix(member.nick) if member.nick else nick_without_prefix(member.name)
+            after = f'{dis_crew.abbr} | {member_nick}'
+            preview.append(f'{before} -> {after}')
+        desc = [f'({len(members)}):', '\n'.join(preview)]
+        out = discord.Embed(title=f'{dis_crew.name} these player\'s will have their names updated.',
+                            description='\n'.join(desc), color=dis_crew.color)
+        await send_long_embed(ctx, out)
         message = f'{ctx.author.mention}: Really retag all {len(members)} members of {dis_crew.name}?'
+
         msg = await ctx.send(message)
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
