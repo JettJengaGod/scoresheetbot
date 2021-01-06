@@ -524,6 +524,7 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
             await bot.cache.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
         else:
             remove_expired_cooldown(user_id)
+            print(str(member))
 
 
 def strfdelta(tdelta, fmt):
