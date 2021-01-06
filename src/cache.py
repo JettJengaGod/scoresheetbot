@@ -49,8 +49,6 @@ class Cache:
     def minor_update(self, bot: 'ScoreSheetBot'):
         self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
         self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
-        self.main_members = self.members_by_name(self.scs.members)
-        self.overflow_members = self.members_by_name(self.overflow_server.members)
 
     @staticmethod
     def role_factory(server):
