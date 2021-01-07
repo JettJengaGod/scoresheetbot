@@ -66,16 +66,16 @@ class ScoreSheetBot(commands.Cog):
     #
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
-
-        if before.roles != after.roles:
-            update_member_roles(after)
-            try:
-                after_crew = crew(after, self)
-            except ValueError:
-                after_crew = None
-            if not crew_correct(after, after_crew):
-                update_member_crew(after, after_crew)
-                self.cache.minor_update(self)
+        if os.getenv('VERSION') == 'PROD':
+            if before.roles != after.roles:
+                update_member_roles(after)
+                try:
+                    after_crew = crew(after, self)
+                except ValueError:
+                    after_crew = None
+                if not crew_correct(after, after_crew):
+                    update_member_crew(after, after_crew)
+                    self.cache.minor_update(self)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
