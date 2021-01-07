@@ -80,12 +80,14 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        role_ids = find_member_roles(member)
-        if role_ids:
-            roles = [discord.utils.get(member.guild.roles, id=role_id) for role_id in role_ids]
-            await member.add_roles(*roles)
-        else:
-            add_member_and_roles(member)
+
+        if os.getenv('VERSION') == 'PROD':
+            role_ids = find_member_roles(member)
+            if role_ids:
+                roles = [discord.utils.get(member.guild.roles, id=role_id) for role_id in role_ids]
+                await member.add_roles(*roles)
+            else:
+                add_member_and_roles(member)
 
     @commands.command(help='Shows this command')
     async def help(self, ctx, *group):
