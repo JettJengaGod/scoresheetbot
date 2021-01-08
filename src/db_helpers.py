@@ -3,7 +3,7 @@ import traceback
 import psycopg2
 import sys
 import os
-from src.battle import Battle
+from src.battle import Battle, InfoMatch, TimerMatch
 from src.crew import Crew
 from src.db_config import config
 import discord
@@ -312,6 +312,8 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> None:
         ))
         battle_id = cur.fetchone()[0]
         for order, match in enumerate(battle.matches):
+            if isinstance(match, TimerMatch) or isinstance(match, InfoMatch):
+                continue
             winner_id = match.p1.id if match.winner == 1 else match.p2.id
             cur.execute(add_match, (
                 match.p1.id,
