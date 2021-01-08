@@ -323,7 +323,7 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> None:
                 winner_id,
                 battle_id,
                 char_id_from_name(match.p1.char.base, cur),
-                char_id_from_name(match.p1.char.base, cur),
+                char_id_from_name(match.p2.char.base, cur),
                 order
             ))
         conn.commit()
