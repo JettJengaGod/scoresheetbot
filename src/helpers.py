@@ -483,8 +483,8 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
 
 async def cache_process(bot: 'ScoreSheetBot'):
     await bot.cache.update(bot)
-    crew_update(bot)
     if os.getenv('VERSION') == 'PROD':
+        crew_update(bot)
         await cooldown_handle(bot)
     for key in bot.battle_map:
         channel = bot.cache.scs.get_channel(channel_id_from_key(key))
@@ -517,6 +517,7 @@ def crew_update(bot: 'ScoreSheetBot'):
         formatted = (cached.role_id, cached.abbr, cached.name, None, cached.overflow)
         if formatted != db_crew:
             update_crew(cached)
+
 
 
 async def cooldown_handle(bot: 'ScoreSheetBot'):
