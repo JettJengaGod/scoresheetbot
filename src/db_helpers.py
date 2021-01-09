@@ -3,7 +3,7 @@ from src.db_config import config
 import discord
 
 
-def add_thanks(user: discord.Member) -> str:
+def add_thanks(prefix: str, user: discord.Member) -> str:
     """ insert a new vendor into the vendors table """
     add = """INSERT into thank (count, userid, username)
      values(%s, %s, %s) ON CONFLICT DO NOTHING;"""
@@ -30,7 +30,7 @@ def add_thanks(user: discord.Member) -> str:
         cur.execute(total, )
 
         res = cur.fetchone()
-        ret += f'alexjett has been thanked {res[0]} total times. (Try `,thankboard`)'
+        ret += f'alexjett has been thanked {res[0]} total times. (Try `{prefix}thankboard`)'
         # commit the changes to the database
         conn.commit()
         # close communication with the database

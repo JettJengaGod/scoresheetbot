@@ -108,10 +108,11 @@ class Team:
         return ret
 
     def mvp_parse(self) -> str:
-        players = ''
-        for player in self.mvp():
-            players += f'**{str(player)}**, '
-        return f'MVP for **{self.name}** was {players[:-2]} with {self.mvp()[0].taken} stocks'
+        mvps = self.mvp()
+        if not mvps:
+            return ''
+        mvp_names = ', '.join(map(lambda p: bold(str(p)), mvps))
+        return f'MVP for {bold(self.name)} was {mvp_names} with {mvps[0].taken} stocks'
 
     def current_status(self) -> str:
         if self.current_player:
