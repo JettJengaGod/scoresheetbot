@@ -476,6 +476,8 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
             react, reactor = await bot.wait_for('reaction_add', timeout=30.0, check=check)
         except asyncio.TimeoutError:
             return False
+        if react.message.id != message.id:
+            continue
         if str(react.emoji) == confirm and reactor == author:
             return True
         elif str(react.emoji) == cancel and reactor == author:
