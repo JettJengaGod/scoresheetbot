@@ -21,7 +21,6 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 class Cache:
     def __init__(self):
-        self.live: bool = False
         self.crews_by_name: Dict[str, Crew] = {}
         self.main_members: Dict[str, discord.Member] = {}
         self.crews: Iterable[str] = []
@@ -30,28 +29,26 @@ class Cache:
         self.overflow_server: discord.Guild = None
         self.roles = None
         self.channels = None
-        self.timer: int = 0
         self.non_crew_roles_main: List[str] = []
         self.non_crew_roles_overflow: List[str] = []
         self.crews_by_tag: Dict[str, Crew] = {}
         self.flairing_allowed: bool = True
 
     async def update(self, bot: 'ScoreSheetBot'):
-        current = time.time_ns()
-        if current > self.timer + CACHE_TIME:
-            self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
-            self.channels = self.channel_factory(self.scs)
-            self.roles = self.role_factory(self.scs)
-            self.crews_by_name = await self.update_crews()
-            self.crews = self.crews_by_name.keys()
-            self.crews_by_tag = {crew.abbr.lower(): crew for crew in self.crews_by_name.values()}
-            self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
-            self.main_members = self.members_by_name(self.scs.members)
-            self.overflow_members = self.members_by_name(self.overflow_server.members)
-            self.crew_populate()
-            self.live = True
-            self.timer = time.time_ns()
-            await self.join_cd_parse(bot)
+        self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
+        self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
+        self.channels = self.channel_factory(self.scs)
+        self.roles = self.role_factory(self.scs)
+        self.crews_by_name = await self.update_crews()
+        self.crews = self.crews_by_name.keys()
+        self.crews_by_tag = {crew.abbr.lower(): crew for crew in self.crews_by_name.values()}
+        self.main_members = self.members_by_name(self.scs.members)
+        self.overflow_members = self.members_by_name(self.overflow_server.members)
+        self.crew_populate()
+
+    def minor_update(self, bot: 'ScoreSheetBot'):
+        self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
+        self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
 
     @staticmethod
     def role_factory(server):
@@ -116,7 +113,7 @@ class Cache:
         service = build('sheets', 'v4', credentials=creds)
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
-        crew_info_range = 'Crew Information!A4:D2160'
+        crew_info_range = 'Crew Information!A4:E2160'
         legacy_range = 'Legacy Ladder!A4:L200'
         rising_range = 'Rising Ladder!A4:L300'
         # Call the Sheets API
@@ -139,6 +136,8 @@ class Cache:
         else:
             for row in values:
                 crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=row[3])
+                if len(row) == 5:
+                    crews_by_name[row[0]].icon = row[4]
         if not legacy:
             raise ValueError('Legacy Sheet Not Found')
         else:
@@ -178,35 +177,19 @@ class Cache:
         for role in self.scs.roles:
             if role.name in self.crews_by_name.keys():
                 self.crews_by_name[role.name].color = role.color
+                self.crews_by_name[role.name].role_id = role.id
             elif role.name not in EXPECTED_NON_CREW_ROLES:
                 self.non_crew_roles_main.append(role.name)
         for role in self.overflow_server.roles:
             if role.name in self.crews_by_name.keys():
                 self.crews_by_name[role.name].color = role.color
+                self.crews_by_name[role.name].role_id = role.id
                 self.crews_by_name[role.name].overflow = True
             elif role.name not in EXPECTED_NON_CREW_ROLES:
                 self.non_crew_roles_overflow.append(role.name)
 
     def flairing_toggle(self):
         self.flairing_allowed = not self.flairing_allowed
-
-    async def join_cd_parse(self, bot: 'ScoreSheetBot'):
-        try:
-            with open(TEMP_ROLES_FILE, 'r') as file:
-                lines = file.readlines()
-            with open(TEMP_ROLES_FILE, 'w') as file:
-                for line in lines:
-                    if len(line) > 17:
-                        member_id = int(line[:line.index(' ')])
-                        reset = float(line[line.index(' ') + 1:-1])
-                        if reset < time.time():
-                            member = bot.cache.scs.get_member(member_id)
-                            await member.remove_roles(self.roles.join_cd)
-                            await self.channels.flair_log.send(f'{member.display_name}\'s join cooldown ended.')
-                        else:
-                            file.write(line)
-        except FileNotFoundError:
-            open(TEMP_ROLES_FILE, 'w+')
 
     def _crew(self, user: discord.Member) -> Optional[str]:
         roles = user.roles

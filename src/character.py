@@ -121,27 +121,7 @@ def clean_emoji(input_str: str) -> str:
 JR_LIST = ['bowser_jr', 'larry', 'royjr', 'wendy', 'iggy', 'morton', 'lemmy', 'ludwig']
 
 
-def string_to_canonical(input_str: str) -> Optional[str]:
-    input_str = clean_emoji(input_str)
-    # Lowercase, remove ':' and '_'.
-    input_str = input_str.strip(':').lower().replace('_', '').replace(' ', '')
-
-    if not input_str:
-        raise ValueError('Input string too short')
-
-    last_char = input_str[-1]
-    if last_char.isdigit():
-        alt_num = int(last_char)
-        if not 1 <= alt_num <= 8:
-            raise ValueError('Alt number {} must be 1-8'.format(alt_num))
-        character = input_str[:-1]
-    else:
-        alt_num = 1
-        character = input_str
-    if character in CANONICAL_NAMES_MAP:
-        canonical_name = CANONICAL_NAMES_MAP[character]
-    else:
-        raise ValueError('Unknown character: \'{}\', try `,chars` '.format(character))
+def post_process(character: str, canonical_name: str, alt_num: int) -> Optional[str]:
     if canonical_name in S_SET and alt_num > 1:
         canonical_name = canonical_name[:-1]
     if canonical_name in JR_LIST:
@@ -161,6 +141,34 @@ def string_to_canonical(input_str: str) -> Optional[str]:
         if alt_num == 8:
             canonical_name = 'enderman'
     return '{}{}'.format(canonical_name, '' if alt_num == 1 else alt_num)
+
+
+def pre_process(input_str: str) -> Tuple[str, str, int]:
+    input_str = clean_emoji(input_str)
+    # Lowercase, remove ':' and '_'.
+    input_str = input_str.strip(':').lower().replace('_', '').replace(' ', '')
+
+    if not input_str:
+        raise ValueError('Input string too short')
+    last_char = input_str[-1]
+    if last_char.isdigit():
+        alt_num = int(last_char)
+        if not 1 <= alt_num <= 8:
+            raise ValueError('Alt number {} must be 1-8'.format(alt_num))
+        character = input_str[:-1]
+    else:
+        alt_num = 1
+        character = input_str
+    if character in CANONICAL_NAMES_MAP:
+        canonical_name = CANONICAL_NAMES_MAP[character]
+        return character, canonical_name, alt_num
+    else:
+        raise ValueError('Unknown character: \'{}\', try `,chars` '.format(character))
+
+
+def string_to_canonical(input_str: str) -> Optional[str]:
+    character, base, alt_num = pre_process(input_str)
+    return post_process(character, base, alt_num)
 
 
 def canonical_to_emote(canonical: str, bot) -> str:
@@ -189,24 +197,24 @@ def all_emojis(bot) -> List[Tuple[str, str]]:
 
 
 class Character:
+
     def __init__(self, char: str, bot, valid_emoji: bool = False):
         # TODO Parse this into categories
-        if not valid_emoji:
-            if not char:
-                self.name = ''
-                self.emoji = ''
-                return
-            char = clean_emoji(char)
-            if char[-1].isdigit():
-                self.skin = char[-1]
-            self.name = string_to_canonical(char)
-            if bot:
-                self.emoji = canonical_to_emote(self.name, bot)
-            else:
-                self.emoji = self.name
+        # if not valid_emoji:
+        if not char:
+            self.emoji_name = ''
+            self.emoji = ''
+            return
+        char = clean_emoji(char)
+        _, self.base, self.skin = pre_process(char)
+        self.emoji_name = string_to_canonical(char)
+        if bot:
+            self.emoji = canonical_to_emote(self.emoji_name, bot)
         else:
-            self.char = char
-            self.emoji = char
+            self.emoji = self.emoji_name
+        # else:
+        #     self.char = char
+        #     self.emoji = char
 
     def __str__(self):
         return self.emoji
