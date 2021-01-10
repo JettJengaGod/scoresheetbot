@@ -5,7 +5,7 @@ import time
 import discord
 import functools
 from datetime import date
-from discord.ext import commands, tasks
+from discord.ext import commands, tasks, menus
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
 from .db_helpers import *
@@ -769,7 +769,10 @@ class ScoreSheetBot(commands.Cog):
         out = []
         for user_id, tdelta in users_and_times:
             user = self.cache.scs.get_member(user_id)
-            out.append(f'{str(user)} has {strfdelta(tdelta, "{hours} hours and {minutes} minutes left on cooldown")}')
+            if tdelta.days > 0:
+                out.append(f'{str(user)} is past 24 hours for some reason.')
+            else:
+                out.append(f'{str(user)} was flaired {strfdelta(tdelta, "{hours} hours and {minutes} minutes ago")}')
         await send_long(ctx, '\n'.join(out), '\n')
 
     @commands.command(**help_doc['non_crew'], hidden=True)
