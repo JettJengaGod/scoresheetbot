@@ -74,7 +74,7 @@ class ScoreSheetBot(commands.Cog):
                 except ValueError:
                     after_crew = None
                 if not crew_correct(after, after_crew):
-                    update_member_crew(after, after_crew)
+                    update_member_crew(after, crew_lookup(after_crew, self))
                     self.cache.minor_update(self)
 
     @commands.Cog.listener()
@@ -769,7 +769,7 @@ class ScoreSheetBot(commands.Cog):
         out = []
         for user_id, tdelta in users_and_times:
             user = self.cache.scs.get_member(user_id)
-            out.append(f'{str(user)} has {strfdelta(tdelta,"{hours} hours and {minutes} minutes left on cooldown")}')
+            out.append(f'{str(user)} has {strfdelta(tdelta, "{hours} hours and {minutes} minutes left on cooldown")}')
         await send_long(ctx, '\n'.join(out), '\n')
 
     @commands.command(**help_doc['non_crew'], hidden=True)
