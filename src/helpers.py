@@ -490,6 +490,7 @@ async def cache_process(bot: 'ScoreSheetBot'):
         channel = bot.cache.scs.get_channel(channel_id_from_key(key))
         if bot.battle_map[key]:
             await update_channel_open(NO, channel)
+    await bot.cache.channels.testing_grounds.send('Successfully recached.')
 
 
 def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
@@ -519,7 +520,6 @@ def crew_update(bot: 'ScoreSheetBot'):
             update_crew(cached)
 
 
-
 async def cooldown_handle(bot: 'ScoreSheetBot'):
     for user_id in cooldown_finished():
         member = bot.cache.scs.get_member(user_id)
@@ -530,6 +530,8 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
             else:
                 remove_expired_cooldown(user_id)
                 print(str(member))
+        else:
+            remove_expired_cooldown(user_id)
 
     uids = {item[0] for item in cooldown_current()}
     for member in bot.cache.scs.members:

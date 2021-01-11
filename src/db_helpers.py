@@ -67,7 +67,7 @@ def thank_board(user: discord.Member) -> discord.Embed:
     board = """select count, userid, username, 
         RANK() OVER (ORDER BY count DESC) thank_rank from thank;"""
     solo = """SELECT * from (SELECT *, RANK () OVER (ORDER BY count DESC) 
-           thank_rank FROM thank) total where userid = %s;""";
+           thank_rank FROM thank) total where userid = %s;"""
     conn = None
     desc = []
     try:
@@ -255,6 +255,13 @@ def find_member_roles(member: discord.Member) -> List[str]:
 def crew_id_from_name(name: str, cursor) -> int:
     find_crew = """SELECT id from crews where name = %s;"""
     cursor.execute(find_crew, (name,))
+    crew_id = cursor.fetchone()[0]
+    return crew_id
+
+
+def crew_id_from_role_id(role_id: int, cursor) -> int:
+    find_crew = """SELECT id from crews where role_id = %s;"""
+    cursor.execute(find_crew, (role_id,))
     crew_id = cursor.fetchone()[0]
     return crew_id
 
@@ -460,7 +467,7 @@ def update_crew_tomain(crew: Crew, new_role_id: int) -> None:
             conn.close()
 
 
-def update_member_crew(member: discord.Member, new_crew: str) -> None:
+def update_member_crew(member: discord.Member, new_crew: Crew) -> None:
     delete_current = """DELETE FROM current_member_crews where member_id = %s RETURNING member_id, crew_id, joined;"""
     old_crew = """INSERT into member_crews_history (member_id, crew_id, joined, leave)
      values(%s, %s, %s, current_timestamp);"""
@@ -476,7 +483,7 @@ def update_member_crew(member: discord.Member, new_crew: str) -> None:
         if current:
             cur.execute(old_crew, (current[0], current[1], current[2],))
         if new_crew:
-            new_id = crew_id_from_name(new_crew, cur)
+            new_id = crew_id_from_role_id(new_crew.role_id, cur)
             cur.execute(add_member_crew, (member.id, new_id,))
         conn.commit()
         cur.close()
