@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 from fuzzywuzzy import process, fuzz
 import asyncio
 import discord
-from discord.ext import commands
+from discord.ext import commands, menus
 from .battle import *
 import time
 from .constants import *
@@ -546,3 +546,16 @@ def strfdelta(tdelta, fmt):
     d["hours"], rem = divmod(tdelta.seconds, 3600)
     d["minutes"], d["seconds"] = divmod(rem, 60)
     return fmt.format(**d)
+
+
+class Paged(menus.ListPageSource):
+    def __init__(self, data, title):
+        super().__init__(data, per_page=10)
+        self.title = title
+
+    async def format_page(self, menu, entries) -> discord.Embed:
+        offset = menu.current_page * self.per_page
+
+        joined = '\n'.join(f'{i + 1}. {v}' for i, v in enumerate(entries, start=offset))
+        embed = discord.Embed(description=joined, title=self.title)
+        return embed
