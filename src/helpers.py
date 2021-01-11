@@ -490,7 +490,8 @@ async def cache_process(bot: 'ScoreSheetBot'):
         channel = bot.cache.scs.get_channel(channel_id_from_key(key))
         if bot.battle_map[key]:
             await update_channel_open(NO, channel)
-    await bot.cache.channels.testing_grounds.send('Successfully recached.')
+    if os.getenv('VERSION') == 'PROD':
+        await bot.cache.channels.testing_grounds.send('Successfully recached.')
 
 
 def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):

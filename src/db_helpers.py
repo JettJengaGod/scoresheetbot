@@ -260,7 +260,7 @@ def crew_id_from_name(name: str, cursor) -> int:
 
 
 def crew_id_from_role_id(role_id: int, cursor) -> int:
-    find_crew = """SELECT id from crews where role_id = %s;"""
+    find_crew = """SELECT id from crews where discord_id = %s;"""
     cursor.execute(find_crew, (role_id,))
     crew_id = cursor.fetchone()[0]
     return crew_id

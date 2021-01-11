@@ -1022,6 +1022,30 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(embed=thank_board(ctx.author))
 
     @commands.command(**help_doc['guide'])
+    @role_call(STAFF_LIST)
+    async def rankings(self, ctx):
+
+        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.ladder],
+                                         key=lambda x: int(x.ladder[1:x.ladder.index('/')]))
+        crew_ranking_str = [f'{cr.name} {cr.rank}' for cr in crews_sorted_by_ranking]
+
+        class Paged(menus.ListPageSource):
+            def __init__(self, data, title):
+                super().__init__(data, per_page=10)
+                self.title = title
+
+            async def format_page(self, menu, entries) -> discord.Embed:
+                offset = menu.current_page * self.per_page
+
+                joined = '\n'.join(f'{i+1}. {v}' for i, v in enumerate(entries, start=offset))
+                embed = discord.Embed(description=joined, title=self.title)
+                return embed
+
+        # somewhere else:
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Legacy Crews Rankings'), clear_reactions_after=True)
+        await pages.start(ctx)
+
+    @commands.command(**help_doc['guide'])
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
