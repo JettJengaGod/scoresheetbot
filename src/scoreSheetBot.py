@@ -457,6 +457,17 @@ class ScoreSheetBot(commands.Cog):
     async def crews(self, ctx):
         await self.help(ctx, 'crews')
 
+    @commands.command(**help_doc['guide'])
+    async def rankings(self, ctx):
+
+        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.ladder],
+                                         key=lambda x: int(x.ladder[1:x.ladder.index('/')]))
+        crew_ranking_str = [f'{cr.name} {cr.rank}' for cr in crews_sorted_by_ranking]
+
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Legacy Crews Rankings'),
+                                clear_reactions_after=True)
+        await pages.start(ctx)
+
     @commands.command(**help_doc['rank'])
     @main_only
     async def rank(self, ctx, *, name: str = None):
@@ -500,6 +511,23 @@ class ScoreSheetBot(commands.Cog):
             out += f'{escape(user.display_name)}\'s crew '
         out += f'{crew_name} has {crew_merit} merit.'
         await ctx.send(out)
+
+    @commands.command(**help_doc['logo'])
+    @main_only
+    async def logo(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        embed = discord.Embed(title=f'{actual_crew.name}\'s logo', color=actual_crew.color)
+        embed.set_image(url=actual_crew.icon)
+        await ctx.send(embed=embed)
 
     @commands.command(**help_doc['crew'])
     @main_only
@@ -1020,30 +1048,6 @@ class ScoreSheetBot(commands.Cog):
     async def thankboard(self, ctx: Context):
 
         await ctx.send(embed=thank_board(ctx.author))
-
-    @commands.command(**help_doc['guide'])
-    @role_call(STAFF_LIST)
-    async def rankings(self, ctx):
-
-        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.ladder],
-                                         key=lambda x: int(x.ladder[1:x.ladder.index('/')]))
-        crew_ranking_str = [f'{cr.name} {cr.rank}' for cr in crews_sorted_by_ranking]
-
-        class Paged(menus.ListPageSource):
-            def __init__(self, data, title):
-                super().__init__(data, per_page=10)
-                self.title = title
-
-            async def format_page(self, menu, entries) -> discord.Embed:
-                offset = menu.current_page * self.per_page
-
-                joined = '\n'.join(f'{i+1}. {v}' for i, v in enumerate(entries, start=offset))
-                embed = discord.Embed(description=joined, title=self.title)
-                return embed
-
-        # somewhere else:
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Legacy Crews Rankings'), clear_reactions_after=True)
-        await pages.start(ctx)
 
     @commands.command(**help_doc['guide'])
     async def guide(self, ctx):

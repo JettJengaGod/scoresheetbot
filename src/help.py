@@ -57,6 +57,8 @@ help_doc = dict(
     pending=HelpDoc(Categories.staff, 'Prints pending battles. Admin only'),
     rank=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s rank'),
     merit=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s merit'),
+    logo=HelpDoc(Categories.crews, 'Find the logo of a crew'),
+    rankings=HelpDoc(Categories.crews, 'Rankings of all legacy crews in order.'),
     unflair=HelpDoc(Categories.flairing, 'Unflairs you from your crew or a member from your crew if you are a leader '
                                          'if you are an admin, unflairs anyone', '', 'Optional<Member>'),
     flair=HelpDoc(Categories.flairing, 'Flairs someone for your crew or for a specific crew if you are an admin', '',
