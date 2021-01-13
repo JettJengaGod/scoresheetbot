@@ -483,6 +483,7 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
 
 
 async def cache_process(bot: 'ScoreSheetBot'):
+    await bot.cache.channels.recache_logs.send('Starting recache.')
     await bot.cache.update(bot)
     if os.getenv('VERSION') == 'PROD':
         crew_update(bot)
@@ -492,7 +493,7 @@ async def cache_process(bot: 'ScoreSheetBot'):
         if bot.battle_map[key]:
             await update_channel_open(NO, channel)
     if os.getenv('VERSION') == 'PROD':
-        await bot.cache.channels.testing_grounds.send('Successfully recached.')
+        await bot.cache.channels.recache_logs.send('Successfully recached.')
 
 
 def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
@@ -549,13 +550,18 @@ def strfdelta(tdelta, fmt):
 
 
 class Paged(menus.ListPageSource):
-    def __init__(self, data, title):
+    def __init__(self, data, title: str, color: Optional[discord.Color] = discord.Color.purple(),
+                 thumbnail: Optional[str] = ''):
         super().__init__(data, per_page=10)
         self.title = title
+        self.color = color
+        self.thumbnail = thumbnail
 
     async def format_page(self, menu, entries) -> discord.Embed:
         offset = menu.current_page * self.per_page
 
         joined = '\n'.join(f'{i + 1}. {v}' for i, v in enumerate(entries, start=offset))
-        embed = discord.Embed(description=joined, title=self.title)
+        embed = discord.Embed(description=joined, title=self.title, colour=self.color)
+        if self.thumbnail:
+            embed.set_thumbnail(url=self.thumbnail)
         return embed

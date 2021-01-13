@@ -74,7 +74,9 @@ class ScoreSheetBot(commands.Cog):
                 except ValueError:
                     after_crew = None
                 if not crew_correct(after, after_crew):
-                    update_member_crew(after, crew_lookup(after_crew, self))
+                    if after_crew:
+                        after_crew = crew_lookup(after_crew, self)
+                    update_member_crew(after,after_crew, self)
                     self.cache.minor_update(self)
 
     @commands.Cog.listener()
@@ -465,6 +467,54 @@ class ScoreSheetBot(commands.Cog):
 
         pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Legacy Crews Rankings'),
                                 clear_reactions_after=True)
+        await pages.start(ctx)
+
+    @commands.command(**help_doc['battles'])
+    async def battles(self, ctx):
+
+        pages = menus.MenuPages(source=Paged(all_battles(), title='Battles'), clear_reactions_after=True)
+        await pages.start(ctx)
+
+    @commands.command(**help_doc['playerstats'])
+    @main_only
+    async def playerstats(self, ctx, *, name: str = None):
+        if name:
+            member = member_lookup(name, self)
+
+        else:
+            member = ctx.author
+        taken, lost = player_stocks(member)
+        title = f'Stats for {str(member)}'
+        embed = discord.Embed(title=title, color=member.color)
+        embed.add_field(name='Stocks Taken/Lost', value=f'{taken}/{lost}', inline=False)
+        pc = player_chars(member)
+        embed.add_field(name='Characters played', value='how many battles played in ', inline=False)
+        for char in pc:
+            emoji = string_to_emote(char[1], self.bot)
+            embed.add_field(name=emoji, value=f'{char[0]}', inline=True)
+        await ctx.send(embed=embed)
+
+    @commands.command(**help_doc['crewstats'])
+    @main_only
+    async def crewstats(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        record = crew_record(actual_crew)
+        if not record[0] or not record[1]:
+            await ctx.send(f'{actual_crew.name} does not have any recorded crew battles with the bot.')
+            return
+        title = f'{actual_crew.name}: {record[0]}-{int(record[1]) - int(record[0])}'
+        pages = menus.MenuPages(
+            source=Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon),
+            clear_reactions_after=True)
         await pages.start(ctx)
 
     @commands.command(**help_doc['rank'])

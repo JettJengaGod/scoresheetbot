@@ -78,7 +78,7 @@ class Cache:
             flair_log = discord.utils.get(server.channels, name=FLAIRING_LOGS)
             flairing_questions = discord.utils.get(server.channels, id=FLAIRING_QUESTIONS_ID)
             flairing_info = discord.utils.get(server.channels, name=FLAIRING_INFO)
-            testing_grounds = discord.utils.get(server.channels, name='⚔┊scoresheet_bot_testing_grounds')
+            recache_logs = discord.utils.get(server.channels, name='recache_logs')
             doc_keeper = discord.utils.get(server.channels, name=DOC_KEEPER_CHAT)
         return Channels
 
