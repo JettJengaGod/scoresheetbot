@@ -58,7 +58,10 @@ help_doc = dict(
     rank=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s rank'),
     merit=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s merit'),
     logo=HelpDoc(Categories.crews, 'Find the logo of a crew'),
-    rankings=HelpDoc(Categories.crews, 'Rankings of all legacy crews in order.'),
+    rankings=HelpDoc(Categories.crews, 'Rankings of all legacy crews in order'),
+    crewstats=HelpDoc(Categories.crews, 'Stats for a crew or the crew of a player'),
+    playerstats=HelpDoc(Categories.crews, 'Stats for a player'),
+    battles=HelpDoc(Categories.crews, 'All battles that have been recorded with the bot'),
     unflair=HelpDoc(Categories.flairing, 'Unflairs you from your crew or a member from your crew if you are a leader '
                                          'if you are an admin, unflairs anyone', '', 'Optional<Member>'),
     flair=HelpDoc(Categories.flairing, 'Flairs someone for your crew or for a specific crew if you are an admin', '',

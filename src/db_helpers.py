@@ -551,7 +551,7 @@ def cooldown_current() -> List[Tuple[int, datetime.timedelta]]:
     return [(c[0], c[1]) for c in current]
 
 
-def remove_expired_cooldown(user_id: int):
+def remove_expired_cooldown(user_id: int) -> None:
     cooldown = """ 
         delete from current_member_roles 
             where role_id = 786492456027029515 and member_id=%s;"""
@@ -571,3 +571,169 @@ def remove_expired_cooldown(user_id: int):
     finally:
         if conn is not None:
             conn.close()
+
+
+def all_battles() -> List[str]:
+    battles = """
+    select c1.name as crew_1, c2.name as crew_2, c3.name as winner, battle.link, battle.finished, battle.final_score
+        from battle
+            join crews c1 on c1.id = battle.crew_1
+            join crews c2 on c2.id = battle.crew_2
+            join crews c3 on c3.id = battle.winner
+            order by battle.id asc;"""
+    conn = None
+    out = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(battles)
+        everything = cur.fetchall()
+        for battle in everything:
+            if battle[2] == battle[0]:
+                winner = 0
+                loser = 1
+            else:
+                winner = 1
+                loser = 0
+
+            out.append(f'**{battle[winner]}** - {battle[loser]} ({battle[5]}-0) [link]({battle[3]})')
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return out
+
+
+def crew_record(cr: Crew) -> List:
+    record = """select crew_record(%s)"""
+    conn = None
+    ret = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        crew_id = crew_id_from_role_id(cr.role_id, cur)
+        cur.execute(record, (crew_id,))
+        ret = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return ret[0][1:-1].split(',')
+
+
+def crew_matches(cr: Crew) -> List[str]:
+    battles = """
+    select c1.name as crew_1, c2.name as crew_2, c3.name as winner, battle.link, battle.finished, battle.final_score
+        from battle
+            join crews c1 on c1.id = battle.crew_1
+            join crews c2 on c2.id = battle.crew_2
+            join crews c3 on c3.id = battle.winner
+            where c1.id = %s or c2.id = %s
+            order by battle.id asc;"""
+    conn = None
+    out = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr.role_id, cur)
+        cur.execute(battles, (cr_id, cr_id,))
+        everything = cur.fetchall()
+        for battle in everything:
+            if battle[2] == battle[0]:
+                winner = 0
+                loser = 1
+            else:
+                winner = 1
+                loser = 0
+
+            out.append(f'**{battle[winner]}** - {battle[loser]} ({battle[5]}-0) [link]({battle[3]})')
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return out
+
+
+def player_stocks(member: discord.Member) -> Tuple[int, int]:
+    taken = """
+    select coalesce(p1.taken1,0)+coalesce(p2.taken2,0) as taken, coalesce(p1.lost1,0)+coalesce(p2.lost2,0) as lost from
+        (select sum(player_1.p1_taken) as taken1, sum(player_1.p2_taken) as lost1, mem.nickname, mem.id
+            from members as mem
+                join match as player_1 on player_1.p1 = mem.id where mem.id = %s
+                group by mem.id) as p1
+            full outer join (select sum(player_2.p2_taken) as taken2, sum(player_2.p1_taken) as lost2, mem.nickname, mem.id
+                from members as mem
+                join match as player_2 on player_2.p2 = mem.id where mem.id = %s
+            group by mem.id) as p2 on p2.nickname = p1.nickname;"""
+    conn = None
+    out = []
+    vals = (0, 0)
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(taken, (member.id, member.id,))
+        vals = cur.fetchone()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return vals if vals else (0, 0)
+
+def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
+    chars = """
+        select coalesce(p1.battle_count,0)+coalesce(p2.battle_count,0) as battle_count, coalesce(p1.name, p2.name) from
+            (select count(distinct(match.battle_id)) as battle_count, fighters.name
+            from match, fighters where match.p1 = %s 
+            and fighters.id = match.p1_char_id
+            group by fighters.name) as p1 full outer join (
+            (select count(distinct(match.battle_id)) as battle_count, fighters.name
+            from match, fighters where match.p2 = %s 
+            and fighters.id = match.p2_char_id
+        group by fighters.name)) as p2 on p1.name = p2.name
+    ;"""
+    conn = None
+    out = []
+    vals = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(chars, (member.id, member.id,))
+        vals = cur.fetchall()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return vals
