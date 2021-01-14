@@ -483,7 +483,7 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
 
 
 async def cache_process(bot: 'ScoreSheetBot'):
-    if bot.cache.channels:
+    if bot.cache.channels and os.getenv('VERSION') == 'PROD':
         await bot.cache.channels.recache_logs.send('Starting recache.')
     await bot.cache.update(bot)
     if os.getenv('VERSION') == 'PROD':
