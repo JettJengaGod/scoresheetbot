@@ -239,6 +239,12 @@ def ambiguous_lookup(name: str, bot: 'ScoreSheetBot') -> Union[discord.Member, C
 
     true_name = process.extractOne(name, bot.cache.main_members.keys(), scorer=fuzz.ratio)
     true_crew = process.extractOne(name, bot.cache.crews_by_name.keys(), scorer=fuzz.ratio)
+    if not true_crew:
+        if not true_name:
+            raise ValueError(f'{name} didn\'t match a crew or a name')
+        return bot.cache.main_members[true_name[0]]
+    if not true_name:
+        return bot.cache.crews_by_name[true_crew[0]]
     if true_crew[1] >= true_name[1]:
         return bot.cache.crews_by_name[true_crew[0]]
     else:
