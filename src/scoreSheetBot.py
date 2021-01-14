@@ -77,7 +77,7 @@ class ScoreSheetBot(commands.Cog):
                 if not crew_correct(after, after_crew):
                     if after_crew:
                         after_crew = crew_lookup(after_crew, self)
-                    update_member_crew(after,after_crew, self)
+                    update_member_crew(after_crew, self)
                     self.cache.minor_update(self)
 
     @commands.Cog.listener()
