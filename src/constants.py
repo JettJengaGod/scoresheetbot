@@ -108,5 +108,7 @@ EXPECTED_NON_CREW_ROLES = {
     JOIN_CD,
     'BetaJettBot',
     'EVIL',
-    'Special Pass'
+    'Special Pass',
+    'how',
+    'Players Union'
 }

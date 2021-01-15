@@ -180,7 +180,36 @@ class ScoreSheetBot(commands.Cog):
                            f'Please contact an admin if this is incorrect.')
             return
         if user_crew != opp_crew:
+            await ctx.send(f'If you are in a playoff battle, please use `{self.bot.command_prefix}playoffbattle`')
             await self._set_current(ctx, Battle(user_crew, opp_crew, size))
+            await send_sheet(ctx, battle=self._current(ctx))
+        else:
+            await ctx.send('You can\'t battle your own crew.')
+
+    @commands.command(**help_doc['playoffbattle'], aliases=['pob', 'playoff'], group='CB')
+    @main_only
+    @no_battle
+    @is_lead
+    @ss_channel
+    async def playoffbattle(self, ctx: Context, user: discord.Member, size: int):
+        if size < 1:
+            await ctx.send('Please enter a size greater than 0.')
+            return
+        user_crew = crew(ctx.author, self)
+        opp_crew = crew(user, self)
+        if not user_crew:
+            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+                           f'They might not be in a crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if not opp_crew:
+            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+                           f'They might not be in a crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if user_crew != opp_crew:
+
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, playoff=True))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -221,6 +250,9 @@ class ScoreSheetBot(commands.Cog):
                     await ctx.send(
                         f'{user.mention} joined this crew less than '
                         f'24 hours ago and must wait to play ranked battles.')
+                    return
+                if self._current(ctx).playoff and check_roles(user, [PLAYOFF_LIMITED]):
+                    await ctx.send(f'{user.mention} is playoff limited and cannot play in playoff battles.')
                     return
                 self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
             else:
@@ -280,6 +312,9 @@ class ScoreSheetBot(commands.Cog):
             await self._reject_outsiders(ctx)
             current_crew = await self._battle_crew(ctx, ctx.author)
             if current_crew == await self._battle_crew(ctx, user):
+                if self._current(ctx).playoff and check_roles(user, [PLAYOFF_LIMITED]):
+                    await ctx.send(f'{user.mention} is playoff limited and cannot play in playoff battles.')
+                    return
                 self._current(ctx).replace_player(current_crew, escape(user.display_name), ctx.author.mention, user.id)
 
             else:
@@ -484,8 +519,10 @@ class ScoreSheetBot(commands.Cog):
         else:
             member = ctx.author
         taken, lost = player_stocks(member)
+        total, wins = player_record(member)
         title = f'Stats for {str(member)}'
         embed = discord.Embed(title=title, color=member.color)
+        embed.add_field(name='Crews record while participating:', value=f'{wins}/{total - wins}', inline=False)
         embed.add_field(name='Stocks Taken/Lost', value=f'{taken}/{lost}', inline=False)
         pc = player_chars(member)
         embed.add_field(name='Characters played', value='how many battles played in ', inline=False)
