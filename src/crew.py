@@ -28,7 +28,7 @@ class Crew:
             title += f' {self.rank}'
         description = [f'Tag: {self.abbr}\n', f'Total Members: {self.member_count}\n']
         if self.ladder:
-            description.append(f'Legacy Current Placement: {self.ladder}\n')
+            description.append(f'Qualifiers Current Placement: {self.ladder}\n')
         if self.social:
             description.append(f'Social: {self.social}\n')
         if self.leaders:

@@ -706,6 +706,7 @@ def player_stocks(member: discord.Member) -> Tuple[int, int]:
             conn.close()
     return vals if vals else (0, 0)
 
+
 def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
     chars = """
         select coalesce(p1.battle_count,0)+coalesce(p2.battle_count,0) as battle_count, coalesce(p1.name, p2.name) from
@@ -737,3 +738,41 @@ def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
         if conn is not None:
             conn.close()
     return vals
+
+
+def player_record(member: discord.Member) -> Tuple[int, int]:
+    win_loss = """
+select p1_total.battles+p2_total.battles as battles, p2_wins.battle_wins+p1_wins.battle_wins as wins from
+    (select count(distinct(match.battle_id)) as battles
+        from match where match.p1 = %s) as p1_total,
+    (select count(distinct(match.battle_id)) as battle_wins
+        from match,battle 
+            where match.p1 = %s 
+            and battle.crew_1=battle.winner 
+            and battle.id=match.battle_id) as p1_wins,
+    (select count(distinct(match.battle_id)) as battles
+        from match where match.p2 = %s) as p2_total,
+    (select count(distinct(match.battle_id)) as battle_wins
+        from match,battle 
+            where match.p2 = %s 
+            and battle.crew_2=battle.winner 
+            and battle.id=match.battle_id) as p2_wins;"""
+    conn = None
+    out = []
+    vals = (0, 0)
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(win_loss, (member.id, member.id,member.id,member.id,))
+        vals = cur.fetchone()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return vals if vals else (0, 0)

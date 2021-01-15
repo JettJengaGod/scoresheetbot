@@ -80,6 +80,7 @@ class Cache:
             flairing_info = discord.utils.get(server.channels, name=FLAIRING_INFO)
             recache_logs = discord.utils.get(server.channels, name='recache_logs')
             doc_keeper = discord.utils.get(server.channels, name=DOC_KEEPER_CHAT)
+
         return Channels
 
     def members_by_name(self, member_list: Iterable[discord.Member]) -> Dict[str, discord.Member]:
@@ -115,21 +116,18 @@ class Cache:
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
         crew_info_range = 'Crew Information!A4:E2160'
-        legacy_range = 'Legacy Ladder!A4:L200'
+        qualifier_range = 'SCL Qualifiers!A4:L800'
         rising_range = 'Rising Ladder!A4:L300'
         # Call the Sheets API
         sheet = service.spreadsheets()
         result = sheet.values().get(spreadsheetId=docs_id,
                                     range=crew_info_range).execute()
 
-        legacy = sheet.values().get(spreadsheetId=docs_id,
-                                    range=legacy_range).execute()
-        rising = sheet.values().get(spreadsheetId=docs_id,
-                                    range=rising_range).execute()
+        qualifiers = sheet.values().get(spreadsheetId=docs_id,
+                                        range=qualifier_range).execute()
         values = result.get('values', [])
 
-        legacy = legacy.get('values', [])
-        rising = rising.get('values', [])
+        qualifiers = qualifiers.get('values', [])
         crews_by_name = {}
         issues = []
         if not values:
@@ -139,29 +137,23 @@ class Cache:
                 crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=row[3])
                 if len(row) == 5:
                     crews_by_name[row[0]].icon = row[4]
-        if not legacy:
-            raise ValueError('Legacy Sheet Not Found')
+        if not qualifiers:
+            raise ValueError('Qualifiers Sheet Not Found')
         else:
-            for pos, row in enumerate(legacy):
+            ranking = 1
+            for pos, row in enumerate(qualifiers):
                 if row[0] in crews_by_name.keys():
                     crews_by_name[row[0]].merit = row[2]
-                    crews_by_name[row[0]].rank = f'{row[11]} (Legacy rank {row[10]})'
-                    crews_by_name[row[0]].ladder = f'({pos+1}/{len(legacy)})'
-                elif row[0] != 'Pending Crew':
-                    issues.append(row[0])
-        if not rising:
-            raise ValueError('Rising Sheet Not Found')
-        else:
-            for row in rising:
-                if row[0] in crews_by_name.keys():
-                    crews_by_name[row[0]].merit = row[2]
-                    crews_by_name[row[0]].rank = f'{row[11]} (Rising rank {row[10]})'
-                elif row[0] != 'Pending Crew':
+                    crews_by_name[row[0]].rank = f'Qualifier {row[7]}'
+                    crews_by_name[row[0]].ladder = f'({ranking}/{len(qualifiers) - 4})'
+                    ranking += 1
+                elif row[0] and row[0] not in ('Pending Crew', 'Pending Unregistered Crew'):
                     issues.append(row[0])
         if issues:
             issue_string = '\n'.join(issues)
-            await self.channels.doc_keeper.send(f'{self.roles.docs.mention}, there is is an issue with these crews in the docs'
-                                                f', please fix asap:\n ```{issue_string}```')
+            await self.channels.doc_keeper.send(
+                f'{self.roles.docs.mention}, there is is an issue with these crews in the docs'
+                f', please fix asap:\n ```{issue_string}```')
         return crews_by_name
 
     def crew_populate(self):
