@@ -258,7 +258,7 @@ class ScoreSheetBot(commands.Cog):
                         f'24 hours ago and must wait to play ranked battles.')
                     return
                 if self._current(ctx).playoff and check_roles(user, [PLAYOFF_LIMITED]):
-                    await ctx.send(f'{user.mention} is playoff limited and cannot play in playoff battles.')
+                    await ctx.send(f'{user.mention} is playoff locked and cannot play in playoff battles.')
                     return
                 self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
             else:
