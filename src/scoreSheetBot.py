@@ -537,8 +537,9 @@ class ScoreSheetBot(commands.Cog):
             record = crew_record(cr, playoff.value)
             playoff_crew_str.append(f'{cr.name} {record[1]}/{record[2] - record[1]}')
 
-        pages = menus.MenuPages(source=PoolPaged(playoff_crew_str, title='Legacy Playoffs Pools', per_page=group_size),
-                                clear_reactions_after=True)
+        pages = menus.MenuPages(
+            source=PoolPaged(playoff_crew_str, title=f'{playoff.name} Playoffs Pools', per_page=group_size),
+            clear_reactions_after=True)
         await pages.start(ctx)
 
     @commands.command(**help_doc['battles'])
