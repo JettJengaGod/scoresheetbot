@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import traceback
 import psycopg2
 from db_config import config
@@ -611,8 +611,35 @@ def all_battles() -> List[str]:
     return out
 
 
-def crew_record(cr: Crew) -> List:
-    record = """select crew_record(%s)"""
+def crew_record(cr: Crew, league: Optional[int] = 0) -> Tuple:
+    record = """
+        select * from (select coalesce(wins.name,bttls.name) as name, coalesce(wins.wins,0) as ws, coalesce(bttls.matches,0) as ms  from
+        (select crews.name, count(*) as wins 
+            from crews, battle 
+                where crews.id = battle.winner and crews.id = %s
+                    group by crews.name) 
+        as wins
+        full outer join 
+        (select crews.name, count(*) as matches 
+            from crews, battle 
+                where (crews.id = battle.crew_1 or crews.id = battle.crew_2) and crews.id = %s 
+                    group by crews.name
+        ) as bttls on bttls.name = wins.name) as crew_wrs;
+    """
+    record_with_league = """
+    select * from (select coalesce(wins.name,bttls.name) as name, coalesce(wins.wins,0) as ws, coalesce(bttls.matches,0) as ms  from
+    (select crews.name, count(*) as wins 
+        from crews, battle 
+            where crews.id = battle.winner and crews.id = %s and battle.league_id = %s 
+                group by crews.name) 
+    as wins
+    full outer join 
+    (select crews.name, count(*) as matches 
+        from crews, battle 
+            where (crews.id = battle.crew_1 or crews.id = battle.crew_2) and crews.id = %s and battle.league_id = %s 
+                group by crews.name
+    ) as bttls on bttls.name = wins.name) as crew_wrs;
+"""
     conn = None
     ret = ()
     try:
@@ -620,8 +647,13 @@ def crew_record(cr: Crew) -> List:
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         crew_id = crew_id_from_role_id(cr.role_id, cur)
-        cur.execute(record, (crew_id,))
+        if league:
+            cur.execute(record_with_league, (crew_id, league, crew_id, league))
+        else:
+            cur.execute(record, (crew_id, crew_id))
         ret = cur.fetchone()
+        if not ret:
+            ret = (cr.name ,0, 0)
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -632,7 +664,7 @@ def crew_record(cr: Crew) -> List:
     finally:
         if conn is not None:
             conn.close()
-    return ret[0][1:-1].split(',')
+    return ret
 
 
 def crew_matches(cr: Crew) -> List[str]:
@@ -764,7 +796,7 @@ select p1_total.battles+p2_total.battles as battles, p2_wins.battle_wins+p1_wins
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
-        cur.execute(win_loss, (member.id, member.id,member.id,member.id,))
+        cur.execute(win_loss, (member.id, member.id, member.id, member.id,))
         vals = cur.fetchone()
 
     except (Exception, psycopg2.DatabaseError) as error:

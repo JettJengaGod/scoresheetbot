@@ -1,5 +1,7 @@
 import os
 from dotenv import load_dotenv
+from enum import Enum
+
 load_dotenv()
 CACHE_TIME = 600_000_000_000  # 6000 seconds
 CACHE_TIME_SECONDS = 120
@@ -112,3 +114,12 @@ EXPECTED_NON_CREW_ROLES = {
     'how',
     'Players Union'
 }
+PLAYOFF_CHANNEL_NAMES = ['', 'first_class_playoffs_results', 'cm-extreme_playoffs_results',
+                        'cm-tempered_playoffs_results']
+
+
+class PlayoffType(Enum):
+    NO_PLAYOFF = 1
+    LEGACY = 2
+    EXTREME = 3
+    TEMPERED = 4

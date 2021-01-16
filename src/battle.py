@@ -177,6 +177,12 @@ class Battle:
         self.time = datetime.now()
         self.mock = mock
         self.playoff = playoff
+        if self.playoff:
+            self.header = 'Playoff '
+        elif self.mock:
+            self.header = 'Mock '
+        else:
+            self.header = ''
 
     def confirmed(self) -> bool:
         return all(self.confirms)
@@ -307,7 +313,7 @@ class Battle:
 
     def __str__(self):
         out = f'{self.team1.name} vs {self.team2.name}\n' \
-              f'{self.team1.num_players} vs {self.team2.num_players} Crew battle'
+              f'{self.team1.num_players} vs {self.team2.num_players} {self.header}Crew battle'
         out += '\n----------------------------------------------\n'
         for match in self.matches:
             out += str(match)
@@ -325,7 +331,7 @@ class Battle:
         title = f'{self.team1.name} vs {self.team2.name}'
         body = f'Lobby ID: {self.id}\n' \
                f'Streamer: {self.stream}\n\n' \
-               f'{self.team1.num_players} vs {self.team2.num_players} Crew battle\n\n'
+               f'{self.team1.num_players} vs {self.team2.num_players} {self.header}Crew battle\n\n'
         for match in self.matches:
             body += str(match)
             body += '\n'
