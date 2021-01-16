@@ -522,7 +522,7 @@ class ScoreSheetBot(commands.Cog):
         if not group:
             group = 'legacy'
         if group not in ['legacy', 'tempered']:
-            await ctx.send(f'`{group}` is not `legacy` or `tempered` try `{self.bot.command_prefix}pools legacy`')
+            await ctx.send(f'`{group}` is not `legacy` or `tempered` try `{self.bot.command_prefix}groups legacy`')
         if group == 'legacy':
             playoff = PlayoffType.LEGACY
             group_size = 5
