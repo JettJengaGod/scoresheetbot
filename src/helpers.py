@@ -558,8 +558,8 @@ def strfdelta(tdelta, fmt):
 
 class Paged(menus.ListPageSource):
     def __init__(self, data, title: str, color: Optional[discord.Color] = discord.Color.purple(),
-                 thumbnail: Optional[str] = ''):
-        super().__init__(data, per_page=10)
+                 thumbnail: Optional[str] = '', per_page: Optional[int] = 10):
+        super().__init__(data, per_page=per_page)
         self.title = title
         self.color = color
         self.thumbnail = thumbnail
@@ -568,6 +568,24 @@ class Paged(menus.ListPageSource):
         offset = menu.current_page * self.per_page
 
         joined = '\n'.join(f'{i + 1}. {v}' for i, v in enumerate(entries, start=offset))
+        embed = discord.Embed(description=joined, title=self.title, colour=self.color)
+        if self.thumbnail:
+            embed.set_thumbnail(url=self.thumbnail)
+        return embed
+
+
+class PoolPaged(menus.ListPageSource):
+    def __init__(self, data, title: str, color: Optional[discord.Color] = discord.Color.purple(),
+                 thumbnail: Optional[str] = '', per_page: Optional[int] = 10):
+        super().__init__(data, per_page=per_page)
+        self.title = title
+        self.color = color
+        self.thumbnail = thumbnail
+
+    async def format_page(self, menu, entries) -> discord.Embed:
+        offset = menu.current_page * self.per_page
+        joined = f'Pool: {menu.current_page+1}\n'
+        joined += '\n'.join(f'{i + 1 - offset}. {v}' for i, v in enumerate(entries, start=offset))
         embed = discord.Embed(description=joined, title=self.title, colour=self.color)
         if self.thumbnail:
             embed.set_thumbnail(url=self.thumbnail)

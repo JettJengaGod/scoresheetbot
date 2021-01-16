@@ -208,7 +208,12 @@ class ScoreSheetBot(commands.Cog):
                            f'Please contact an admin if this is incorrect.')
             return
         if user_crew != opp_crew:
-
+            user_cr = crew_lookup(user_crew, self)
+            opp_cr = crew_lookup(opp_crew, self)
+            if user_cr.playoff != opp_cr.playoff or user_cr.playoff == PlayoffType.NO_PLAYOFF:
+                await ctx.send(
+                    f'{user_crew} and {opp_crew} are not in the same playoffs or are not in playoffs at all.')
+                return
             await self._set_current(ctx, Battle(user_crew, opp_crew, size, playoff=True))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
@@ -406,6 +411,14 @@ class ScoreSheetBot(commands.Cog):
                                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
                     winner = self._current(ctx).winner().name
                     loser = self._current(ctx).loser().name
+                    if self._current(ctx).playoff:
+                        league_id = crew_lookup(winner, self).playoff.value
+                        output_channels.pop(0)
+                        output_channels.insert(0,
+                                               discord.utils.get(ctx.guild.channels,
+                                                                 name=PLAYOFF_CHANNEL_NAMES[league_id]))
+                    else:
+                        league_id = 1
                     for output_channel in output_channels:
                         await output_channel.send(
                             f'**{today.strftime("%B %d, %Y")}- {winner} vs. {loser} **\n'
@@ -414,7 +427,7 @@ class ScoreSheetBot(commands.Cog):
                             f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
                             f'from  {ctx.channel.mention}.')
                         link = await send_sheet(output_channel, self._current(ctx))
-                    add_finished_battle(self._current(ctx), link.jump_url, 1)
+                    add_finished_battle(self._current(ctx), link.jump_url, league_id)
                     await ctx.send(
                         f'The battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}.')
@@ -493,14 +506,37 @@ class ScoreSheetBot(commands.Cog):
     async def crews(self, ctx):
         await self.help(ctx, 'crews')
 
-    @commands.command(**help_doc['guide'])
+    @commands.command(**help_doc['rankings'])
     async def rankings(self, ctx):
-
         crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.ladder],
                                          key=lambda x: int(x.ladder[1:x.ladder.index('/')]))
         crew_ranking_str = [f'{cr.name} {cr.rank}' for cr in crews_sorted_by_ranking]
 
         pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Legacy Crews Rankings'),
+                                clear_reactions_after=True)
+        await pages.start(ctx)
+
+    @commands.command(**help_doc['pools'])
+    async def pools(self, ctx, group: Optional[str]):
+        if not group:
+            group = 'legacy'
+        if group not in ['legacy', 'tempered']:
+            await ctx.send(f'`{group}` is not `legacy` or `tempered` try `{self.bot.command_prefix}pools legacy`')
+        if group == 'legacy':
+            playoff = PlayoffType.LEGACY
+            group_size = 5
+        else:
+            playoff = PlayoffType.TEMPERED
+            group_size = 4
+
+        playoff_crews = sorted([cr for cr in self.cache.crews_by_name.values() if cr.playoff == playoff],
+                               key=lambda x: x.pool)
+        playoff_crew_str = []
+        for cr in playoff_crews:
+            record = crew_record(cr, playoff.value)
+            playoff_crew_str.append(f'{cr.name} {record[1]}/{record[2] - record[1]}')
+
+        pages = menus.MenuPages(source=PoolPaged(playoff_crew_str, title='Legacy Playoffs Pools', per_page=group_size),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
@@ -545,10 +581,10 @@ class ScoreSheetBot(commands.Cog):
             actual_crew = crew_lookup(crew(ctx.author, self), self)
             await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
         record = crew_record(actual_crew)
-        if not record[0] or not record[1]:
+        if not record[2]:
             await ctx.send(f'{actual_crew.name} does not have any recorded crew battles with the bot.')
             return
-        title = f'{actual_crew.name}: {record[0]}-{int(record[1]) - int(record[0])}'
+        title = f'{actual_crew.name}: {record[1]}-{int(record[2]) - int(record[1])}'
         pages = menus.MenuPages(
             source=Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon),
             clear_reactions_after=True)
