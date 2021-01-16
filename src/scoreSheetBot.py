@@ -517,8 +517,8 @@ class ScoreSheetBot(commands.Cog):
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
-    @commands.command(**help_doc['pools'])
-    async def pools(self, ctx, group: Optional[str]):
+    @commands.command(**help_doc['groups'])
+    async def groups(self, ctx, group: Optional[str]):
         if not group:
             group = 'legacy'
         if group not in ['legacy', 'tempered']:
