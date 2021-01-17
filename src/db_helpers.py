@@ -1,13 +1,15 @@
-from typing import List, Tuple, Optional
-import traceback
-import psycopg2
-import sys
+import datetime
 import os
+import sys
+import traceback
+from typing import List, Tuple, Optional
+
+import discord
+import psycopg2
+
 from src.battle import Battle, InfoMatch, TimerMatch
 from src.crew import Crew
 from src.db_config import config
-import discord
-import datetime
 
 
 def logfile():
@@ -298,13 +300,14 @@ def char_id_from_name(name: str, cursor) -> int:
     return char_id
 
 
-def add_finished_battle(battle: Battle, link: str, league: int) -> None:
+def add_finished_battle(battle: Battle, link: str, league: int) -> int:
     add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id)
      values(%s, %s, %s, %s, %s, current_timestamp, %s)  RETURNING id;"""
 
     add_match = """INSERT into match (p1, p2, p1_taken, p2_taken, winner, battle_id, p1_char_id, p2_char_id, match_order)
      values(%s, %s, %s, %s, %s, %s, %s, %s, %s);"""
     conn = None
+    battle_id = -1
     try:
         params = config()
         conn = psycopg2.connect(**params)
@@ -343,7 +346,7 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> None:
     finally:
         if conn is not None:
             conn.close()
-    return
+    return battle_id
 
 
 def crew_correct(member: discord.Member, current: str) -> bool:
@@ -575,7 +578,8 @@ def remove_expired_cooldown(user_id: int) -> None:
 
 def all_battles() -> List[str]:
     battles = """
-    select c1.name as crew_1, c2.name as crew_2, c3.name as winner, battle.link, battle.finished, battle.final_score
+    select c1.name as crew_1, c2.name as crew_2, c3.name as winner, battle.link, battle.finished, battle.final_score, 
+        battle.vod
         from battle
             join crews c1 on c1.id = battle.crew_1
             join crews c2 on c2.id = battle.crew_2
@@ -598,6 +602,8 @@ def all_battles() -> List[str]:
                 loser = 0
 
             out.append(f'**{battle[winner]}** - {battle[loser]} ({battle[5]}-0) [link]({battle[3]})')
+            if battle[6]:
+                out[-1] += f' [vod]({battle[6]})'
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -653,7 +659,7 @@ def crew_record(cr: Crew, league: Optional[int] = 0) -> Tuple:
             cur.execute(record, (crew_id, crew_id))
         ret = cur.fetchone()
         if not ret:
-            ret = (cr.name ,0, 0)
+            ret = (cr.name, 0, 0)
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -770,6 +776,31 @@ def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
         if conn is not None:
             conn.close()
     return vals
+
+
+def set_vod(battle_id: int, vod: str) -> None:
+    update = """
+        update battle set vod = %s where battle.id = %s
+    ;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(update, (vod, battle_id))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+        raise error
+    finally:
+        if conn is not None:
+            conn.close()
+    return
 
 
 def player_record(member: discord.Member) -> Tuple[int, int]:
