@@ -1,7 +1,7 @@
 import dataclasses
 import discord
 from typing import List
-from .constants import PlayoffType
+from constants import PlayoffType
 
 
 @dataclasses.dataclass

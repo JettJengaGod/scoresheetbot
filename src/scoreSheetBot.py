@@ -420,6 +420,7 @@ class ScoreSheetBot(commands.Cog):
                                                                  name=PLAYOFF_CHANNEL_NAMES[league_id]))
                     else:
                         league_id = 1
+
                     for output_channel in output_channels:
                         await output_channel.send(
                             f'**{today.strftime("%B %d, %Y")}- {winner} vs. {loser} **\n'
@@ -428,10 +429,11 @@ class ScoreSheetBot(commands.Cog):
                             f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
                             f'from  {ctx.channel.mention}.')
                         link = await send_sheet(output_channel, self._current(ctx))
-                    add_finished_battle(self._current(ctx), link.jump_url, league_id)
+                    battle_id = add_finished_battle(self._current(ctx), link.jump_url, league_id)
                     await ctx.send(
                         f'The battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
-                        f'has been confirmed by both sides and posted in {output_channels[0].mention}.')
+                        f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
+                        f'(Battle number:{battle_id})')
                     await self._clear_current(ctx)
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
@@ -547,6 +549,13 @@ class ScoreSheetBot(commands.Cog):
 
         pages = menus.MenuPages(source=Paged(all_battles(), title='Battles'), clear_reactions_after=True)
         await pages.start(ctx)
+
+    @commands.command(**help_doc['vod'])
+    @role_call([CERTIFIED, ADMIN, DOCS, MINION])
+    async def vod(self, ctx, battle_id: int, vod: str):
+
+        set_vod(battle_id, vod)
+        await ctx.send(f'{ctx.author.name} set battle {battle_id}\'s vod to {vod}.')
 
     @commands.command(**help_doc['playerstats'])
     @main_only
