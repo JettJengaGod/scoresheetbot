@@ -306,9 +306,7 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
 
         await member.edit(nick=nick_without_prefix(member.display_name))
         role = discord.utils.get(bot.cache.overflow_server.roles, name=user_crew)
-        overflow_adv = discord.utils.get(bot.cache.overflow_server.roles, name=ADVISOR)
-        overflow_leader = discord.utils.get(bot.cache.overflow_server.roles, name=LEADER)
-        await user.remove_roles(role, overflow_adv, overflow_leader, reason=f'Unflaired by {author.name}')
+        await user.remove_roles(role, reason=f'Unflaired by {author.name}')
         await member.remove_roles(bot.cache.roles.overflow, reason=f'Unflaired by {author.name}')
     else:
         role = discord.utils.get(bot.cache.scs.roles, name=user_crew)
