@@ -675,7 +675,8 @@ def crew_record(cr: Crew, league: Optional[int] = 0) -> Tuple:
 
 def crew_matches(cr: Crew) -> List[str]:
     battles = """
-    select c1.name as crew_1, c2.name as crew_2, c3.name as winner, battle.link, battle.finished, battle.final_score
+    select c1.name as crew_1, c2.name as crew_2, c3.name as winner, battle.link, battle.finished, battle.final_score, 
+        battle.vod
         from battle
             join crews c1 on c1.id = battle.crew_1
             join crews c2 on c2.id = battle.crew_2
@@ -700,6 +701,8 @@ def crew_matches(cr: Crew) -> List[str]:
                 loser = 0
 
             out.append(f'**{battle[winner]}** - {battle[loser]} ({battle[5]}-0) [link]({battle[3]})')
+            if battle[6]:
+                out[-1] += f' [vod]({battle[6]})'
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
