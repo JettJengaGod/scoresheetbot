@@ -582,9 +582,24 @@ class PoolPaged(menus.ListPageSource):
 
     async def format_page(self, menu, entries) -> discord.Embed:
         offset = menu.current_page * self.per_page
-        joined = f'Pool: {menu.current_page+1}\n'
+        joined = f'Pool: {menu.current_page + 1}\n'
         joined += '\n'.join(f'{i + 1 - offset}. {v}' for i, v in enumerate(entries, start=offset))
         embed = discord.Embed(description=joined, title=self.title, colour=self.color)
         if self.thumbnail:
             embed.set_thumbnail(url=self.thumbnail)
         return embed
+
+
+def playoff_summary(bot: 'ScoreSheetBot') -> discord.Embed:
+    embed = discord.Embed(title='Current Playoff Battles')
+    for key, battle in bot.battle_map.items():
+        if battle:
+            if battle.playoff:
+                chan = discord.utils.get(bot.cache.scs.channels, id=channel_id_from_key(key))
+                title = f'{battle.team1.name} vs {battle.team2.name}: ' \
+                        f'{battle.team1.num_players} vs {battle.team2.num_players}'
+                text = f'{battle.team1.stocks}-{battle.team2.stocks} {chan.mention}'
+                if 'Not Set' not in battle.stream:
+                    text += f' [stream]({battle.stream})'
+                embed.add_field(name=title, value=text, inline=False)
+    return embed
