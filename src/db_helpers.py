@@ -181,7 +181,7 @@ def update_member_roles(member: discord.Member) -> None:
     return
 
 
-def add_member_and_crew(member: discord.Member, crew: Crew, role: discord.Role) -> None:
+def add_member_and_crew(member: discord.Member, crew: Crew) -> None:
     add_member = """INSERT into members (id, nickname, discord_name)
      values(%s, %s, %s) ON CONFLICT DO NOTHING;"""
     add_crew = """INSERT into crews (discord_id, name, tag, overflow)
@@ -204,7 +204,7 @@ def add_member_and_crew(member: discord.Member, crew: Crew, role: discord.Role) 
         cur = conn.cursor()
         cur.execute(add_member, (member.id, member.display_name, member.name))
 
-        cur.execute(add_crew, (role.id, crew.name, crew.abbr, crew.overflow, crew.name))
+        cur.execute(add_crew, (crew.role_id, crew.name, crew.abbr, crew.overflow, crew.name))
         cur.execute(find_crew, (crew.name,))
         crew_id = cur.fetchone()[0]
         cur.execute(current_crew, (member.id,))

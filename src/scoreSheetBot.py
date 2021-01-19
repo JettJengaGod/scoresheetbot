@@ -1001,6 +1001,11 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(chan.mention)
                 await send_sheet(ctx, battle)
 
+    @commands.command(**help_doc['po'], hidden=True)
+    @main_only
+    async def po(self, ctx: Context):
+        await ctx.send(embed=playoff_summary(self))
+
     @commands.command(**help_doc['disband'], hidden=True)
     @role_call(STAFF_LIST)
     async def disband(self, ctx, *, name: str = None):
