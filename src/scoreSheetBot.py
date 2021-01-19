@@ -416,7 +416,7 @@ class ScoreSheetBot(commands.Cog):
                         output_channels.pop(0)
                         output_channels.insert(0,
                                                discord.utils.get(ctx.guild.channels,
-                                                                 name=PLAYOFF_CHANNEL_NAMES[league_id]))
+                                                                 name=PLAYOFF_CHANNEL_NAMES[league_id+1]))
                     else:
                         league_id = 1
 
