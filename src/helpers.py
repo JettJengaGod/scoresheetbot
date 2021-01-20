@@ -491,7 +491,8 @@ async def cache_process(bot: 'ScoreSheetBot'):
     await bot.cache.update(bot)
     if os.getenv('VERSION') == 'PROD':
         crew_update(bot)
-        await overflow_anomalies(bot)
+        if bot.cache.scs:
+            await overflow_anomalies(bot)
         await cooldown_handle(bot)
     for key in bot.battle_map:
         channel = bot.cache.scs.get_channel(channel_id_from_key(key))
