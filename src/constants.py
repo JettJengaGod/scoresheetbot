@@ -117,6 +117,7 @@ EXPECTED_NON_CREW_ROLES = {
 PLAYOFF_CHANNEL_NAMES = ['', 'first_class_playoffs_results', 'cm-extreme_playoffs_results',
                         'cm-tempered_playoffs_results']
 
+WLED_CREWS = ['Royal Knights']
 
 class PlayoffType(Enum):
     NO_PLAYOFF = 1
