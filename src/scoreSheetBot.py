@@ -416,7 +416,7 @@ class ScoreSheetBot(commands.Cog):
                         output_channels.pop(0)
                         output_channels.insert(0,
                                                discord.utils.get(ctx.guild.channels,
-                                                                 name=PLAYOFF_CHANNEL_NAMES[league_id-1]))
+                                                                 name=PLAYOFF_CHANNEL_NAMES[league_id - 1]))
                     else:
                         league_id = 1
 
@@ -875,7 +875,8 @@ class ScoreSheetBot(commands.Cog):
         else:
             flairing_crew = crew_lookup(crew(ctx.author, self), self)
         if flairing_crew.name in WLED_CREWS:
-            await response_message(ctx, f'WEE OOO WEE OO {flairing_crew.name} is recruit banned and can\'t flair people!')
+            await response_message(ctx,
+                                   f'WEE OOO WEE OO {flairing_crew.name} is recruit banned and can\'t flair people!')
             return
         if member.id == ctx.author.id and user_crew == flairing_crew.name:
             await response_message(ctx, f'Stop flairing yourself, stop flairing yourself.')
@@ -1037,9 +1038,7 @@ class ScoreSheetBot(commands.Cog):
                     continue
                 await member.edit(nick=nick_without_prefix(member.display_name))
                 role = discord.utils.get(self.cache.overflow_server.roles, name=dis_crew.name)
-                overflow_adv = discord.utils.get(self.cache.overflow_server.roles, name=ADVISOR)
-                overflow_leader = discord.utils.get(self.cache.overflow_server.roles, name=LEADER)
-                await user.remove_roles(role, overflow_adv, overflow_leader, reason=f'Unflaired by {ctx.author.name}')
+                await user.remove_roles(role, reason=f'Unflaired by {ctx.author.name}')
 
             await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader,
                                       reason=f'Unflaired in disband by {ctx.author.name}')
@@ -1095,10 +1094,7 @@ class ScoreSheetBot(commands.Cog):
                 if not user:
                     continue
                 await member.edit(nick=nick_without_prefix(member.display_name))
-                overflow_adv = discord.utils.get(self.cache.overflow_server.roles, name=ADVISOR)
-                overflow_leader = discord.utils.get(self.cache.overflow_server.roles, name=LEADER)
-                await user.remove_roles(of_role, overflow_adv, overflow_leader,
-                                        reason=f'Unflaired by {ctx.author.name}')
+                await user.remove_roles(of_role, reason=f'Unflaired by {ctx.author.name}')
                 await member.add_roles(new_role)
         update_crew_tomain(dis_crew, new_role.id)
         await self.cache.update(self)
