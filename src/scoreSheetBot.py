@@ -416,7 +416,7 @@ class ScoreSheetBot(commands.Cog):
                         output_channels.pop(0)
                         output_channels.insert(0,
                                                discord.utils.get(ctx.guild.channels,
-                                                                 name=PLAYOFF_CHANNEL_NAMES[league_id+1]))
+                                                                 name=PLAYOFF_CHANNEL_NAMES[league_id-1]))
                     else:
                         league_id = 1
 
@@ -956,18 +956,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['overflow'], hidden=True)
     @role_call([ADMIN, MINION])
     async def overflow(self, ctx: Context):
-        overflow_role = set()
-        for member in self.cache.scs.members:
-            if check_roles(member, OVERFLOW_ROLE):
-                overflow_role.add(f'{str(member)} | {member.id}')
-        other_set = set()
-        other_members = self.cache.overflow_server.members
-        for member in other_members:
-            if any((role.name in self.cache.crews for role in member.roles)):
-                other_set.add(f'{str(member)} | {member.id}')
-                continue
-        first = overflow_role - other_set
-        second = other_set - overflow_role
+        first, second = await overflow_anomalies(self)
         out = ['These members have the role, but are not in an overflow crew.']
         for member in first:
             out.append(f'> {member}')

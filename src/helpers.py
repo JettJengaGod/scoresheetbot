@@ -2,7 +2,7 @@ import os
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict
 
 from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
-    remove_expired_cooldown, cooldown_current
+    remove_expired_cooldown, cooldown_current, find_member_crew
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
@@ -492,6 +492,7 @@ async def cache_process(bot: 'ScoreSheetBot'):
     await bot.cache.update(bot)
     if os.getenv('VERSION') == 'PROD':
         crew_update(bot)
+        await overflow_anomalies(bot)
         await cooldown_handle(bot)
     for key in bot.battle_map:
         channel = bot.cache.scs.get_channel(channel_id_from_key(key))
@@ -603,3 +604,36 @@ def playoff_summary(bot: 'ScoreSheetBot') -> discord.Embed:
                     text += f' [stream]({battle.stream})'
                 embed.add_field(name=title, value=text, inline=False)
     return embed
+
+
+async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
+    overflow_role = set()
+    for member in bot.cache.scs.members:
+        if check_roles(member, OVERFLOW_ROLE):
+            overflow_role.add(member.id)
+    other_set = set()
+    other_members = bot.cache.overflow_server.members
+    for member in other_members:
+        if any((role.name in bot.cache.crews for role in member.roles)):
+            other_set.add(member.id)
+            continue
+    first = overflow_role - other_set
+    for mem_id in first:
+        mem = bot.cache.scs.get_member(mem_id)
+        await mem.remove_roles(bot.cache.roles.overflow, bot.cache.roles.leader, bot.cache.roles.advisor)
+        crew_name = find_member_crew(mem_id)
+        out_str = f'{str(mem)} left the overflow server and lost their roles here.'
+        if crew_name:
+            out_str += f'They were previously on {crew_name}'
+        await bot.cache.channels.flair_log.send(out_str)
+    second = other_set - overflow_role
+    for mem_id in second:
+        mem = bot.cache.overflow_server.get_member(mem_id)
+        for role in mem.roles:
+            if role.name in bot.cache.crews:
+                await mem.remove_roles(role)
+                await bot.cache.channels.flair_log.send(
+                    f'{str(mem)} no longer has the overflow role in the main server so they have been unflaired from'
+                    f'{role.name}.')
+
+    return first, second
