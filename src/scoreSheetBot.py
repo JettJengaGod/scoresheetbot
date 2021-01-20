@@ -876,7 +876,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             flairing_crew = crew_lookup(crew(ctx.author, self), self)
         if flairing_crew.name in WLED_CREWS:
-            await response_message(ctx, f'WEE OOO WEE OO {flairing_crew.name} is WLed and can\'t flair people!')
+            await response_message(ctx, f'WEE OOO WEE OO {flairing_crew.name} is recruit banned and can\'t flair people!')
             return
         if member.id == ctx.author.id and user_crew == flairing_crew.name:
             await response_message(ctx, f'Stop flairing yourself, stop flairing yourself.')
