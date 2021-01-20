@@ -621,6 +621,7 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
     for mem_id in first:
         mem = bot.cache.scs.get_member(mem_id)
         await mem.remove_roles(bot.cache.roles.overflow, bot.cache.roles.leader, bot.cache.roles.advisor)
+        await mem.edit(nick=nick_without_prefix(mem.display_name))
         crew_name = find_member_crew(mem_id)
         out_str = f'{str(mem)} left the overflow server and lost their roles here.'
         if crew_name:
