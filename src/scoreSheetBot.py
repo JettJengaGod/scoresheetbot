@@ -1046,9 +1046,11 @@ class ScoreSheetBot(commands.Cog):
 
         await cr_role.delete(reason=f'disbanded by {ctx.author.name}')
         response_embed = discord.Embed(title=f'{dis_crew.name} has been disbanded',
-                                       description='\n'.join([mem.mention for mem in members]),
+                                       description='\n'.join(
+                                           [f'{mem.mention}, {mem.id}, {str(mem)}' for mem in members]),
                                        color=dis_crew.color)
         await send_long_embed(ctx, response_embed)
+        await send_long_embed(self.cache.channels.flair_log, response_embed)
 
     @commands.command(**help_doc['tomain'], hidden=True)
     @role_call(STAFF_LIST)
