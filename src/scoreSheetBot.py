@@ -1006,43 +1006,46 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('You must send in a crew name.')
             return
-        if not dis_crew.overflow:
-            await ctx.send('You can only disband overflow crews like this')
-            return
 
         members = crew_members(dis_crew, self)
+        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
+        out = discord.Embed(title=f'{dis_crew.name} these players will have all crew roles stripped.',
+                            description='\n'.join(desc), color=dis_crew.color)
+
+        await send_long_embed(ctx, out)
         message = f'{ctx.author.mention}: You are attempting to disband {dis_crew.name}, all {len(members)} members' \
                   f' will have their crew roles stripped, are you sure?'
         msg = await ctx.send(message)
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
-        desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
-        out = discord.Embed(title=f'{dis_crew.name} these players will have all crew roles stripped.',
-                            description='\n'.join(desc), color=dis_crew.color)
-
-        await send_long_embed(ctx, out)
 
         desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
         out = discord.Embed(title=f'{dis_crew.name} is disbanding, here is their players:',
                             description='\n'.join(desc), color=dis_crew.color)
 
-        output = split_embed(out, 2000)
-        for put in output:
-            await self.cache.channels.doc_keeper.send(embed=put)
+        await send_long_embed(self.cache.channels.doc_keeper, out)
+        if dis_crew.overflow:
+            cr_role = discord.utils.get(self.cache.overflow_server.roles, name=dis_crew.name)
+        else:
+            cr_role = discord.utils.get(self.cache.scs.roles, name=dis_crew.name)
         for member in members:
-            if check_roles(member, [self.cache.roles.overflow.name]):
-                user = discord.utils.get(self.cache.overflow_server.members, id=member.id)
-                await member.remove_roles(self.cache.roles.overflow,
-                                          reason=f'Unflaired in disband by {ctx.author.name}')
-                if not user:
-                    continue
-                await member.edit(nick=nick_without_prefix(member.display_name))
-                role = discord.utils.get(self.cache.overflow_server.roles, name=dis_crew.name)
-                await user.remove_roles(role, reason=f'Unflaired by {ctx.author.name}')
 
+            if dis_crew.overflow:
+                if check_roles(member, [self.cache.roles.overflow.name]):
+                    user = discord.utils.get(self.cache.overflow_server.members, id=member.id)
+                    await member.remove_roles(self.cache.roles.overflow,
+                                              reason=f'Unflaired in disband by {ctx.author.name}')
+                    if not user:
+                        continue
+                    await member.edit(nick=nick_without_prefix(member.display_name))
+                    await user.remove_roles(cr_role, reason=f'Unflaired by {ctx.author.name}')
+            else:
+                await member.remove_roles(cr_role)
             await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader,
                                       reason=f'Unflaired in disband by {ctx.author.name}')
+
+        await cr_role.delete(reason=f'disbanded by {ctx.author.name}')
         response_embed = discord.Embed(title=f'{dis_crew.name} has been disbanded',
                                        description='\n'.join([mem.mention for mem in members]),
                                        color=dis_crew.color)
