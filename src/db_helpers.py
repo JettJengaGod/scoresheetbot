@@ -265,7 +265,8 @@ def crew_id_from_name(name: str, cursor) -> int:
 def crew_id_from_role_id(role_id: int, cursor) -> int:
     find_crew = """SELECT id from crews where discord_id = %s;"""
     cursor.execute(find_crew, (role_id,))
-    crew_id = cursor.fetchone()[0]
+    fetched = cursor.fetchone()
+    crew_id = fetched[0] if fetched else None
     return crew_id
 
 
@@ -488,7 +489,8 @@ def update_member_crew(member: discord.Member, new_crew: Crew) -> None:
             cur.execute(old_crew, (current[0], current[1], current[2],))
         if new_crew:
             new_id = crew_id_from_role_id(new_crew.role_id, cur)
-            cur.execute(add_member_crew, (member.id, new_id,))
+            if new_id:
+                cur.execute(add_member_crew, (member.id, new_id,))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
