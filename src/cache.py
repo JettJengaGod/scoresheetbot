@@ -139,9 +139,9 @@ class Cache:
             raise ValueError('Crews Sheet Not Found')
         else:
             for row in values:
-                crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=row[3])
-                if len(row) == 5:
-                    crews_by_name[row[0]].icon = row[4]
+                while len(row) < 5:
+                    row.append('')
+                crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=row[3], icon=row[4])
         if not qualifiers:
             raise ValueError('Qualifiers Sheet Not Found')
         else:
