@@ -4,6 +4,7 @@ import traceback
 import time
 import discord
 import functools
+from asyncio import sleep
 from datetime import date
 from discord.ext import commands, tasks, menus
 from dotenv import load_dotenv
@@ -230,6 +231,18 @@ class ScoreSheetBot(commands.Cog):
             return
         await self._set_current(ctx, Battle(team1, team2, size, mock=True))
         await ctx.send(embed=self._current(ctx).embed())
+
+    @commands.command(**help_doc['countdown'])
+    @ss_channel
+    async def countdown(self, ctx: Context, seconds: Optional[int] = 3):
+        if seconds > 10 or seconds < 1:
+            await ctx.send('You can only countdown from 10 or less!')
+        await ctx.send(f'Counting down from {seconds}')
+        while seconds > 0:
+            await ctx.send(f'{seconds}')
+            seconds -= 1
+            await sleep(1)
+        await ctx.send('Finished!')
 
     @commands.command(**help_doc['send'])
     @main_only
@@ -1047,9 +1060,11 @@ class ScoreSheetBot(commands.Cog):
 
         await cr_role.delete(reason=f'disbanded by {ctx.author.name}')
         response_embed = discord.Embed(title=f'{dis_crew.name} has been disbanded',
-                                       description='\n'.join([mem.mention for mem in members]),
+                                       description='\n'.join(
+                                           [f'{mem.mention}, {mem.id}, {str(mem)}' for mem in members]),
                                        color=dis_crew.color)
         await send_long_embed(ctx, response_embed)
+        await send_long_embed(self.cache.channels.flair_log, response_embed)
 
     @commands.command(**help_doc['tomain'], hidden=True)
     @role_call(STAFF_LIST)

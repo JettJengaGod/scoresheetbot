@@ -63,6 +63,7 @@ help_doc = dict(
     recache=HelpDoc(Categories.staff, 'Updates the cache. Admin only'),
     pending=HelpDoc(Categories.staff, 'Prints pending battles. Admin only'),
     po=HelpDoc(Categories.staff, 'Prints all playoff cbs in a summary.'),
+    countdown=HelpDoc(Categories.cb, 'Counts down for x seconds (defaults to 3).'),
     rank=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s rank'),
     merit=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s merit'),
     logo=HelpDoc(Categories.crews, 'Find the logo of a crew'),
