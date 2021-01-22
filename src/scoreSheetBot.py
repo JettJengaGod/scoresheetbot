@@ -7,6 +7,7 @@ import functools
 from asyncio import sleep
 from datetime import date
 from discord.ext import commands, tasks, menus
+from discord.ext.commands import Greedy
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
 from helpers import *
@@ -933,6 +934,14 @@ class ScoreSheetBot(commands.Cog):
             of_after = set(overflow_server.get_member(member.id).roles)
         await self.cache.channels.flair_log.send(
             embed=role_change(before, after, ctx.author, member, of_before, of_after))
+
+    @commands.command(**help_doc['multiflair'])
+    @main_only
+    @flairing_required
+    async def multiflair(self, ctx: Context, members: Greedy[discord.Member], new_crew: str = None):
+        for member in members:
+            await self.flair(ctx, member, new_crew=new_crew)
+
 
     ''' ***********************************STAFF COMMANDS ************************************************'''
 

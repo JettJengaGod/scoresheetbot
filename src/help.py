@@ -74,6 +74,10 @@ help_doc = dict(
     battles=HelpDoc(Categories.crews, 'All battles that have been recorded with the bot'),
     unflair=HelpDoc(Categories.flairing, 'Unflairs you from your crew or a member from your crew if you are a leader '
                                          'if you are an admin, unflairs anyone', '', 'Optional<Member>'),
+    multiflair=HelpDoc(Categories.flairing,
+                       'Flairs multiple people for your crew or for a specific crew if you are an admin.'
+                       'Only use spaces between members, and mention mention each one', '',
+                       'Member1 Member2 Member3 Optional<Crew>'),
     flair=HelpDoc(Categories.flairing, 'Flairs someone for your crew or for a specific crew if you are an admin', '',
                   'Member Optional<Crew>'),
     promote=HelpDoc(Categories.flairing, 'Used by leaders to promote users to advoisrs or staff to promote to leaders',
