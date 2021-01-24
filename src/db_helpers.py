@@ -102,7 +102,7 @@ def add_member_and_roles(member: discord.Member) -> None:
     add_role = """INSERT into roles (id, name, guild_id)
      values(%s, %s, %s) ON CONFLICT DO NOTHING;"""
     add_member_role = """INSERT into current_member_roles (member_id, role_id, gained)
-     values(%s, %s, current_timestamp);"""
+     values(%s, %s, current_timestamp) ON CONFLICT DO NOTHING;"""
     conn = None
     try:
         params = config()
