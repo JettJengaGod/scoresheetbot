@@ -238,6 +238,7 @@ class ScoreSheetBot(commands.Cog):
     async def countdown(self, ctx: Context, seconds: Optional[int] = 3):
         if seconds > 10 or seconds < 1:
             await ctx.send('You can only countdown from 10 or less!')
+            return
         await ctx.send(f'Counting down from {seconds}')
         while seconds > 0:
             await ctx.send(f'{seconds}')
