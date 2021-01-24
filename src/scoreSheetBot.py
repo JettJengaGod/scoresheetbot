@@ -356,6 +356,20 @@ class ScoreSheetBot(commands.Cog):
                                         Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
         await send_sheet(ctx, battle=self._current(ctx))
 
+    @commands.command(**help_doc['end'])
+    @main_only
+    @has_sheet
+    @ss_channel
+    async def endlag(self, ctx: Context, char1: Union[str, discord.Emoji], stocks1: int,
+                     char2: Union[str, discord.Emoji],
+                     stocks2: int):
+        await self._reject_outsiders(ctx)
+
+        self._current(ctx).finish_lag(stocks1, stocks2,
+                                      Character(str(char1), self.bot, is_usable_emoji(char1, self.bot)),
+                                      Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
+        await send_sheet(ctx, battle=self._current(ctx))
+
     @commands.command(**help_doc['resize'])
     @main_only
     @is_lead
@@ -942,7 +956,6 @@ class ScoreSheetBot(commands.Cog):
     async def multiflair(self, ctx: Context, members: Greedy[discord.Member], new_crew: str = None):
         for member in members:
             await self.flair(ctx, member, new_crew=new_crew)
-
 
     ''' ***********************************STAFF COMMANDS ************************************************'''
 
