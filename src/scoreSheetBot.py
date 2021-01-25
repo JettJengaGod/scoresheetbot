@@ -210,62 +210,6 @@ class ScoreSheetBot(commands.Cog):
         await unlock(ctx.channel, self)
         await ctx.send('Unlocked the channel for all crews to use.')
 
-    @commands.command(**help_doc['roomlock'])
-    @main_only
-    @role_call([MINION, ADMIN, DOCS, LEADER])
-    @ss_channel
-    async def roomlock(self, ctx: Context, cr1: Optional[str], cr2: Optional[str]):
-        if not (cr1 and cr2):
-            try:
-                current = self._current(ctx)
-            except ValueError:
-                await ctx.send('There needs to be a ranked battle running to use this command.')
-                return
-            if current and not current.mock:
-                if not check_roles(ctx.author, STAFF_LIST):
-                    await self._reject_outsiders(ctx)
-                cr_role_1 = discord.utils.get(ctx.guild.roles, name=current.team1.name)
-                cr_role_2 = discord.utils.get(ctx.guild.roles, name=current.team2.name)
-                await ctx.channel.set_permissions(self.cache.roles.everyone, send_messages=False)
-                await ctx.channel.set_permissions(cr_role_1, send_messages=True)
-                await ctx.channel.set_permissions(cr_role_2, send_messages=True)
-                await ctx.send(f'Room Locked to only {current.team1.name} and {current.team2.name}.')
-            else:
-                await ctx.send('There needs to be a ranked battle running to use this command.')
-                return
-        else:
-            if not check_roles(ctx.author, STAFF_LIST):
-                await ctx.send('Only staff can lock a room to a specific group.')
-                return
-
-    @commands.command(**help_doc['roomlock'])
-    @main_only
-    @role_call([MINION, ADMIN, DOCS, LEADER])
-    @ss_channel
-    async def roomlock(self, ctx: Context, cr1: Optional[str], cr2: Optional[str]):
-        if not (cr1 and cr2):
-            try:
-                current = self._current(ctx)
-            except ValueError:
-                await ctx.send('There needs to be a ranked battle running to use this command.')
-                return
-            if current and not current.mock:
-                if not check_roles(ctx.author, STAFF_LIST):
-                    await self._reject_outsiders(ctx)
-                cr_role_1 = discord.utils.get(ctx.guild.roles, name=current.team1.name)
-                cr_role_2 = discord.utils.get(ctx.guild.roles, name=current.team2.name)
-                await ctx.channel.set_permissions(self.cache.roles.everyone, send_messages=False)
-                await ctx.channel.set_permissions(cr_role_1, send_messages=True)
-                await ctx.channel.set_permissions(cr_role_2, send_messages=True)
-                await ctx.send(f'Room Locked to only {current.team1.name} and {current.team2.name}.')
-            else:
-                await ctx.send('There needs to be a ranked battle running to use this command.')
-                return
-        else:
-            if not check_roles(ctx.author, STAFF_LIST):
-                await ctx.send('Only staff can lock a room to a specific group.')
-                return
-
     @commands.command(**help_doc['battle'], aliases=['challenge'], group='CB')
     @main_only
     @no_battle
