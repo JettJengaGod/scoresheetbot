@@ -641,10 +641,6 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
     return first, second
 
 
-
-
-
-
 async def unlock(channel: discord.TextChannel, bot: 'ScoreSheetBot') -> None:
     for role in bot.cache.scs.roles:
         if role.name in bot.cache.crews_by_name:
