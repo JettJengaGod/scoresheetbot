@@ -69,6 +69,7 @@ class Cache:
             free_agent = discord.utils.get(server.roles, name=FREE_AGENT)
             join_cd = discord.utils.get(server.roles, name=JOIN_CD)
             playoff = discord.utils.get(server.roles, name=PLAYOFF_LIMITED)
+            everyone = discord.utils.get(server.roles, name='@everyone')
 
         return Roles
 

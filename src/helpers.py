@@ -639,3 +639,17 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
                     f'{role.name}.')
 
     return first, second
+
+
+
+
+
+
+async def unlock(channel: discord.TextChannel, bot: 'ScoreSheetBot') -> None:
+    for role in bot.cache.scs.roles:
+        if role.name in bot.cache.crews_by_name:
+            if channel.overwrites_for(role) != discord.PermissionOverwrite():
+                await channel.set_permissions(role, overwrite=None)
+    everyone_overwrite = discord.PermissionOverwrite(manage_messages=False)
+
+    await channel.set_permissions(bot.cache.roles.everyone, overwrite=everyone_overwrite)
