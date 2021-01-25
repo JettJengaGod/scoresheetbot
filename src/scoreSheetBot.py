@@ -188,7 +188,8 @@ class ScoreSheetBot(commands.Cog):
                     cr_role_2 = self.cache.roles.overflow
                 else:
                     cr_role_2 = discord.utils.get(ctx.guild.roles, name=current.team2.name)
-                everyone_overwrite = discord.PermissionOverwrite(send_messages=False, manage_messages=False)
+                everyone_overwrite = discord.PermissionOverwrite(send_messages=False, manage_messages=False,
+                                                                 add_reactions=False)
                 await ctx.channel.set_permissions(self.cache.roles.everyone, overwrite=everyone_overwrite)
                 crew_overwrite = discord.PermissionOverwrite(send_messages=True)
                 await ctx.channel.set_permissions(cr_role_1, overwrite=crew_overwrite)
