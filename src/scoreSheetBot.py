@@ -47,6 +47,7 @@ class ScoreSheetBot(commands.Cog):
 
     async def _clear_current(self, ctx):
         self.battle_map.pop(key_string(ctx), None)
+        await unlock(ctx.channel, self)
         await update_channel_open('', ctx.channel)
 
     def cog_unload(self):
