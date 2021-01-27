@@ -169,6 +169,10 @@ class ScoreSheetBot(commands.Cog):
     @role_call([MINION, ADMIN, DOCS, LEADER])
     @ss_channel
     async def lock(self, ctx: Context, cr1: Optional[str], cr2: Optional[str]):
+
+        if 'testing' in ctx.channel.name:
+            await ctx.send('This channel cannot be locked')
+            return
         if not (cr1 and cr2):
             try:
                 current = self._current(ctx)
