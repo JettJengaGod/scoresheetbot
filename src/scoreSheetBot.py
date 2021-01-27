@@ -1205,6 +1205,7 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def recache(self, ctx: Context):
         await cache_process(self)
+        self.auto_cache.cancel()
         self.auto_cache.restart()
         await ctx.send('The cache has been reset, everything should be updated now.')
 
