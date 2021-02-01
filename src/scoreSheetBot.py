@@ -43,6 +43,8 @@ class ScoreSheetBot(commands.Cog):
         if self._current(ctx).mock:
             return
         if not await self._battle_crew(ctx, ctx.author):
+            if not check_roles(ctx.author, [DOCS, ADMIN, ADVISOR, LEADER]):
+                raise Exception('You need to be an advisor or leader to run this command.')
             raise Exception('You are not in this battle, stop trying to mess with it.')
 
     async def _set_current(self, ctx: Context, battle: Battle):
