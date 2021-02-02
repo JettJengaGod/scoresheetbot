@@ -108,6 +108,7 @@ help_doc = dict(
     thank=HelpDoc(Categories.misc, 'Thanks alexjett'),
     thankboard=HelpDoc(Categories.misc, 'Returns the thanking leaderboard'),
     make_lead=HelpDoc(Categories.staff, 'Makes a user a leader on their crew', '', 'User'),
+    bigcrew=HelpDoc(Categories.staff, 'Returns all the crews that are bigger than x, default 40', '', 'Crew min'),
 
     pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),
 )
