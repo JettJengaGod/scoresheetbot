@@ -1,5 +1,7 @@
 import os
 from dotenv import load_dotenv
+from enum import Enum
+
 load_dotenv()
 CACHE_TIME = 600_000_000_000  # 6000 seconds
 CACHE_TIME_SECONDS = 120
@@ -25,7 +27,7 @@ JOIN_CD = '24h Join Cooldown'
 FLAIRING_LOGS = 'jettbot_flairing_logs'
 POWER_MERGE = '! Verify Power Merges !'
 FLAIR_VERIFY = '! Verify Flair Change !'
-PLAYOFF_LIMITED = 'Playoff Limited'
+PLAYOFF_LIMITED = 'Playoff Locked'
 FLAIRING_QUESTIONS_ID = 786842350822490122
 COOLDOWN_TIME_SECONDS = 60 * 60 * 24  # 24 Hours
 TEMP_ROLES_FILE = 'temp_roles.txt'
@@ -108,5 +110,17 @@ EXPECTED_NON_CREW_ROLES = {
     JOIN_CD,
     'BetaJettBot',
     'EVIL',
-    'Special Pass'
+    'Special Pass',
+    'how',
+    'Players Union'
 }
+PLAYOFF_CHANNEL_NAMES = ['', 'first_class_playoffs_results', 'cm-extreme_playoffs_results',
+                        'cm-tempered_playoffs_results']
+
+WLED_CREWS = ['Royal Knights']
+
+class PlayoffType(Enum):
+    NO_PLAYOFF = 1
+    LEGACY = 2
+    EXTREME = 3
+    TEMPERED = 4
