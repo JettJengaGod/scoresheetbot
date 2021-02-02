@@ -1119,11 +1119,13 @@ class ScoreSheetBot(commands.Cog):
     ###########################################################################################
 
     @commands.group(name='test')
+    @role_call(STAFF_LIST)
     async def test_group(self, ctx):
         if ctx.invoked_subcommand is None:
             await ctx.send('Invalid test sub command')
 
     @test_group.command(name='confirm')
+    @role_call(STAFF_LIST)
     async def test_confirm(self, ctx):
         msg = await ctx.send(datetime.today().strftime("%Y/%m/%d %H:%M:%S"))
         result = await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot)
