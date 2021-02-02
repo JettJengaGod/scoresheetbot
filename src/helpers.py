@@ -2,14 +2,14 @@ import os
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict
 
 from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
-    remove_expired_cooldown, cooldown_current
+    remove_expired_cooldown, cooldown_current, find_member_crew
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
 from fuzzywuzzy import process, fuzz
 import asyncio
 import discord
-from discord.ext import commands
+from discord.ext import commands, menus
 from .battle import *
 import time
 from .constants import *
@@ -239,6 +239,12 @@ def ambiguous_lookup(name: str, bot: 'ScoreSheetBot') -> Union[discord.Member, C
 
     true_name = process.extractOne(name, bot.cache.main_members.keys(), scorer=fuzz.ratio)
     true_crew = process.extractOne(name, bot.cache.crews_by_name.keys(), scorer=fuzz.ratio)
+    if not true_crew:
+        if not true_name:
+            raise ValueError(f'{name} didn\'t match a crew or a name')
+        return bot.cache.main_members[true_name[0]]
+    if not true_name:
+        return bot.cache.crews_by_name[true_crew[0]]
     if true_crew[1] >= true_name[1]:
         return bot.cache.crews_by_name[true_crew[0]]
     else:
@@ -300,9 +306,7 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
 
         await member.edit(nick=nick_without_prefix(member.display_name))
         role = discord.utils.get(bot.cache.overflow_server.roles, name=user_crew)
-        overflow_adv = discord.utils.get(bot.cache.overflow_server.roles, name=ADVISOR)
-        overflow_leader = discord.utils.get(bot.cache.overflow_server.roles, name=LEADER)
-        await user.remove_roles(role, overflow_adv, overflow_leader, reason=f'Unflaired by {author.name}')
+        await user.remove_roles(role, reason=f'Unflaired by {author.name}')
         await member.remove_roles(bot.cache.roles.overflow, reason=f'Unflaired by {author.name}')
     else:
         role = discord.utils.get(bot.cache.scs.roles, name=user_crew)
@@ -485,14 +489,20 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
 
 
 async def cache_process(bot: 'ScoreSheetBot'):
+    if bot.cache.channels and os.getenv('VERSION') == 'PROD':
+        await bot.cache.channels.recache_logs.send('Starting recache.')
     await bot.cache.update(bot)
     if os.getenv('VERSION') == 'PROD':
         crew_update(bot)
+        if bot.cache.scs:
+            await overflow_anomalies(bot)
         await cooldown_handle(bot)
     for key in bot.battle_map:
         channel = bot.cache.scs.get_channel(channel_id_from_key(key))
         if bot.battle_map[key]:
             await update_channel_open(NO, channel)
+    if os.getenv('VERSION') == 'PROD':
+        await bot.cache.channels.recache_logs.send('Successfully recached.')
 
 
 def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
@@ -522,13 +532,15 @@ def crew_update(bot: 'ScoreSheetBot'):
             update_crew(cached)
 
 
-
 async def cooldown_handle(bot: 'ScoreSheetBot'):
     for user_id in cooldown_finished():
         member = bot.cache.scs.get_member(user_id)
-        if check_roles(member, ['24h Join Cooldown']):
-            await member.remove_roles(bot.cache.roles.join_cd)
-            await bot.cache.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
+        if member:
+            if check_roles(member, ['24h Join Cooldown']):
+                await member.remove_roles(bot.cache.roles.join_cd)
+                await bot.cache.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
+            else:
+                remove_expired_cooldown(user_id)
         else:
             remove_expired_cooldown(user_id)
 
@@ -544,3 +556,100 @@ def strfdelta(tdelta, fmt):
     d["hours"], rem = divmod(tdelta.seconds, 3600)
     d["minutes"], d["seconds"] = divmod(rem, 60)
     return fmt.format(**d)
+
+
+class Paged(menus.ListPageSource):
+    def __init__(self, data, title: str, color: Optional[discord.Color] = discord.Color.purple(),
+                 thumbnail: Optional[str] = '', per_page: Optional[int] = 10):
+        super().__init__(data, per_page=per_page)
+        self.title = title
+        self.color = color
+        self.thumbnail = thumbnail
+
+    async def format_page(self, menu, entries) -> discord.Embed:
+        offset = menu.current_page * self.per_page
+
+        joined = '\n'.join(f'{i + 1}. {v}' for i, v in enumerate(entries, start=offset))
+        embed = discord.Embed(description=joined, title=self.title, colour=self.color)
+        if self.thumbnail:
+            embed.set_thumbnail(url=self.thumbnail)
+        return embed
+
+
+class PoolPaged(menus.ListPageSource):
+    def __init__(self, data, title: str, color: Optional[discord.Color] = discord.Color.purple(),
+                 thumbnail: Optional[str] = '', per_page: Optional[int] = 10):
+        super().__init__(data, per_page=per_page)
+        self.title = title
+        self.color = color
+        self.thumbnail = thumbnail
+
+    async def format_page(self, menu, entries) -> discord.Embed:
+        offset = menu.current_page * self.per_page
+        joined = f'Pool: {menu.current_page + 1}\n'
+        joined += '\n'.join(f'{i + 1 - offset}. {v}' for i, v in enumerate(entries, start=offset))
+        embed = discord.Embed(description=joined, title=self.title, colour=self.color)
+        if self.thumbnail:
+            embed.set_thumbnail(url=self.thumbnail)
+        return embed
+
+
+def playoff_summary(bot: 'ScoreSheetBot') -> discord.Embed:
+    embed = discord.Embed(title='Current Playoff Battles')
+    for key, battle in bot.battle_map.items():
+        if battle:
+            if battle.playoff:
+                chan = discord.utils.get(bot.cache.scs.channels, id=channel_id_from_key(key))
+                title = f'{battle.team1.name} vs {battle.team2.name}: ' \
+                        f'{battle.team1.num_players} vs {battle.team2.num_players}'
+                text = f'{battle.team1.stocks}-{battle.team2.stocks} {chan.mention}'
+                if 'Not Set' not in battle.stream:
+                    text += f' [stream]({battle.stream})'
+                embed.add_field(name=title, value=text, inline=False)
+    return embed
+
+
+async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
+    overflow_role = set()
+    for member in bot.cache.scs.members:
+        if check_roles(member, OVERFLOW_ROLE):
+            overflow_role.add(member.id)
+    other_set = set()
+    other_members = bot.cache.overflow_server.members
+    for member in other_members:
+        if any((role.name in bot.cache.crews for role in member.roles)):
+            other_set.add(member.id)
+            continue
+    first = overflow_role - other_set
+    for mem_id in first:
+        mem = bot.cache.scs.get_member(mem_id)
+        await mem.remove_roles(bot.cache.roles.overflow, bot.cache.roles.leader, bot.cache.roles.advisor)
+        await mem.edit(nick=nick_without_prefix(mem.display_name))
+        crew_name = find_member_crew(mem_id)
+        out_str = f'{str(mem)} left the overflow server and lost their roles here.'
+        if crew_name:
+            out_str += f'They were previously on {crew_name}'
+        await bot.cache.channels.flair_log.send(out_str)
+    second = other_set - overflow_role
+    for mem_id in second:
+        mem = bot.cache.overflow_server.get_member(mem_id)
+        for role in mem.roles:
+            if role.name in bot.cache.crews:
+                await mem.remove_roles(role)
+                await bot.cache.channels.flair_log.send(
+                    f'{str(mem)} no longer has the overflow role in the main server so they have been unflaired from'
+                    f'{role.name}.')
+
+    return first, second
+
+
+async def unlock(channel: discord.TextChannel, bot: 'ScoreSheetBot') -> None:
+    if 'testing' in channel.name:
+        return
+    for role in bot.cache.scs.roles:
+        if role.name in bot.cache.crews_by_name:
+            if channel.overwrites_for(role) != discord.PermissionOverwrite():
+                await channel.set_permissions(role, overwrite=None)
+    everyone_overwrite = discord.PermissionOverwrite(manage_messages=False)
+
+    await channel.set_permissions(bot.cache.roles.everyone, overwrite=everyone_overwrite)

@@ -165,7 +165,7 @@ class TimerMatch(Match):
 
 
 class Battle:
-    def __init__(self, name1: str, name2: str, players: int, mock: bool = False):
+    def __init__(self, name1: str, name2: str, players: int, mock: bool = False, playoff: bool = False):
         self.team1 = Team(name1, players, players * PLAYER_STOCKS)
         self.team2 = Team(name2, players, players * PLAYER_STOCKS)
         self.teams = (self.team1, self.team2)
@@ -176,6 +176,13 @@ class Battle:
         self.color = colour.Color.from_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         self.time = datetime.now()
         self.mock = mock
+        self.playoff = playoff
+        if self.playoff:
+            self.header = 'Playoff '
+        elif self.mock:
+            self.header = 'Mock '
+        else:
+            self.header = ''
 
     def confirmed(self) -> bool:
         return all(self.confirms)
@@ -210,7 +217,7 @@ class Battle:
 
     def replace_player(self, team_name: str, player_name: str, leader: str, player_id: Optional[int] = 0) -> None:
         team = self.lookup(team_name)
-        info = team.replace_current(player_name)
+        info = team.replace_current(player_name, player_id)
         team.leader.add(leader)
         self.matches.append(InfoMatch(info=info))
 
@@ -243,6 +250,33 @@ class Battle:
         self.matches.append(match)
         self.team1.match_finish(taken2, taken1)
         self.team2.match_finish(taken1, taken2)
+        self.time = datetime.now()
+        return match
+
+    def finish_lag(self, taken1: int, taken2: int, char1: Character, char2: Character) -> Match:
+        if not self.match_ready():
+            not_ready = []
+            for team in self.teams:
+                if not team.current_player:
+                    not_ready.append(team.name)
+            raise StateError(self, f'The match is not ready yet, {not_ready} still need players')
+        p1 = self.team1.current_player
+        p1.set_char(char1)
+        p2 = self.team2.current_player
+        p2.set_char(char2)
+        if p1.left == taken2 or p2.left == taken1:
+            raise StateError(self, f'Game ended normally,\n'
+                                   f' use the normal end command.')
+        winner = 1
+        if taken2 > p1.left or taken1 > p2.left:
+            raise StateError(self, f'You can\'t take more stocks than a player has. '
+                                   f' {p1.name} has {p1.left} stocks {p2.name} has {p2.left} stocks')
+        match = Match(p1, p2, taken1, taken2, winner)
+        self.matches.append(match)
+        self.team1.match_finish(taken2, taken1)
+        self.team2.match_finish(taken1, taken2)
+        info = InfoMatch('Previous match ended due to lag ignore the winner.')
+        self.matches.append(info)
         self.time = datetime.now()
         return match
 
@@ -306,7 +340,7 @@ class Battle:
 
     def __str__(self):
         out = f'{self.team1.name} vs {self.team2.name}\n' \
-              f'{self.team1.num_players} vs {self.team2.num_players} Crew battle'
+              f'{self.team1.num_players} vs {self.team2.num_players} {self.header}Crew battle'
         out += '\n----------------------------------------------\n'
         for match in self.matches:
             out += str(match)
@@ -324,7 +358,7 @@ class Battle:
         title = f'{self.team1.name} vs {self.team2.name}'
         body = f'Lobby ID: {self.id}\n' \
                f'Streamer: {self.stream}\n\n' \
-               f'{self.team1.num_players} vs {self.team2.num_players} Crew battle\n\n'
+               f'{self.team1.num_players} vs {self.team2.num_players} {self.header}Crew battle\n\n'
         for match in self.matches:
             body += str(match)
             body += '\n'

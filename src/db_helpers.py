@@ -1,13 +1,15 @@
-from typing import List, Tuple
-import traceback
-import psycopg2
-import sys
+import datetime
 import os
+import sys
+import traceback
+from typing import List, Tuple, Optional
+
+import discord
+import psycopg2
+
 from src.battle import Battle, InfoMatch, TimerMatch
 from src.crew import Crew
 from src.db_config import config
-import discord
-import datetime
 
 
 def logfile():
@@ -67,7 +69,7 @@ def thank_board(user: discord.Member) -> discord.Embed:
     board = """select count, userid, username, 
         RANK() OVER (ORDER BY count DESC) thank_rank from thank;"""
     solo = """SELECT * from (SELECT *, RANK () OVER (ORDER BY count DESC) 
-           thank_rank FROM thank) total where userid = %s;""";
+           thank_rank FROM thank) total where userid = %s;"""
     conn = None
     desc = []
     try:
@@ -100,7 +102,7 @@ def add_member_and_roles(member: discord.Member) -> None:
     add_role = """INSERT into roles (id, name, guild_id)
      values(%s, %s, %s) ON CONFLICT DO NOTHING;"""
     add_member_role = """INSERT into current_member_roles (member_id, role_id, gained)
-     values(%s, %s, current_timestamp);"""
+     values(%s, %s, current_timestamp) ON CONFLICT DO NOTHING;"""
     conn = None
     try:
         params = config()
@@ -178,7 +180,7 @@ def update_member_roles(member: discord.Member) -> None:
     return
 
 
-def add_member_and_crew(member: discord.Member, crew: Crew, role: discord.Role) -> None:
+def add_member_and_crew(member: discord.Member, crew: Crew) -> None:
     add_member = """INSERT into members (id, nickname, discord_name)
      values(%s, %s, %s) ON CONFLICT DO NOTHING;"""
     add_crew = """INSERT into crews (discord_id, name, tag, overflow)
@@ -201,7 +203,7 @@ def add_member_and_crew(member: discord.Member, crew: Crew, role: discord.Role) 
         cur = conn.cursor()
         cur.execute(add_member, (member.id, member.display_name, member.name))
 
-        cur.execute(add_crew, (role.id, crew.name, crew.abbr, crew.overflow, crew.name))
+        cur.execute(add_crew, (crew.role_id, crew.name, crew.abbr, crew.overflow, crew.name))
         cur.execute(find_crew, (crew.name,))
         crew_id = cur.fetchone()[0]
         cur.execute(current_crew, (member.id,))
@@ -259,6 +261,14 @@ def crew_id_from_name(name: str, cursor) -> int:
     return crew_id
 
 
+def crew_id_from_role_id(role_id: int, cursor) -> int:
+    find_crew = """SELECT id from crews where discord_id = %s;"""
+    cursor.execute(find_crew, (role_id,))
+    fetched = cursor.fetchone()
+    crew_id = fetched[0] if fetched else None
+    return crew_id
+
+
 def add_character(name: str):
     add_char = """INSERT into fighters (name)
         select %s WHERE
@@ -291,13 +301,14 @@ def char_id_from_name(name: str, cursor) -> int:
     return char_id
 
 
-def add_finished_battle(battle: Battle, link: str, league: int) -> None:
+def add_finished_battle(battle: Battle, link: str, league: int) -> int:
     add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id)
      values(%s, %s, %s, %s, %s, current_timestamp, %s)  RETURNING id;"""
 
     add_match = """INSERT into match (p1, p2, p1_taken, p2_taken, winner, battle_id, p1_char_id, p2_char_id, match_order)
      values(%s, %s, %s, %s, %s, %s, %s, %s, %s);"""
     conn = None
+    battle_id = -1
     try:
         params = config()
         conn = psycopg2.connect(**params)
@@ -336,7 +347,7 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> None:
     finally:
         if conn is not None:
             conn.close()
-    return
+    return battle_id
 
 
 def crew_correct(member: discord.Member, current: str) -> bool:
@@ -460,7 +471,7 @@ def update_crew_tomain(crew: Crew, new_role_id: int) -> None:
             conn.close()
 
 
-def update_member_crew(member: discord.Member, new_crew: str) -> None:
+def update_member_crew(member: discord.Member, new_crew: Crew) -> None:
     delete_current = """DELETE FROM current_member_crews where member_id = %s RETURNING member_id, crew_id, joined;"""
     old_crew = """INSERT into member_crews_history (member_id, crew_id, joined, leave)
      values(%s, %s, %s, current_timestamp);"""
@@ -476,8 +487,9 @@ def update_member_crew(member: discord.Member, new_crew: str) -> None:
         if current:
             cur.execute(old_crew, (current[0], current[1], current[2],))
         if new_crew:
-            new_id = crew_id_from_name(new_crew, cur)
-            cur.execute(add_member_crew, (member.id, new_id,))
+            new_id = crew_id_from_role_id(new_crew.role_id, cur)
+            if new_id:
+                cur.execute(add_member_crew, (member.id, new_id,))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -488,6 +500,32 @@ def update_member_crew(member: discord.Member, new_crew: str) -> None:
     finally:
         if conn is not None:
             conn.close()
+
+
+def find_member_crew(member_id: int) -> str:
+    find_current = """Select crews.name from crews, current_member_crews 
+        where current_member_crews.member_id = %s and crews.id = current_member_crews.crew_id;"""
+    conn = None
+    crew_name = ''
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(find_current, (member_id,))
+        current = cur.fetchone()
+        if current:
+            crew_name = current[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return crew_name
 
 
 def cooldown_finished() -> List[int]:
@@ -544,7 +582,7 @@ def cooldown_current() -> List[Tuple[int, datetime.timedelta]]:
     return [(c[0], c[1]) for c in current]
 
 
-def remove_expired_cooldown(user_id: int):
+def remove_expired_cooldown(user_id: int) -> None:
     cooldown = """ 
         delete from current_member_roles 
             where role_id = 786492456027029515 and member_id=%s;"""
@@ -564,3 +602,271 @@ def remove_expired_cooldown(user_id: int):
     finally:
         if conn is not None:
             conn.close()
+
+
+def all_battles() -> List[str]:
+    battles = """
+    select c1.name as crew_1, c2.name as crew_2, c3.name as winner, battle.link, battle.finished, battle.final_score, 
+        battle.vod
+        from battle
+            join crews c1 on c1.id = battle.crew_1
+            join crews c2 on c2.id = battle.crew_2
+            join crews c3 on c3.id = battle.winner
+            order by battle.id asc;"""
+    conn = None
+    out = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(battles)
+        everything = cur.fetchall()
+        for battle in everything:
+            if battle[2] == battle[0]:
+                winner = 0
+                loser = 1
+            else:
+                winner = 1
+                loser = 0
+
+            out.append(f'**{battle[winner]}** - {battle[loser]} ({battle[5]}-0) [link]({battle[3]})')
+            if battle[6]:
+                out[-1] += f' [vod]({battle[6]})'
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return out
+
+
+def crew_record(cr: Crew, league: Optional[int] = 0) -> Tuple:
+    record = """
+        select * from (select coalesce(wins.name,bttls.name) as name, coalesce(wins.wins,0) as ws, coalesce(bttls.matches,0) as ms  from
+        (select crews.name, count(*) as wins 
+            from crews, battle 
+                where crews.id = battle.winner and crews.id = %s
+                    group by crews.name) 
+        as wins
+        full outer join 
+        (select crews.name, count(*) as matches 
+            from crews, battle 
+                where (crews.id = battle.crew_1 or crews.id = battle.crew_2) and crews.id = %s 
+                    group by crews.name
+        ) as bttls on bttls.name = wins.name) as crew_wrs;
+    """
+    record_with_league = """
+    select * from (select coalesce(wins.name,bttls.name) as name, coalesce(wins.wins,0) as ws, coalesce(bttls.matches,0) as ms  from
+    (select crews.name, count(*) as wins 
+        from crews, battle 
+            where crews.id = battle.winner and crews.id = %s and battle.league_id = %s 
+                group by crews.name) 
+    as wins
+    full outer join 
+    (select crews.name, count(*) as matches 
+        from crews, battle 
+            where (crews.id = battle.crew_1 or crews.id = battle.crew_2) and crews.id = %s and battle.league_id = %s 
+                group by crews.name
+    ) as bttls on bttls.name = wins.name) as crew_wrs;
+"""
+    conn = None
+    ret = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        crew_id = crew_id_from_role_id(cr.role_id, cur)
+        if league:
+            cur.execute(record_with_league, (crew_id, league, crew_id, league))
+        else:
+            cur.execute(record, (crew_id, crew_id))
+        ret = cur.fetchone()
+        if not ret:
+            ret = (cr.name, 0, 0)
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return ret
+
+
+def crew_matches(cr: Crew) -> List[str]:
+    battles = """
+    select c1.name as crew_1, c2.name as crew_2, c3.name as winner, battle.link, battle.finished, battle.final_score, 
+        battle.vod
+        from battle
+            join crews c1 on c1.id = battle.crew_1
+            join crews c2 on c2.id = battle.crew_2
+            join crews c3 on c3.id = battle.winner
+            where c1.id = %s or c2.id = %s
+            order by battle.id asc;"""
+    conn = None
+    out = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr.role_id, cur)
+        cur.execute(battles, (cr_id, cr_id,))
+        everything = cur.fetchall()
+        for battle in everything:
+            if battle[2] == battle[0]:
+                winner = 0
+                loser = 1
+            else:
+                winner = 1
+                loser = 0
+
+            out.append(f'**{battle[winner]}** - {battle[loser]} ({battle[5]}-0) [link]({battle[3]})')
+            if battle[6]:
+                out[-1] += f' [vod]({battle[6]})'
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return out
+
+
+def player_stocks(member: discord.Member) -> Tuple[int, int]:
+    taken = """
+    select coalesce(p1.taken1,0)+coalesce(p2.taken2,0) as taken, coalesce(p1.lost1,0)+coalesce(p2.lost2,0) as lost from
+        (select sum(player_1.p1_taken) as taken1, sum(player_1.p2_taken) as lost1, mem.nickname, mem.id
+            from members as mem
+                join match as player_1 on player_1.p1 = mem.id where mem.id = %s
+                group by mem.id) as p1
+            full outer join (select sum(player_2.p2_taken) as taken2, sum(player_2.p1_taken) as lost2, mem.nickname, mem.id
+                from members as mem
+                join match as player_2 on player_2.p2 = mem.id where mem.id = %s
+            group by mem.id) as p2 on p2.nickname = p1.nickname;"""
+    conn = None
+    out = []
+    vals = (0, 0)
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(taken, (member.id, member.id,))
+        vals = cur.fetchone()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return vals if vals else (0, 0)
+
+
+def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
+    chars = """
+        select coalesce(p1.battle_count,0)+coalesce(p2.battle_count,0) as battle_count, coalesce(p1.name, p2.name) from
+            (select count(distinct(match.battle_id)) as battle_count, fighters.name
+            from match, fighters where match.p1 = %s 
+            and fighters.id = match.p1_char_id
+            group by fighters.name) as p1 full outer join (
+            (select count(distinct(match.battle_id)) as battle_count, fighters.name
+            from match, fighters where match.p2 = %s 
+            and fighters.id = match.p2_char_id
+        group by fighters.name)) as p2 on p1.name = p2.name
+    ;"""
+    conn = None
+    out = []
+    vals = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(chars, (member.id, member.id,))
+        vals = cur.fetchall()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return vals
+
+
+def set_vod(battle_id: int, vod: str) -> None:
+    update = """
+        update battle set vod = %s where battle.id = %s
+    ;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(update, (vod, battle_id))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+        raise error
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def player_record(member: discord.Member) -> Tuple[int, int]:
+    win_loss = """
+select p1_total.battles+p2_total.battles as battles, p2_wins.battle_wins+p1_wins.battle_wins as wins from
+    (select count(distinct(match.battle_id)) as battles
+        from match where match.p1 = %s) as p1_total,
+    (select count(distinct(match.battle_id)) as battle_wins
+        from match,battle 
+            where match.p1 = %s 
+            and battle.crew_1=battle.winner 
+            and battle.id=match.battle_id) as p1_wins,
+    (select count(distinct(match.battle_id)) as battles
+        from match where match.p2 = %s) as p2_total,
+    (select count(distinct(match.battle_id)) as battle_wins
+        from match,battle 
+            where match.p2 = %s 
+            and battle.crew_2=battle.winner 
+            and battle.id=match.battle_id) as p2_wins;"""
+    conn = None
+    out = []
+    vals = (0, 0)
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(win_loss, (member.id, member.id, member.id, member.id,))
+        vals = cur.fetchone()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return vals if vals else (0, 0)

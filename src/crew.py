@@ -1,6 +1,7 @@
 import dataclasses
 import discord
 from typing import List
+from .constants import PlayoffType
 
 
 @dataclasses.dataclass
@@ -18,6 +19,8 @@ class Crew:
     overflow: bool = False
     role_id: int = -1
     color: discord.Color = discord.Color.default()
+    playoff: PlayoffType = PlayoffType.NO_PLAYOFF
+    pool: int = 0
 
     @property
     def embed(self) -> discord.Embed:
@@ -27,8 +30,10 @@ class Crew:
         if self.rank:
             title += f' {self.rank}'
         description = [f'Tag: {self.abbr}\n', f'Total Members: {self.member_count}\n']
+        if self.playoff != PlayoffType.NO_PLAYOFF:
+            description.append(f'Playoff: {self.playoff.name}\n')
         if self.ladder:
-            description.append(f'Legacy Current Placement: {self.ladder}\n')
+            description.append(f'Qualifiers Current Placement: {self.ladder}\n')
         if self.social:
             description.append(f'Social: {self.social}\n')
         if self.leaders:
