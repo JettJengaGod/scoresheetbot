@@ -495,7 +495,8 @@ async def cache_process(bot: 'ScoreSheetBot'):
         if bot.cache.scs:
             await overflow_anomalies(bot)
         await cooldown_handle(bot)
-    for key in bot.battle_map:
+    keys = bot.battle_map.keys()
+    for key in keys:
         channel = bot.cache.scs.get_channel(channel_id_from_key(key))
         if bot.battle_map[key]:
             await update_channel_open(NO, channel)
