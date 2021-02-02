@@ -240,7 +240,7 @@ class ScoreSheetBot(commands.Cog):
             return
         if user_crew != opp_crew:
             await ctx.send(f'If you are in a playoff battle, please use `{self.bot.command_prefix}playoffbattle`')
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size))
+            await self._set_current(ctx, Battle(self, user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -273,7 +273,7 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(
                     f'{user_crew} and {opp_crew} are not in the same playoffs or are not in playoffs at all.')
                 return
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, playoff=True))
+            await self._set_current(ctx, Battle(self, user_crew, opp_crew, size, playoff=True))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -286,7 +286,7 @@ class ScoreSheetBot(commands.Cog):
         if size < 1:
             await ctx.send('Please enter a size greater than 0.')
             return
-        await self._set_current(ctx, Battle(team1, team2, size, mock=True))
+        await self._set_current(ctx, Battle(self, team1, team2, size, mock=True))
         await ctx.send(embed=self._current(ctx).embed())
 
     @commands.command(**help_doc['countdown'])

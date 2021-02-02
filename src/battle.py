@@ -1,9 +1,11 @@
 from dataclasses import dataclass, field
-from typing import Optional, Set, List
+from typing import Optional, Set, List, Callable
 from src.character import Character
 from discord import embeds, colour
 from datetime import datetime
 import random
+
+from src.scoreSheetBot import ScoreSheetBot
 
 
 class StateError(Exception):
@@ -166,14 +168,16 @@ class TimerMatch(Match):
 
 
 class Battle:
-    def __init__(self, name1: str, name2: str, players: int, mock: bool = False, playoff: bool = False):
+    def __init__(self, bot: ScoreSheetBot, name1: str, name2: str, players: int, mock: bool = False,
+                 playoff: bool = False):
+        self.bot = bot
         self.team1 = Team(name1, players, players * PLAYER_STOCKS)
         self.team2 = Team(name2, players, players * PLAYER_STOCKS)
         self.teams = (self.team1, self.team2)
         self.matches = []
         self.confirms = [False, False]
-        self.id = 'Not Set, use `,arena ID/PASS` to set '
-        self.stream = 'Not Set, use `,stream STREAMLINKHERE` to set '
+        self.id = lambda: f'Not Set, use `{self.bot.prefix}arena ID/PASS` to set '
+        self.stream = lambda: f'Not Set, use `{self.bot.prefix}stream STREAMLINKHERE` to set '
         self.color = colour.Color.from_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         self.time = datetime.now()
         self.mock = mock
@@ -357,8 +361,8 @@ class Battle:
 
     def embed(self) -> embeds.Embed:
         title = f'{self.team1.name} vs {self.team2.name}'
-        body = f'Lobby ID: {self.id}\n' \
-               f'Streamer: {self.stream}\n\n' \
+        body = f'Lobby ID: {self.id()}\n' \
+               f'Streamer: {self.stream()}\n\n' \
                f'{self.team1.num_players} vs {self.team2.num_players} {self.header}Crew battle\n\n'
         for match in self.matches:
             body += str(match)
