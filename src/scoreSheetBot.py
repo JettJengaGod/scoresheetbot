@@ -1304,6 +1304,20 @@ class ScoreSheetBot(commands.Cog):
         out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([mem.mention for mem in mems])
         await send_long(ctx, out, ',')
 
+    @commands.command(hidden=True, **help_doc['bigcrew'])
+    @role_call(STAFF_LIST)
+    async def bigcrew(self, ctx, over: Optional[int]=40):
+        big = []
+        for cr in self.cache.crews_by_name.values():
+            if cr.member_count>=over:
+                big.append(cr)
+        desc = []
+        for cr in big:
+            desc.append(f'{cr.name}: {cr.member_count}')
+
+        embed = discord.Embed(title=f'These Crews have {over} members or more', description='\n'.join(desc))
+        await send_long_embed(ctx, embed)
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):
         """The event triggered when an error is raised while invoking a command.
