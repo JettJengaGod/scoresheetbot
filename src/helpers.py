@@ -431,6 +431,29 @@ def best_of_possibilities(combined: str, bot: 'ScoreSheetBot'):
     return best
 
 
+def members_with_str_role(role: str, bot: 'ScoreSheetBot'):
+    all_role_names = {role.name for role in bot.cache.scs.roles}
+    all_role_names = set.union(set(bot.cache.crews), all_role_names)
+
+    actual = process.extractOne(role, all_role_names)[0]
+    if role.lower() in bot.cache.crews_by_tag:
+        actual = bot.cache.crews_by_tag[role.lower()].name
+    out = []
+    if actual in bot.cache.crews:
+        for member in bot.cache.scs.members:
+            try:
+                if crew(member, bot) == actual:
+                    out.append(member)
+            except ValueError:
+                continue
+    else:
+        for member in bot.cache.scs.members:
+            role_names = {r.name for r in member.roles}
+            if actual in role_names:
+                out.append(member)
+    return actual, out
+
+
 def search_two_roles_in_list(first_role: str, second_role: str, everything):
     first = process.extractOne(first_role, everything)
     second = process.extractOne(second_role, everything)
