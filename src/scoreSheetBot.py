@@ -1380,6 +1380,24 @@ class ScoreSheetBot(commands.Cog):
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
             lf.close()
 
+    ###########################################################################################
+    # Start test commands
+    # Test commands should be limited to dev only.
+    # No mutation should occur, and they are meant to test discord.py APIs.
+    ###########################################################################################
+
+    @commands.group(name='test')
+    @role_call(STAFF_LIST)
+    async def test_group(self, ctx):
+        if ctx.invoked_subcommand is None:
+            await ctx.send('Invalid test sub command')
+
+    @test_group.command(name='confirm')
+    @role_call(STAFF_LIST)
+    async def test_confirm(self, ctx):
+        msg = await ctx.send(datetime.today().strftime("%Y/%m/%d %H:%M:%S"))
+        result = await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot)
+        await ctx.send(f'{msg.content}: {result}')
 
 def main():
     load_dotenv()
