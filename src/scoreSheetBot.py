@@ -1277,10 +1277,36 @@ class ScoreSheetBot(commands.Cog):
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
+    @commands.command(**help_doc['listroles'])
+    async def listroles(self, ctx, *, role: str):
+        actual, mems = members_with_str_role(role, self)
+        mems.sort(key=lambda x:str(x))
+        desc = ['\n'.join([f'{str(member)} {member.mention}' for member in mems])]
+        if actual in self.cache.crews_by_name:
+            cr = crew_lookup(actual, self)
+            title = f'All {len(mems)} members on crew {actual}'
+            color = cr.color
+        else:
+            title = f'All {len(mems)} members with {actual} role'
+            color = discord.Color.dark_gold()
+
+        out = discord.Embed(title=title,
+                            description='\n'.join(desc), color=color)
+        await send_long_embed(ctx, out)
+
+    @commands.command(**help_doc['pingrole'])
+    @role_call(STAFF_LIST)
+    async def pingrole(self, ctx, *, role: str):
+        actual, mems = members_with_str_role(role, self)
+        out = [f'Pinging all members of role {actual}: ']
+        for mem in mems:
+            out.append(mem.mention)
+        await ctx.send(''.join(out))
+
     @commands.command(**help_doc['overlap'])
     async def overlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `.list_roles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
         best = best_of_possibilities(two_roles, self)
         mems = overlap_members(best[0], best[1], self)
         out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([escape(str(mem)) for mem in mems])
@@ -1291,7 +1317,7 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def pingoverlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `.list_roles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
         best = best_of_possibilities(two_roles, self)
         mems = overlap_members(best[0], best[1], self)
         if len(mems) > 10:
@@ -1306,10 +1332,10 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(hidden=True, **help_doc['bigcrew'])
     @role_call(STAFF_LIST)
-    async def bigcrew(self, ctx, over: Optional[int]=40):
+    async def bigcrew(self, ctx, over: Optional[int] = 40):
         big = []
         for cr in self.cache.crews_by_name.values():
-            if cr.member_count>=over:
+            if cr.member_count >= over:
                 big.append(cr)
         desc = []
         for cr in big:
@@ -1382,6 +1408,24 @@ class ScoreSheetBot(commands.Cog):
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
             lf.close()
 
+    ###########################################################################################
+    # Start test commands
+    # Test commands should be limited to dev only.
+    # No mutation should occur, and they are meant to test discord.py APIs.
+    ###########################################################################################
+
+    @commands.group(name='test')
+    @role_call(STAFF_LIST)
+    async def test_group(self, ctx):
+        if ctx.invoked_subcommand is None:
+            await ctx.send('Invalid test sub command')
+
+    @test_group.command(name='confirm')
+    @role_call(STAFF_LIST)
+    async def test_confirm(self, ctx):
+        msg = await ctx.send(datetime.today().strftime("%Y/%m/%d %H:%M:%S"))
+        result = await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot)
+        await ctx.send(f'{msg.content}: {result}')
 
 def main():
     load_dotenv()

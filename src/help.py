@@ -90,6 +90,9 @@ help_doc = dict(
     overlap=HelpDoc(Categories.misc, 'Find the overlap between two roles',
                     'Send in the two role names separated by spaces, it will try to find the best match',
                     'role1 role2'),
+    listroles=HelpDoc(Categories.misc, 'Find the users with this role', '', 'role'),
+
+    pingrole=HelpDoc(Categories.staff, 'Same As listroles, but pings instead', '', 'role'),
     cooldown=HelpDoc(Categories.staff,
                      'Finds the current cooldown for each of recently flaired users and fixes any that might have been missed'),
     non_crew=HelpDoc(Categories.staff, 'Returns a list of all non crew roles (should be small)'),
