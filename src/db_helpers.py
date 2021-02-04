@@ -227,6 +227,33 @@ def add_member_and_crew(member: discord.Member, crew: Crew) -> None:
     return
 
 
+def new_crew(crew: Crew):
+    add_crew = """INSERT into crews (discord_id, name, tag, overflow)
+         select %s, %s, %s, %s WHERE
+         NOT EXISTS (
+             SELECT name FROM crews WHERE name = %s
+         );"""
+
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+
+        cur.execute(add_crew, (crew.role_id, crew.name, crew.abbr, crew.overflow, crew.name))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
 def find_member_roles(member: discord.Member) -> List[str]:
     roles = """SELECT roles.id from current_member_roles, roles, members 
                         where members.id = %s 
@@ -409,12 +436,14 @@ def update_crew(crew: Crew) -> None:
     current = """SELECT id, discord_id, tag, name, rank, overflow FROM crews
     where discord_id = %s
     ;"""
+    fetch_with_id = """SELECT id, discord_id, tag, name, rank, overflow FROM crews
+    where id = %s"""
     history = """INSERT INTO crews_history (crew_id, old_discord_id, old_tag, old_name, old_rank, old_overflow, 
     new_discord_id, new_tag, new_name, new_rank, new_overflow, update_time) 
     values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, current_timestamp)"""
     update = """UPDATE crews 
-    SET tag = %s, name = %s, rank = %s,overflow = %s
-    WHERE discord_id = %s;"""
+    SET tag = %s, name = %s, rank = %s,overflow = %s, discord_id = %s
+    WHERE id = %s;"""
     conn = None
     try:
         params = config()
@@ -422,10 +451,19 @@ def update_crew(crew: Crew) -> None:
         cur = conn.cursor()
         cur.execute(current, (crew.role_id,))
         old = cur.fetchone()
+        if not old:
+            cr_id = crew_id_from_name(crew.name, cur)
+            cur.execute(fetch_with_id, (cr_id,))
+            old = cur.fetchone()
+        if not old:
+            new_crew(crew)
+            cr_id = crew_id_from_name(crew.name, cur)
+            cur.execute(fetch_with_id, (cr_id,))
+            old = cur.fetchone()
         cur.execute(history,
                     (old[0], old[1], old[2], old[3], old[4], old[5], crew.role_id, crew.abbr, crew.name, None,
                      crew.overflow))
-        cur.execute(update, (crew.abbr, crew.name, None, crew.overflow, crew.role_id))
+        cur.execute(update, (crew.abbr, crew.name, None, crew.overflow, crew.role_id, old[0]))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
