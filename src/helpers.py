@@ -2,7 +2,7 @@ import os
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict
 
 from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
-    remove_expired_cooldown, cooldown_current, find_member_crew
+    remove_expired_cooldown, cooldown_current, find_member_crew, new_crew
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
@@ -515,8 +515,9 @@ async def cache_process(bot: 'ScoreSheetBot'):
     if bot.cache.channels and os.getenv('VERSION') == 'PROD':
         await bot.cache.channels.recache_logs.send('Starting recache.')
     await bot.cache.update(bot)
+
+    crew_update(bot)
     if os.getenv('VERSION') == 'PROD':
-        crew_update(bot)
         if bot.cache.scs:
             await overflow_anomalies(bot)
         await cooldown_handle(bot)
@@ -542,7 +543,7 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
 
 
 def crew_update(bot: 'ScoreSheetBot'):
-    cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache.crews_by_name.values()}
+    cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache.crews_by_name.values() if cr.role_id != -1}
     db_crews = all_crews()
     missing = []
     for db_crew in db_crews:
@@ -554,6 +555,8 @@ def crew_update(bot: 'ScoreSheetBot'):
         formatted = (cached.role_id, cached.abbr, cached.name, None, cached.overflow)
         if formatted != db_crew:
             update_crew(cached)
+    for cr in cached_crews.values():
+        update_crew(cr)
 
 
 async def cooldown_handle(bot: 'ScoreSheetBot'):

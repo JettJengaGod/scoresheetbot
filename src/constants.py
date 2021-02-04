@@ -4,7 +4,7 @@ from enum import Enum
 
 load_dotenv()
 CACHE_TIME = 600_000_000_000  # 6000 seconds
-CACHE_TIME_SECONDS = 120
+CACHE_TIME_SECONDS = 300
 OVERFLOW_SERVER = 'Overflow Beta' if os.getenv('VERSION') == 'ALPHA' else 'SCS Overflow Server'
 
 TRACK = ['Track 1', 'Track 2', 'Move Locked Next Join']
