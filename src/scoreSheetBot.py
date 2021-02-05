@@ -169,49 +169,56 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['lock'])
     @main_only
-    @role_call([MINION, ADMIN, DOCS, LEADER])
+    @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
-    async def lock(self, ctx: Context, cr1: Optional[str], cr2: Optional[str]):
+    async def lock(self, ctx: Context, streamer: Optional[discord.Member]):
 
         if 'testing' in ctx.channel.name:
             await ctx.send('This channel cannot be locked')
             return
-        if not (cr1 and cr2):
-            try:
-                current = self._current(ctx)
-            except ValueError:
-                await ctx.send('There needs to be a ranked battle running to use this command.')
-                return
-            if current and not current.mock:
-                if not check_roles(ctx.author, STAFF_LIST):
-                    await self._reject_outsiders(ctx)
-                if crew_lookup(current.team1.name, self).overflow:
-                    cr_role_1 = self.cache.roles.overflow
-                else:
-                    cr_role_1 = discord.utils.get(ctx.guild.roles, name=current.team1.name)
 
-                if crew_lookup(current.team2.name, self).overflow:
-                    cr_role_2 = self.cache.roles.overflow
-                else:
-                    cr_role_2 = discord.utils.get(ctx.guild.roles, name=current.team2.name)
-                everyone_overwrite = discord.PermissionOverwrite(send_messages=False, manage_messages=False,
-                                                                 add_reactions=False)
-                await ctx.channel.set_permissions(self.cache.roles.everyone, overwrite=everyone_overwrite)
-                crew_overwrite = discord.PermissionOverwrite(send_messages=True, add_reactions=True)
-                await ctx.channel.set_permissions(cr_role_1, overwrite=crew_overwrite)
-                await ctx.channel.set_permissions(cr_role_2, overwrite=crew_overwrite)
-                await ctx.send(f'Room Locked to only {current.team1.name} and {current.team2.name}.')
-            else:
-                await ctx.send('There needs to be a ranked battle running to use this command.')
-                return
-        else:
+        try:
+            current = self._current(ctx)
+        except ValueError:
+            await ctx.send('There needs to be a ranked battle running to use this command.')
+            return
+        if current and not current.mock:
             if not check_roles(ctx.author, STAFF_LIST):
-                await ctx.send('Only staff can lock a room to a specific group.')
-                return
+                await self._reject_outsiders(ctx)
+            overwrites = ctx.channel.overwrites
+
+            crew_overwrite = discord.PermissionOverwrite(send_messages=True, add_reactions=True)
+            if crew_lookup(current.team1.name, self).overflow:
+                _, mems = members_with_str_role(current.team1.name, self)
+                for mem in mems:
+                    overwrites[mem] = crew_overwrite
+            else:
+                cr_role_1 = discord.utils.get(ctx.guild.roles, name=current.team1.name)
+                overwrites[cr_role_1] = crew_overwrite
+
+            if crew_lookup(current.team2.name, self).overflow:
+                _, mems = members_with_str_role(current.team2.name, self)
+                for mem in mems:
+                    overwrites[mem] = crew_overwrite
+            else:
+                cr_role_2 = discord.utils.get(ctx.guild.roles, name=current.team2.name)
+                overwrites[cr_role_2] = crew_overwrite
+            everyone_overwrite = discord.PermissionOverwrite(send_messages=False, manage_messages=False,
+                                                             add_reactions=False)
+            overwrites[self.cache.roles.everyone] = everyone_overwrite
+            out = f'Room Locked to only {current.team1.name} and {current.team2.name}.'
+            if streamer:
+                overwrites[streamer] = crew_overwrite
+                out += f' As the streamer, {streamer.display_name} also can talk.'
+            await ctx.channel.edit(overwrites=overwrites)
+            await ctx.send(out)
+        else:
+            await ctx.send('There needs to be a ranked battle running to use this command.')
+            return
 
     @commands.command(**help_doc['unlock'])
     @main_only
-    @role_call([MINION, ADMIN, DOCS, LEADER])
+    @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
     async def unlock(self, ctx: Context):
         await unlock(ctx.channel, self)
@@ -1280,7 +1287,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['listroles'])
     async def listroles(self, ctx, *, role: str):
         actual, mems = members_with_str_role(role, self)
-        mems.sort(key=lambda x:str(x))
+        mems.sort(key=lambda x: str(x))
         desc = ['\n'.join([f'{str(member)} {member.mention}' for member in mems])]
         if actual in self.cache.crews_by_name:
             cr = crew_lookup(actual, self)
@@ -1426,6 +1433,7 @@ class ScoreSheetBot(commands.Cog):
         msg = await ctx.send(datetime.today().strftime("%Y/%m/%d %H:%M:%S"))
         result = await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot)
         await ctx.send(f'{msg.content}: {result}')
+
 
 def main():
     load_dotenv()
