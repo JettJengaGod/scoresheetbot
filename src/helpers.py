@@ -515,9 +515,8 @@ async def cache_process(bot: 'ScoreSheetBot'):
     if bot.cache.channels and os.getenv('VERSION') == 'PROD':
         await bot.cache.channels.recache_logs.send('Starting recache.')
     await bot.cache.update(bot)
-
-    crew_update(bot)
     if os.getenv('VERSION') == 'PROD':
+        crew_update(bot)
         if bot.cache.scs:
             await overflow_anomalies(bot)
         await cooldown_handle(bot)
@@ -671,12 +670,9 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
 
 
 async def unlock(channel: discord.TextChannel, bot: 'ScoreSheetBot') -> None:
-    if 'testing' in channel.name:
-        return
-    for role in bot.cache.scs.roles:
-        if role.name in bot.cache.crews_by_name:
-            if channel.overwrites_for(role) != discord.PermissionOverwrite():
-                await channel.set_permissions(role, overwrite=None)
-    everyone_overwrite = discord.PermissionOverwrite(manage_messages=False)
-
-    await channel.set_permissions(bot.cache.roles.everyone, overwrite=everyone_overwrite)
+    base_perms = {BOT, MINION, CERTIFIED, DOCS, 'MEE6Muted', 'Muted', '@everyone'}
+    overwrites = channel.overwrites
+    for overwrite in list(overwrites):
+        if overwrite.name not in base_perms:
+            del overwrites[overwrite]
+    await channel.edit(overwrites=overwrites)
