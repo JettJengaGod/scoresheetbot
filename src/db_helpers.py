@@ -766,8 +766,10 @@ def crew_matches(cr: Crew) -> List[str]:
             else:
                 winner = 1
                 loser = 0
-
-            out.append(f'**{battle[winner]}** - {battle[loser]} ({battle[5]}-0) [link]({battle[3]})')
+            if battle[winner] == cr.name:
+                out.append(f'**{battle[winner]}** - {battle[loser]} ({battle[5]}-0) [link]({battle[3]})')
+            else:
+                out.append(f'{battle[loser]} - **{battle[winner]}** (0-{battle[5]}) [link]({battle[3]})')
             if battle[6]:
                 out[-1] += f' [vod]({battle[6]})'
         conn.commit()
