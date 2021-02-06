@@ -669,10 +669,5 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
     return first, second
 
 
-async def unlock(channel: discord.TextChannel, bot: 'ScoreSheetBot') -> None:
-    base_perms = {BOT, MINION, CERTIFIED, DOCS, 'MEE6Muted', 'Muted', '@everyone'}
-    overwrites = channel.overwrites
-    for overwrite in list(overwrites):
-        if overwrite.name not in base_perms:
-            del overwrites[overwrite]
-    await channel.edit(overwrites=overwrites)
+async def unlock(channel: discord.TextChannel) -> None:
+    await channel.edit(sync_permissions=True)
