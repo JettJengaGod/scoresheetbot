@@ -52,7 +52,7 @@ class ScoreSheetBot(commands.Cog):
 
     async def _clear_current(self, ctx):
         self.battle_map.pop(key_string(ctx), None)
-        await unlock(ctx.channel, self)
+        await unlock(ctx.channel)
         await update_channel_open('', ctx.channel)
 
     def cog_unload(self):
@@ -220,7 +220,7 @@ class ScoreSheetBot(commands.Cog):
     @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
     async def unlock(self, ctx: Context):
-        await unlock(ctx.channel, self)
+        await unlock(ctx.channel)
         await ctx.send('Unlocked the channel for all crews to use.')
 
     @commands.command(**help_doc['battle'], aliases=['challenge'], group='CB')
