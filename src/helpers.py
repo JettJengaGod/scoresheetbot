@@ -2,15 +2,9 @@ import os
 from datetime import date
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict
 
-<<<<<<< HEAD
 from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
-    remove_expired_cooldown, cooldown_current, find_member_crew, new_crew
-=======
-from dateutil.relativedelta import relativedelta
-
-from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze
->>>>>>> master
+from dateutil.relativedelta import relativedelta
 
 if TYPE_CHECKING:
     from scoreSheetBot import ScoreSheetBot
