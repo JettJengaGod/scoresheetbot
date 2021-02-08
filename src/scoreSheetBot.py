@@ -1117,6 +1117,7 @@ class ScoreSheetBot(commands.Cog):
                     await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                     return
                 freeze_crew(actual, None)
+                await ctx.send(f'{actual.name} unfrozen.')
             else:
                 finish = parseTime(length)
                 msg = await ctx.send(f'{actual.name} is already frozen till {actual.freeze}'
