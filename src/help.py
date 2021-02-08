@@ -99,6 +99,9 @@ help_doc = dict(
     overflow=HelpDoc(Categories.staff, 'Returns a two lists of overflow incorrectly tagged members'),
     flairing_off=HelpDoc(Categories.staff, 'Turns flairing off until restart or staff turns it back on'),
     flairing_on=HelpDoc(Categories.staff, 'Turns flairing back on'),
+    freeze=HelpDoc(Categories.staff, 'Freezes a crews registration for a time.',
+                   'If you pass in a time it will stop a crew from registering for that amount of time,'
+                   ' accepts xD or xW or xM for x days, weeks or months respectively', 'CREW Optional[length]'),
     disband=HelpDoc(Categories.staff,
                     'Disbands an overflow crew removing all crew related roles from all members. (requires confirm)',
                     usage='CrewName or Tag'),
