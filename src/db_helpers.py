@@ -284,8 +284,10 @@ def find_member_roles(member: discord.Member) -> List[str]:
 def crew_id_from_name(name: str, cursor) -> int:
     find_crew = """SELECT id from crews where name = %s;"""
     cursor.execute(find_crew, (name,))
-    crew_id = cursor.fetchone()[0]
-    return crew_id
+    fetched = cursor.fetchone()
+    if fetched:
+        return fetched[0]
+    return None
 
 
 def crew_id_from_role_id(role_id: int, cursor) -> int:
@@ -409,7 +411,8 @@ def crew_correct(member: discord.Member, current: str) -> bool:
 
 
 def all_crews() -> List[List]:
-    everything = """SELECT discord_id, tag, name, rank, overflow FROM crews;"""
+    everything = """SELECT discord_id, tag, name, rank, overflow, watchlisted, freezedate,
+        verify, strikes, slotstotal, slotsleft  FROM crews;"""
     conn = None
     crews = [[]]
     try:
@@ -910,3 +913,56 @@ select p1_total.battles+p2_total.battles as battles, p2_wins.battle_wins+p1_wins
         if conn is not None:
             conn.close()
     return vals if vals else (0, 0)
+
+
+def freeze_crew(cr: Crew, end: datetime.date):
+    freeze = """update crews 
+        set freezedate = %s
+        where id = %s;
+    """
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr.role_id, cur)
+        cur.execute(freeze, (end, cr_id))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def auto_unfreeze() -> Tuple[Tuple[str]]:
+    unfreeze = """update crews
+    set freezedate = Null
+        where freezedate <= current_date
+        returning name;"""
+    conn = None
+    out = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(unfreeze)
+        out = cur.fetchall()
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return out

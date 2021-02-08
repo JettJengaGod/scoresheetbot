@@ -1,8 +1,11 @@
 import os
+from datetime import date
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict
 
+from dateutil.relativedelta import relativedelta
+
 from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
-    remove_expired_cooldown, cooldown_current, find_member_crew, new_crew
+    remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
@@ -514,17 +517,14 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
 async def cache_process(bot: 'ScoreSheetBot'):
     if bot.cache.channels and os.getenv('VERSION') == 'PROD':
         await bot.cache.channels.recache_logs.send('Starting recache.')
+
     await bot.cache.update(bot)
     if os.getenv('VERSION') == 'PROD':
         crew_update(bot)
+        await handle_unfreeze(bot)
         if bot.cache.scs:
             await overflow_anomalies(bot)
         await cooldown_handle(bot)
-    keys = bot.battle_map.keys()
-    for key in keys:
-        channel = bot.cache.scs.get_channel(channel_id_from_key(key))
-        if bot.battle_map[key]:
-            await update_channel_open(NO, channel)
     if os.getenv('VERSION') == 'PROD':
         await bot.cache.channels.recache_logs.send('Successfully recached.')
 
@@ -536,9 +536,8 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
         return
     member_crew = crew_lookup(crew_str, bot)
     server = bot.cache.overflow_server if member_crew.overflow else bot.cache.scs
-    crew_role = discord.utils.get(server.roles, name=member_crew.name)
     if not crew_correct(member, crew_str):
-        add_member_and_crew(member, member_crew, crew_role)
+        add_member_and_crew(member, member_crew)
 
 
 def crew_update(bot: 'ScoreSheetBot'):
@@ -552,8 +551,9 @@ def crew_update(bot: 'ScoreSheetBot'):
             missing.append(db_crew)
             continue
         formatted = (cached.role_id, cached.abbr, cached.name, None, cached.overflow)
-        if formatted != db_crew:
+        if formatted != db_crew[0:5]:
             update_crew(cached)
+        bot.cache.crews_by_name[cached.name].dbattr(*db_crew[5:])
     for cr in cached_crews.values():
         update_crew(cr)
 
@@ -671,3 +671,29 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
 
 async def unlock(channel: discord.TextChannel) -> None:
     await channel.edit(sync_permissions=True)
+
+
+def parseTime(timestr: str) -> date:
+    parts = timestr.split(' ')
+    current = datetime.now().date()
+    for part in parts:
+        increment = part[-1].lower()
+        if increment not in ['w', 'd', 'm']:
+            raise ValueError(f'{part} needs to be in the format numberIncrement, eg 1M or 2D or 3W.')
+        number = int(part[:-1])
+        if number <= 0:
+            raise ValueError('need to have a number larger than 0')
+        if increment == 'm':
+            current += relativedelta(months=+number)
+        if increment == 'w':
+            current += relativedelta(weeks=+number)
+        if increment == 'd':
+            current += relativedelta(days=+number)
+    return current
+
+
+async def handle_unfreeze(bot: 'ScoreSheetBot'):
+    unfrozen = auto_unfreeze()
+    if unfrozen:
+        for cr in unfrozen:
+            await bot.cache.channels.flair_log.send(f'{cr[0]} finished their registration freeze.')

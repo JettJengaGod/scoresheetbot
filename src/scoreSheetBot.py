@@ -49,6 +49,7 @@ class ScoreSheetBot(commands.Cog):
 
     async def _set_current(self, ctx: Context, battle: Battle):
         self.battle_map[key_string(ctx)] = battle
+        await update_channel_open(NO, ctx.channel)
 
     async def _clear_current(self, ctx):
         self.battle_map.pop(key_string(ctx), None)
@@ -965,9 +966,10 @@ class ScoreSheetBot(commands.Cog):
                 return
         else:
             flairing_crew = crew_lookup(crew(ctx.author, self), self)
-        if flairing_crew.name in WLED_CREWS:
+        if flairing_crew.freeze and not new_crew:
             await response_message(ctx,
-                                   f'WEE OOO WEE OO {flairing_crew.name} is recruit banned and can\'t flair people!')
+                                   f'WEE OOO WEE OO {flairing_crew.name} is recruitment frozen till '
+                                   f'{flairing_crew.freeze} and can\'t flair people!')
             return
         if member.id == ctx.author.id and user_crew == flairing_crew.name:
             await response_message(ctx, f'Stop flairing yourself, stop flairing yourself.')
@@ -1094,6 +1096,52 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     async def po(self, ctx: Context):
         await ctx.send(embed=playoff_summary(self))
+
+    @commands.command(**help_doc['freeze'])
+    @role_call(STAFF_LIST)
+    async def freeze(self, ctx: Context, *, everything: str):
+        split = everything.split()
+        try:
+            parseTime(split[-1])
+            length = split[-1]
+            cr = ''.join(split[:-1])
+        except ValueError:
+            length = ''
+            cr = ''.join(split)
+
+        actual = crew_lookup(cr, self)
+        if actual.freeze:
+            if not length:
+                msg = await ctx.send(f'{actual.name} is already frozen till {actual.freeze}, really unfreeze them?')
+                if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                    await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                    return
+                freeze_crew(actual, None)
+            else:
+                finish = parseTime(length)
+                msg = await ctx.send(f'{actual.name} is already frozen till {actual.freeze}'
+                                     f' do you want to change their end date to {finish}?')
+                if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                    await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                    return
+                freeze_crew(actual, finish)
+                await ctx.send(f'{actual.name} frozen till {finish}.')
+        else:
+            if length:
+                finish = parseTime(length)
+                msg = await ctx.send(f'Do you want to freeze {actual.name} till {finish}?')
+                if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                    await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                    return
+                freeze_crew(actual, finish)
+                await ctx.send(f'{actual.name} frozen till {finish}.')
+            else:
+                msg = await ctx.send(f'Do you want to freeze {actual.name} indefinitely?')
+                if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                    await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                    return
+                freeze_crew(actual, datetime(2069, 4, 20))
+                await ctx.send(f'{actual.name} frozen indefinitely.')
 
     @commands.command(**help_doc['disband'], hidden=True)
     @role_call(STAFF_LIST)
