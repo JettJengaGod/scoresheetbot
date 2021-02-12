@@ -1337,6 +1337,9 @@ class ScoreSheetBot(commands.Cog):
     async def listroles(self, ctx, *, role: str):
         actual, mems = members_with_str_role(role, self)
         mems.sort(key=lambda x: str(x))
+        if len(mems) > 150:
+            await ctx.send(f'{actual} is too large of a role, use `.listroles`.')
+            return
         desc = ['\n'.join([f'{str(member)} {member.mention}' for member in mems])]
         if actual in self.cache.crews_by_name:
             cr = crew_lookup(actual, self)
