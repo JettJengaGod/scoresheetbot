@@ -45,6 +45,7 @@ python-levenshtein = "*"
 fuzzywuzzy = "*"
 psycopg2 = "*"
 oauth2client = "*"
+elote = "*"
 
 [dev-packages]
 coverage = ">=5.3"

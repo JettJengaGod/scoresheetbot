@@ -4,6 +4,7 @@ class Categories:
     staff = 'staff'
     misc = 'misc'
     flairing = 'flairing'
+    arena = 'arena'
 
 
 class HelpDoc(dict):
