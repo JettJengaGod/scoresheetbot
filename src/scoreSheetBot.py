@@ -1337,6 +1337,9 @@ class ScoreSheetBot(commands.Cog):
     async def listroles(self, ctx, *, role: str):
         actual, mems = members_with_str_role(role, self)
         mems.sort(key=lambda x: str(x))
+        if 'everyone' in actual:
+            await ctx.send('I will literally ban you if you try this again.')
+            return
         if len(mems) > 150:
             await ctx.send(f'{actual} is too large of a role, use `.listroles`.')
             return
