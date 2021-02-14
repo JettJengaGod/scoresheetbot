@@ -696,3 +696,9 @@ async def handle_unfreeze(bot: 'ScoreSheetBot'):
     if unfrozen:
         for cr in unfrozen:
             await bot.cache.channels.flair_log.send(f'{cr[0]} finished their registration freeze.')
+
+
+def closest_command(command: str, bot: 'ScoreSheetBot'):
+    command_strs = [cmd.name for cmd in bot.get_commands()]
+    actual, _ = process.extractOne(command, command_strs)
+    return actual

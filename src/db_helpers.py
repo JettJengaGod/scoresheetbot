@@ -1036,3 +1036,105 @@ def remove_disabled_channel(id_num: int):
         if conn is not None:
             conn.close()
     return
+
+
+def set_command_activation(command_name: int, activation: bool):
+    deactivate = """
+    INSERT INTO commands (cname, deactivated) values(%s, %s)
+    on CONFLICT (cname)
+    do update set deactivated = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(deactivate, (command_name, activation, activation))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def command_lookup(command_name: int) -> Tuple[str, bool, int]:
+    lookup = """ select * from commands where cname = %s;"""
+    add = """ insert into commands (cname) values (%s) returning *;"""
+    conn = None
+    cmd = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(lookup, (command_name,))
+        cmd = cur.fetchone()
+        if not cmd:
+            cur.execute(add, (command_name,))
+            cmd = cur.fetchone()
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return cmd
+
+
+def increment_command_used(command_name: int):
+    increment = """ Update commands
+                        set called = called + 1
+                        where cname = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(increment, (command_name,))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+def command_leaderboard():
+    leaderboard = """select * from commands order by called desc;"""
+    conn = None
+    desc = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(leaderboard)
+        board = cur.fetchall()
+        for entry in board:
+            desc.append(f'{entry[0]}: {entry[2]} uses')
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return desc
