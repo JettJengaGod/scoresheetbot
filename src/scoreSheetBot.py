@@ -60,6 +60,11 @@ class ScoreSheetBot(commands.Cog):
     def cog_unload(self):
         self.auto_cache.cancel()
 
+    async def cog_before_invoke(self, ctx):
+        if ctx.channel.id in disabled_channels():
+            await ctx.send('Jettbot is disabled for this channel.')
+            raise ValueError('Jettbot is Disabled for this channel.')
+
     @tasks.loop(seconds=CACHE_TIME_SECONDS)
     async def auto_cache(self):
         await cache_process(self)
@@ -1084,6 +1089,24 @@ class ScoreSheetBot(commands.Cog):
         self.cache.flairing_allowed = True
         await ctx.send('Flairing has been re-enabled.')
 
+    @commands.command(**help_doc['disable'], hidden=True)
+    @role_call(STAFF_LIST)
+    async def disable(self, ctx: Context, channel: discord.TextChannel):
+        if channel.id in disabled_channels():
+            msg = await ctx.send(f'{channel.name} is already disabled, re-enable?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            remove_disabled_channel(channel.id)
+            await ctx.send(f'{channel.name} undisabled.')
+        else:
+            msg = await ctx.send(f'Really disable the bot in {channel.name}?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            add_disabled_channel(channel.id)
+            await ctx.send(f'JettBot disabled in {channel.name}.')
+
     @commands.command(**help_doc['pending'], hidden=True)
     @role_call(STAFF_LIST)
     async def pending(self, ctx: Context):
@@ -1328,6 +1351,13 @@ class ScoreSheetBot(commands.Cog):
     async def thankboard(self, ctx: Context):
 
         await ctx.send(embed=thank_board(ctx.author))
+
+    @commands.command(**help_doc['disablelist'])
+    async def disablelist(self, ctx: Context):
+        ids = disabled_channels()
+        out = [f'<#{id_num}>' for id_num in ids]
+        out.insert(0, 'List of channels the bot is disabled in:')
+        await ctx.send('\n'.join(out))
 
     @commands.command(**help_doc['guide'])
     async def guide(self, ctx):
