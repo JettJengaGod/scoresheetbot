@@ -64,7 +64,8 @@ help_doc = dict(
     ext=HelpDoc(Categories.cb, 'Prints out extension status'),
     recache=HelpDoc(Categories.staff, 'Updates the cache. Admin only'),
     pending=HelpDoc(Categories.staff, 'Prints pending battles. Admin only'),
-    po=HelpDoc(Categories.staff, 'Prints all playoff cbs in a summary.'),
+    po=HelpDoc(Categories.staff, 'Prints all playoff cbs in a summary'),
+    disable=HelpDoc(Categories.staff, 'Disables the bot in a channel'),
     countdown=HelpDoc(Categories.cb, 'Counts down for x seconds (defaults to 3).'),
     rank=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s rank'),
     merit=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s merit'),
@@ -91,6 +92,8 @@ help_doc = dict(
                     'Send in the two role names separated by spaces, it will try to find the best match',
                     'role1 role2'),
     listroles=HelpDoc(Categories.misc, 'Find the users with this role', '', 'role'),
+    disablelist=HelpDoc(Categories.misc, 'List of channels disabled for jettbot'),
+
 
     pingrole=HelpDoc(Categories.staff, 'Same As listroles, but pings instead', '', 'role'),
     cooldown=HelpDoc(Categories.staff,
