@@ -62,10 +62,14 @@ class ScoreSheetBot(commands.Cog):
 
     async def cog_before_invoke(self, ctx):
         if ctx.channel.id in disabled_channels():
-            await ctx.send('Jettbot is disabled for this channel.')
+            await ctx.message.delete()
+            msg = await ctx.send(f'Jettbot is disabled for this channel please use <#{BOT_CORNER_ID}> instead.')
+            await msg.delete(delay=5)
             raise ValueError('Jettbot is Disabled for this channel.')
         if command_lookup(ctx.command.name)[1]:
-            await ctx.send(f'{ctx.command.name} is deactivated, and cannot be used for now.')
+            await ctx.message.delete(delay=2)
+            msg = await ctx.send(f'{ctx.command.name} is deactivated, and cannot be used for now.')
+            await msg.delete(delay=5)
             raise ValueError(f'{ctx.command.name} is deactivated, and cannot be used for now.')
 
     async def cog_after_invoke(self, ctx):
@@ -1141,7 +1145,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'`{command_name}` deactivated.')
 
     @commands.command(**help_doc['usage'])
-    @role_call(STAFF_LIST)
+    @role_call([DOCS, MINION, ADMIN, CERTIFIED])
     async def usage(self, ctx: Context):
         pages = menus.MenuPages(source=Paged(command_leaderboard(), title='Command usage counts'),
                                 clear_reactions_after=True)

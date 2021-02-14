@@ -29,6 +29,7 @@ FLAIRING_LOGS = 'jettbot_flairing_logs'
 POWER_MERGE = '! Verify Power Merges !'
 FLAIR_VERIFY = '! Verify Flair Change !'
 PLAYOFF_LIMITED = 'Playoff Locked'
+BOT_CORNER_ID = 430367391227052054
 FLAIRING_QUESTIONS_ID = 786842350822490122
 COOLDOWN_TIME_SECONDS = 60 * 60 * 24  # 24 Hours
 TEMP_ROLES_FILE = 'temp_roles.txt'
