@@ -63,6 +63,13 @@ class ScoreSheetBot(commands.Cog):
         if ctx.channel.id in disabled_channels():
             await ctx.send('Jettbot is disabled for this channel.')
             raise ValueError('Jettbot is Disabled for this channel.')
+        if command_lookup(ctx.command.name)[1]:
+            await ctx.send(f'{ctx.command.name} is deactivated, and cannot be used for now.')
+            raise ValueError(f'{ctx.command.name} is deactivated, and cannot be used for now.')
+
+    async def cog_after_invoke(self, ctx):
+        if os.getenv('VERSION') == 'PROD':
+            increment_command_used(ctx.command.name)
 
     @tasks.loop(seconds=CACHE_TIME_SECONDS)
     async def auto_cache(self):
@@ -1093,7 +1100,7 @@ class ScoreSheetBot(commands.Cog):
         self.cache.flairing_allowed = True
         await ctx.send('Flairing has been re-enabled.')
 
-    @commands.command(**help_doc['disable'], hidden=True)
+    @commands.command(**help_doc['disable'])
     @role_call(STAFF_LIST)
     async def disable(self, ctx: Context, channel: discord.TextChannel):
         if channel.id in disabled_channels():
@@ -1110,6 +1117,33 @@ class ScoreSheetBot(commands.Cog):
                 return
             add_disabled_channel(channel.id)
             await ctx.send(f'JettBot disabled in {channel.name}.')
+
+    @commands.command(**help_doc['deactivate'])
+    @role_call(STAFF_LIST)
+    async def deactivate(self, ctx: Context, command: str):
+        command_name = closest_command(command, self)
+        db_command = command_lookup(command_name)
+        if db_command[1]:
+            msg = await ctx.send(f'`{command_name}` is already deactivated, re-activate?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            set_command_activation(command_name, False)
+            await ctx.send(f'{command_name} reactivated.')
+        else:
+            msg = await ctx.send(f'really deactivate `{command_name}`?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            set_command_activation(command_name, True)
+            await ctx.send(f'`{command_name}` deactivated.')
+
+    @commands.command(**help_doc['usage'])
+    @role_call(STAFF_LIST)
+    async def usage(self, ctx: Context):
+        pages = menus.MenuPages(source=Paged(command_leaderboard(), title='Command usage counts'),
+                                clear_reactions_after=True)
+        await pages.start(ctx)
 
     @commands.command(**help_doc['pending'], hidden=True)
     @role_call(STAFF_LIST)

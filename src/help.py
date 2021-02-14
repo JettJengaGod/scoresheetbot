@@ -65,7 +65,12 @@ help_doc = dict(
     recache=HelpDoc(Categories.staff, 'Updates the cache. Admin only'),
     pending=HelpDoc(Categories.staff, 'Prints pending battles. Admin only'),
     po=HelpDoc(Categories.staff, 'Prints all playoff cbs in a summary'),
-    disable=HelpDoc(Categories.staff, 'Disables the bot in a channel'),
+    disable=HelpDoc(Categories.staff, 'Disables the bot in a channel', '', 'ChannelMention'),
+    usage=HelpDoc(Categories.staff, 'Shows the usage stats of each command'),
+
+    deactivate=HelpDoc(Categories.staff, 'Deactivates a command so the bot will not '
+                                         'be able to use it till reactivation, also reactivates commands', '',
+                       'CommandName'),
     countdown=HelpDoc(Categories.cb, 'Counts down for x seconds (defaults to 3).'),
     rank=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s rank'),
     merit=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s merit'),
