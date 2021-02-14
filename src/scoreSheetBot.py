@@ -820,7 +820,10 @@ class ScoreSheetBot(commands.Cog):
         except ValueError:
             await response_message(ctx, f'You can\'t promote someone who is not in a crew.')
             return
-
+        if check_roles(member, [LEAD_RESTRICT]):
+            await response_message(ctx,
+                                   f'{member.mention} is leadership restricted and can\'t be made a leader or advisor.')
+            return
         if not check_roles(ctx.author, STAFF_LIST):
             author_crew = crew(ctx.author, self)
             if author_crew is not target_crew:
@@ -890,6 +893,9 @@ class ScoreSheetBot(commands.Cog):
             return
         if check_roles(member, [LEADER]):
             await response_message(ctx, f'{member.mention} is already a leader.')
+            return
+        if check_roles(member, [LEAD_RESTRICT]):
+            await response_message(ctx, f'{member.mention} is leadership restricted and can\'t be made a leader.')
             return
         before = set(member.roles)
         await promote(member, self)
