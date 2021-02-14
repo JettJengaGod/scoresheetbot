@@ -94,7 +94,6 @@ help_doc = dict(
     listroles=HelpDoc(Categories.misc, 'Find the users with this role', '', 'role'),
     disablelist=HelpDoc(Categories.misc, 'List of channels disabled for jettbot'),
 
-
     pingrole=HelpDoc(Categories.staff, 'Same As listroles, but pings instead', '', 'role'),
     cooldown=HelpDoc(Categories.staff,
                      'Finds the current cooldown for each of recently flaired users and fixes any that might have been missed'),
