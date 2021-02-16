@@ -271,10 +271,6 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
     if check_roles(member, [JOIN_CD]):
         raise ValueError(f'{member.mention} cannot be flaired because they have {JOIN_CD}.')
     if not staff:
-        if check_roles(member, [POWER_MERGE]):
-            raise ValueError(f'{member.mention} cannot be flaired because they are a potential power merge.\n'
-                             f'Please tag the Doc Keeper role in '
-                             f'{bot.cache.channels.flairing_questions.mention} to confirm.')
         if check_roles(member, [FLAIR_VERIFY]):
             raise ValueError(f'{member.mention} needs to be verified before flairing. \n'
                              f'Please tag the Doc Keeper role in '
