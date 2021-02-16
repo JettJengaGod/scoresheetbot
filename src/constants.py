@@ -26,7 +26,6 @@ BOT = 'Bots'
 DOCS_UPDATES = 'scs_docs_updates'
 JOIN_CD = '24h Join Cooldown'
 FLAIRING_LOGS = 'jettbot_flairing_logs'
-POWER_MERGE = '! Verify Power Merges !'
 FLAIR_VERIFY = '! Verify Flair Change !'
 PLAYOFF_LIMITED = 'Playoff Locked'
 BOT_CORNER_ID = 430367391227052054
@@ -108,13 +107,19 @@ EXPECTED_NON_CREW_ROLES = {
     'v2 Minion',
     'SCS Admin',
     PLAYOFF_LIMITED,
-    POWER_MERGE,
     JOIN_CD,
     'BetaJettBot',
     'EVIL',
     'Special Pass',
     'how',
-    'Players Union'
+    'Players Union',
+    'Leadership Restriction',
+    'JettBot',
+    'DC Verify',
+    'Double Counter',
+    'Corneo Champion',
+    'CMC Tempered Leader',
+    PLAYOFF_LIMITED
 }
 PLAYOFF_CHANNEL_NAMES = ['', 'first_class_playoffs_results', 'cm-extreme_playoffs_results',
                         'cm-tempered_playoffs_results']
