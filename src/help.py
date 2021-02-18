@@ -4,6 +4,7 @@ class Categories:
     staff = 'staff'
     misc = 'misc'
     flairing = 'flairing'
+    gambit = 'gambit'
 
 
 class HelpDoc(dict):
@@ -124,4 +125,6 @@ help_doc = dict(
     bigcrew=HelpDoc(Categories.staff, 'Returns all the crews that are bigger than x, default 40', '', 'Crew min'),
 
     pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),
+    coins=HelpDoc(Categories.gambit, 'Shows your gcoins'),
+    bet=HelpDoc(Categories.gambit, 'Bets an amount on a crew, only valid while a gambit is active.'),
 )

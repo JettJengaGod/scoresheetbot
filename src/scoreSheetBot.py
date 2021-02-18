@@ -1042,6 +1042,102 @@ class ScoreSheetBot(commands.Cog):
         for member in set(members):
             await self.flair(ctx, member, new_crew=new_crew)
 
+    ''' ***********************************GAMBIT COMMANDS ************************************************'''
+
+    @commands.command(**help_doc['coins'])
+    @main_only
+    async def coins(self, ctx: Context, member: Optional[discord.Member] = None):
+        member = member or ctx.author
+        await ctx.send(f'{str(member)} has {member_gcoins(member)} gcoins.')
+
+    @commands.group(name='gamb', invoke_without_command=True)
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def gamb(self, ctx: Context):
+        if current_gambit():
+            await ctx.send(f'{current_gambit()}')
+        else:
+            await ctx.send('No Current gambit.')
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def start(self, ctx: Context, c1: str, c2: str):
+        cg = current_gambit()
+        if cg:
+            await response_message(ctx, f'Gambit is already started between {cg.team1} and {cg.team2}')
+            return
+        crew1, crew2 = crew_lookup(c1, self), crew_lookup(c2, self)
+        msg = await ctx.send(f'Would you like to start a gambit between {crew1.name} and {crew2.name}?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        new_gambit(crew1, crew2)
+        await ctx.send(f'Gambit started between {crew1.name} and {crew2.name}.')
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def lock(self, ctx: Context):
+        cg = current_gambit()
+        if not cg:
+            await response_message(ctx, f'Gambit not started, please use `,gamb start`')
+            return
+        if cg.locked:
+            msg = await ctx.send(f'Gambit between {cg.team1} and {cg.team2} is already locked, do you want to unlock?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            lock_gambit(False)
+            await msg.delete()
+            await response_message(ctx, f'Gambit between {cg.team1} and {cg.team2} unlocked by {ctx.author.mention}.')
+        else:
+            lock_gambit(True)
+            await response_message(ctx, f'Gambit between {cg.team1} and {cg.team2} locked by {ctx.author.mention}.')
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def cancel(self, ctx: Context):
+        cg = current_gambit()
+        if not cg:
+            await response_message(ctx, f'Gambit not started, please use `,gamb start`')
+            return
+        msg = await ctx.send(f'Are you sure you want to cancel the gambit between {cg.team1} and {cg.team2}?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        for bet in all_bets():
+            member_id, amount, cr = bet
+            member = self.bot.get_user(member_id)
+            total = refund_member_gcoins(member, amount)
+            await member.send(f'The gambit between {cg.team1} and {cg.team2} was canceled, '
+                              f'you have been refunded {amount} gcoins for your bet on {cr}.\n'
+                              f'You now have {total} gcoins.')
+        cancel_gambit()
+        await ctx.send(f'Gambit between {cg.team1} and {cg.team2} cancelled. All participants have been refunded.')
+
+
+
+    @commands.command(**help_doc['bet'])
+    async def bet(self, ctx: Context, amount: int, *, team: str):
+        cg = current_gambit()
+        if not cg:
+            await ctx.send('No gambit is currently running, please wait for one to start before betting.')
+            return
+        if cg.locked:
+            await ctx.send(f'The gambit between {cg.team1} and {cg.team2} is locked as the battle has already started.'
+                           f'\nUse `,gamibt` to see the current odds.')
+            return
+        if not is_gambiter(ctx.author):
+            if not await join_gambit(ctx.author, self):
+                await ctx.send(f'{str(ctx.author)} isn\'t a gambiter and didn\'t join. (check your dms and try again)')
+                return
+        cr = crew_lookup(team, self)
+        validate_bet(ctx.author, cr, amount, self)
+        await confirm_bet(ctx, cr, amount, self)
+
+
     ''' ***********************************STAFF COMMANDS ************************************************'''
 
     @commands.group(name='staff', brief='Commands for staff', invoke_without_command=True)
