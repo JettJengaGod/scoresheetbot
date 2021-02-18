@@ -1256,6 +1256,28 @@ def make_bet(member: discord.Member, cr: Crew, amount: int):
     return coins
 
 
+def archive_bet(member: discord.Member, amount: int, gambit_id: int):
+    archive = """ insert into past_bets
+        (member_id, result, gambit_id) values (%s, %s, %s);"""
+
+    conn = None
+    coins = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(archive, (member.id, amount, gambit_id))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return coins
+
+
 def lock_gambit(status: bool):
     lock = """ update current_gambit set locked = %s;"""
     conn = None
@@ -1294,6 +1316,7 @@ def all_bets() -> Tuple[Tuple[int, int, str]]:
             conn.close()
     return bets
 
+
 def cancel_gambit():
     cancel = """delete from current_gambit;"""
     remove_bets = "delete from current_bets;"
@@ -1312,3 +1335,26 @@ def cancel_gambit():
         if conn is not None:
             conn.close()
     return
+
+
+def archive_gambit(winner: str, loser: str, winning_total: int, losing_total: int) -> int:
+    archive = """insert into gambit_results (winning_crew, losing_crew, winning_total, losing_total)
+     values(%s, %s, %s, %s) returning id;"""
+    conn = None
+    gambit_id = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        winner_id = crew_id_from_name(winner, cur)
+        loser_id = crew_id_from_name(loser, cur)
+        cur.execute(archive, (winner_id, loser_id, winning_total, losing_total))
+        gambit_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return gambit_id

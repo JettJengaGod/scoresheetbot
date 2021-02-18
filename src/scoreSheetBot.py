@@ -3,6 +3,7 @@ import sys
 import traceback
 import time
 import discord
+import math
 import functools
 from asyncio import sleep
 from datetime import date
@@ -1107,8 +1108,7 @@ class ScoreSheetBot(commands.Cog):
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
-        for bet in all_bets():
-            member_id, amount, cr = bet
+        for member_id, amount, cr in all_bets():
             member = self.bot.get_user(member_id)
             total = refund_member_gcoins(member, amount)
             await member.send(f'The gambit between {cg.team1} and {cg.team2} was canceled, '
@@ -1117,6 +1117,47 @@ class ScoreSheetBot(commands.Cog):
         cancel_gambit()
         await ctx.send(f'Gambit between {cg.team1} and {cg.team2} cancelled. All participants have been refunded.')
 
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def end(self, ctx: Context, *, winner: str):
+        cg = current_gambit()
+        if not cg:
+            await response_message(ctx, f'Gambit not started, please use `,gamb start`')
+            return
+        win = crew_lookup(winner, self)
+        if win.name == cg.team1:
+            loser = cg.team2
+            winning_bets = cg.bets_1
+            losing_bets = cg.bets_2
+
+        elif win.name == cg.team2:
+            loser = cg.team1
+            winning_bets = cg.bets_2
+            losing_bets = cg.bets_1
+        else:
+            await response_message(ctx, f'{win.name} is not in the current gambit between {cg.team1} and {cg.team2}.')
+            return
+        msg = await ctx.send(f'Are you sure you want to end the gambit as {win.name} beat {loser}?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        ratio = losing_bets / winning_bets
+        gambit_id = archive_gambit(win.name, loser, winning_bets, losing_bets)
+        for member_id, amount, cr in all_bets():
+            member = self.bot.get_user(member_id)
+            final = amount + math.ceil(amount * ratio)
+            if cr == win.name:
+                total = refund_member_gcoins(member, final)
+                await member.send(f'You won {final} gcoins on your bet of {amount} on {cr} over {loser}! '
+                                  f'Congrats you now have {total} gcoins!')
+            else:
+                await member.send(f'You lost {amount} gcoins on your bet on {cr} over {win.name}.')
+                total = -amount
+            archive_bet(member, total, gambit_id)
+        cancel_gambit()
+        await ctx.send(f'Gambit concluded! {win.name} beat {loser}, {winning_bets} gcoins were placed on {win.name} '
+                       f'and {losing_bets} gcoins were placed on {loser}.')
 
 
     @commands.command(**help_doc['bet'])
@@ -1136,7 +1177,6 @@ class ScoreSheetBot(commands.Cog):
         cr = crew_lookup(team, self)
         validate_bet(ctx.author, cr, amount, self)
         await confirm_bet(ctx, cr, amount, self)
-
 
     ''' ***********************************STAFF COMMANDS ************************************************'''
 
