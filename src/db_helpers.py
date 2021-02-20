@@ -1358,3 +1358,66 @@ def archive_gambit(winner: str, loser: str, winning_total: int, losing_total: in
         if conn is not None:
             conn.close()
     return gambit_id
+
+
+def gambit_standings() -> Tuple[Tuple[int, int, int, str]]:
+    leaderboard = """select RANK() OVER (ORDER BY gcoins DESC) gamb_rank, member_id,gcoins, discord_name
+         from gambiters, members where member_id = id;"""
+    conn = None
+    standings = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(leaderboard)
+        standings = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return standings
+
+
+def past_gambits() -> Tuple[Tuple[int, str, str, int, int]]:
+    matches = """select gambit_results.id, c1.name, c2.name, winning_total, losing_total
+        from gambit_results, crews as c1, crews as c2 
+            where c1.id = winning_crew and c2.id = losing_crew order by id desc ;"""
+    conn = None
+    all_past = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(matches)
+        all_past = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return all_past
+
+
+def past_bets() -> Tuple[Tuple[int, int, int]]:
+    bets = """select gambit_id, member_id, result from past_bets;"""
+    conn = None
+    all_past = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(bets)
+        all_past = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return all_past

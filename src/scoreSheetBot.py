@@ -11,6 +11,8 @@ from discord.ext import commands, tasks, menus
 from discord.ext.commands import Greedy
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
+
+from src.gambit_helpers import update_gambit_sheet
 from .db_helpers import *
 import src.cache
 from .character import all_emojis, string_to_emote, all_alts, CHARACTERS
@@ -1120,6 +1122,13 @@ class ScoreSheetBot(commands.Cog):
     @gamb.command()
     @main_only
     @role_call([MINION, ADMIN])
+    async def update(self, ctx: Context):
+        update_gambit_sheet()
+
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
     async def end(self, ctx: Context, *, winner: str):
         cg = current_gambit()
         if not cg:
@@ -1142,12 +1151,18 @@ class ScoreSheetBot(commands.Cog):
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
-        ratio = losing_bets / winning_bets
+        if winning_bets == 0:
+            ratio = 0
+        else:
+            ratio = losing_bets / winning_bets
         gambit_id = archive_gambit(win.name, loser, winning_bets, losing_bets)
         for member_id, amount, cr in all_bets():
             member = self.bot.get_user(member_id)
-            final = amount + math.ceil(amount * ratio)
             if cr == win.name:
+                final = amount + math.ceil(amount * ratio)
+                if final == 0:
+                    # Reset win
+                    final = 220
                 total = refund_member_gcoins(member, final)
                 await member.send(f'You won {final} gcoins on your bet of {amount} on {cr} over {loser}! '
                                   f'Congrats you now have {total} gcoins!')

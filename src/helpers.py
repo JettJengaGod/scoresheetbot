@@ -735,6 +735,8 @@ def validate_bet(member: discord.Member, on: Crew, amount: int, bot: 'ScoreSheet
     if team:
         if on.name != team:
             raise ValueError(f'{member.mention} already has a bet on {team} can\'t also bet on {on.name}')
+    if amount == 0 and current == 0 and not team:
+        return
     if amount <= 0:
         raise ValueError('You must bet a positive amount!')
 
@@ -749,7 +751,7 @@ async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot')
     else:
         msg = await ctx.send(f'{member.mention} really bet {amount} on {on.name}?')
     if not await wait_for_reaction_on_message(YES, NO, msg, member, bot.bot):
-        await ctx.send(f'Timed out or canceled! You need to respond within 30 seconds!')
+        await ctx.send(f'{member.mention}: Your bet timed out or was canceled! You need to respond within 30 seconds!')
         return False
     final = make_bet(member, on, amount)
-    await ctx.send(f'Bet made! You now have {final} gcoins remaining! Best of luck!')
+    await ctx.send(f'{member.mention} your bet was made! You now have {final} gcoins remaining! Best of luck!')

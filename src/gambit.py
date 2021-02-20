@@ -1,18 +1,4 @@
-# import gspread
-# from oauth2client.service_account import ServiceAccountCredentials
-# import pprint
-#
-# scope = [
-#     'https://www.googleapis.com/auth/drive',
-#     'https://www.googleapis.com/auth/drive.file'
-# ]
-# file_name = '../client_key.json'
-# creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
-# client = gspread.authorize(creds)
-# #Fetch the sheet
-# sheet = client.open('Fake Gambit').sheet1
 import dataclasses
-from src.crew import Crew
 
 
 @dataclasses.dataclass
