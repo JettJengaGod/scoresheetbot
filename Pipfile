@@ -45,11 +45,8 @@ python-levenshtein = "*"
 fuzzywuzzy = "*"
 psycopg2 = "*"
 oauth2client = "*"
-<<<<<<< HEAD
 psycopg2-binary = "*"
-=======
 matplotlib = "*"
->>>>>>> master
 
 [dev-packages]
 coverage = ">=5.3"
