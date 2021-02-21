@@ -2,17 +2,13 @@ import os
 from datetime import date
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict, Sequence, ValuesView
 
-<<<<<<< HEAD
-from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
-=======
 from dateutil.relativedelta import relativedelta
 import matplotlib.pyplot as plt;
 
 plt.rcdefaults()
 import numpy as np
 import matplotlib.pyplot as plt
-from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
->>>>>>> master
+from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze
 from dateutil.relativedelta import relativedelta
 
