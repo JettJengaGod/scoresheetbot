@@ -22,7 +22,8 @@ def logfile():
     return logfile
 
 
-def add_thanks(user: discord.Member) -> str:
+def add_thanks(prefix: str, user: discord.Member) -> str:
+    """ insert a new vendor into the vendors table """
     add = """INSERT into thank (count, userid, username)
      values(%s, %s, %s) ON CONFLICT DO NOTHING;"""
     update = """UPDATE thank set count = count +1
@@ -48,7 +49,7 @@ def add_thanks(user: discord.Member) -> str:
         cur.execute(total, )
 
         res = cur.fetchone()
-        ret += f'alexjett has been thanked {res[0]} total times. (Try `,thankboard`)'
+        ret += f'alexjett has been thanked {res[0]} total times. (Try `{prefix}thankboard`)'
         # commit the changes to the database
         conn.commit()
         # close communication with the database

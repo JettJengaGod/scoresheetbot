@@ -20,6 +20,9 @@ class HelpDoc(dict):
     def descriptify(self, s):
         return s[0].upper() + s[1:] + '.'
 
+class HelpDocBot:
+    def __init__(self, info: str):
+        self.info: str = info
 
 help_doc = dict(
     battle=HelpDoc(Categories.cb,

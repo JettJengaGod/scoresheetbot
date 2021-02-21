@@ -25,6 +25,7 @@ class ScoreSheetBot(commands.Cog):
         self.bot = bot
         self.battle_map: Dict[str, Battle] = {}
         self.cache = cache
+        self.prefix = bot.command_prefix
         self.auto_cache.start()
 
     def _current(self, ctx) -> Battle:
@@ -125,7 +126,7 @@ class ScoreSheetBot(commands.Cog):
         staff = check_roles(main_user, STAFF_LIST)
         if not group:
             halp = discord.Embed(title='Group Listing and Uncategorized Commands',
-                                 description=f'Use `{self.bot.command_prefix}help *group*` to find out more about them!')
+                                 description=f'Use `{self.prefix}help *group*` to find out more about them!')
             groups_desc = ''
             for cmd in self.bot.walk_commands():
                 if isinstance(cmd, discord.ext.commands.Group):
@@ -165,7 +166,7 @@ class ScoreSheetBot(commands.Cog):
                                 if staff or not cmd.hidden:
                                     halp = discord.Embed(title=group[0],
                                                          description=f'{cmd.description}\n'
-                                                                     f'{self.bot.command_prefix}{cmd.name} {cmd.usage}')
+                                                                     f'{self.prefix}{cmd.name} {cmd.usage}')
                                 else:
                                     await ctx.author.send('That command is hidden.')
                             found = True
@@ -263,7 +264,7 @@ class ScoreSheetBot(commands.Cog):
             return
         if user_crew != opp_crew:
             await ctx.send(f'If you are in a playoff battle, please use `{self.bot.command_prefix}playoffbattle`')
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size))
+            await self._set_current(ctx, Battle(self, user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -296,7 +297,7 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(
                     f'{user_crew} and {opp_crew} are not in the same playoffs or are not in playoffs at all.')
                 return
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, playoff=True))
+            await self._set_current(ctx, Battle(self, user_crew, opp_crew, size, playoff=True))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -309,7 +310,7 @@ class ScoreSheetBot(commands.Cog):
         if size < 1:
             await ctx.send('Please enter a size greater than 0.')
             return
-        await self._set_current(ctx, Battle(team1, team2, size, mock=True))
+        await self._set_current(ctx, Battle(self, team1, team2, size, mock=True))
         await ctx.send(embed=self._current(ctx).embed())
 
     @commands.command(**help_doc['countdown'])
@@ -1383,9 +1384,8 @@ class ScoreSheetBot(commands.Cog):
     @banned_channels(['crew_flairing', 'scs_docs_updates'])
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def thank(self, ctx: Context):
-
         await ctx.send(f'Thanks for all the hard work you do on the bot alexjett!\n'
-                       f'{add_thanks(ctx.author)}')
+                       f'{add_thanks(self.prefix, ctx.author)}')
 
     @commands.command(**help_doc['thankboard'])
     @banned_channels(['crew_flairing', 'scs_docs_updates'])
@@ -1545,7 +1545,7 @@ class ScoreSheetBot(commands.Cog):
         if isinstance(error, commands.DisabledCommand):
             await ctx.send(f'{ctx.command} has been disabled.')
         elif isinstance(error, commands.CommandNotFound):
-            await ctx.send(f'{str(error)}, try ",help" for a list of commands.')
+            await ctx.send(f'{str(error)}, try "{self.prefix}help" for a list of commands.')
 
         elif isinstance(error, commands.NoPrivateMessage):
             try:
@@ -1559,7 +1559,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'"{ctx.command}" did not work because:{error.message}')
         elif isinstance(error, discord.ext.commands.errors.MemberNotFound):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} failed because:{str(error)}\n'
-                           f'Try using `{self.bot.command_prefix}{ctx.command.name} @Member`.')
+                           f'Try using `{self.prefixdd}{ctx.command.name} @Member`.')
         elif str(error) == 'The read operation timed out':
             await ctx.send('The google sheets API isn\'t responding, wait 60 seconds and try again')
         else:
@@ -1602,6 +1602,7 @@ def main():
     bot.remove_command('help')
     cache = src.cache.Cache()
     bot.add_cog(ScoreSheetBot(bot, cache))
+    print('Running bot')
     bot.run(token)
 
 
