@@ -1338,8 +1338,8 @@ def cancel_gambit():
 
 
 def archive_gambit(winner: str, loser: str, winning_total: int, losing_total: int) -> int:
-    archive = """insert into gambit_results (winning_crew, losing_crew, winning_total, losing_total)
-     values(%s, %s, %s, %s) returning id;"""
+    archive = """insert into gambit_results (winning_crew, losing_crew, winning_total, losing_total, finished)
+     values(%s, %s, %s, %s, current_date) returning id;"""
     conn = None
     gambit_id = 0
     try:
@@ -1381,8 +1381,8 @@ def gambit_standings() -> Tuple[Tuple[int, int, int, str]]:
     return standings
 
 
-def past_gambits() -> Tuple[Tuple[int, str, str, int, int]]:
-    matches = """select gambit_results.id, c1.name, c2.name, winning_total, losing_total
+def past_gambits() -> Tuple[Tuple[int, str, str, int, int, datetime.date]]:
+    matches = """select gambit_results.id, c1.name, c2.name, winning_total, losing_total, finished
         from gambit_results, crews as c1, crews as c2 
             where c1.id = winning_crew and c2.id = losing_crew order by id desc ;"""
     conn = None

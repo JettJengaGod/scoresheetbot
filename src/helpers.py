@@ -742,7 +742,6 @@ def validate_bet(member: discord.Member, on: Crew, amount: int, bot: 'ScoreSheet
 
 
 async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot'):
-    # TODO add the reset from zero here
     member = ctx.author
     team, bet_amount = member_bet(member)
     if team:
@@ -754,4 +753,9 @@ async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot')
         await ctx.send(f'{member.mention}: Your bet timed out or was canceled! You need to respond within 30 seconds!')
         return False
     final = make_bet(member, on, amount)
-    await ctx.send(f'{member.mention} your bet was made! You now have {final} gcoins remaining! Best of luck!')
+    if amount == 0:
+        await ctx.send(
+            f'{member.mention}: You have placed a reset bet of 0 with a chance to win back in with 220 gcoins!')
+    else:
+
+        await ctx.send(f'{member.mention} your bet was made! You now have {final} gcoins remaining! Best of luck!')

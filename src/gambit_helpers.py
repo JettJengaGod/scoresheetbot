@@ -30,13 +30,13 @@ def update_gambit_sheet():
 
     gambits = {}
     gambit_list = []
-    for gamb_id, winner_name, loser_name, winner_total, loser_total in past_gambits():
-        gambits[gamb_id] = [f'{winner_name} beat {loser_name}', winner_total, loser_total]
+    for gamb_id, winner_name, loser_name, winner_total, loser_total, date in past_gambits():
+        gambits[gamb_id] = [str(date), winner_name, loser_name, winner_total, loser_total]
         gambits[gamb_id].extend([''] * len(player_cols))
         gambit_list.append(gamb_id)
 
     for gamb_id, member_id, result in past_bets():
-        gambits[gamb_id][player_to_rank[member_id] + 2] = result
+        gambits[gamb_id][player_to_rank[member_id] + 4] = result
 
     cols = []
     for gamb_id in gambit_list:
@@ -44,9 +44,9 @@ def update_gambit_sheet():
     rows = [list(x) for x in zip(*cols)]  # Transpose
 
     sheet.batch_update([{
-        'range': f'B4:D{4 + len(player_cols)}',
+        'range': f'B6:D{6 + len(player_cols)}',
         'values': player_cols
     }, {
-        'range': f'E1:{colnum_string(len(gambit_list)+5)}{4 + len(player_cols)}',
+        'range': f'E1:{colnum_string(len(gambit_list) + 5)}{6 + len(player_cols)}',
         'values': rows
     }])

@@ -1167,9 +1167,15 @@ class ScoreSheetBot(commands.Cog):
                 await member.send(f'You won {final} gcoins on your bet of {amount} on {cr} over {loser}! '
                                   f'Congrats you now have {total} gcoins!')
             else:
+                total = member_gcoins(member)
                 await member.send(f'You lost {amount} gcoins on your bet on {cr} over {win.name}.')
-                total = -amount
-            archive_bet(member, total, gambit_id)
+                if total > 0:
+                    await member.send(f'You now have {total} coins remaining.')
+                else:
+                    await member.send('You are all out of gcoins, but worry not! If you place a 0 gcoin bet'
+                                      ' when you are bankrupt, if you win, you get 220 gcoins!')
+                final = -amount
+            archive_bet(member, final, gambit_id)
         cancel_gambit()
         await ctx.send(f'Gambit concluded! {win.name} beat {loser}, {winning_bets} gcoins were placed on {win.name} '
                        f'and {losing_bets} gcoins were placed on {loser}.')
