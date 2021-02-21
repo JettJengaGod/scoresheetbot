@@ -2,7 +2,7 @@ import datetime
 import os
 import sys
 import traceback
-from typing import List, Tuple, Optional, Iterable
+from typing import List, Tuple, Optional, Iterable, Dict
 
 import discord
 import psycopg2
@@ -1113,6 +1113,7 @@ def increment_command_used(command_name: int):
             conn.close()
     return
 
+
 def command_leaderboard():
     leaderboard = """select * from commands order by called desc;"""
     conn = None
@@ -1137,3 +1138,49 @@ def command_leaderboard():
         if conn is not None:
             conn.close()
     return desc
+
+
+def crew_flairs() -> Dict[str, int]:
+    flairs = """
+    select crews.name, count(member_id) as total
+        from current_member_crews, crews
+            where crew_id = crews.id and DATE_PART('day', current_timestamp - joined) <30
+                group by crews.name, crews.id
+                    order by total desc;"""
+    old_flairs = """
+    select count(distinct(member_id)) as total, crews.name, crews.id
+        from member_crews_history, crews
+            where crew_id = crews.id and DATE_PART('day', current_timestamp - joined) <30
+            and member_id != 775586622241505281
+                group by crews.name, crews.id
+                    order by total desc;"""
+    conn = None
+    cr = {}
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(flairs)
+        new = cur.fetchall()
+        for name, count in new:
+            cr[name] = count
+
+        cur.execute(old_flairs)
+        old = cur.fetchall()
+        for name, count in old:
+            if name in cr:
+                cr[name] += count
+            else:
+                cr[name] = count
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        lf = logfile()
+        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        lf.close()
+    finally:
+        if conn is not None:
+            conn.close()
+    return cr

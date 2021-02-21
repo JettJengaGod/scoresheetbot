@@ -1478,6 +1478,39 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'These Crews have {over} members or more', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 
+    @commands.command(hidden=True, **help_doc['crnumbers'])
+    @role_call(STAFF_LIST)
+    async def crnumbers(self, ctx):
+        crews = list(self.cache.crews_by_name.values())
+
+        embed = discord.Embed(title=f'Crew numbers for analysis')
+        embed.add_field(name='number', value=str(len(crews)))
+        embed.add_field(name='average size', value='{:.2f}'.format(crew_avg(crews)))
+        embed.add_field(name='stdev of size', value='{:.2f}'.format(crew_stdev(crews)))
+        crew_bar_chart(crews)
+        await ctx.send(embed=embed, file=discord.File('cr.png'))
+
+    @commands.command(hidden=True, **help_doc['flaircounts'])
+    @role_call(STAFF_LIST)
+    async def flaircounts(self, ctx, long:Optional[str]):
+        crews = list(self.cache.crews_by_name.values())
+        flairs = crew_flairs()
+        flair_list = []
+        for cr in crews:
+            if cr.name in flairs:
+                flair_list.append((cr.name, flairs[cr.name]))
+            else:
+                flair_list.append((cr.name, 0))
+        flair_list.sort(key=lambda x: x[1])
+        embed = discord.Embed(title=f'Crew flair numbers for analysis')
+        embed.add_field(name='number of crews', value=str(len(crews)))
+        embed.add_field(name='average flairs', value='{:.2f}'.format(avg_flairs(flair_list)))
+        embed.add_field(name='stdev of flairs', value='{:.2f}'.format(flair_stdev(flair_list)))
+        flair_bar_chart(flair_list)
+        await ctx.send(embed=embed, file=discord.File('fl.png'))
+        if long:
+            await send_long(ctx, '\n'.join([f'{fl[0]}: {fl[1]}' for fl in flair_list]), '\n')
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):
         """The event triggered when an error is raised while invoking a command.
