@@ -1,8 +1,18 @@
 import os
 from datetime import date
-from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict
+from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict, Sequence, ValuesView
 
+<<<<<<< HEAD
 from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
+=======
+from dateutil.relativedelta import relativedelta
+import matplotlib.pyplot as plt;
+
+plt.rcdefaults()
+import numpy as np
+import matplotlib.pyplot as plt
+from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
+>>>>>>> master
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze
 from dateutil.relativedelta import relativedelta
 
@@ -11,6 +21,7 @@ if TYPE_CHECKING:
 from fuzzywuzzy import process, fuzz
 import asyncio
 import discord
+from statistics import stdev
 from discord.ext import commands, menus
 from battle import *
 import time
@@ -698,3 +709,44 @@ def closest_command(command: str, bot: 'ScoreSheetBot'):
     command_strs = [cmd.name for cmd in bot.get_commands()]
     actual, _ = process.extractOne(command, command_strs)
     return actual
+
+
+def crew_avg(crews: List[Crew]) -> float:
+    total = 0
+    for cr in crews:
+        total += cr.member_count
+    return total / len(crews)
+
+
+def crew_stdev(crews: List[Crew]) -> float:
+    member_numbers = [cr.member_count for cr in crews]
+    return stdev(member_numbers)
+
+
+def crew_bar_chart(crews: List[Crew]):
+    member_numbers = [cr.member_count for cr in crews]
+    bins = 20
+    plt.hist(member_numbers, bins=bins)
+    plt.title('Crew Sizes')
+    plt.xlabel('Crews')
+    plt.ylabel('Sizes')
+    plt.savefig('cr.png')
+
+
+def avg_flairs(flairs: List[Tuple[str, int]]) -> float:
+    combined = sum([fl[1] for fl in flairs])
+    return combined / len(flairs)
+
+
+def flair_stdev(flairs: List[Tuple[str, int]]) -> float:
+    combined = [fl[1] for fl in flairs]
+    return stdev(combined)
+
+def flair_bar_chart(flairs: List[Tuple[str, int]]):
+    member_numbers = [fl[1] for fl in flairs]
+    bins = 20
+    plt.hist(member_numbers, bins=bins)
+    plt.title('Crew Flairs last 30 days')
+    plt.xlabel('Crews')
+    plt.ylabel('Flairs')
+    plt.savefig('fl.png')

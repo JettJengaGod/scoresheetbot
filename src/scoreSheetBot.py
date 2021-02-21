@@ -506,22 +506,22 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     async def confirm(self, ctx: Context):
         await self._reject_outsiders(ctx)
-
-        if self._current(ctx).battle_over():
-            if self._current(ctx).mock:
+        current = self._current(ctx)
+        if current.battle_over():
+            if current.mock:
                 await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
             else:
-                self._current(ctx).confirm(await self._battle_crew(ctx, ctx.author))
-                await send_sheet(ctx, battle=self._current(ctx))
-                if self._current(ctx).confirmed():
+                current.confirm(await self._battle_crew(ctx, ctx.author))
+                await send_sheet(ctx, battle=current)
+                if current.confirmed():
                     today = date.today()
 
                     output_channels = [discord.utils.get(ctx.guild.channels, name=DOCS_UPDATES),
                                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
-                    winner = self._current(ctx).winner().name
-                    loser = self._current(ctx).loser().name
-                    if self._current(ctx).playoff:
+                    winner = current.winner().name
+                    loser = current.loser().name
+                    if current.playoff:
                         league_id = crew_lookup(winner, self).playoff.value
                         output_channels.pop(0)
                         output_channels.insert(0,
@@ -535,12 +535,12 @@ class ScoreSheetBot(commands.Cog):
                             f'**{today.strftime("%B %d, %Y")}- {winner} vs. {loser} **\n'
                             f'{self.cache.crews_by_name[winner].rank} crew defeats'
                             f' {self.cache.crews_by_name[loser].rank} crew in a '
-                            f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
+                            f'{current.team1.num_players}v{current.team2.num_players} battle!\n'
                             f'from  {ctx.channel.mention}.')
-                        link = await send_sheet(output_channel, self._current(ctx))
-                    battle_id = add_finished_battle(self._current(ctx), link.jump_url, league_id)
+                        link = await send_sheet(output_channel, current)
+                    battle_id = add_finished_battle(current, link.jump_url, league_id)
                     await ctx.send(
-                        f'The battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
+                        f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
                     await self._clear_current(ctx)
@@ -1479,6 +1479,39 @@ class ScoreSheetBot(commands.Cog):
 
         embed = discord.Embed(title=f'These Crews have {over} members or more', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
+
+    @commands.command(hidden=True, **help_doc['crnumbers'])
+    @role_call(STAFF_LIST)
+    async def crnumbers(self, ctx):
+        crews = list(self.cache.crews_by_name.values())
+
+        embed = discord.Embed(title=f'Crew numbers for analysis')
+        embed.add_field(name='number', value=str(len(crews)))
+        embed.add_field(name='average size', value='{:.2f}'.format(crew_avg(crews)))
+        embed.add_field(name='stdev of size', value='{:.2f}'.format(crew_stdev(crews)))
+        crew_bar_chart(crews)
+        await ctx.send(embed=embed, file=discord.File('cr.png'))
+
+    @commands.command(hidden=True, **help_doc['flaircounts'])
+    @role_call(STAFF_LIST)
+    async def flaircounts(self, ctx, long:Optional[str]):
+        crews = list(self.cache.crews_by_name.values())
+        flairs = crew_flairs()
+        flair_list = []
+        for cr in crews:
+            if cr.name in flairs:
+                flair_list.append((cr.name, flairs[cr.name]))
+            else:
+                flair_list.append((cr.name, 0))
+        flair_list.sort(key=lambda x: x[1])
+        embed = discord.Embed(title=f'Crew flair numbers for analysis')
+        embed.add_field(name='number of crews', value=str(len(crews)))
+        embed.add_field(name='average flairs', value='{:.2f}'.format(avg_flairs(flair_list)))
+        embed.add_field(name='stdev of flairs', value='{:.2f}'.format(flair_stdev(flair_list)))
+        flair_bar_chart(flair_list)
+        await ctx.send(embed=embed, file=discord.File('fl.png'))
+        if long:
+            await send_long(ctx, '\n'.join([f'{fl[0]}: {fl[1]}' for fl in flair_list]), '\n')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):

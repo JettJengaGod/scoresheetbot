@@ -122,6 +122,7 @@ help_doc = dict(
     thankboard=HelpDoc(Categories.misc, 'Returns the thanking leaderboard'),
     make_lead=HelpDoc(Categories.staff, 'Makes a user a leader on their crew', '', 'User'),
     bigcrew=HelpDoc(Categories.staff, 'Returns all the crews that are bigger than x, default 40', '', 'Crew min'),
-
+    crnumbers=HelpDoc(Categories.staff, 'Helpful numbers for crew analysis'),
+    flaircounts=HelpDoc(Categories.staff, 'Helpful numbers for flair analysis'),
     pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),
 )
