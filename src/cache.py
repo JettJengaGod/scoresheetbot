@@ -59,6 +59,7 @@ class Cache:
             advisor = discord.utils.get(server.roles, name=ADVISOR)
             watchlist = discord.utils.get(server.roles, name=WATCHLIST)
             streamer = discord.utils.get(server.roles, name=STREAMER)
+            gambit = discord.utils.get(server.roles, name=GAMBIT_ROLE)
             docs = discord.utils.get(server.roles, name=DOCS)
             certified = discord.utils.get(server.roles, name=CERTIFIED)
             overflow = discord.utils.get(server.roles, name=OVERFLOW_ROLE)
@@ -81,6 +82,8 @@ class Cache:
             flairing_info = discord.utils.get(server.channels, name=FLAIRING_INFO)
             recache_logs = discord.utils.get(server.channels, name='recache_logs')
             doc_keeper = discord.utils.get(server.channels, name=DOC_KEEPER_CHAT)
+            gambit_announce = discord.utils.get(server.channels, id=GAMBIT_ANNOUNCE)
+            gambit_bot = discord.utils.get(server.channels, id=GAMBIT_BOT_ID)
 
         return Channels
 

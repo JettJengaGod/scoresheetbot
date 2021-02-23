@@ -1075,7 +1075,10 @@ class ScoreSheetBot(commands.Cog):
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
-        new_gambit(crew1, crew2)
+        msg = await self.cache.channels.gambit_announce.send(
+            f'{self.cache.roles.gambit.mention} a new gambit has started between {cg.team1} and {cg.team2}!'
+            f'\nPlace your bets by typing `,bet AMOUNT CREW_NAME` in {self.cache.channels.gambit_bot.mention}')
+        new_gambit(crew1, crew2, msg.id)
         await ctx.send(f'Gambit started between {crew1.name} and {crew2.name}.')
 
     @gamb.command()

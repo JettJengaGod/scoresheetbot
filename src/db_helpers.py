@@ -1137,8 +1137,8 @@ def is_gambiter(member: discord.Member) -> bool:
     return gambiter
 
 
-def new_gambit(c1: Crew, c2: Crew):
-    create = """ insert into current_gambit (team_1, team_2) values(%s, %s);"""
+def new_gambit(c1: Crew, c2: Crew, message_id: int):
+    create = """ insert into current_gambit (team_1, team_2, message_id) values(%s, %s, %s);"""
     conn = None
     try:
         params = config()
@@ -1160,7 +1160,7 @@ def new_gambit(c1: Crew, c2: Crew):
 
 def current_gambit() -> Gambit:
     teams = """ 
-    select c1.name, c2.name, current_gambit.locked
+    select c1.name, c2.name, current_gambit.locked, current_gambit.message_id
         from current_gambit, crews as c1, crews as c2
             where current_gambit.team_1 = c1.id and current_gambit.team_2 = c2.id;"""
     t1_bet = """select coalesce(sum(amount),0)
@@ -1171,7 +1171,7 @@ def current_gambit() -> Gambit:
         from current_gambit
             join current_bets on current_gambit.team_2 = current_bets.team;"""
     conn = None
-    t1, t1_bets, t2, t2_bets, locked = '', 0, '', 0, True
+    t1, t1_bets, t2, t2_bets, locked, m_id = '', 0, '', 0, True, 0
     try:
         params = config()
         conn = psycopg2.connect(**params)
@@ -1181,7 +1181,7 @@ def current_gambit() -> Gambit:
         if not crews:
             return None
 
-        t1, t2, locked = crews
+        t1, t2, locked, m_id = crews
         cur.execute(t1_bet)
         t1_bets = cur.fetchone()[0]
         cur.execute(t2_bet)
@@ -1195,7 +1195,7 @@ def current_gambit() -> Gambit:
     finally:
         if conn is not None:
             conn.close()
-    return Gambit(t1, t2, locked, t1_bets, t2_bets)
+    return Gambit(t1, t2, locked, t1_bets, t2_bets, m_id)
 
 
 def member_bet(member: discord.Member) -> Tuple[str, int]:
