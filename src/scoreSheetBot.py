@@ -1598,7 +1598,8 @@ class ScoreSheetBot(commands.Cog):
 def main():
     load_dotenv()
     token = os.getenv('DISCORD_TOKEN')
-    bot = commands.Bot(command_prefix=os.getenv('PREFIX'), intents=discord.Intents.all(), case_insensitive=True)
+    bot = commands.Bot(command_prefix=os.getenv('PREFIX'), intents=discord.Intents.all(), case_insensitive=True,
+                       allowed_mentions=discord.AllowedMentions(everyone=False))
     bot.remove_command('help')
     cache = src.cache.Cache()
     bot.add_cog(ScoreSheetBot(bot, cache))
