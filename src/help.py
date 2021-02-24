@@ -126,5 +126,6 @@ help_doc = dict(
 
     pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),
     coins=HelpDoc(Categories.gambit, 'Shows your gcoins'),
-    bet=HelpDoc(Categories.gambit, 'Bets an amount on a crew, only valid while a gambit is active.'),
+    bet=HelpDoc(Categories.gambit, 'Bets an amount on a crew, only valid while a gambit is active.', '', 'amount crew'),
+    odds=HelpDoc(Categories.gambit, 'Tells you the current odds for the gambit.')
 )

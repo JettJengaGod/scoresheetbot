@@ -17,8 +17,6 @@ from .crew import *
 # If modifying these scopes, delete the file token.pickle.
 
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-
-
 class Cache:
     def __init__(self):
         self.crews_by_name: Dict[str, Crew] = {}
@@ -116,7 +114,7 @@ class Cache:
             with open('token.pickle', 'wb') as token:
                 pickle.dump(creds, token)
 
-        service = build('sheets', 'v4', credentials=creds)
+        service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
         crew_info_range = 'Crew Information!A4:E2160'

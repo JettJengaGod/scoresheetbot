@@ -1146,7 +1146,7 @@ def new_gambit(c1: Crew, c2: Crew, message_id: int):
         cur = conn.cursor()
         id_1 = crew_id_from_role_id(c1.role_id, cur)
         id_2 = crew_id_from_role_id(c2.role_id, cur)
-        cur.execute(create, (id_1, id_2))
+        cur.execute(create, (id_1, id_2, message_id))
         conn.commit()
         cur.close()
 
@@ -1160,7 +1160,7 @@ def new_gambit(c1: Crew, c2: Crew, message_id: int):
 
 def current_gambit() -> Gambit:
     teams = """ 
-    select c1.name, c2.name, current_gambit.locked, current_gambit.message_id
+    select c1.name, c2.name, current_gambit.locked, current_gambit.message_id, c1.id, c2.id
         from current_gambit, crews as c1, crews as c2
             where current_gambit.team_1 = c1.id and current_gambit.team_2 = c2.id;"""
     t1_bet = """select coalesce(sum(amount),0)
@@ -1170,8 +1170,14 @@ def current_gambit() -> Gambit:
     t2_bet = """select coalesce(sum(amount),0)
         from current_gambit
             join current_bets on current_gambit.team_2 = current_bets.team;"""
+    top_bet = """
+    SELECT nickname, MAX(amount) amount
+        FROM current_bets, members, crews
+            where team = %s and members.id=current_bets.member_id and crews.id = team
+                group by member_id, nickname, crews.name;
+    """
     conn = None
-    t1, t1_bets, t2, t2_bets, locked, m_id = '', 0, '', 0, True, 0
+    t1, t1_bets, t2, t2_bets, locked, m_id, tb1, tb2 = '', 0, '', 0, True, 0, (), ()
     try:
         params = config()
         conn = psycopg2.connect(**params)
@@ -1181,11 +1187,20 @@ def current_gambit() -> Gambit:
         if not crews:
             return None
 
-        t1, t2, locked, m_id = crews
+        t1, t2, locked, m_id, c1_id, c2_id = crews
         cur.execute(t1_bet)
         t1_bets = cur.fetchone()[0]
         cur.execute(t2_bet)
         t2_bets = cur.fetchone()[0]
+        cur.execute(top_bet, (c1_id,))
+
+        top_bet_1 = cur.fetchone()
+        if top_bet_1:
+            tb1 = top_bet_1
+        cur.execute(top_bet, (c2_id,))
+        top_bet_2 = cur.fetchone()
+        if top_bet_2:
+            tb2 = top_bet_2
 
         conn.commit()
         cur.close()
@@ -1195,7 +1210,7 @@ def current_gambit() -> Gambit:
     finally:
         if conn is not None:
             conn.close()
-    return Gambit(t1, t2, locked, t1_bets, t2_bets, m_id)
+    return Gambit(t1, t2, locked, m_id, t1_bets, t2_bets, tb1, tb2)
 
 
 def member_bet(member: discord.Member) -> Tuple[str, int]:

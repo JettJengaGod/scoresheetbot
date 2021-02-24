@@ -7,6 +7,7 @@ from dateutil.relativedelta import relativedelta
 from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
     current_gambit, member_bet, member_gcoins, make_bet
+from .gambit import Gambit
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
@@ -516,6 +517,9 @@ async def cache_process(bot: 'ScoreSheetBot'):
         await bot.cache.channels.recache_logs.send('Starting recache.')
 
     await bot.cache.update(bot)
+    cg = current_gambit()
+    if cg:
+        await update_gambit_message(current_gambit(), bot)
     if os.getenv('VERSION') == 'PROD':
         crew_update(bot)
         await handle_unfreeze(bot)
@@ -755,7 +759,27 @@ async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot')
     final = make_bet(member, on, amount)
     if amount == 0:
         await ctx.send(
-            f'{member.mention}: You have placed a reset bet of 0 with a chance to win back in with 220 gcoins!')
+            f'{member.mention}: You have placed a reset bet of 0 with a chance to win back in with 220 G-Coins.')
     else:
+        if team:
+            await ctx.send(f'{member.mention}: Bet on **{on.name}** increased to {amount + bet_amount} G-Coins. '
+                           f'You have {final} G-Coins remaining.')
+        else:
+            await ctx.send(f'{member.mention}: Bet on **{on.name}** made for {amount} G-Coins. '
+                           f'You have {final} G-Coins remaining.')
 
-        await ctx.send(f'{member.mention} your bet was made! You now have {final} gcoins remaining! Best of luck!')
+
+async def update_gambit_message(gambit: Gambit, bot: 'ScoreSheetBot'):
+    message = await bot.gambit_message(gambit.message_id)
+    crew1 = crew_lookup(gambit.team1, bot)
+    crew2 = crew_lookup(gambit.team2, bot)
+    print(gambit)
+
+    await message.edit(embed=gambit.embed(crew1.abbr, crew2.abbr))
+
+
+async def update_finished_gambit(gambit: Gambit, winner: int, bot: 'ScoreSheetBot'):
+    message = await bot.gambit_message(gambit.message_id)
+    crew1 = crew_lookup(gambit.team1, bot)
+    crew2 = crew_lookup(gambit.team2, bot)
+    await message.edit(embed=gambit.finished_embed(crew1.abbr, crew2.abbr, winner))

@@ -19,6 +19,9 @@ from .character import all_emojis, string_to_emote, all_alts, CHARACTERS
 from .decorators import *
 from .help import help_doc
 from .constants import *
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 Context = discord.ext.commands.Context
 
@@ -29,12 +32,23 @@ class ScoreSheetBot(commands.Cog):
         self.battle_map: Dict[str, Battle] = {}
         self.cache = cache
         self.auto_cache.start()
+        self._gambit_message = None
 
     def _current(self, ctx) -> Battle:
         if key_string(ctx) in self.battle_map:
             return self.battle_map[key_string(ctx)]
         else:
             raise ValueError
+
+    async def gambit_message(self, msg_id: int) -> discord.Message:
+        # tmp = self.cache.channels.gambit_announce.get_partial_message(msg_id)
+        # if tmp:
+        #     self._gambit_message = tmp
+        #     return self._gambit_message
+        if not self._gambit_message:
+            msg = await self.cache.channels.gambit_announce.fetch_message(msg_id)
+            self._gambit_message = msg
+        return self._gambit_message
 
     async def _battle_crew(self, ctx: Context, user: discord.Member) -> Optional[str]:
         crew_name = crew(user, self)
@@ -1051,7 +1065,7 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     async def coins(self, ctx: Context, member: Optional[discord.Member] = None):
         member = member or ctx.author
-        await ctx.send(f'{str(member)} has {member_gcoins(member)} gcoins.')
+        await ctx.send(f'{str(member)} has {member_gcoins(member)} G-Coins.')
 
     @commands.group(name='gamb', invoke_without_command=True)
     @main_only
@@ -1076,10 +1090,11 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
         msg = await self.cache.channels.gambit_announce.send(
-            f'{self.cache.roles.gambit.mention} a new gambit has started between {cg.team1} and {cg.team2}!'
+            f'{self.cache.roles.gambit.mention} a new gambit has started between {crew1.name} and {crew2.name}!'
             f'\nPlace your bets by typing `,bet AMOUNT CREW_NAME` in {self.cache.channels.gambit_bot.mention}')
         new_gambit(crew1, crew2, msg.id)
         await ctx.send(f'Gambit started between {crew1.name} and {crew2.name}.')
+        self._gambit_message = msg
 
     @gamb.command()
     @main_only
@@ -1117,17 +1132,10 @@ class ScoreSheetBot(commands.Cog):
             member = self.bot.get_user(member_id)
             total = refund_member_gcoins(member, amount)
             await member.send(f'The gambit between {cg.team1} and {cg.team2} was canceled, '
-                              f'you have been refunded {amount} gcoins for your bet on {cr}.\n'
-                              f'You now have {total} gcoins.')
+                              f'you have been refunded {amount} G-Coins for your bet on {cr}.\n'
+                              f'You now have {total} G-Coins.')
         cancel_gambit()
         await ctx.send(f'Gambit between {cg.team1} and {cg.team2} cancelled. All participants have been refunded.')
-
-    @gamb.command()
-    @main_only
-    @role_call([MINION, ADMIN])
-    async def update(self, ctx: Context):
-        update_gambit_sheet()
-
 
     @gamb.command()
     @main_only
@@ -1142,11 +1150,13 @@ class ScoreSheetBot(commands.Cog):
             loser = cg.team2
             winning_bets = cg.bets_1
             losing_bets = cg.bets_2
+            winner = 1
 
         elif win.name == cg.team2:
             loser = cg.team1
             winning_bets = cg.bets_2
             losing_bets = cg.bets_1
+            winner = 2
         else:
             await response_message(ctx, f'{win.name} is not in the current gambit between {cg.team1} and {cg.team2}.')
             return
@@ -1167,22 +1177,29 @@ class ScoreSheetBot(commands.Cog):
                     # Reset win
                     final = 220
                 total = refund_member_gcoins(member, final)
-                await member.send(f'You won {final} gcoins on your bet of {amount} on {cr} over {loser}! '
-                                  f'Congrats you now have {total} gcoins!')
+                await member.send(f'You won {final} G-Coins on your bet of {amount} on {cr} over {loser}! '
+                                  f'Congrats you now have {total} G-Coins!')
             else:
                 total = member_gcoins(member)
-                await member.send(f'You lost {amount} gcoins on your bet on {cr} over {win.name}.')
+                await member.send(f'You lost {amount} G-Coins on your bet on {cr} over {win.name}.')
                 if total > 0:
                     await member.send(f'You now have {total} coins remaining.')
                 else:
-                    await member.send('You are all out of gcoins, but worry not! If you place a 0 gcoin bet'
-                                      ' when you are bankrupt, if you win, you get 220 gcoins!')
+                    await member.send('You are all out of G-Coins, but worry not! If you place a 0 G-Coin bet'
+                                      ' when you are bankrupt, if you win, you get 220 G-Coins!')
                 final = -amount
             archive_bet(member, final, gambit_id)
         cancel_gambit()
-        await ctx.send(f'Gambit concluded! {win.name} beat {loser}, {winning_bets} gcoins were placed on {win.name} '
-                       f'and {losing_bets} gcoins were placed on {loser}.')
+        await ctx.send(f'Gambit concluded! {win.name} beat {loser}, {winning_bets} G-Coins were placed on {win.name} '
+                       f'and {losing_bets} G-Coins were placed on {loser}.')
+        update_gambit_sheet()
+        await update_finished_gambit(cg, winner, self)
 
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def update(self, ctx):
+        update_gambit_sheet()
 
     @commands.command(**help_doc['bet'])
     async def bet(self, ctx: Context, amount: int, *, team: str):
@@ -1201,6 +1218,16 @@ class ScoreSheetBot(commands.Cog):
         cr = crew_lookup(team, self)
         validate_bet(ctx.author, cr, amount, self)
         await confirm_bet(ctx, cr, amount, self)
+        await update_gambit_message(current_gambit(), self)
+
+    @commands.command(**help_doc['odds'])
+    async def odds(self, ctx: Context):
+        cg = current_gambit()
+        if not cg:
+            await ctx.send('No gambit is currently running, please wait for one to start before betting.')
+            return
+        await ctx.send(f'If you win a bet on {cg.team1} you will get {cg.odds_1} extra G-Coins.'
+                       f'\nIf you win bet on {cg.team2} you will get {cg.odds_2} extra G-Coins.')
 
     ''' ***********************************STAFF COMMANDS ************************************************'''
 
