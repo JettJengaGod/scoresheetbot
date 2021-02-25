@@ -2,15 +2,15 @@ import os
 from datetime import date
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict, Sequence, ValuesView
 
-from dateutil.relativedelta import relativedelta
 import matplotlib.pyplot as plt;
 
 plt.rcdefaults()
 import numpy as np
-import matplotlib.pyplot as plt
-from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
-    remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze
 from dateutil.relativedelta import relativedelta
+from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
+    remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
+    current_gambit, member_bet, member_gcoins, make_bet
+from gambit import Gambit
 
 if TYPE_CHECKING:
     from scoreSheetBot import ScoreSheetBot
@@ -705,6 +705,86 @@ def closest_command(command: str, bot: 'ScoreSheetBot'):
     command_strs = [cmd.name for cmd in bot.get_commands()]
     actual, _ = process.extractOne(command, command_strs)
     return actual
+
+
+async def join_gambit(member: discord.Member, bot: 'ScoreSheetBot') -> bool:
+    msg = await member.send(f'{str(member)}: It appears you are not part of gambit, '
+                            f'but are attempting to place a bet, would you like to join gamibt?')
+    if not await wait_for_reaction_on_message(YES, NO, msg, member, bot.bot):
+        await member.send(f'Timed out or canceled! You need to respond within 30 seconds!')
+        return False
+
+    await member.send(f'Welcome to gambit! Here are {new_member_gcoins(member)} coins for your trouble.')
+    # TODO add gambit guide right here
+    return True
+
+
+def validate_bet(member: discord.Member, on: Crew, amount: int, bot: 'ScoreSheetBot'):
+    cg = current_gambit()
+    if on.name not in [cg.team1, cg.team2]:
+        raise ValueError(
+            f'{on.name} not one of the two crews in the current gambit ({cg.team1}, {cg.team2}).')
+
+    try:
+        member_crew = crew(member, bot)
+    except ValueError:
+        member_crew = None
+    if member_crew in [cg.team1, cg.team2]:
+        raise ValueError(
+            f'{member.mention} is on {member_crew}, a crew competing in the gambit and cannot participate.')
+
+    current = member_gcoins(member)
+    if amount > current:
+        raise ValueError(f'{member.mention} only has {current} and cannot bet {amount}.')
+    team, bet_amount = member_bet(member)
+    if team:
+        if on.name != team:
+            raise ValueError(f'{member.mention} already has a bet on {team} can\'t also bet on {on.name}')
+    if amount == 0 and current == 0 and not team:
+        return
+    if amount <= 0:
+        raise ValueError('You must bet a positive amount!')
+
+
+async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot'):
+    member = ctx.author
+    team, bet_amount = member_bet(member)
+    if team:
+        msg = await ctx.send(f'{str(member)} has {bet_amount} already on'
+                             f' {team} do you want to increase that to {bet_amount + amount}?')
+    else:
+        msg = await ctx.send(f'{member.mention} really bet {amount} on {on.name}?')
+    if not await wait_for_reaction_on_message(YES, NO, msg, member, bot.bot):
+        await ctx.send(f'{member.mention}: Your bet timed out or was canceled! You need to respond within 30 seconds!')
+        return False
+    final = make_bet(member, on, amount)
+    if amount == 0:
+        await ctx.send(
+            f'{member.mention}: You have placed a reset bet of 0 with a chance to win back in with 220 G-Coins.')
+    else:
+        if team:
+            await ctx.send(f'{member.mention}: Bet on **{on.name}** increased to {amount + bet_amount} G-Coins. '
+                           f'You have {final} G-Coins remaining.')
+        else:
+            await ctx.send(f'{member.mention}: Bet on **{on.name}** made for {amount} G-Coins. '
+                           f'You have {final} G-Coins remaining.')
+
+
+async def update_gambit_message(gambit: Gambit, bot: 'ScoreSheetBot'):
+    message = await bot.gambit_message(gambit.message_id)
+    crew1 = crew_lookup(gambit.team1, bot)
+    crew2 = crew_lookup(gambit.team2, bot)
+
+    await message.edit(embed=gambit.embed(crew1.abbr, crew2.abbr))
+
+
+async def update_finished_gambit(gambit: Gambit, winner: int, bot: 'ScoreSheetBot'):
+    message = await bot.gambit_message(gambit.message_id)
+    await message.delete()
+    crew1 = crew_lookup(gambit.team1, bot)
+    crew2 = crew_lookup(gambit.team2, bot)
+    await bot.cache.channels.gambit_announce.send(
+        embed=gambit.finished_embed(crew1.abbr, crew2.abbr, winner))
 
 
 def crew_avg(crews: List[Crew]) -> float:
