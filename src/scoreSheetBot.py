@@ -453,7 +453,7 @@ class ScoreSheetBot(commands.Cog):
                                         Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['end'])
+    @commands.command(**help_doc['endlag'])
     @main_only
     @has_sheet
     @ss_channel
@@ -1145,7 +1145,7 @@ class ScoreSheetBot(commands.Cog):
     @gamb.command()
     @main_only
     @role_call([MINION, ADMIN])
-    async def end(self, ctx: Context, *, winner: str):
+    async def finish(self, ctx: Context, *, winner: str):
         cg = current_gambit()
         if not cg:
             await response_message(ctx, f'Gambit not started, please use `,gamb start`')
