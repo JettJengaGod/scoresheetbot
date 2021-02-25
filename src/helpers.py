@@ -773,13 +773,14 @@ async def update_gambit_message(gambit: Gambit, bot: 'ScoreSheetBot'):
     message = await bot.gambit_message(gambit.message_id)
     crew1 = crew_lookup(gambit.team1, bot)
     crew2 = crew_lookup(gambit.team2, bot)
-    print(gambit)
 
     await message.edit(embed=gambit.embed(crew1.abbr, crew2.abbr))
 
 
 async def update_finished_gambit(gambit: Gambit, winner: int, bot: 'ScoreSheetBot'):
     message = await bot.gambit_message(gambit.message_id)
+    await message.delete()
     crew1 = crew_lookup(gambit.team1, bot)
     crew2 = crew_lookup(gambit.team2, bot)
-    await message.edit(embed=gambit.finished_embed(crew1.abbr, crew2.abbr, winner))
+    await bot.cache.channels.gambit_announce.send(
+        embed=gambit.finished_embed(crew1.abbr, crew2.abbr, winner))

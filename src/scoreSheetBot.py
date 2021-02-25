@@ -1091,7 +1091,8 @@ class ScoreSheetBot(commands.Cog):
             return
         msg = await self.cache.channels.gambit_announce.send(
             f'{self.cache.roles.gambit.mention} a new gambit has started between {crew1.name} and {crew2.name}!'
-            f'\nPlace your bets by typing `,bet AMOUNT CREW_NAME` in {self.cache.channels.gambit_bot.mention}')
+            f'\nPlace your bets by typing `,bet AMOUNT CREW_NAME` in {self.cache.channels.gambit_bot.mention} '
+            f'and find out the odds by typing `,odds`.')
         new_gambit(crew1, crew2, msg.id)
         await ctx.send(f'Gambit started between {crew1.name} and {crew2.name}.')
         self._gambit_message = msg
@@ -1201,7 +1202,9 @@ class ScoreSheetBot(commands.Cog):
     async def update(self, ctx):
         update_gambit_sheet()
 
+
     @commands.command(**help_doc['bet'])
+    @gambit_channel
     async def bet(self, ctx: Context, amount: int, *, team: str):
         cg = current_gambit()
         if not cg:
@@ -1221,6 +1224,7 @@ class ScoreSheetBot(commands.Cog):
         await update_gambit_message(current_gambit(), self)
 
     @commands.command(**help_doc['odds'])
+    @gambit_channel
     async def odds(self, ctx: Context):
         cg = current_gambit()
         if not cg:

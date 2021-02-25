@@ -17,6 +17,20 @@ def ss_channel(func):
     return wrapper
 
 
+def gambit_channel(func):
+    """Decorator that errors if not in the correct channel."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        ctx = args[0]
+        if 'gambit-bot-commands' not in ctx.channel.name:
+            await ctx.send(f'Please use gambit commands in <#{GAMBIT_BOT_ID}>.')
+            return
+        return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
 def main_only(func):
     """Decorator that errors if not in the correct channel."""
 
@@ -114,6 +128,7 @@ def role_call(required: Iterable):
         return wrapped_f
 
     return wrapper
+
 
 def banned_channels(disallowed: Iterable):
     """Decorator that checks if someone is in a roles list."""

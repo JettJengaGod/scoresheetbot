@@ -1,5 +1,6 @@
 import dataclasses
 import discord
+import math
 from typing import Tuple
 
 
@@ -49,9 +50,16 @@ class Gambit:
         if winner == 1:
             winning_team = self.team1
             losing_team = self.team2
+            top_winner = self.top_1
+            winning_odds = self.bets_2 / self.bets_1 if self.bets_1 else 0
+            top_loser = self.top_2
         else:
             winning_team = self.team2
             losing_team = self.team1
+            top_winner = self.top_2
+            winning_odds = self.bets_1 / self.bets_2 if self.bets_2 else 0
+            top_loser = self.top_1
+
         title = f'{winning_team} beat {losing_team}'
         color = discord.Color.dark_gold()
         embed = discord.Embed(title=title, color=color)
@@ -60,6 +68,10 @@ class Gambit:
         embed.add_field(name=f'Final odds',
                         value=f'{self.team1} {self.odds_1} {self.team2}\n{self.team2} {self.odds_2} {self.team1}',
                         inline=False)
+        if top_winner:
+            embed.add_field(name=f'Top Winner', value=f'{top_winner[0]}: {math.ceil(top_winner[1]*(1+winning_odds))}')
+        if top_loser:
+            embed.add_field(name=f'Most Lost', value=f'{top_loser[0]}: {top_loser[1]}')
 
         embed.add_field(name='Current Status', value='finished')
 
