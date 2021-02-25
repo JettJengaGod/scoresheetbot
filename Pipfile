@@ -46,6 +46,7 @@ fuzzywuzzy = "*"
 psycopg2 = "*"
 oauth2client = "*"
 matplotlib = "*"
+gspread = "*"
 
 [dev-packages]
 coverage = ">=5.3"

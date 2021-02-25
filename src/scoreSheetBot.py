@@ -3,6 +3,7 @@ import sys
 import traceback
 import time
 import discord
+import math
 import functools
 from asyncio import sleep
 from datetime import date
@@ -10,12 +11,17 @@ from discord.ext import commands, tasks, menus
 from discord.ext.commands import Greedy
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
+
+from src.gambit_helpers import update_gambit_sheet
 from .db_helpers import *
 import src.cache
 from .character import all_emojis, string_to_emote, all_alts, CHARACTERS
 from .decorators import *
 from .help import help_doc
 from .constants import *
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 Context = discord.ext.commands.Context
 
@@ -26,12 +32,23 @@ class ScoreSheetBot(commands.Cog):
         self.battle_map: Dict[str, Battle] = {}
         self.cache = cache
         self.auto_cache.start()
+        self._gambit_message = None
 
     def _current(self, ctx) -> Battle:
         if key_string(ctx) in self.battle_map:
             return self.battle_map[key_string(ctx)]
         else:
             return None
+
+    async def gambit_message(self, msg_id: int) -> discord.Message:
+        # tmp = self.cache.channels.gambit_announce.get_partial_message(msg_id)
+        # if tmp:
+        #     self._gambit_message = tmp
+        #     return self._gambit_message
+        if not self._gambit_message:
+            msg = await self.cache.channels.gambit_announce.fetch_message(msg_id)
+            self._gambit_message = msg
+        return self._gambit_message
 
     async def _battle_crew(self, ctx: Context, user: discord.Member) -> Optional[str]:
         crew_name = crew(user, self)
@@ -1043,6 +1060,180 @@ class ScoreSheetBot(commands.Cog):
     async def multiflair(self, ctx: Context, members: Greedy[discord.Member], new_crew: str = None):
         for member in set(members):
             await self.flair(ctx, member, new_crew=new_crew)
+
+    ''' ***********************************GAMBIT COMMANDS ************************************************'''
+
+    @commands.command(**help_doc['coins'])
+    @main_only
+    async def coins(self, ctx: Context, member: Optional[discord.Member] = None):
+        member = member or ctx.author
+        await ctx.send(f'{str(member)} has {member_gcoins(member)} G-Coins.')
+
+    @commands.group(name='gamb', invoke_without_command=True)
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def gamb(self, ctx: Context):
+        if current_gambit():
+            await ctx.send(f'{current_gambit()}')
+        else:
+            await ctx.send('No Current gambit.')
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def start(self, ctx: Context, c1: str, c2: str):
+        cg = current_gambit()
+        if cg:
+            await response_message(ctx, f'Gambit is already started between {cg.team1} and {cg.team2}')
+            return
+        crew1, crew2 = crew_lookup(c1, self), crew_lookup(c2, self)
+        msg = await ctx.send(f'Would you like to start a gambit between {crew1.name} and {crew2.name}?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        msg = await self.cache.channels.gambit_announce.send(
+            f'{self.cache.roles.gambit.mention} a new gambit has started between {crew1.name} and {crew2.name}!'
+            f'\nPlace your bets by typing `,bet AMOUNT CREW_NAME` in {self.cache.channels.gambit_bot.mention} '
+            f'and find out the odds by typing `,odds`.')
+        new_gambit(crew1, crew2, msg.id)
+        await ctx.send(f'Gambit started between {crew1.name} and {crew2.name}.')
+        self._gambit_message = msg
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def lock(self, ctx: Context):
+        cg = current_gambit()
+        if not cg:
+            await response_message(ctx, f'Gambit not started, please use `,gamb start`')
+            return
+        if cg.locked:
+            msg = await ctx.send(f'Gambit between {cg.team1} and {cg.team2} is already locked, do you want to unlock?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            lock_gambit(False)
+            await msg.delete()
+            await response_message(ctx, f'Gambit between {cg.team1} and {cg.team2} unlocked by {ctx.author.mention}.')
+        else:
+            lock_gambit(True)
+            await response_message(ctx, f'Gambit between {cg.team1} and {cg.team2} locked by {ctx.author.mention}.')
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def cancel(self, ctx: Context):
+        cg = current_gambit()
+        if not cg:
+            await response_message(ctx, f'Gambit not started, please use `,gamb start`')
+            return
+        msg = await ctx.send(f'Are you sure you want to cancel the gambit between {cg.team1} and {cg.team2}?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        for member_id, amount, cr in all_bets():
+            member = self.bot.get_user(member_id)
+            total = refund_member_gcoins(member, amount)
+            await member.send(f'The gambit between {cg.team1} and {cg.team2} was canceled, '
+                              f'you have been refunded {amount} G-Coins for your bet on {cr}.\n'
+                              f'You now have {total} G-Coins.')
+        cancel_gambit()
+        await ctx.send(f'Gambit between {cg.team1} and {cg.team2} cancelled. All participants have been refunded.')
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def end(self, ctx: Context, *, winner: str):
+        cg = current_gambit()
+        if not cg:
+            await response_message(ctx, f'Gambit not started, please use `,gamb start`')
+            return
+        win = crew_lookup(winner, self)
+        if win.name == cg.team1:
+            loser = cg.team2
+            winning_bets = cg.bets_1
+            losing_bets = cg.bets_2
+            winner = 1
+
+        elif win.name == cg.team2:
+            loser = cg.team1
+            winning_bets = cg.bets_2
+            losing_bets = cg.bets_1
+            winner = 2
+        else:
+            await response_message(ctx, f'{win.name} is not in the current gambit between {cg.team1} and {cg.team2}.')
+            return
+        msg = await ctx.send(f'Are you sure you want to end the gambit as {win.name} beat {loser}?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        if winning_bets == 0:
+            ratio = 0
+        else:
+            ratio = losing_bets / winning_bets
+        gambit_id = archive_gambit(win.name, loser, winning_bets, losing_bets)
+        for member_id, amount, cr in all_bets():
+            member = self.bot.get_user(member_id)
+            if cr == win.name:
+                final = amount + math.ceil(amount * ratio)
+                if final == 0:
+                    # Reset win
+                    final = 220
+                total = refund_member_gcoins(member, final)
+                await member.send(f'You won {final} G-Coins on your bet of {amount} on {cr} over {loser}! '
+                                  f'Congrats you now have {total} G-Coins!')
+            else:
+                total = member_gcoins(member)
+                await member.send(f'You lost {amount} G-Coins on your bet on {cr} over {win.name}.')
+                if total > 0:
+                    await member.send(f'You now have {total} coins remaining.')
+                else:
+                    await member.send('You are all out of G-Coins, but worry not! If you place a 0 G-Coin bet'
+                                      ' when you are bankrupt, if you win, you get 220 G-Coins!')
+                final = -amount
+            archive_bet(member, final, gambit_id)
+        cancel_gambit()
+        await ctx.send(f'Gambit concluded! {win.name} beat {loser}, {winning_bets} G-Coins were placed on {win.name} '
+                       f'and {losing_bets} G-Coins were placed on {loser}.')
+        update_gambit_sheet()
+        await update_finished_gambit(cg, winner, self)
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def update(self, ctx):
+        update_gambit_sheet()
+
+
+    @commands.command(**help_doc['bet'])
+    @gambit_channel
+    async def bet(self, ctx: Context, amount: int, *, team: str):
+        cg = current_gambit()
+        if not cg:
+            await ctx.send('No gambit is currently running, please wait for one to start before betting.')
+            return
+        if cg.locked:
+            await ctx.send(f'The gambit between {cg.team1} and {cg.team2} is locked as the battle has already started.'
+                           f'\nUse `,gamibt` to see the current odds.')
+            return
+        if not is_gambiter(ctx.author):
+            if not await join_gambit(ctx.author, self):
+                await ctx.send(f'{str(ctx.author)} isn\'t a gambiter and didn\'t join. (check your dms and try again)')
+                return
+        cr = crew_lookup(team, self)
+        validate_bet(ctx.author, cr, amount, self)
+        await confirm_bet(ctx, cr, amount, self)
+        await update_gambit_message(current_gambit(), self)
+
+    @commands.command(**help_doc['odds'])
+    @gambit_channel
+    async def odds(self, ctx: Context):
+        cg = current_gambit()
+        if not cg:
+            await ctx.send('No gambit is currently running, please wait for one to start before betting.')
+            return
+        await ctx.send(f'If you win a bet on {cg.team1} you will get {cg.odds_1} extra G-Coins.'
+                       f'\nIf you win bet on {cg.team2} you will get {cg.odds_2} extra G-Coins.')
 
     ''' ***********************************STAFF COMMANDS ************************************************'''
 

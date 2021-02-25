@@ -17,8 +17,6 @@ from .crew import *
 # If modifying these scopes, delete the file token.pickle.
 
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-
-
 class Cache:
     def __init__(self):
         self.crews_by_name: Dict[str, Crew] = {}
@@ -59,6 +57,7 @@ class Cache:
             advisor = discord.utils.get(server.roles, name=ADVISOR)
             watchlist = discord.utils.get(server.roles, name=WATCHLIST)
             streamer = discord.utils.get(server.roles, name=STREAMER)
+            gambit = discord.utils.get(server.roles, name=GAMBIT_ROLE)
             docs = discord.utils.get(server.roles, name=DOCS)
             certified = discord.utils.get(server.roles, name=CERTIFIED)
             overflow = discord.utils.get(server.roles, name=OVERFLOW_ROLE)
@@ -81,6 +80,8 @@ class Cache:
             flairing_info = discord.utils.get(server.channels, name=FLAIRING_INFO)
             recache_logs = discord.utils.get(server.channels, name='recache_logs')
             doc_keeper = discord.utils.get(server.channels, name=DOC_KEEPER_CHAT)
+            gambit_announce = discord.utils.get(server.channels, id=GAMBIT_ANNOUNCE)
+            gambit_bot = discord.utils.get(server.channels, id=GAMBIT_BOT_ID)
 
         return Channels
 
@@ -113,7 +114,7 @@ class Cache:
             with open('token.pickle', 'wb') as token:
                 pickle.dump(creds, token)
 
-        service = build('sheets', 'v4', credentials=creds)
+        service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
         crew_info_range = 'Crew Information!A4:E2160'
