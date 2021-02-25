@@ -11,7 +11,7 @@ from battle import Battle, InfoMatch, TimerMatch
 from crew import Crew
 import discord
 import datetime
-from gambit import gambit
+from gambit import Gambit
 
 
 def logfile():
