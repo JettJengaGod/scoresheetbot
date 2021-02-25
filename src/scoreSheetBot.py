@@ -1222,8 +1222,9 @@ class ScoreSheetBot(commands.Cog):
                 return
         cr = crew_lookup(team, self)
         validate_bet(ctx.author, cr, amount, self)
-        await confirm_bet(ctx, cr, amount, self)
-        await update_gambit_message(current_gambit(), self)
+        if await confirm_bet(ctx, cr, amount, self):
+            await ctx.message.delete()
+            await update_gambit_message(current_gambit(), self)
 
     @commands.command(**help_doc['odds'])
     @gambit_channel
