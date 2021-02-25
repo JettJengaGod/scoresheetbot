@@ -746,7 +746,7 @@ def validate_bet(member: discord.Member, on: Crew, amount: int, bot: 'ScoreSheet
         raise ValueError('You must bet a positive amount!')
 
 
-async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot'):
+async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot') -> bool:
     member = ctx.author
     team, bet_amount = member_bet(member)
     if team:
@@ -768,6 +768,8 @@ async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot')
         else:
             await ctx.send(f'{member.mention}: Bet on **{on.name}** made for {amount} G-Coins. '
                            f'You have {final} G-Coins remaining.')
+    await msg.delete(delay=2)
+    return True
 
 
 async def update_gambit_message(gambit: Gambit, bot: 'ScoreSheetBot'):
@@ -817,6 +819,7 @@ def avg_flairs(flairs: List[Tuple[str, int]]) -> float:
 def flair_stdev(flairs: List[Tuple[str, int]]) -> float:
     combined = [fl[1] for fl in flairs]
     return stdev(combined)
+
 
 def flair_bar_chart(flairs: List[Tuple[str, int]]):
     member_numbers = [fl[1] for fl in flairs]
