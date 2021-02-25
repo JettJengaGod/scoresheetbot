@@ -1104,7 +1104,7 @@ class ScoreSheetBot(commands.Cog):
     @gamb.command()
     @main_only
     @role_call([MINION, ADMIN])
-    async def lock(self, ctx: Context):
+    async def close(self, ctx: Context):
         cg = current_gambit()
         if not cg:
             await response_message(ctx, f'Gambit not started, please use `,gamb start`')
