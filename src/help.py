@@ -41,6 +41,11 @@ help_doc = dict(
     end=HelpDoc(Categories.cb, 'End the game with characters and stocks for both teams',
                 'Example: `!end ness 3 palu 2`, you can also choose alts here. use `,char CharName` to test it',
                 'Char1 StocksTaken1 Char2 StocksTaken2'),
+    endlag=HelpDoc(Categories.cb,
+                   'End the game with characters and stocks for both teams. '
+                   'Same as end, but does not need to result in one player winning'
+                   'Example: `!end ness 3 palu 2`, you can also choose alts here. use `,char CharName` to test it',
+                   'Char1 StocksTaken1 Char2 StocksTaken2'),
     resize=HelpDoc(Categories.cb, 'Resize the crew battle', '', 'NewSize'),
     undo=HelpDoc(Categories.cb, 'Undo the last match',
                  'Takes no parameters and undoes the last match that was played'),
