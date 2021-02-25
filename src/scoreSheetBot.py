@@ -31,7 +31,7 @@ class ScoreSheetBot(commands.Cog):
         if key_string(ctx) in self.battle_map:
             return self.battle_map[key_string(ctx)]
         else:
-            raise ValueError
+            return None
 
     async def _battle_crew(self, ctx: Context, user: discord.Member) -> Optional[str]:
         crew_name = crew(user, self)
@@ -527,7 +527,10 @@ class ScoreSheetBot(commands.Cog):
                                                                  name=PLAYOFF_CHANNEL_NAMES[league_id - 1]))
                     else:
                         league_id = 1
-
+                    current = self._current(ctx)
+                    if not current:
+                        return
+                    await self._clear_current(ctx)
                     for output_channel in output_channels:
                         await output_channel.send(
                             f'**{today.strftime("%B %d, %Y")}- {winner} vs. {loser} **\n'
@@ -541,7 +544,6 @@ class ScoreSheetBot(commands.Cog):
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
-                    await self._clear_current(ctx)
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
