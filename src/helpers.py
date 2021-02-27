@@ -709,7 +709,7 @@ def closest_command(command: str, bot: 'ScoreSheetBot'):
 
 async def join_gambit(member: discord.Member, bot: 'ScoreSheetBot') -> bool:
     msg = await member.send(f'{str(member)}: It appears you are not part of gambit, '
-                            f'but are attempting to place a bet, would you like to join gamibt?')
+                            f'would you like to join gamibt?')
     if not await wait_for_reaction_on_message(YES, NO, msg, member, bot.bot):
         await member.send(f'Timed out or canceled! You need to respond within 30 seconds!')
         return False
@@ -757,6 +757,7 @@ async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot')
     if not await wait_for_reaction_on_message(YES, NO, msg, member, bot.bot):
         await ctx.send(f'{member.mention}: Your bet timed out or was canceled! You need to respond within 30 seconds!')
         return False
+    validate_bet(member,on, amount, bot)
     final = make_bet(member, on, amount)
     if amount == 0:
         await ctx.send(
