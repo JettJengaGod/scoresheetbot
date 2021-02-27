@@ -27,7 +27,7 @@ def update_gambit_sheet():
     player_cols = []
     for rank, member_id, coins, name in gambit_standings():
         player_cols.append([rank, name, coins])
-        player_to_rank[member_id] = rank
+        player_to_rank[member_id] = len(player_cols)
 
     gambits = {}
     gambit_list = []
