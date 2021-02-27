@@ -1210,8 +1210,8 @@ class ScoreSheetBot(commands.Cog):
         cancel_gambit()
         await ctx.send(f'Gambit concluded! {win.name} beat {loser}, {winning_bets} G-Coins were placed on {win.name} '
                        f'and {losing_bets} G-Coins were placed on {loser}.')
-        update_gambit_sheet()
         await update_finished_gambit(cg, winner, self)
+        update_gambit_sheet()
 
     @gamb.command()
     @main_only

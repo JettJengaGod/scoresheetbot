@@ -734,6 +734,8 @@ def validate_bet(member: discord.Member, on: Crew, amount: int, bot: 'ScoreSheet
             f'{member.mention} is on {member_crew}, a crew competing in the gambit and cannot participate.')
 
     current = member_gcoins(member)
+    if current == 0 and amount > current:
+        raise ValueError(f'{member.mention} since you have 0 G-Coins left, bet 0 on either team to win back in..')
     if amount > current:
         raise ValueError(f'{member.mention} only has {current} and cannot bet {amount}.')
     team, bet_amount = member_bet(member)
