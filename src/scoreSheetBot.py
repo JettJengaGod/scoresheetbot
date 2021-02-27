@@ -145,7 +145,7 @@ class ScoreSheetBot(commands.Cog):
                                  description=f'Use `{self.bot.command_prefix}help *group*` to find out more about them!')
             groups_desc = ''
             for cmd in self.bot.walk_commands():
-                if isinstance(cmd, discord.ext.commands.Group):
+                if isinstance(cmd, discord.ext.commands.Group) and not cmd.hidden:
                     groups_desc += ('{} - {}'.format(cmd, cmd.brief) + '\n')
             halp.add_field(name='Cogs', value=groups_desc[0:len(groups_desc) - 1], inline=False)
             cmds_desc = ''
@@ -167,7 +167,7 @@ class ScoreSheetBot(commands.Cog):
                 for cmd in self.bot.walk_commands():
                     for grp in group:
                         if cmd.name == grp:
-                            if isinstance(cmd, discord.ext.commands.Group):
+                            if isinstance(cmd, discord.ext.commands.Group) and not cmd.hidden:
                                 cmds = []
                                 halp = discord.Embed(title=group[0] + ' Command Listing',
                                                      description=cmd.brief)
@@ -1063,13 +1063,23 @@ class ScoreSheetBot(commands.Cog):
 
     ''' ***********************************GAMBIT COMMANDS ************************************************'''
 
+    @commands.group(name='gambit', brief='Commands for gambit.', invoke_without_command=True)
+    async def gambit(self, ctx):
+        await self.help(ctx, 'gambit')
+
+
     @commands.command(**help_doc['coins'])
+    @gambit_channel
     @main_only
     async def coins(self, ctx: Context, member: Optional[discord.Member] = None):
         member = member or ctx.author
+        if not is_gambiter(ctx.author):
+            if not await join_gambit(ctx.author, self):
+                await ctx.send(f'{str(ctx.author)} isn\'t a gambiter and didn\'t join. (check your dms and try again)')
+                return
         await ctx.send(f'{str(member)} has {member_gcoins(member)} G-Coins.')
 
-    @commands.group(name='gamb', invoke_without_command=True)
+    @commands.group(name='gamb', invoke_without_command=True, hidden=True)
     @main_only
     @role_call([MINION, ADMIN])
     async def gamb(self, ctx: Context):
@@ -1174,23 +1184,26 @@ class ScoreSheetBot(commands.Cog):
         gambit_id = archive_gambit(win.name, loser, winning_bets, losing_bets)
         for member_id, amount, cr in all_bets():
             member = self.bot.get_user(member_id)
-            if cr == win.name:
-                final = amount + math.ceil(amount * ratio)
-                if final == 0:
-                    # Reset win
-                    final = 220
-                total = refund_member_gcoins(member, final)
-                await member.send(f'You won {final} G-Coins on your bet of {amount} on {cr} over {loser}! '
-                                  f'Congrats you now have {total} G-Coins!')
-            else:
-                total = member_gcoins(member)
-                await member.send(f'You lost {amount} G-Coins on your bet on {cr} over {win.name}.')
-                if total > 0:
-                    await member.send(f'You now have {total} coins remaining.')
+            try:
+                if cr == win.name:
+                    final = amount + math.ceil(amount * ratio)
+                    if final == 0:
+                        # Reset win
+                        final = 220
+                    total = refund_member_gcoins(member, final)
+                    await member.send(f'You won {final} G-Coins on your bet of {amount} on {cr} over {loser}! '
+                                      f'Congrats you now have {total} G-Coins!')
                 else:
-                    await member.send('You are all out of G-Coins, but worry not! If you place a 0 G-Coin bet'
-                                      ' when you are bankrupt, if you win, you get 220 G-Coins!')
-                final = -amount
+                    total = member_gcoins(member)
+                    final = -amount
+                    await member.send(f'You lost {amount} G-Coins on your bet on {cr} over {win.name}.')
+                    if total > 0:
+                        await member.send(f'You now have {total} coins remaining.')
+                    else:
+                        await member.send('You are all out of G-Coins, but worry not! If you place a 0 G-Coin bet'
+                                          ' when you are bankrupt, if you win, you get 220 G-Coins!')
+            except discord.errors.Forbidden:
+                await ctx.send(f'{str(member)} is not accepting dms.')
             archive_bet(member, final, gambit_id)
         cancel_gambit()
         await ctx.send(f'Gambit concluded! {win.name} beat {loser}, {winning_bets} G-Coins were placed on {win.name} '
@@ -1202,6 +1215,10 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @role_call([MINION, ADMIN])
     async def update(self, ctx):
+        cg = current_gambit()
+        if cg:
+            await update_gambit_message(cg, self)
+
         update_gambit_sheet()
 
 
