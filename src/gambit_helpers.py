@@ -9,8 +9,8 @@ from src.db_helpers import gambit_standings, past_gambits, past_bets
 def colnum_string(n):
     string = ""
     while n > 0:
-        n, remainder = divmod(n - 1, 26)
-        string = chr(65 + remainder) + string
+       n, remainder = divmod(n - 1, 26)
+    string = chr(65 + remainder) + string
     return string
 
 
@@ -19,7 +19,7 @@ def update_gambit_sheet():
         'https://www.googleapis.com/auth/drive',
         'https://www.googleapis.com/auth/drive.file'
     ]
-    file_name = '../client_key.json'
+    file_name = 'client_key.json'
     creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
     client = gspread.authorize(creds)
     sheet = client.open('Fake Gambit').sheet1
