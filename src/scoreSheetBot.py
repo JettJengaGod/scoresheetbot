@@ -1231,7 +1231,7 @@ class ScoreSheetBot(commands.Cog):
             return
         if cg.locked:
             await ctx.send(f'The gambit between {cg.team1} and {cg.team2} is locked as the battle has already started.'
-                           f'\nUse `,gamibt` to see the current odds.')
+                           f'\nUse `,odds` to see the current odds.')
             return
         if not is_gambiter(ctx.author):
             if not await join_gambit(ctx.author, self):
