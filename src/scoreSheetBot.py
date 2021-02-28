@@ -704,6 +704,28 @@ class ScoreSheetBot(commands.Cog):
             embed.add_field(name=emoji, value=f'{char[0]}', inline=True)
         await ctx.send(embed=embed)
 
+    @commands.command(**help_doc['history'])
+    @main_only
+    async def history(self, ctx, *, name: str = None):
+        if name:
+            member = member_lookup(name, self)
+
+        else:
+            member = ctx.author
+        embed = discord.Embed(title=f'Crew History for {str(member)}', color=member.color)
+        desc = []
+        current = member_crew_and_date(member)
+        if current:
+            desc.append(f'Current crew: {current[0]} Joined: {current[1].strftime("%m/%d/%Y")}')
+        past = member_crew_history(member)
+        desc.append('Past Crew              Joined            Left')
+        for cr_name, joined, left in past:
+            j = joined.strftime('%m/%d/%Y')
+            l = left.strftime('%m/%d/%Y')
+            desc.append(f'{cr_name}: {j}       {l}')
+        embed.description = '\n'.join(desc)
+        await send_long_embed(ctx, embed)
+
     @commands.command(**help_doc['crewstats'])
     @main_only
     async def crewstats(self, ctx, *, name: str = None):
@@ -976,8 +998,14 @@ class ScoreSheetBot(commands.Cog):
             of_user = self.cache.overflow_server.get_member(member.id)
             of_before = set(of_user.roles)
         before = set(member.roles)
+        if check_roles(member, [JOIN_CD]):
+            slot = mod_slot(user_crew, 1)
         await unflair(member, ctx.author, self)
         await response_message(ctx, f'Successfully unflaired {member.mention} from {user_crew.name}.')
+        if check_roles(member, [JOIN_CD]):
+            mod_slot(user_crew, 1)
+            left, total = slots(user_crew)
+            await ctx.send(f'{str(member)} was on 24h cooldown so {user_crew.name} gets back a slot ({left}/{total})')
         after = set(ctx.guild.get_member(member.id).roles)
         if user_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
@@ -1015,6 +1043,7 @@ class ScoreSheetBot(commands.Cog):
         if member.id == ctx.author.id and user_crew == flairing_crew.name:
             await response_message(ctx, f'Stop flairing yourself, stop flairing yourself.')
             return
+
         overflow_mem = discord.utils.get(self.cache.overflow_server.members, id=member.id)
         if flairing_crew.overflow and not overflow_mem:
             await self.cache.update(self)
@@ -1024,6 +1053,10 @@ class ScoreSheetBot(commands.Cog):
                                        f'{member.mention} is not in the overflow server and '
                                        f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
                 return
+
+        left, total = slots(flairing_crew)
+        if left <= 0:
+            await response_message(ctx, f'{flairing_crew.name} has no slots left ({left}/{total})')
         of_before, of_after = None, None
         if flairing_crew.overflow:
             of_user = self.cache.overflow_server.get_member(member.id)
@@ -1045,7 +1078,10 @@ class ScoreSheetBot(commands.Cog):
         except ValueError as ve:
             await response_message(ctx, str(ve))
             return
-        await response_message(ctx, f'Successfully flaired {member.mention} for {flairing_crew.name}.')
+        mod_slot(flairing_crew, -1)
+
+        await response_message(ctx, f'Successfully flaired {member.mention} for {flairing_crew.name}.\n'
+                                    f'{left - 1}/{total} remaining.')
 
         after = set(ctx.guild.get_member(member.id).roles)
         if flairing_crew.overflow:
@@ -1203,7 +1239,6 @@ class ScoreSheetBot(commands.Cog):
     @role_call([MINION, ADMIN])
     async def update(self, ctx):
         update_gambit_sheet()
-
 
     @commands.command(**help_doc['bet'])
     @gambit_channel
@@ -1686,7 +1721,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(hidden=True, **help_doc['flaircounts'])
     @role_call(STAFF_LIST)
-    async def flaircounts(self, ctx, long:Optional[str]):
+    async def flaircounts(self, ctx, long: Optional[str]):
         crews = list(self.cache.crews_by_name.values())
         flairs = crew_flairs()
         flair_list = []

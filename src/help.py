@@ -83,6 +83,7 @@ help_doc = dict(
     logo=HelpDoc(Categories.crews, 'Find the logo of a crew'),
     rankings=HelpDoc(Categories.crews, 'Rankings of all legacy crews in order'),
     crewstats=HelpDoc(Categories.crews, 'Stats for a crew or the crew of a player'),
+    history=HelpDoc(Categories.crews, 'Crew history of a member'),
     vod=HelpDoc(Categories.crews, 'Used for a streamer or admin to set the vod of a match', '', 'battle_id vod_url'),
     playerstats=HelpDoc(Categories.crews, 'Stats for a player'),
     battles=HelpDoc(Categories.crews, 'All battles that have been recorded with the bot'),

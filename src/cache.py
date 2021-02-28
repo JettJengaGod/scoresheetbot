@@ -151,7 +151,7 @@ class Cache:
             for pos, row in enumerate(qualifiers):
                 if row[0] in crews_by_name.keys():
                     crews_by_name[row[0]].merit = row[2]
-                    crews_by_name[row[0]].rank = f'Qualifier {row[7]}'
+                    crews_by_name[row[0]].rank = {row[7]}
                     crews_by_name[row[0]].ladder = f'({ranking}/{len(qualifiers) - 4})'
                     ranking += 1
                 elif row[0] and row[0] not in ('Pending Crew', 'Pending Unregistered Crew'):

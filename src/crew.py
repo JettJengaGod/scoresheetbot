@@ -10,7 +10,7 @@ class Crew:
     name: str
     abbr: str
     social: str = ''
-    rank: str = ''
+    rank: int = 0
     merit: int = 0
     member_count: int = 0
     ladder: str = ''
@@ -35,7 +35,7 @@ class Crew:
         if self.overflow:
             title += f' (Overflow) '
         if self.rank:
-            title += f' {self.rank}'
+            title += f'Qualifier {self.rank}'
         if self.wl:
             title += ' WATCHLISTED'
         description = [f'Tag: {self.abbr}\n', f'Total Members: {self.member_count}\n']

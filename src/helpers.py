@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
-    current_gambit, member_bet, member_gcoins, make_bet
+    current_gambit, member_bet, member_gcoins, make_bet, slots
 from .gambit import Gambit
 
 if TYPE_CHECKING:
@@ -830,3 +830,19 @@ def flair_bar_chart(flairs: List[Tuple[str, int]]):
     plt.xlabel('Crews')
     plt.ylabel('Flairs')
     plt.savefig('fl.png')
+
+
+def calc_total_slots(cr: Crew):
+    if cr.rank < RANK_CUTOFF:
+        base = 7
+        rollover_max = 3
+    else:
+        base = 6
+        rollover_max = 2
+    rollover, _ = slots(cr)
+    modifiers = [2, 1, 0, -1, -2]
+    modifer_loc = 0
+    while modifer_loc <= 4 and cr.member_count > SLOT_CUTOFFS:
+        modifer_loc += 1
+
+    return base + modifiers[modifer_loc] + min(rollover, rollover_max)
