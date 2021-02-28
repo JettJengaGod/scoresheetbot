@@ -62,8 +62,8 @@ class Crew:
             description.append(f'\nRecruitment frozen till: {self.freeze}')
         if self.verify:
             description.append('\nVerify required for flairing')
-        if False:
-            description.append(f'Flairing Slots: {self.remaining_slots}/{self.total_slots}')
+        if self.total_slots:
+            description.append(f'\nFlairing Slots: {self.remaining_slots}/{self.total_slots}')
         embed = discord.Embed(title=title, description=''.join(description), color=self.color)
         if self.icon:
             embed.set_thumbnail(url=self.icon)

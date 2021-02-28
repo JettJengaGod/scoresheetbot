@@ -998,8 +998,6 @@ class ScoreSheetBot(commands.Cog):
             of_user = self.cache.overflow_server.get_member(member.id)
             of_before = set(of_user.roles)
         before = set(member.roles)
-        if check_roles(member, [JOIN_CD]):
-            slot = mod_slot(user_crew, 1)
         await unflair(member, ctx.author, self)
         await response_message(ctx, f'Successfully unflaired {member.mention} from {user_crew.name}.')
         if check_roles(member, [JOIN_CD]):
@@ -1056,7 +1054,8 @@ class ScoreSheetBot(commands.Cog):
 
         left, total = slots(flairing_crew)
         if left <= 0:
-            await response_message(ctx, f'{flairing_crew.name} has no slots left ({left}/{total})')
+            await response_message(ctx, f'{flairing_crew.name} has no flairing slots left ({left}/{total})')
+            return
         of_before, of_after = None, None
         if flairing_crew.overflow:
             of_user = self.cache.overflow_server.get_member(member.id)
@@ -1081,7 +1080,7 @@ class ScoreSheetBot(commands.Cog):
         mod_slot(flairing_crew, -1)
 
         await response_message(ctx, f'Successfully flaired {member.mention} for {flairing_crew.name}.\n'
-                                    f'{left - 1}/{total} remaining.')
+                                    f'{left - 1}/{total} slots remaining.')
 
         after = set(ctx.guild.get_member(member.id).roles)
         if flairing_crew.overflow:
@@ -1392,6 +1391,71 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     async def po(self, ctx: Context):
         await ctx.send(embed=playoff_summary(self))
+
+    @commands.command(**help_doc['register'])
+    @main_only
+    @role_call(STAFF_LIST)
+    @flairing_required
+    async def register(self, ctx: Context, members: Greedy[discord.Member], new_crew: str = None):
+
+        await self.cache.update(self)
+        success = []
+        fail_not_overflow = []
+        fail_on_crew = []
+        flairing_crew = crew_lookup(new_crew, self)
+        for member in members:
+            try:
+                user_crew = crew(member, self)
+            except ValueError:
+                user_crew = None
+
+            if user_crew:
+                await response_message(ctx, f'{member.display_name} '
+                                            f'must be unflaired for their current crew before they can be flaired. ')
+                fail_on_crew.append(member)
+                continue
+            overflow_mem = discord.utils.get(self.cache.overflow_server.members, id=member.id)
+            if flairing_crew.overflow and not overflow_mem:
+                await response_message(ctx,
+                                       f'{member.mention} is not in the overflow server and '
+                                       f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
+                fail_not_overflow.append(member)
+                continue
+            of_before, of_after = None, None
+            if flairing_crew.overflow:
+                of_user = self.cache.overflow_server.get_member(member.id)
+                of_before = set(of_user.roles)
+            before = set(member.roles)
+            try:
+                await flair(member, flairing_crew, self, True, True)
+            except ValueError as ve:
+                await response_message(ctx, str(ve))
+                return
+
+            after = set(ctx.guild.get_member(member.id).roles)
+            if flairing_crew.overflow:
+                overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
+                of_after = set(overflow_server.get_member(member.id).roles)
+            await self.cache.channels.flair_log.send(
+                embed=role_change(before, after, ctx.author, member, of_before, of_after))
+            success.append(member)
+        desc = ['Successful flairs']
+        for s in success:
+            desc.append(f'{s.display_name}: {s.mention}')
+        if fail_not_overflow or fail_on_crew:
+            desc.append('Unsuccessful flairs')
+            if fail_not_overflow:
+                desc.append('Not in overflow:')
+                for s in fail_not_overflow:
+                    desc.append(f'{s.display_name}: {s.mention}')
+            if fail_on_crew:
+                desc.append('Already on a crew, needs to unflair')
+                for s in fail_on_crew:
+                    desc.append(f'{s.display_name}: {s.mention}')
+        embed = discord.Embed(title=f'Crew Reg for {flairing_crew.name}', description='\n'.join(desc),
+                              color=flairing_crew.color)
+        await send_long_embed(ctx, embed)
+        await send_long_embed(self.cache.channels.flair_log, embed)
 
     @commands.command(**help_doc['freeze'])
     @role_call(STAFF_LIST)
@@ -1718,6 +1782,23 @@ class ScoreSheetBot(commands.Cog):
         embed.add_field(name='stdev of size', value='{:.2f}'.format(crew_stdev(crews)))
         crew_bar_chart(crews)
         await ctx.send(embed=embed, file=discord.File('cr.png'))
+
+    @commands.command(hidden=True, **help_doc['slottotals'])
+    @role_call(STAFF_LIST)
+    async def slottotals(self, ctx):
+        crews = list(self.cache.crews_by_name.values())
+        desc = []
+        for cr in crews:
+            if cr.member_count == 0:
+                continue
+            total, base, modifer, rollover = calc_total_slots(cr)
+            if not total:
+                print(cr.name)
+            desc.append(f'{cr.name}: {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
+            total_slot_set(cr, total)
+
+        embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
+        await send_long_embed(ctx, embed)
 
     @commands.command(hidden=True, **help_doc['flaircounts'])
     @role_call(STAFF_LIST)
