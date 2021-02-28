@@ -15,7 +15,7 @@ CHARACTERS = {
     'dark_pit': ['dpit'],
     'dark_samus': ['damus', 'ds', 'darkus', 'dsamus'],
     'diddy_kong': ['diddy'],
-    'donkey_kong': ['dk'],
+    'donkey_kong': ['dk', 'monke', 'monkee'],
     'dr_mario': ['dr.mario', 'doc'],
     'duck_hunt': ['dh', 'dhd'],
     'falco': [],
