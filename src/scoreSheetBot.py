@@ -1818,6 +1818,7 @@ class ScoreSheetBot(commands.Cog):
                       f'{base} base slots\n' \
                       f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
+                      f'with an overall minimum of 5 slots\n' \
                       'For more information, refer to message link in #lead_announcements. ' \
                       'This bot will not be able to respond to any questions you have, so use #questions_feedback'
             crew_msg[cr.name] = message

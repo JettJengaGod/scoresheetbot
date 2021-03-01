@@ -35,7 +35,7 @@ class Crew:
         if self.overflow:
             title += f' (Overflow) '
         if self.rank:
-            title += f'Qualifier {self.rank}'
+            title += f' Qualifier {self.rank}'
         if self.wl:
             title += ' WATCHLISTED'
         description = [f'Tag: {self.abbr}\n', f'Total Members: {self.member_count}\n']
