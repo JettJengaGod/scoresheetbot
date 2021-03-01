@@ -269,6 +269,11 @@ def find_member_roles(member: discord.Member) -> List[str]:
     return everything
 
 
+def crew_id_from_crews(cr: Crew, cursor):
+    fr_id = crew_id_from_role_id(cr.role_id, cursor)
+    return fr_id if fr_id else crew_id_from_name(cr.name, cursor)
+
+
 def crew_id_from_name(name: str, cursor) -> int:
     find_crew = """SELECT id from crews where name = %s;"""
     cursor.execute(find_crew, (name,))
@@ -1473,6 +1478,122 @@ def crew_flairs() -> Dict[str, int]:
         conn.commit()
         cur.close()
 
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return cr
+
+
+def slots(cr: Crew) -> Tuple[int, int]:
+    both = """SELECT slotsleft, slotstotal FROM crews where id = %s;"""
+    conn = None
+    slot = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr.role_id, cur)
+        cur.execute(both, (cr_id,))
+        slot = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return slot
+
+
+def mod_slot(cr: Crew, change: int) -> int:
+    mod = """update crews set slotsleft = slotsleft + %s
+                where id = %s returning slotsleft;"""
+    conn = None
+    after = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr.role_id, cur)
+        cur.execute(mod, (change, cr_id))
+        after = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return after
+
+
+def total_slot_set(cr: Crew, total: int) -> None:
+    set = """update crews set slotsleft = %s, slotstotal = %s
+                where id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(cr, cur)
+        if not total or not cr_id:
+            print(cr.name)
+            return
+        cur.execute(set, (total, total, cr_id))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def member_crew_history(member: discord.Member) -> Tuple[Tuple[str, datetime.datetime, datetime.datetime]]:
+    history = """select crews.name, joined, leave
+                from crews, member_crews_history
+                    where crews.id = member_crews_history.crew_id
+                        and member_crews_history.member_id = %s
+                            order by joined;"""
+    conn = None
+    hist = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+
+        cur.execute(history, (member.id,))
+        hist = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return hist
+
+
+def member_crew_and_date(member: discord.Member) -> Tuple[str, datetime.datetime]:
+    current = """select crews.name, joined
+                from crews, current_member_crews
+                    where crews.id = current_member_crews.crew_id
+                        and current_member_crews.member_id = %s
+                            order by joined;"""
+    conn = None
+    cr = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+
+        cur.execute(current, (member.id,))
+        cr = cur.fetchone()
+        conn.commit()
+        cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
         log_error_and_reraise(error)
     finally:

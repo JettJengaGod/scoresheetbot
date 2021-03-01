@@ -135,3 +135,7 @@ class PlayoffType(Enum):
     LEGACY = 2
     EXTREME = 3
     TEMPERED = 4
+
+
+SLOT_CUTOFFS = [11, 18, 25, 33, 40]
+RANK_CUTOFF = 4

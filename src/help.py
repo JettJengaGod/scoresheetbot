@@ -83,6 +83,7 @@ help_doc = dict(
     logo=HelpDoc(Categories.crews, 'Find the logo of a crew'),
     rankings=HelpDoc(Categories.crews, 'Rankings of all legacy crews in order'),
     crewstats=HelpDoc(Categories.crews, 'Stats for a crew or the crew of a player'),
+    history=HelpDoc(Categories.crews, 'Crew history of a member'),
     vod=HelpDoc(Categories.crews, 'Used for a streamer or admin to set the vod of a match', '', 'battle_id vod_url'),
     playerstats=HelpDoc(Categories.crews, 'Stats for a player'),
     battles=HelpDoc(Categories.crews, 'All battles that have been recorded with the bot'),
@@ -129,8 +130,13 @@ help_doc = dict(
     make_lead=HelpDoc(Categories.staff, 'Makes a user a leader on their crew', '', 'User'),
     bigcrew=HelpDoc(Categories.staff, 'Returns all the crews that are bigger than x, default 40', '', 'Crew min'),
     crnumbers=HelpDoc(Categories.staff, 'Helpful numbers for crew analysis'),
+    slottotals=HelpDoc(Categories.staff, 'Prints all the max slots for crews'),
     flaircounts=HelpDoc(Categories.staff, 'Helpful numbers for flair analysis'),
     pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),
+    register=HelpDoc(Categories.staff,
+                     'Flairs multiple people for a new crew'
+                     'Only use spaces between members, and mention mention each one', '',
+                     'Member1 Member2 Member3 Crew'),
     coins=HelpDoc(Categories.gambit, 'Shows your gcoins'),
     bet=HelpDoc(Categories.gambit, 'Bets an amount on a crew, only valid while a gambit is active.', '', 'amount crew'),
     odds=HelpDoc(Categories.gambit, 'Tells you the current odds for the gambit.')
