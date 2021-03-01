@@ -1067,7 +1067,6 @@ class ScoreSheetBot(commands.Cog):
     async def gambit(self, ctx):
         await self.help(ctx, 'gambit')
 
-
     @commands.command(**help_doc['coins'])
     @gambit_channel
     @main_only
@@ -1182,8 +1181,11 @@ class ScoreSheetBot(commands.Cog):
         else:
             ratio = losing_bets / winning_bets
         gambit_id = archive_gambit(win.name, loser, winning_bets, losing_bets)
+        top_win, top_loss = (0, None), (0, None)
         for member_id, amount, cr in all_bets():
             member = self.bot.get_user(member_id)
+            if not member:
+                continue
             try:
                 if cr == win.name:
                     final = amount + math.ceil(amount * ratio)
@@ -1191,11 +1193,17 @@ class ScoreSheetBot(commands.Cog):
                         # Reset win
                         final = 220
                     total = refund_member_gcoins(member, final)
+                    if final > top_win[0]:
+                        top_win = [final, str(member)]
+
                     await member.send(f'You won {final} G-Coins on your bet of {amount} on {cr} over {loser}! '
                                       f'Congrats you now have {total} G-Coins!')
                 else:
                     total = member_gcoins(member)
                     final = -amount
+
+                    if final > top_loss[0]:
+                        top_loss = [final, str(member)]
                     await member.send(f'You lost {amount} G-Coins on your bet on {cr} over {win.name}.')
                     if total > 0:
                         await member.send(f'You now have {total} coins remaining.')
@@ -1220,7 +1228,6 @@ class ScoreSheetBot(commands.Cog):
             await update_gambit_message(cg, self)
 
         update_gambit_sheet()
-
 
     @commands.command(**help_doc['bet'])
     @gambit_channel
@@ -1703,7 +1710,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(hidden=True, **help_doc['flaircounts'])
     @role_call(STAFF_LIST)
-    async def flaircounts(self, ctx, long:Optional[str]):
+    async def flaircounts(self, ctx, long: Optional[str]):
         crews = list(self.cache.crews_by_name.values())
         flairs = crew_flairs()
         flair_list = []
