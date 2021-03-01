@@ -1061,6 +1061,8 @@ class ScoreSheetBot(commands.Cog):
         if left <= 0:
             await response_message(ctx, f'{flairing_crew.name} has no flairing slots left ({left}/{total})')
             return
+
+
         of_before, of_after = None, None
         if flairing_crew.overflow:
             of_user = self.cache.overflow_server.get_member(member.id)
@@ -1083,7 +1085,8 @@ class ScoreSheetBot(commands.Cog):
             await response_message(ctx, str(ve))
             return
         await response_message(ctx, f'Successfully flaired {member.mention} for {flairing_crew.name}.')
-
+        mod_slot(flairing_crew, -1)
+        await ctx.send(f'{flairing_crew.name} now has ({left-1}/{total}) slots.')
         after = set(ctx.guild.get_member(member.id).roles)
         if flairing_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
