@@ -1001,9 +1001,15 @@ class ScoreSheetBot(commands.Cog):
         await unflair(member, ctx.author, self)
         await response_message(ctx, f'Successfully unflaired {member.mention} from {user_crew.name}.')
         if check_roles(member, [JOIN_CD]):
-            mod_slot(user_crew, 1)
             left, total = slots(user_crew)
-            await ctx.send(f'{str(member)} was on 24h cooldown so {user_crew.name} gets back a slot ({left}/{total})')
+            if left < total:
+                mod_slot(user_crew, 1)
+                left, total = slots(user_crew)
+                await ctx.send(
+                    f'{str(member)} was on 24h cooldown so {user_crew.name} gets back a slot ({left}/{total})')
+            else:
+                await ctx.send(
+                    f'This would normally give {user_crew.name} a slot back, but they are at the max of {total} already.')
         after = set(ctx.guild.get_member(member.id).roles)
         if user_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
@@ -1788,14 +1794,34 @@ class ScoreSheetBot(commands.Cog):
     async def slottotals(self, ctx):
         crews = list(self.cache.crews_by_name.values())
         desc = []
+        crew_msg = {}
         for cr in crews:
             if cr.member_count == 0:
                 continue
             total, base, modifer, rollover = calc_total_slots(cr)
-            if not total:
-                print(cr.name)
             desc.append(f'{cr.name}: {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
             total_slot_set(cr, total)
+            message = f'{cr.name} has {total} flairing slots this month:\n' \
+                      f'{base} base slots\n' \
+                      f'{modifer} from size modifier\n' \
+                      f'{rollover} rollover slots\n' \
+                      'For more information, refer to message link in #lead_announcements. ' \
+                      'This bot will not be able to respond to any questions you have, so use #questions_feedback'
+            crew_msg[cr.name] = message
+
+        for member in self.cache.scs.members:
+            if self.cache.roles.leader in member.roles:
+                msg = ''
+                try:
+                    cr = crew(member, self)
+                    msg = crew_msg[cr]
+                except ValueError:
+                    await ctx.send(f'{str(member)} is a leader with no crew.')
+                if msg:
+                    try:
+                        await member.send(msg)
+                    except discord.errors.Forbidden:
+                        await ctx.send(f'{str(member)} is not accepting dms.')
 
         embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
