@@ -1074,13 +1074,9 @@ class ScoreSheetBot(commands.Cog):
             await response_message(ctx, f'{str(member)} is already flaired for {user_crew}!')
             return
         if user_crew:
-            if author_pl == 3:
-                await unflair(member, ctx.author, self)
-                await response_message(ctx, f'Unflaired {member.mention} from {user_crew}.')
-            else:
-                await response_message(ctx, f'{member.display_name} '
-                                            f'must be unflaired for their current crew before they can be flaired. ')
-                return
+            await response_message(ctx, f'{member.display_name} '
+                                        f'must be unflaired for their current crew before they can be flaired. ')
+            return
         try:
             await flair(member, flairing_crew, self, check_roles(ctx.author, STAFF_LIST))
         except ValueError as ve:
@@ -1807,6 +1803,22 @@ class ScoreSheetBot(commands.Cog):
         crew_bar_chart(crews)
         await ctx.send(embed=embed, file=discord.File('cr.png'))
 
+    @commands.command(**help_doc['crew'])
+    @role_call(STAFF_LIST)
+    @main_only
+    async def slots(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        await ctx.send(calc_total_slots(actual_crew))
+
     @commands.command(hidden=True, **help_doc['slottotals'])
     @role_call(STAFF_LIST)
     async def slottotals(self, ctx):
@@ -1828,19 +1840,19 @@ class ScoreSheetBot(commands.Cog):
                       'This bot will not be able to respond to any questions you have, so use #questions_feedback'
             crew_msg[cr.name] = message
 
-        for member in self.cache.scs.members:
-            if self.cache.roles.leader in member.roles:
-                msg = ''
-                try:
-                    cr = crew(member, self)
-                    msg = crew_msg[cr]
-                except ValueError:
-                    await ctx.send(f'{str(member)} is a leader with no crew.')
-                if msg:
-                    try:
-                        await member.send(msg)
-                    except discord.errors.Forbidden:
-                        await ctx.send(f'{str(member)} is not accepting dms.')
+        # for member in self.cache.scs.members:
+        #     if self.cache.roles.leader in member.roles:
+        #         msg = ''
+        #         try:
+        #             cr = crew(member, self)
+        #             msg = crew_msg[cr]
+        #         except ValueError:
+        #             await ctx.send(f'{str(member)} is a leader with no crew.')
+        #         if msg:
+        #             try:
+        #                 await member.send(msg)
+        #             except discord.errors.Forbidden:
+        #                 await ctx.send(f'{str(member)} is not accepting dms.')
 
         embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
