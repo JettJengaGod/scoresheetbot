@@ -9,7 +9,7 @@ import numpy as np
 from dateutil.relativedelta import relativedelta
 from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
-    current_gambit, member_bet, member_gcoins, make_bet
+    current_gambit, member_bet, member_gcoins, make_bet,slots
 from gambit import Gambit
 
 if TYPE_CHECKING:
@@ -270,7 +270,8 @@ def add_join_cd(member: discord.Member, file: TextIO):
     file.write(f'{member.id} {time.time() + COOLDOWN_TIME_SECONDS}\n')
 
 
-async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot', staff: bool = False):
+async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot', staff: bool = False,
+                reg: Optional[bool] = False):
     if check_roles(member, [TRUE_LOCKED]):
         raise ValueError(f'{member.mention} cannot be flaired because they are {TRUE_LOCKED}.')
 
@@ -300,8 +301,9 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
         flairing_info = bot.cache.channels.flairing_info
         await flairing_info.send(f'{pepper.mention} {member.mention} is {TRUE_LOCKED}.')
-    await member.add_roles(bot.cache.roles.join_cd)
-    await member.add_roles(bot.cache.roles.playoff)
+    if not reg:
+        await member.add_roles(bot.cache.roles.join_cd)
+        await member.add_roles(bot.cache.roles.playoff)
 
 
 async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreSheetBot'):
@@ -520,8 +522,8 @@ async def cache_process(bot: 'ScoreSheetBot'):
         await bot.cache.channels.recache_logs.send('Starting recache.')
 
     await bot.cache.update(bot)
+    crew_update(bot)
     if os.getenv('VERSION') == 'PROD':
-        crew_update(bot)
         await handle_unfreeze(bot)
         if bot.cache.scs:
             await overflow_anomalies(bot)
@@ -832,3 +834,25 @@ def flair_bar_chart(flairs: List[Tuple[str, int]]):
     plt.xlabel('Crews')
     plt.ylabel('Flairs')
     plt.savefig('fl.png')
+
+
+def calc_total_slots(cr: Crew):
+    if cr.rank < RANK_CUTOFF:
+        base = 7
+        rollover_max = 3
+    else:
+        base = 6
+        rollover_max = 2
+    sl = slots(cr)
+    if sl:
+        rollover = sl[0]
+    else:
+        rollover = 0
+    modifiers = [2, 1, 0, -1, -2]
+    modifer_loc = 0
+    while modifer_loc < 4 and cr.member_count > SLOT_CUTOFFS[modifer_loc]:
+        modifer_loc += 1
+
+    total = base + modifiers[modifer_loc] + min(rollover, rollover_max)
+    total = max(total, 5)
+    return total, base, modifiers[modifer_loc], min(rollover_max, rollover)
