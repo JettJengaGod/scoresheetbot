@@ -79,6 +79,7 @@ help_doc = dict(
                        'CommandName'),
     countdown=HelpDoc(Categories.cb, 'Counts down for x seconds (defaults to 3).'),
     rank=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s rank'),
+    slots=HelpDoc(Categories.crews, 'Find out the remaining slots of a crew'),
     merit=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s merit'),
     logo=HelpDoc(Categories.crews, 'Find the logo of a crew'),
     rankings=HelpDoc(Categories.crews, 'Rankings of all legacy crews in order'),

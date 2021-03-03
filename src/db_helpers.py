@@ -1451,7 +1451,7 @@ def crew_flairs() -> Dict[str, int]:
                 group by crews.name, crews.id
                     order by total desc;"""
     old_flairs = """
-    select count(distinct(member_id)) as total, crews.name, crews.id
+    select count(distinct(member_id)) as total, crews.name
         from member_crews_history, crews
             where crew_id = crews.id and DATE_PART('day', current_timestamp - joined) <30
             and member_id != 775586622241505281
@@ -1470,7 +1470,7 @@ def crew_flairs() -> Dict[str, int]:
 
         cur.execute(old_flairs)
         old = cur.fetchall()
-        for name, count in old:
+        for count, name in old:
             if name in cr:
                 cr[name] += count
             else:
@@ -1506,6 +1506,25 @@ def slots(cr: Crew) -> Tuple[int, int]:
             conn.close()
     return slot
 
+def extra_slots(cr: Crew) -> Tuple[int, int, int]:
+    both = """SELECT slotsleft, slotstotal, unflair FROM crews where id = %s;"""
+    conn = None
+    slot = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr.role_id, cur)
+        cur.execute(both, (cr_id,))
+        slot = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return slot
 
 def mod_slot(cr: Crew, change: int) -> int:
     mod = """update crews set slotsleft = slotsleft + %s
@@ -1600,3 +1619,54 @@ def member_crew_and_date(member: discord.Member) -> Tuple[str, datetime.datetime
         if conn is not None:
             conn.close()
     return cr
+
+
+def record_flair(member: discord.Member, crew: Crew):
+    record = """INSERT into flairs (member_id, crew_id, joined)
+     values(%s, %s, current_timestamp) ON CONFLICT DO NOTHING;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(record, (member.id, cr_id))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def record_unflair(member: discord.Member, crew: Crew, join_cd: bool) -> Tuple[int, int, int]:
+    record = """INSERT into unflairs (member_id, crew_id, leave_time)
+     values(%s, %s, current_timestamp);"""
+    cr_record = """update crews set unflair = unflair + 1 where id = %s returning unflair;"""
+    reset = """update crews set unflair = 0, slotsleft = slotsleft+1  where id = %s;"""
+    slot = """SELECT slotsleft, slotstotal FROM crews where id = %s;"""
+    conn = None
+    unflairs, remaining, total = 0, 0, 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(record, (member.id, cr_id))
+        if not join_cd:
+            cur.execute(cr_record, (cr_id,))
+            unflairs = cur.fetchone()[0]
+            if unflairs == 3:
+                cur.execute(reset, (cr_id,))
+        cur.execute(slot, (cr_id,))
+        remaining, total = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return unflairs, remaining, total
