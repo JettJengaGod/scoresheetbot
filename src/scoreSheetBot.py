@@ -1295,6 +1295,7 @@ class ScoreSheetBot(commands.Cog):
         await self.help(ctx, 'staff')
 
     @commands.command(**help_doc['setslots'])
+    @role_call(STAFF_LIST)
     @main_only
     async def setslots(self, ctx, num: int, *, name: str = None):
         if name:
