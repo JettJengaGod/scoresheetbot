@@ -108,6 +108,7 @@ help_doc = dict(
     disablelist=HelpDoc(Categories.misc, 'List of channels disabled for jettbot'),
 
     pingrole=HelpDoc(Categories.staff, 'Same As listroles, but pings instead', '', 'role'),
+    setslots=HelpDoc(Categories.staff, 'Sets the slots for a crew to a specific number', '', 'number Crew'),
     cooldown=HelpDoc(Categories.staff,
                      'Finds the current cooldown for each of recently flaired users and fixes any that might have been missed'),
     non_crew=HelpDoc(Categories.staff, 'Returns a list of all non crew roles (should be small)'),

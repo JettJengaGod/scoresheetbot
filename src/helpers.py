@@ -762,7 +762,7 @@ async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot')
     if not await wait_for_reaction_on_message(YES, NO, msg, member, bot.bot):
         await ctx.send(f'{member.mention}: Your bet timed out or was canceled! You need to respond within 30 seconds!')
         return False
-    validate_bet(member,on, amount, bot)
+    validate_bet(member, on, amount, bot)
     final = make_bet(member, on, amount)
     if amount == 0:
         await ctx.send(
@@ -837,7 +837,7 @@ def flair_bar_chart(flairs: List[Tuple[str, int]]):
     plt.savefig('fl.png')
 
 
-def calc_total_slots(cr: Crew):
+def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
     if cr.rank < RANK_CUTOFF:
         base = 7
         rollover_max = 3
@@ -857,3 +857,13 @@ def calc_total_slots(cr: Crew):
     total = base + modifiers[modifer_loc] + min(rollover, rollover_max)
     total = max(total, 5)
     return total, base, modifiers[modifer_loc], min(rollover_max, rollover)
+
+
+def calc_reg_slots(members: int) -> int:
+    base = 7
+    modifiers = [2, 1, 0, -1, -2]
+    modifer_loc = 0
+    while modifer_loc < 4 and members > SLOT_CUTOFFS[modifer_loc]:
+        modifer_loc += 1
+
+    return base + modifiers[modifer_loc]

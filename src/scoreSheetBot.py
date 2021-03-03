@@ -1294,6 +1294,22 @@ class ScoreSheetBot(commands.Cog):
     async def staff(self, ctx):
         await self.help(ctx, 'staff')
 
+    @commands.command(**help_doc['setslots'])
+    @main_only
+    async def setslots(self, ctx, num: int, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        new = cur_slot_set(actual_crew, num)
+        await ctx.send(f'Set {actual_crew.name} slots to {new}.')
+
     @commands.command(**help_doc['cooldown'], hidden=True)
     @role_call(STAFF_LIST)
     async def cooldown(self, ctx):
@@ -1470,6 +1486,12 @@ class ScoreSheetBot(commands.Cog):
                 desc.append('Already on a crew, needs to unflair')
                 for s in fail_on_crew:
                     desc.append(f'{s.display_name}: {s.mention}')
+        _, total = slots(flairing_crew)
+        if total == 0:
+            calced = calc_reg_slots(len(members))
+            total_slot_set(flairing_crew, calced)
+            desc.append(f'Initiated with {calced} slots.')
+
         embed = discord.Embed(title=f'Crew Reg for {flairing_crew.name}', description='\n'.join(desc),
                               color=flairing_crew.color)
         await send_long_embed(ctx, embed)
