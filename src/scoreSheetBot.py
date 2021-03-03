@@ -1826,7 +1826,6 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(embed=embed, file=discord.File('cr.png'))
 
     @commands.command(**help_doc['slots'])
-    @role_call(STAFF_LIST)
     @main_only
     async def slots(self, ctx, *, name: str = None):
         if name:
