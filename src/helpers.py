@@ -854,8 +854,9 @@ def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
     while modifer_loc < 4 and cr.member_count > SLOT_CUTOFFS[modifer_loc]:
         modifer_loc += 1
 
-    total = base + modifiers[modifer_loc] + min(rollover, rollover_max)
-    total = max(total, 5)
+    total = base + modifiers[modifer_loc]
+    total = max(total, 5) + min(rollover, rollover_max)
+
     return total, base, modifiers[modifer_loc], min(rollover_max, rollover)
 
 
