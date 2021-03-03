@@ -79,6 +79,7 @@ help_doc = dict(
                        'CommandName'),
     countdown=HelpDoc(Categories.cb, 'Counts down for x seconds (defaults to 3).'),
     rank=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s rank'),
+    slots=HelpDoc(Categories.crews, 'Find out the remaining slots of a crew'),
     merit=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s merit'),
     logo=HelpDoc(Categories.crews, 'Find the logo of a crew'),
     rankings=HelpDoc(Categories.crews, 'Rankings of all legacy crews in order'),
@@ -107,6 +108,7 @@ help_doc = dict(
     disablelist=HelpDoc(Categories.misc, 'List of channels disabled for jettbot'),
 
     pingrole=HelpDoc(Categories.staff, 'Same As listroles, but pings instead', '', 'role'),
+    setslots=HelpDoc(Categories.staff, 'Sets the slots for a crew to a specific number', '', 'number Crew'),
     cooldown=HelpDoc(Categories.staff,
                      'Finds the current cooldown for each of recently flaired users and fixes any that might have been missed'),
     non_crew=HelpDoc(Categories.staff, 'Returns a list of all non crew roles (should be small)'),

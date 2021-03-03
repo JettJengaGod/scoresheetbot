@@ -1003,15 +1003,16 @@ class ScoreSheetBot(commands.Cog):
         await unflair(member, ctx.author, self)
         await response_message(ctx, f'Successfully unflaired {member.mention} from {user_crew.name}.')
         if check_roles(member, [JOIN_CD]):
-            left, total = slots(user_crew)
-            if left < total:
-                mod_slot(user_crew, 1)
-                left, total = slots(user_crew)
-                await ctx.send(
-                    f'{str(member)} was on 24h cooldown so {user_crew.name} gets back a slot ({left}/{total})')
+            mod_slot(user_crew, 1)
+            unflairs, left, total = record_unflair(member, user_crew, True)
+            await ctx.send(
+                f'{str(member)} was on 24h cooldown so {user_crew.name} gets back a slot ({left}/{total})')
+        else:
+            unflairs, remaining, total = record_unflair(member, user_crew, False)
+            if unflairs == 3:
+                await ctx.send(f'{user_crew.name} got a flair slot back for 3 unflairs. {remaining}/{total} left.')
             else:
-                await ctx.send(
-                    f'This would normally give {user_crew.name} a slot back, but they are at the max of {total} already.')
+                await ctx.send(f'{unflairs}/3 unflairs for returning a slot.')
         after = set(ctx.guild.get_member(member.id).roles)
         if user_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
@@ -1064,7 +1065,6 @@ class ScoreSheetBot(commands.Cog):
             await response_message(ctx, f'{flairing_crew.name} has no flairing slots left ({left}/{total})')
             return
 
-
         of_before, of_after = None, None
         if flairing_crew.overflow:
             of_user = self.cache.overflow_server.get_member(member.id)
@@ -1084,7 +1084,8 @@ class ScoreSheetBot(commands.Cog):
             return
         await response_message(ctx, f'Successfully flaired {member.mention} for {flairing_crew.name}.')
         mod_slot(flairing_crew, -1)
-        await ctx.send(f'{flairing_crew.name} now has ({left-1}/{total}) slots.')
+        record_flair(member, flairing_crew)
+        await ctx.send(f'{flairing_crew.name} now has ({left - 1}/{total}) slots.')
         after = set(ctx.guild.get_member(member.id).roles)
         if flairing_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
@@ -1258,7 +1259,6 @@ class ScoreSheetBot(commands.Cog):
 
         update_gambit_sheet()
 
-
     @commands.command(**help_doc['bet'])
     @gambit_channel
     async def bet(self, ctx: Context, amount: int, *, team: str):
@@ -1295,6 +1295,22 @@ class ScoreSheetBot(commands.Cog):
     @commands.group(name='staff', brief='Commands for staff', invoke_without_command=True)
     async def staff(self, ctx):
         await self.help(ctx, 'staff')
+
+    @commands.command(**help_doc['setslots'])
+    @main_only
+    async def setslots(self, ctx, num: int, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        new = cur_slot_set(actual_crew, num)
+        await ctx.send(f'Set {actual_crew.name} slots to {new}.')
 
     @commands.command(**help_doc['cooldown'], hidden=True)
     @role_call(STAFF_LIST)
@@ -1472,6 +1488,12 @@ class ScoreSheetBot(commands.Cog):
                 desc.append('Already on a crew, needs to unflair')
                 for s in fail_on_crew:
                     desc.append(f'{s.display_name}: {s.mention}')
+        _, total = slots(flairing_crew)
+        if total == 0:
+            calced = calc_reg_slots(len(members))
+            total_slot_set(flairing_crew, calced)
+            desc.append(f'Initiated with {calced} slots.')
+
         embed = discord.Embed(title=f'Crew Reg for {flairing_crew.name}', description='\n'.join(desc),
                               color=flairing_crew.color)
         await send_long_embed(ctx, embed)
@@ -1803,7 +1825,7 @@ class ScoreSheetBot(commands.Cog):
         crew_bar_chart(crews)
         await ctx.send(embed=embed, file=discord.File('cr.png'))
 
-    @commands.command(**help_doc['crew'])
+    @commands.command(**help_doc['slots'])
     @role_call(STAFF_LIST)
     @main_only
     async def slots(self, ctx, *, name: str = None):
@@ -1817,7 +1839,8 @@ class ScoreSheetBot(commands.Cog):
         else:
             actual_crew = crew_lookup(crew(ctx.author, self), self)
             await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
-        await ctx.send(calc_total_slots(actual_crew))
+        left, total, unflairs = extra_slots(actual_crew)
+        await ctx.send(f'{actual_crew.name} has a ({left}/{total} slots) and {unflairs}/3 unflairs till a new slot.')
 
     @commands.command(hidden=True, **help_doc['slottotals'])
     @role_call(STAFF_LIST)
