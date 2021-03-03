@@ -1462,6 +1462,7 @@ class ScoreSheetBot(commands.Cog):
             before = set(member.roles)
             try:
                 await flair(member, flairing_crew, self, True, True)
+                record_flair(member, flairing_crew)
             except ValueError as ve:
                 await response_message(ctx, str(ve))
                 return
