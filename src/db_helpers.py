@@ -1009,7 +1009,7 @@ def command_lookup(command_name: int) -> Tuple[str, bool, int]:
     return cmd
 
 
-def increment_command_used(command_name: int):
+def increment_command_used(command_name: str):
     increment = """ Update commands
                         set called = called + 1
                         where cname = %s;"""

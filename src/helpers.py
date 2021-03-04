@@ -736,27 +736,29 @@ def validate_bet(member: discord.Member, on: Crew, amount: int, bot: 'ScoreSheet
             f'{member.mention} is on {member_crew}, a crew competing in the gambit and cannot participate.')
 
     current = member_gcoins(member)
-    if current == 0 and amount > current:
-        raise ValueError(f'{member.mention} since you have 0 G-Coins left, bet 0 on either team to win back in..')
+    team, bet_amount = member_bet(member)
+    if current == 0 and not team:
+        return
     if amount > current:
         raise ValueError(f'{member.mention} only has {current} and cannot bet {amount}.')
-    team, bet_amount = member_bet(member)
     if team:
         if on.name != team:
             raise ValueError(f'{member.mention} already has a bet on {team} can\'t also bet on {on.name}')
-    if amount == 0 and current == 0 and not team:
-        return
+
     if amount <= 0:
         raise ValueError('You must bet a positive amount!')
 
 
 async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot') -> bool:
     member = ctx.author
+    current = member_gcoins(member)
     team, bet_amount = member_bet(member)
     if team:
         msg = await ctx.send(f'{str(member)} has {bet_amount} already on'
                              f' {team} do you want to increase that to {bet_amount + amount}?')
     else:
+        if current == 0:
+            amount = 0
         msg = await ctx.send(f'{member.mention} really bet {amount} on {on.name}?')
     if not await wait_for_reaction_on_message(YES, NO, msg, member, bot.bot):
         await ctx.send(f'{member.mention}: Your bet timed out or was canceled! You need to respond within 30 seconds!')
@@ -779,19 +781,22 @@ async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot')
 
 async def update_gambit_message(gambit: Gambit, bot: 'ScoreSheetBot'):
     message = await bot.gambit_message(gambit.message_id)
+    if not message:
+        return
     crew1 = crew_lookup(gambit.team1, bot)
     crew2 = crew_lookup(gambit.team2, bot)
 
     await message.edit(embed=gambit.embed(crew1.abbr, crew2.abbr))
 
 
-async def update_finished_gambit(gambit: Gambit, winner: int, bot: 'ScoreSheetBot'):
+async def update_finished_gambit(gambit: Gambit, winner: int, bot: 'ScoreSheetBot', top_win, top_loss):
     message = await bot.gambit_message(gambit.message_id)
-    await message.delete()
+    if message:
+        await message.delete()
     crew1 = crew_lookup(gambit.team1, bot)
     crew2 = crew_lookup(gambit.team2, bot)
     await bot.cache.channels.gambit_announce.send(
-        embed=gambit.finished_embed(crew1.abbr, crew2.abbr, winner))
+        embed=gambit.finished_embed(crew1.abbr, crew2.abbr, winner, top_win, top_loss))
 
 
 def crew_avg(crews: List[Crew]) -> float:
