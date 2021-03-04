@@ -42,8 +42,11 @@ class ScoreSheetBot(commands.Cog):
 
     async def gambit_message(self, msg_id: int) -> discord.Message:
         if not self._gambit_message:
-            msg = await self.cache.channels.gambit_announce.fetch_message(msg_id)
-            self._gambit_message = msg
+            try:
+                msg = await self.cache.channels.gambit_announce.fetch_message(msg_id)
+                self._gambit_message = msg
+            except discord.errors.NotFound:
+                return None
         return self._gambit_message
 
     async def _battle_crew(self, ctx: Context, user: discord.Member) -> Optional[str]:
