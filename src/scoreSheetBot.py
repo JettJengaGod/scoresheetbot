@@ -41,10 +41,6 @@ class ScoreSheetBot(commands.Cog):
             return None
 
     async def gambit_message(self, msg_id: int) -> discord.Message:
-        # tmp = self.cache.channels.gambit_announce.get_partial_message(msg_id)
-        # if tmp:
-        #     self._gambit_message = tmp
-        #     return self._gambit_message
         if not self._gambit_message:
             msg = await self.cache.channels.gambit_announce.fetch_message(msg_id)
             self._gambit_message = msg
@@ -712,6 +708,9 @@ class ScoreSheetBot(commands.Cog):
 
         else:
             member = ctx.author
+        if member.id == 775586622241505281:
+            await ctx.send('Don\'t use EvilJett for this')
+            return
         embed = discord.Embed(title=f'Crew History for {str(member)}', color=member.color)
         desc = []
         current = member_crew_and_date(member)
@@ -1139,7 +1138,7 @@ class ScoreSheetBot(commands.Cog):
     @gamb.command()
     @main_only
     @role_call([MINION, ADMIN])
-    async def close(self, ctx: Context):
+    async def close(self, ctx: Context, stream: Optional[str] = ''):
         cg = current_gambit()
         if not cg:
             await response_message(ctx, f'Gambit not started, please use `,gamb start`')
@@ -1154,7 +1153,13 @@ class ScoreSheetBot(commands.Cog):
             await response_message(ctx, f'Gambit between {cg.team1} and {cg.team2} unlocked by {ctx.author.mention}.')
         else:
             lock_gambit(True)
+            cg = current_gambit()
+            if self._gambit_message:
+                await self._gambit_message.delete()
             await response_message(ctx, f'Gambit between {cg.team1} and {cg.team2} locked by {ctx.author.mention}.')
+            await self.cache.channels.gambit_announce.send(
+                f' {cg.team1} vs {cg.team2} has started! {stream}',
+                embed=cg.embed(crew_lookup(cg.team1, self).abbr, crew_lookup(cg.team2, self).abbr))
 
     @gamb.command()
     @main_only
@@ -1244,7 +1249,7 @@ class ScoreSheetBot(commands.Cog):
         cancel_gambit()
         await ctx.send(f'Gambit concluded! {win.name} beat {loser}, {winning_bets} G-Coins were placed on {win.name} '
                        f'and {losing_bets} G-Coins were placed on {loser}.')
-        await update_finished_gambit(cg, winner, self)
+        await update_finished_gambit(cg, winner, self, top_win, top_loss)
         update_gambit_sheet()
 
     @gamb.command()
@@ -1259,8 +1264,19 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['bet'])
     @gambit_channel
-    async def bet(self, ctx: Context, amount: int, *, team: str):
+    async def bet(self, ctx: Context, *, everything: str):
         cg = current_gambit()
+        split = everything.split()
+        if split[0].isdigit():
+            team = ' '.join(split[1:])
+            amount = int(split[0])
+        elif split[-1].isdigit():
+            team = ' '.join(split[:-1])
+            amount = int(split[-1])
+        else:
+            await response_message(ctx, f'{everything} needs to start or end with a bet amount.')
+            return
+
         if not cg:
             await ctx.send('No gambit is currently running, please wait for one to start before betting.')
             return
@@ -1839,7 +1855,7 @@ class ScoreSheetBot(commands.Cog):
             actual_crew = crew_lookup(crew(ctx.author, self), self)
             await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
         left, total, unflairs = extra_slots(actual_crew)
-        await ctx.send(f'{actual_crew.name} has a ({left}/{total} slots) and {unflairs}/3 unflairs till a new slot.')
+        await ctx.send(f'{actual_crew.name} has ({left}/{total} slots) and {unflairs}/3 unflairs till a new slot.')
 
     @commands.command(hidden=True, **help_doc['slottotals'])
     @role_call(STAFF_LIST)

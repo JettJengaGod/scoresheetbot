@@ -780,19 +780,22 @@ async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot')
 
 async def update_gambit_message(gambit: Gambit, bot: 'ScoreSheetBot'):
     message = await bot.gambit_message(gambit.message_id)
+    if not message:
+        return
     crew1 = crew_lookup(gambit.team1, bot)
     crew2 = crew_lookup(gambit.team2, bot)
 
     await message.edit(embed=gambit.embed(crew1.abbr, crew2.abbr))
 
 
-async def update_finished_gambit(gambit: Gambit, winner: int, bot: 'ScoreSheetBot'):
+async def update_finished_gambit(gambit: Gambit, winner: int, bot: 'ScoreSheetBot', top_win, top_loss):
     message = await bot.gambit_message(gambit.message_id)
-    await message.delete()
+    if message:
+        await message.delete()
     crew1 = crew_lookup(gambit.team1, bot)
     crew2 = crew_lookup(gambit.team2, bot)
     await bot.cache.channels.gambit_announce.send(
-        embed=gambit.finished_embed(crew1.abbr, crew2.abbr, winner))
+        embed=gambit.finished_embed(crew1.abbr, crew2.abbr, winner, top_win, top_loss))
 
 
 def crew_avg(crews: List[Crew]) -> float:
