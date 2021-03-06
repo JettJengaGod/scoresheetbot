@@ -1797,6 +1797,7 @@ class ScoreSheetBot(commands.Cog):
     async def overlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            return
         best = best_of_possibilities(two_roles, self)
         mems = overlap_members(best[0], best[1], self)
         out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([escape(str(mem)) for mem in mems])
