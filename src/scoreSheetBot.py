@@ -1214,6 +1214,8 @@ class ScoreSheetBot(commands.Cog):
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
+
+        await ctx.send('This might take awhile, so please do not repeat the command.')
         if winning_bets == 0:
             ratio = 0
         else:
