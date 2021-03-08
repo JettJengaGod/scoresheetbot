@@ -60,7 +60,7 @@ CHARACTERS = {
     'piranha_plant': ['plant', 'pp'],
     'pit': [],
     'pokemon_trainer': ['pt', 'trainer'],
-    'pythra': ['pyra', 'mythra'],
+    'pythra': ['pyra', 'mythra', 'aegis', 'baeblades', 'myra'],
     'richter': [],
     'ridley': [],
     'rob': ['r.o.b.'],
