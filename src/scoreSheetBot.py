@@ -1868,13 +1868,15 @@ class ScoreSheetBot(commands.Cog):
                                   description='\n'.join(desc), color=discord.Color.random())
             await send_long_embed(ctx, embed)
         else:
-            usage = all_crew_usage()
-            desc = []
-            for number, name, _ in usage:
-                desc.append(f'{name}: {number}')
-            embed = discord.Embed(title='Number of unique players in cbs last month by each crew',
-                                  description='\n'.join(desc), color=discord.Color.random())
-            await send_long_embed(ctx, embed)
+            pass
+            #TODO Fix this
+            # usage = all_crew_usage()
+            # desc = []
+            # for number, name, _ in usage:
+            #     desc.append(f'{name}: {number}')
+            # embed = discord.Embed(title='Number of unique players in cbs last month by each crew',
+            #                       description='\n'.join(desc), color=discord.Color.random())
+            # await send_long_embed(ctx, embed)
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)

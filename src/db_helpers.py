@@ -417,6 +417,7 @@ def all_crews() -> List[List]:
 
 
 def all_crew_usage() -> List[List]:
+    # TODO Update this to handle year too
     everything = """select coalesce(t1.players,0) + coalesce(t2. players, 0) as total, 
         coalesce(t1.name, t2.name) as name, coalesce(t1.id, t2.id) as id
         from (select count(distinct(p1)) as players, crews.name, crews.id
