@@ -131,6 +131,9 @@ help_doc = dict(
     thankboard=HelpDoc(Categories.misc, 'Returns the thanking leaderboard'),
     make_lead=HelpDoc(Categories.staff, 'Makes a user a leader on their crew', '', 'User'),
     bigcrew=HelpDoc(Categories.staff, 'Returns all the crews that are bigger than x, default 40', '', 'Crew min'),
+    softlock=HelpDoc(Categories.staff,
+                     'Returns the number of unique players used by crews last month or the players and each cb'
+                     'for a specific crew', '', 'Optional[Crew]'),
     crnumbers=HelpDoc(Categories.staff, 'Helpful numbers for crew analysis'),
     slottotals=HelpDoc(Categories.staff, 'Prints all the max slots for crews'),
     flaircounts=HelpDoc(Categories.staff, 'Helpful numbers for flair analysis'),
