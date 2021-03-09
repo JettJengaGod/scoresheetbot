@@ -1847,6 +1847,35 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'These Crews have {over} members or more', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 
+    @commands.command(hidden=True, **help_doc['softlock'])
+    @role_call(STAFF_LIST)
+    async def softlock(self, ctx, cr: Optional[str] = ''):
+        if cr:
+            actual = crew_lookup(cr, self)
+            usage = crew_usage(actual)
+            desc = []
+            for mem_id, links in usage.items():
+                link_str = ''
+                for link in links:
+                    link_str += f'[link]({link}) '
+                member = self.bot.get_user(mem_id)
+                if not member:
+                    desc.append(f'{mem_id}: {link_str} (name not found for some reason)')
+                    continue
+                desc.append(f'{member.display_name}: {link_str}')
+            desc.sort()
+            embed = discord.Embed(title=f'Usage of each member of {actual.name} from last month ({len(usage)} total)',
+                                  description='\n'.join(desc), color=discord.Color.random())
+            await send_long_embed(ctx, embed)
+        else:
+            usage = all_crew_usage()
+            desc = []
+            for number, name, _ in usage:
+                desc.append(f'{name}: {number}')
+            embed = discord.Embed(title='Number of unique players in cbs last month by each crew',
+                                  description='\n'.join(desc), color=discord.Color.random())
+            await send_long_embed(ctx, embed)
+
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def crnumbers(self, ctx):

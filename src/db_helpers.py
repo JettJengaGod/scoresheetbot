@@ -416,6 +416,88 @@ def all_crews() -> List[List]:
     return crews
 
 
+def all_crew_usage() -> List[List]:
+    everything = """select coalesce(t1.players,0) + coalesce(t2. players, 0) as total, 
+        coalesce(t1.name, t2.name) as name, coalesce(t1.id, t2.id) as id
+        from (select count(distinct(p1)) as players, crews.name, crews.id
+            from match, battle, crews
+                where match.battle_id = battle.id and crews.id = battle.crew_1
+                and extract(month from battle.finished) = extract(month from current_timestamp) - 1
+                    group by crews.name, crews.id
+                        order by players desc) as t1
+            full outer join 
+            (select count(distinct(p2)) as players, crews.name, crews.id
+            from match, battle, crews
+                where match.battle_id = battle.id and crews.id = battle.crew_2
+                and extract(month from battle.finished) = extract(month from current_timestamp) - 1
+                    group by crews.name, crews.id
+                        order by players desc) as t2
+                on t1.id = t2.id
+                    order by total desc;"""
+    conn = None
+    crews = [[]]
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(everything)
+        crews = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return crews
+
+
+def crew_usage(cr: Crew) -> Dict[int, List[str]]:
+    team_1 = """select distinct(p1) as players, battle.link
+        from match, battle, crews
+            where match.battle_id = battle.id and crews.id = battle.crew_1 and crews.id = %s
+            and extract(month from battle.finished) = extract(month from current_timestamp) - 1;
+            """
+    team_2 = """select distinct(p2) as players, battle.link
+        from match, battle, crews
+            where match.battle_id = battle.id and crews.id = battle.crew_2 and crews.id = %s
+            and extract(month from battle.finished) = extract(month from current_timestamp) - 1;
+            """
+    conn = None
+    players = {}
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(cr, cur)
+        cur.execute(team_1, (cr_id,))
+        t1 = cur.fetchall()
+        if t1:
+            for member, link in t1:
+                if member in players:
+                    players[member].append(link)
+                else:
+                    players[member] = [link]
+
+        cur.execute(team_2, (cr_id,))
+        t2 = cur.fetchall()
+        if t2:
+            for member, link in t2:
+                if member in players:
+                    players[member].append(link)
+                else:
+                    players[member] = [link]
+
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return players
+
+
 def update_crew(crew: Crew) -> None:
     current = """SELECT id, discord_id, tag, name, rank, overflow FROM crews
     where discord_id = %s
