@@ -1273,7 +1273,14 @@ class ScoreSheetBot(commands.Cog):
     async def bet(self, ctx: Context, *, everything: str):
         cg = current_gambit()
         split = everything.split()
-        if split[0].isdigit():
+        current = member_gcoins(ctx.author)
+        if split[0] == 'all':
+            amount = current
+            team = ' '.join(split[1:])
+        elif split[-1] == 'all':
+            team = ' '.join(split[:-1])
+            amount = current
+        elif split[0].isdigit():
             team = ' '.join(split[1:])
             amount = int(split[0])
         elif split[-1].isdigit():
