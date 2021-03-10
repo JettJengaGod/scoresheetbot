@@ -786,7 +786,10 @@ async def update_gambit_message(gambit: Gambit, bot: 'ScoreSheetBot'):
     crew1 = crew_lookup(gambit.team1, bot)
     crew2 = crew_lookup(gambit.team2, bot)
 
-    await message.edit(embed=gambit.embed(crew1.abbr, crew2.abbr))
+    try:
+        await message.edit(embed=gambit.embed(crew1.abbr, crew2.abbr))
+    except discord.errors.NotFound:
+        pass
 
 
 async def update_finished_gambit(gambit: Gambit, winner: int, bot: 'ScoreSheetBot', top_win, top_loss):

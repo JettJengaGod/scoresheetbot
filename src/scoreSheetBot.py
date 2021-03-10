@@ -1275,7 +1275,14 @@ class ScoreSheetBot(commands.Cog):
     async def bet(self, ctx: Context, *, everything: str):
         cg = current_gambit()
         split = everything.split()
-        if split[0].isdigit():
+        current = member_gcoins(ctx.author)
+        if split[0] == 'all':
+            amount = current
+            team = ' '.join(split[1:])
+        elif split[-1] == 'all':
+            team = ' '.join(split[:-1])
+            amount = current
+        elif split[0].isdigit():
             team = ' '.join(split[1:])
             amount = int(split[0])
         elif split[-1].isdigit():
@@ -1300,6 +1307,7 @@ class ScoreSheetBot(commands.Cog):
         validate_bet(ctx.author, cr, amount, self)
         if await confirm_bet(ctx, cr, amount, self):
             await ctx.message.delete()
+
             await update_gambit_message(current_gambit(), self)
 
     @commands.command(**help_doc['odds'])
