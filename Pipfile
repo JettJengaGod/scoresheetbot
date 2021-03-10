@@ -45,6 +45,8 @@ python-levenshtein = "*"
 fuzzywuzzy = "*"
 psycopg2 = "*"
 oauth2client = "*"
+matplotlib = "*"
+gspread = "*"
 elote = "*"
 
 [dev-packages]

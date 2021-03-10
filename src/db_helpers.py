@@ -2,7 +2,7 @@ import datetime
 import os
 import sys
 import traceback
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Iterable, Dict
 
 import discord
 import psycopg2
@@ -10,6 +10,7 @@ import psycopg2
 from src.battle import Battle, InfoMatch, TimerMatch
 from src.crew import Crew
 from src.db_config import config
+from src.gambit import Gambit
 
 
 def logfile():
@@ -20,6 +21,14 @@ def logfile():
         append_write = 'w'  # make a new file if not
     logfile = open(logfilename, append_write)
     return logfile
+
+
+def log_error_and_reraise(error: Exception):
+    lf = logfile()
+    traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+    traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+    lf.close()
+    raise error
 
 
 def add_thanks(user: discord.Member) -> str:
@@ -54,10 +63,7 @@ def add_thanks(user: discord.Member) -> str:
         # close communication with the database
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
 
     finally:
         if conn is not None:
@@ -86,10 +92,7 @@ def thank_board(user: discord.Member) -> discord.Embed:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -115,10 +118,7 @@ def add_member_and_roles(member: discord.Member) -> None:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -170,10 +170,7 @@ def update_member_roles(member: discord.Member) -> None:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -216,10 +213,7 @@ def add_member_and_crew(member: discord.Member, crew: Crew) -> None:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -243,10 +237,7 @@ def new_crew(crew: Crew):
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -271,14 +262,16 @@ def find_member_roles(member: discord.Member) -> List[str]:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
     return everything
+
+
+def crew_id_from_crews(cr: Crew, cursor):
+    fr_id = crew_id_from_role_id(cr.role_id, cursor)
+    return fr_id if fr_id else crew_id_from_name(cr.name, cursor)
 
 
 def crew_id_from_name(name: str, cursor) -> int:
@@ -313,10 +306,7 @@ def add_character(name: str):
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -369,10 +359,7 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -400,10 +387,7 @@ def crew_correct(member: discord.Member, current: str) -> bool:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -424,14 +408,94 @@ def all_crews() -> List[List]:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
     return crews
+
+
+def all_crew_usage() -> List[List]:
+    # TODO Update this to handle year too
+    everything = """select coalesce(t1.players,0) + coalesce(t2. players, 0) as total, 
+        coalesce(t1.name, t2.name) as name, coalesce(t1.id, t2.id) as id
+        from (select count(distinct(p1)) as players, crews.name, crews.id
+            from match, battle, crews
+                where match.battle_id = battle.id and crews.id = battle.crew_1
+                and extract(month from battle.finished) = extract(month from current_timestamp) - 1
+                    group by crews.name, crews.id
+                        order by players desc) as t1
+            full outer join 
+            (select count(distinct(p2)) as players, crews.name, crews.id
+            from match, battle, crews
+                where match.battle_id = battle.id and crews.id = battle.crew_2
+                and extract(month from battle.finished) = extract(month from current_timestamp) - 1
+                    group by crews.name, crews.id
+                        order by players desc) as t2
+                on t1.id = t2.id
+                    order by total desc;"""
+    conn = None
+    crews = [[]]
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(everything)
+        crews = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return crews
+
+
+def crew_usage(cr: Crew) -> Dict[int, List[str]]:
+    team_1 = """select distinct(p1) as players, battle.link
+        from match, battle, crews
+            where match.battle_id = battle.id and crews.id = battle.crew_1 and crews.id = %s
+            and extract(month from battle.finished) = extract(month from current_timestamp) - 1;
+            """
+    team_2 = """select distinct(p2) as players, battle.link
+        from match, battle, crews
+            where match.battle_id = battle.id and crews.id = battle.crew_2 and crews.id = %s
+            and extract(month from battle.finished) = extract(month from current_timestamp) - 1;
+            """
+    conn = None
+    players = {}
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(cr, cur)
+        cur.execute(team_1, (cr_id,))
+        t1 = cur.fetchall()
+        if t1:
+            for member, link in t1:
+                if member in players:
+                    players[member].append(link)
+                else:
+                    players[member] = [link]
+
+        cur.execute(team_2, (cr_id,))
+        t2 = cur.fetchall()
+        if t2:
+            for member, link in t2:
+                if member in players:
+                    players[member].append(link)
+                else:
+                    players[member] = [link]
+
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return players
 
 
 def update_crew(crew: Crew) -> None:
@@ -469,10 +533,7 @@ def update_crew(crew: Crew) -> None:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -503,10 +564,7 @@ def update_crew_tomain(crew: Crew, new_role_id: int) -> None:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -534,10 +592,7 @@ def update_member_crew(member: discord.Member, new_crew: Crew) -> None:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -559,10 +614,7 @@ def find_member_crew(member_id: int) -> str:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -587,10 +639,7 @@ def cooldown_finished() -> List[int]:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -613,10 +662,7 @@ def cooldown_current() -> List[Tuple[int, datetime.timedelta]]:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -636,10 +682,7 @@ def remove_expired_cooldown(user_id: int) -> None:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -676,10 +719,7 @@ def all_battles() -> List[str]:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -732,10 +772,7 @@ def crew_record(cr: Crew, league: Optional[int] = 0) -> Tuple:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -777,10 +814,7 @@ def crew_matches(cr: Crew) -> List[str]:
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -809,10 +843,7 @@ def player_stocks(member: discord.Member) -> Tuple[int, int]:
         vals = cur.fetchone()
 
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -842,10 +873,7 @@ def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
         vals = cur.fetchall()
 
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -866,10 +894,7 @@ def set_vod(battle_id: int, vod: str) -> None:
         cur.close()
 
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
         raise error
     finally:
         if conn is not None:
@@ -905,10 +930,7 @@ select p1_total.battles+p2_total.battles as battles, p2_wins.battle_wins+p1_wins
         vals = cur.fetchone()
 
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -931,10 +953,7 @@ def freeze_crew(cr: Crew, end: datetime.date):
         cur.close()
 
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
@@ -958,11 +977,803 @@ def auto_unfreeze() -> Tuple[Tuple[str]]:
         cur.close()
 
     except (Exception, psycopg2.DatabaseError) as error:
-        lf = logfile()
-        traceback.print_exception(type(error), error, error.__traceback__, file=lf)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        lf.close()
+        log_error_and_reraise(error)
     finally:
         if conn is not None:
             conn.close()
     return out
+
+
+def disabled_channels() -> Iterable[int]:
+    channels = """select * from disabled_channels;"""
+    conn = None
+    out = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(channels)
+        out = cur.fetchall()
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return [o[0] for o in out]
+
+
+def add_disabled_channel(id_num: int):
+    add_channel = """INSERT into disabled_channels (id)
+     values(%s) ON CONFLICT DO NOTHING;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(add_channel, (id_num,))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def remove_disabled_channel(id_num: int):
+    del_channel = """delete from disabled_channels where id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(del_channel, (id_num,))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def set_command_activation(command_name: int, activation: bool):
+    deactivate = """
+    INSERT INTO commands (cname, deactivated) values(%s, %s)
+    on CONFLICT (cname)
+    do update set deactivated = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(deactivate, (command_name, activation, activation))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def command_lookup(command_name: int) -> Tuple[str, bool, int]:
+    lookup = """ select * from commands where cname = %s;"""
+    add = """ insert into commands (cname) values (%s) returning *;"""
+    conn = None
+    cmd = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(lookup, (command_name,))
+        cmd = cur.fetchone()
+        if not cmd:
+            cur.execute(add, (command_name,))
+            cmd = cur.fetchone()
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return cmd
+
+
+def increment_command_used(command_name: str):
+    increment = """ Update commands
+                        set called = called + 1
+                        where cname = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(increment, (command_name,))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def command_leaderboard():
+    leaderboard = """select * from commands order by called desc;"""
+    conn = None
+    desc = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(leaderboard)
+        board = cur.fetchall()
+        for entry in board:
+            desc.append(f'{entry[0]}: {entry[2]} uses')
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return desc
+
+
+def new_member_gcoins(member: discord.Member) -> int:
+    create = """ insert into gambiters (member_id) values(%s) returning gcoins;"""
+    conn = None
+    coins = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(create, (member.id,))
+        res = cur.fetchone()
+        coins = res[0]
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return coins
+
+
+def refund_member_gcoins(member: discord.Member, amount: int) -> int:
+    refund = """ update gambiters set gcoins = gcoins + %s where member_id = %s returning gcoins;"""
+    conn = None
+    coins = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(refund, (amount, member.id,))
+        res = cur.fetchone()
+        coins = res[0]
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return coins
+
+
+def member_gcoins(member: discord.Member) -> int:
+    gcoins = """ select gcoins from gambiters where member_id = %s;"""
+    conn = None
+    coins = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(gcoins, (member.id,))
+        res = cur.fetchone()
+        if res:
+            coins = res[0]
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return coins
+
+
+def is_gambiter(member: discord.Member) -> bool:
+    gcoins = """ select * from gambiters where member_id = %s;"""
+    conn = None
+    gambiter = False
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(gcoins, (member.id,))
+        res = cur.fetchone()
+        if res:
+            gambiter = True
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return gambiter
+
+
+def new_gambit(c1: Crew, c2: Crew, message_id: int):
+    create = """ insert into current_gambit (team_1, team_2, message_id) values(%s, %s, %s);"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        id_1 = crew_id_from_role_id(c1.role_id, cur)
+        id_2 = crew_id_from_role_id(c2.role_id, cur)
+        cur.execute(create, (id_1, id_2, message_id))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def current_gambit() -> Gambit:
+    teams = """ 
+    select c1.name, c2.name, current_gambit.locked, current_gambit.message_id, c1.id, c2.id
+        from current_gambit, crews as c1, crews as c2
+            where current_gambit.team_1 = c1.id and current_gambit.team_2 = c2.id;"""
+    t1_bet = """select coalesce(sum(amount),0)
+        from current_gambit
+            join current_bets on current_gambit.team_1 = current_bets.team;
+    """
+    t2_bet = """select coalesce(sum(amount),0)
+        from current_gambit
+            join current_bets on current_gambit.team_2 = current_bets.team;"""
+    top_bet = """
+    SELECT nickname, MAX(amount) amount
+        FROM current_bets, members, crews
+            where team = %s and members.id=current_bets.member_id and crews.id = team
+                group by member_id, nickname, crews.name;
+    """
+    conn = None
+    t1, t1_bets, t2, t2_bets, locked, m_id, tb1, tb2 = '', 0, '', 0, True, 0, (), ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(teams)
+        crews = cur.fetchone()
+        if not crews:
+            return None
+
+        t1, t2, locked, m_id, c1_id, c2_id = crews
+        cur.execute(t1_bet)
+        t1_bets = cur.fetchone()[0]
+        cur.execute(t2_bet)
+        t2_bets = cur.fetchone()[0]
+        cur.execute(top_bet, (c1_id,))
+
+        top_bet_1 = cur.fetchone()
+        if top_bet_1:
+            tb1 = top_bet_1
+        cur.execute(top_bet, (c2_id,))
+        top_bet_2 = cur.fetchone()
+        if top_bet_2:
+            tb2 = top_bet_2
+
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return Gambit(t1, t2, locked, m_id, t1_bets, t2_bets, tb1, tb2)
+
+
+def member_bet(member: discord.Member) -> Tuple[str, int]:
+    bet = """ 
+    select crews.name, current_bets.amount
+        from current_bets, crews
+            where current_bets.team = crews.id and current_bets.member_id = %s;"""
+    conn = None
+    team, amount = '', 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(bet, (member.id,))
+        res = cur.fetchone()
+        if res:
+            team, amount = res
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return team, amount
+
+
+def make_bet(member: discord.Member, cr: Crew, amount: int):
+    bet = """ insert into current_bets
+        (member_id, amount, team) values (%s, %s, %s)
+        on conflict (member_id) do update set amount = current_bets.amount+EXCLUDED.amount ;"""
+    deduct = """ update gambiters set gcoins = gcoins - %s where member_id = %s
+    returning gcoins;
+    """
+
+    conn = None
+    coins = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        crew_id = crew_id_from_role_id(cr.role_id, cur)
+
+        cur.execute(bet, (member.id, amount, crew_id))
+        cur.execute(deduct, (amount, member.id))
+        res = cur.fetchone()
+        if res:
+            coins = res[0]
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return coins
+
+
+def archive_bet(member: discord.Member, amount: int, gambit_id: int):
+    archive = """ insert into past_bets
+        (member_id, result, gambit_id) values (%s, %s, %s);"""
+
+    conn = None
+    coins = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(archive, (member.id, amount, gambit_id))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return coins
+
+
+def lock_gambit(status: bool):
+    lock = """ update current_gambit set locked = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(lock, (status,))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def all_bets() -> Tuple[Tuple[int, int, str]]:
+    bet_list = """select member_id, amount, name
+        from current_bets, crews where team = crews.id;"""
+    conn = None
+    bets = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(bet_list)
+        bets = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return bets
+
+
+def cancel_gambit():
+    cancel = """delete from current_gambit;"""
+    remove_bets = "delete from current_bets;"
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(cancel)
+        cur.execute(remove_bets)
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def archive_gambit(winner: str, loser: str, winning_total: int, losing_total: int) -> int:
+    archive = """insert into gambit_results (winning_crew, losing_crew, winning_total, losing_total, finished)
+     values(%s, %s, %s, %s, current_date) returning id;"""
+    conn = None
+    gambit_id = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        winner_id = crew_id_from_name(winner, cur)
+        loser_id = crew_id_from_name(loser, cur)
+        cur.execute(archive, (winner_id, loser_id, winning_total, losing_total))
+        gambit_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return gambit_id
+
+
+def gambit_standings() -> Tuple[Tuple[int, int, int, str]]:
+    leaderboard = """select RANK() OVER (ORDER BY gcoins DESC) gamb_rank, member_id,gcoins, discord_name
+         from gambiters, members where member_id = id;"""
+    conn = None
+    standings = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(leaderboard)
+        standings = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return standings
+
+
+def past_gambits() -> Tuple[Tuple[int, str, str, int, int, datetime.date]]:
+    matches = """select gambit_results.id, c1.name, c2.name, winning_total, losing_total, finished
+        from gambit_results, crews as c1, crews as c2 
+            where c1.id = winning_crew and c2.id = losing_crew order by id desc ;"""
+    conn = None
+    all_past = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(matches)
+        all_past = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return all_past
+
+
+def past_bets() -> Tuple[Tuple[int, int, int]]:
+    bets = """select gambit_id, member_id, result from past_bets;"""
+    conn = None
+    all_past = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(bets)
+        all_past = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return all_past
+
+
+def crew_flairs() -> Dict[str, int]:
+    flairs = """
+    select crews.name, count(member_id) as total
+        from current_member_crews, crews
+            where crew_id = crews.id and DATE_PART('day', current_timestamp - joined) <30
+                group by crews.name, crews.id
+                    order by total desc;"""
+    old_flairs = """
+    select count(distinct(member_id)) as total, crews.name
+        from member_crews_history, crews
+            where crew_id = crews.id and DATE_PART('day', current_timestamp - joined) <30
+            and member_id != 775586622241505281
+                group by crews.name, crews.id
+                    order by total desc;"""
+    conn = None
+    cr = {}
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(flairs)
+        new = cur.fetchall()
+        for name, count in new:
+            cr[name] = count
+
+        cur.execute(old_flairs)
+        old = cur.fetchall()
+        for count, name in old:
+            if name in cr:
+                cr[name] += count
+            else:
+                cr[name] = count
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return cr
+
+
+def slots(cr: Crew) -> Tuple[int, int]:
+    both = """SELECT slotsleft, slotstotal FROM crews where id = %s;"""
+    conn = None
+    slot = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr.role_id, cur)
+        cur.execute(both, (cr_id,))
+        slot = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return slot
+
+
+def extra_slots(cr: Crew) -> Tuple[int, int, int]:
+    both = """SELECT slotsleft, slotstotal, unflair FROM crews where id = %s;"""
+    conn = None
+    slot = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr.role_id, cur)
+        cur.execute(both, (cr_id,))
+        slot = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return slot
+
+
+def mod_slot(cr: Crew, change: int) -> int:
+    mod = """update crews set slotsleft = slotsleft + %s
+                where id = %s returning slotsleft;"""
+    conn = None
+    after = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr.role_id, cur)
+        cur.execute(mod, (change, cr_id))
+        after = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return after
+
+
+def cur_slot_set(cr: Crew, change: int) -> int:
+    mod = """update crews set slotsleft = %s
+                where id = %s returning slotsleft;"""
+    conn = None
+    after = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr.role_id, cur)
+        cur.execute(mod, (change, cr_id))
+        after = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return after
+
+
+def total_slot_set(cr: Crew, total: int) -> None:
+    set = """update crews set slotsleft = %s, slotstotal = %s
+                where id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(cr, cur)
+        if not total or not cr_id:
+            print(cr.name)
+            return
+        cur.execute(set, (total, total, cr_id))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def member_crew_history(member: discord.Member) -> Tuple[Tuple[str, datetime.datetime, datetime.datetime]]:
+    history = """select crews.name, joined, leave
+                from crews, member_crews_history
+                    where crews.id = member_crews_history.crew_id
+                        and member_crews_history.member_id = %s
+                            order by joined;"""
+    conn = None
+    hist = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+
+        cur.execute(history, (member.id,))
+        hist = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return hist
+
+
+def member_crew_and_date(member: discord.Member) -> Tuple[str, datetime.datetime]:
+    current = """select crews.name, joined
+                from crews, current_member_crews
+                    where crews.id = current_member_crews.crew_id
+                        and current_member_crews.member_id = %s
+                            order by joined;"""
+    conn = None
+    cr = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+
+        cur.execute(current, (member.id,))
+        cr = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return cr
+
+
+def record_flair(member: discord.Member, crew: Crew):
+    record = """INSERT into flairs (member_id, crew_id, joined)
+     values(%s, %s, current_timestamp) ON CONFLICT DO NOTHING;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(record, (member.id, cr_id))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def record_unflair(member: discord.Member, crew: Crew, join_cd: bool) -> Tuple[int, int, int]:
+    record = """INSERT into unflairs (member_id, crew_id, leave_time)
+     values(%s, %s, current_timestamp);"""
+    cr_record = """update crews set unflair = unflair + 1 where id = %s returning unflair;"""
+    reset = """update crews set unflair = 0, slotsleft = slotsleft+1  where id = %s;"""
+    slot = """SELECT slotsleft, slotstotal FROM crews where id = %s;"""
+    conn = None
+    unflairs, remaining, total = 0, 0, 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(record, (member.id, cr_id))
+        if not join_cd:
+            cur.execute(cr_record, (cr_id,))
+            unflairs = cur.fetchone()[0]
+            if unflairs == 3:
+                cur.execute(reset, (cr_id,))
+        cur.execute(slot, (cr_id,))
+        remaining, total = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return unflairs, remaining, total

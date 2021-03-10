@@ -1,17 +1,24 @@
 import os
 from datetime import date
-from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict
+from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict, Sequence, ValuesView
 
 from dateutil.relativedelta import relativedelta
+import matplotlib.pyplot as plt;
 
+plt.rcdefaults()
+import numpy as np
+import matplotlib.pyplot as plt
 from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
-    remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze
+    remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
+    current_gambit, member_bet, member_gcoins, make_bet, slots
+from .gambit import Gambit
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
 from fuzzywuzzy import process, fuzz
 import asyncio
 import discord
+from statistics import stdev
 from discord.ext import commands, menus
 from .battle import *
 import time
@@ -264,17 +271,14 @@ def add_join_cd(member: discord.Member, file: TextIO):
     file.write(f'{member.id} {time.time() + COOLDOWN_TIME_SECONDS}\n')
 
 
-async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot', staff: bool = False):
+async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot', staff: bool = False,
+                reg: Optional[bool] = False):
     if check_roles(member, [TRUE_LOCKED]):
         raise ValueError(f'{member.mention} cannot be flaired because they are {TRUE_LOCKED}.')
 
     if check_roles(member, [JOIN_CD]):
         raise ValueError(f'{member.mention} cannot be flaired because they have {JOIN_CD}.')
     if not staff:
-        if check_roles(member, [POWER_MERGE]):
-            raise ValueError(f'{member.mention} cannot be flaired because they are a potential power merge.\n'
-                             f'Please tag the Doc Keeper role in '
-                             f'{bot.cache.channels.flairing_questions.mention} to confirm.')
         if check_roles(member, [FLAIR_VERIFY]):
             raise ValueError(f'{member.mention} needs to be verified before flairing. \n'
                              f'Please tag the Doc Keeper role in '
@@ -298,8 +302,9 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
         flairing_info = bot.cache.channels.flairing_info
         await flairing_info.send(f'{pepper.mention} {member.mention} is {TRUE_LOCKED}.')
-    await member.add_roles(bot.cache.roles.join_cd)
-    await member.add_roles(bot.cache.roles.playoff)
+    if not reg:
+        await member.add_roles(bot.cache.roles.join_cd)
+        await member.add_roles(bot.cache.roles.playoff)
 
 
 async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreSheetBot'):
@@ -519,8 +524,8 @@ async def cache_process(bot: 'ScoreSheetBot'):
         await bot.cache.channels.recache_logs.send('Starting recache.')
 
     await bot.cache.update(bot)
+    crew_update(bot)
     if os.getenv('VERSION') == 'PROD':
-        crew_update(bot)
         await handle_unfreeze(bot)
         if bot.cache.scs:
             await overflow_anomalies(bot)
@@ -697,3 +702,181 @@ async def handle_unfreeze(bot: 'ScoreSheetBot'):
     if unfrozen:
         for cr in unfrozen:
             await bot.cache.channels.flair_log.send(f'{cr[0]} finished their registration freeze.')
+
+
+def closest_command(command: str, bot: 'ScoreSheetBot'):
+    command_strs = [cmd.name for cmd in bot.get_commands()]
+    actual, _ = process.extractOne(command, command_strs)
+    return actual
+
+
+async def join_gambit(member: discord.Member, bot: 'ScoreSheetBot') -> bool:
+    msg = await member.send(f'{str(member)}: It appears you are not part of gambit, '
+                            f'would you like to join gamibt?')
+    if not await wait_for_reaction_on_message(YES, NO, msg, member, bot.bot):
+        await member.send(f'Timed out or canceled! You need to respond within 30 seconds!')
+        return False
+
+    await member.send(f'Welcome to gambit! Here are {new_member_gcoins(member)} coins for your trouble.')
+    # TODO add gambit guide right here
+    return True
+
+
+def validate_bet(member: discord.Member, on: Crew, amount: int, bot: 'ScoreSheetBot'):
+    cg = current_gambit()
+    if on.name not in [cg.team1, cg.team2]:
+        raise ValueError(
+            f'{on.name} not one of the two crews in the current gambit ({cg.team1}, {cg.team2}).')
+
+    try:
+        member_crew = crew(member, bot)
+    except ValueError:
+        member_crew = None
+    if member_crew in [cg.team1, cg.team2]:
+        raise ValueError(
+            f'{member.mention} is on {member_crew}, a crew competing in the gambit and cannot participate.')
+
+    current = member_gcoins(member)
+    team, bet_amount = member_bet(member)
+    if current == 0 and not team:
+        return
+    if amount > current:
+        raise ValueError(f'{member.mention} only has {current} and cannot bet {amount}.')
+    if team:
+        if on.name != team:
+            raise ValueError(f'{member.mention} already has a bet on {team} can\'t also bet on {on.name}')
+
+    if amount <= 0:
+        raise ValueError('You must bet a positive amount!')
+
+
+async def confirm_bet(ctx: Context, on: Crew, amount: int, bot: 'ScoreSheetBot') -> bool:
+    member = ctx.author
+    current = member_gcoins(member)
+    team, bet_amount = member_bet(member)
+    if team:
+        msg = await ctx.send(f'{str(member)} has {bet_amount} already on'
+                             f' {team} do you want to increase that to {bet_amount + amount}?')
+    else:
+        if current == 0:
+            amount = 0
+        msg = await ctx.send(f'{member.mention} really bet {amount} on {on.name}?')
+    if not await wait_for_reaction_on_message(YES, NO, msg, member, bot.bot):
+        await ctx.send(f'{member.mention}: Your bet timed out or was canceled! You need to respond within 30 seconds!')
+        return False
+    validate_bet(member, on, amount, bot)
+    final = make_bet(member, on, amount)
+    if amount == 0:
+        await ctx.send(
+            f'{member.mention}: You have placed a reset bet of 0 with a chance to win back in with 220 G-Coins.')
+    else:
+        if team:
+            await ctx.send(f'{member.mention}: Bet on **{on.name}** increased to {amount + bet_amount} G-Coins. '
+                           f'You have {final} G-Coins remaining.')
+        else:
+            await ctx.send(f'{member.mention}: Bet on **{on.name}** made for {amount} G-Coins. '
+                           f'You have {final} G-Coins remaining.')
+    await msg.delete(delay=2)
+    return True
+
+
+async def update_gambit_message(gambit: Gambit, bot: 'ScoreSheetBot'):
+    message = await bot.gambit_message(gambit.message_id)
+    if not message:
+        return
+    crew1 = crew_lookup(gambit.team1, bot)
+    crew2 = crew_lookup(gambit.team2, bot)
+
+    try:
+        await message.edit(embed=gambit.embed(crew1.abbr, crew2.abbr))
+    except discord.errors.NotFound:
+        pass
+
+
+async def update_finished_gambit(gambit: Gambit, winner: int, bot: 'ScoreSheetBot', top_win, top_loss):
+    message = await bot.gambit_message(gambit.message_id)
+    if message:
+        try:
+            await message.delete()
+        except discord.errors.NotFound:
+            pass
+
+    crew1 = crew_lookup(gambit.team1, bot)
+    crew2 = crew_lookup(gambit.team2, bot)
+    await bot.cache.channels.gambit_announce.send(
+        embed=gambit.finished_embed(crew1.abbr, crew2.abbr, winner, top_win, top_loss))
+
+
+def crew_avg(crews: List[Crew]) -> float:
+    total = 0
+    for cr in crews:
+        total += cr.member_count
+    return total / len(crews)
+
+
+def crew_stdev(crews: List[Crew]) -> float:
+    member_numbers = [cr.member_count for cr in crews]
+    return stdev(member_numbers)
+
+
+def crew_bar_chart(crews: List[Crew]):
+    member_numbers = [cr.member_count for cr in crews]
+    bins = 20
+    plt.hist(member_numbers, bins=bins)
+    plt.title('Crew Sizes')
+    plt.xlabel('Crews')
+    plt.ylabel('Sizes')
+    plt.savefig('cr.png')
+
+
+def avg_flairs(flairs: List[Tuple[str, int]]) -> float:
+    combined = sum([fl[1] for fl in flairs])
+    return combined / len(flairs)
+
+
+def flair_stdev(flairs: List[Tuple[str, int]]) -> float:
+    combined = [fl[1] for fl in flairs]
+    return stdev(combined)
+
+
+def flair_bar_chart(flairs: List[Tuple[str, int]]):
+    member_numbers = [fl[1] for fl in flairs]
+    bins = 20
+    plt.hist(member_numbers, bins=bins)
+    plt.title('Crew Flairs last 30 days')
+    plt.xlabel('Crews')
+    plt.ylabel('Flairs')
+    plt.savefig('fl.png')
+
+
+def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
+    if cr.rank < RANK_CUTOFF:
+        base = 7
+        rollover_max = 3
+    else:
+        base = 6
+        rollover_max = 2
+    sl = slots(cr)
+    if sl:
+        rollover = sl[0]
+    else:
+        rollover = 0
+    modifiers = [2, 1, 0, -1, -2]
+    modifer_loc = 0
+    while modifer_loc < 4 and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
+        modifer_loc += 1
+
+    total = base + modifiers[modifer_loc]
+    total = max(total, 5) + min(rollover, rollover_max)
+
+    return total, base, modifiers[modifer_loc], min(rollover_max, rollover)
+
+
+def calc_reg_slots(members: int) -> int:
+    base = 7
+    modifiers = [2, 1, 0, -1, -2]
+    modifer_loc = 0
+    while modifer_loc < 4 and members >= SLOT_CUTOFFS[modifer_loc]:
+        modifer_loc += 1
+
+    return base + modifiers[modifer_loc]

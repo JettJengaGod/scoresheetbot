@@ -4,6 +4,7 @@ class Categories:
     staff = 'staff'
     misc = 'misc'
     flairing = 'flairing'
+    gambit = 'gambit'
     arena = 'arena'
 
 
@@ -41,6 +42,11 @@ help_doc = dict(
     end=HelpDoc(Categories.cb, 'End the game with characters and stocks for both teams',
                 'Example: `!end ness 3 palu 2`, you can also choose alts here. use `,char CharName` to test it',
                 'Char1 StocksTaken1 Char2 StocksTaken2'),
+    endlag=HelpDoc(Categories.cb,
+                   'End the game with characters and stocks for both teams. '
+                   'Same as end, but does not need to result in one player winning'
+                   'Example: `!end ness 3 palu 2`, you can also choose alts here. use `,char CharName` to test it',
+                   'Char1 StocksTaken1 Char2 StocksTaken2'),
     resize=HelpDoc(Categories.cb, 'Resize the crew battle', '', 'NewSize'),
     undo=HelpDoc(Categories.cb, 'Undo the last match',
                  'Takes no parameters and undoes the last match that was played'),
@@ -65,13 +71,21 @@ help_doc = dict(
     ext=HelpDoc(Categories.cb, 'Prints out extension status'),
     recache=HelpDoc(Categories.staff, 'Updates the cache. Admin only'),
     pending=HelpDoc(Categories.staff, 'Prints pending battles. Admin only'),
-    po=HelpDoc(Categories.staff, 'Prints all playoff cbs in a summary.'),
+    po=HelpDoc(Categories.staff, 'Prints all playoff cbs in a summary'),
+    disable=HelpDoc(Categories.staff, 'Disables the bot in a channel', '', 'ChannelMention'),
+    usage=HelpDoc(Categories.staff, 'Shows the usage stats of each command'),
+
+    deactivate=HelpDoc(Categories.staff, 'Deactivates a command so the bot will not '
+                                         'be able to use it till reactivation, also reactivates commands', '',
+                       'CommandName'),
     countdown=HelpDoc(Categories.cb, 'Counts down for x seconds (defaults to 3).'),
     rank=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s rank'),
+    slots=HelpDoc(Categories.crews, 'Find out the remaining slots of a crew'),
     merit=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s merit'),
     logo=HelpDoc(Categories.crews, 'Find the logo of a crew'),
     rankings=HelpDoc(Categories.crews, 'Rankings of all legacy crews in order'),
     crewstats=HelpDoc(Categories.crews, 'Stats for a crew or the crew of a player'),
+    history=HelpDoc(Categories.crews, 'Crew history of a member'),
     vod=HelpDoc(Categories.crews, 'Used for a streamer or admin to set the vod of a match', '', 'battle_id vod_url'),
     playerstats=HelpDoc(Categories.crews, 'Stats for a player'),
     battles=HelpDoc(Categories.crews, 'All battles that have been recorded with the bot'),
@@ -92,8 +106,10 @@ help_doc = dict(
                     'Send in the two role names separated by spaces, it will try to find the best match',
                     'role1 role2'),
     listroles=HelpDoc(Categories.misc, 'Find the users with this role', '', 'role'),
+    disablelist=HelpDoc(Categories.misc, 'List of channels disabled for jettbot'),
 
     pingrole=HelpDoc(Categories.staff, 'Same As listroles, but pings instead', '', 'role'),
+    setslots=HelpDoc(Categories.staff, 'Sets the slots for a crew to a specific number', '', 'number Crew'),
     cooldown=HelpDoc(Categories.staff,
                      'Finds the current cooldown for each of recently flaired users and fixes any that might have been missed'),
     non_crew=HelpDoc(Categories.staff, 'Returns a list of all non crew roles (should be small)'),
@@ -116,6 +132,18 @@ help_doc = dict(
     thankboard=HelpDoc(Categories.misc, 'Returns the thanking leaderboard'),
     make_lead=HelpDoc(Categories.staff, 'Makes a user a leader on their crew', '', 'User'),
     bigcrew=HelpDoc(Categories.staff, 'Returns all the crews that are bigger than x, default 40', '', 'Crew min'),
-
+    softlock=HelpDoc(Categories.staff,
+                     'Returns the number of unique players used by crews last month or the players and each cb'
+                     'for a specific crew', '', 'Optional[Crew]'),
+    crnumbers=HelpDoc(Categories.staff, 'Helpful numbers for crew analysis'),
+    slottotals=HelpDoc(Categories.staff, 'Prints all the max slots for crews'),
+    flaircounts=HelpDoc(Categories.staff, 'Helpful numbers for flair analysis'),
     pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),
+    register=HelpDoc(Categories.staff,
+                     'Flairs multiple people for a new crew'
+                     'Only use spaces between members, and mention mention each one', '',
+                     'Member1 Member2 Member3 Crew'),
+    coins=HelpDoc(Categories.gambit, 'Shows your gcoins'),
+    bet=HelpDoc(Categories.gambit, 'Bets an amount on a crew, only valid while a gambit is active.', '', 'amount crew'),
+    odds=HelpDoc(Categories.gambit, 'Tells you the current odds for the gambit.')
 )

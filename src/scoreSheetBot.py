@@ -3,6 +3,7 @@ import sys
 import traceback
 import time
 import discord
+import math
 import functools
 from asyncio import sleep
 from datetime import date
@@ -10,12 +11,17 @@ from discord.ext import commands, tasks, menus
 from discord.ext.commands import Greedy
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
+
+from src.gambit_helpers import update_gambit_sheet
 from .db_helpers import *
 import src.cache
 from .character import all_emojis, string_to_emote, all_alts, CHARACTERS
 from .decorators import *
 from .help import help_doc
 from .constants import *
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 Context = discord.ext.commands.Context
 
@@ -26,12 +32,22 @@ class ScoreSheetBot(commands.Cog):
         self.battle_map: Dict[str, Battle] = {}
         self.cache = cache
         self.auto_cache.start()
+        self._gambit_message = None
 
     def _current(self, ctx) -> Battle:
         if key_string(ctx) in self.battle_map:
             return self.battle_map[key_string(ctx)]
         else:
-            raise ValueError
+            return None
+
+    async def gambit_message(self, msg_id: int) -> discord.Message:
+        if not self._gambit_message:
+            try:
+                msg = await self.cache.channels.gambit_announce.fetch_message(msg_id)
+                self._gambit_message = msg
+            except discord.errors.NotFound:
+                return None
+        return self._gambit_message
 
     async def _battle_crew(self, ctx: Context, user: discord.Member) -> Optional[str]:
         crew_name = crew(user, self)
@@ -58,6 +74,22 @@ class ScoreSheetBot(commands.Cog):
 
     def cog_unload(self):
         self.auto_cache.cancel()
+
+    async def cog_before_invoke(self, ctx):
+        if ctx.channel.id in disabled_channels():
+            await ctx.message.delete()
+            msg = await ctx.send(f'Jettbot is disabled for this channel please use <#{BOT_CORNER_ID}> instead.')
+            await msg.delete(delay=5)
+            raise ValueError('Jettbot is Disabled for this channel.')
+        if command_lookup(ctx.command.name)[1]:
+            await ctx.message.delete(delay=2)
+            msg = await ctx.send(f'{ctx.command.name} is deactivated, and cannot be used for now.')
+            await msg.delete(delay=5)
+            raise ValueError(f'{ctx.command.name} is deactivated, and cannot be used for now.')
+
+    async def cog_after_invoke(self, ctx):
+        if os.getenv('VERSION') == 'PROD':
+            increment_command_used(ctx.command.name)
 
     @tasks.loop(seconds=CACHE_TIME_SECONDS)
     async def auto_cache(self):
@@ -134,7 +166,7 @@ class ScoreSheetBot(commands.Cog):
                 for cmd in self.bot.walk_commands():
                     for grp in group:
                         if cmd.name == grp:
-                            if isinstance(cmd, discord.ext.commands.Group):
+                            if isinstance(cmd, discord.ext.commands.Group) and not cmd.hidden:
                                 cmds = []
                                 halp = discord.Embed(title=group[0] + ' Command Listing',
                                                      description=cmd.brief)
@@ -418,7 +450,7 @@ class ScoreSheetBot(commands.Cog):
                                         Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['end'])
+    @commands.command(**help_doc['endlag'])
     @main_only
     @has_sheet
     @ss_channel
@@ -488,22 +520,22 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     async def confirm(self, ctx: Context):
         await self._reject_outsiders(ctx)
-
-        if self._current(ctx).battle_over():
-            if self._current(ctx).mock:
+        current = self._current(ctx)
+        if current.battle_over():
+            if current.mock:
                 await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
             else:
-                self._current(ctx).confirm(await self._battle_crew(ctx, ctx.author))
-                await send_sheet(ctx, battle=self._current(ctx))
-                if self._current(ctx).confirmed():
+                current.confirm(await self._battle_crew(ctx, ctx.author))
+                await send_sheet(ctx, battle=current)
+                if current.confirmed():
                     today = date.today()
 
                     output_channels = [discord.utils.get(ctx.guild.channels, name=DOCS_UPDATES),
                                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
-                    winner = self._current(ctx).winner().name
-                    loser = self._current(ctx).loser().name
-                    if self._current(ctx).playoff:
+                    winner = current.winner().name
+                    loser = current.loser().name
+                    if current.playoff:
                         league_id = crew_lookup(winner, self).playoff.value
                         output_channels.pop(0)
                         output_channels.insert(0,
@@ -511,21 +543,23 @@ class ScoreSheetBot(commands.Cog):
                                                                  name=PLAYOFF_CHANNEL_NAMES[league_id - 1]))
                     else:
                         league_id = 1
-
+                    current = self._current(ctx)
+                    if not current:
+                        return
+                    await self._clear_current(ctx)
                     for output_channel in output_channels:
                         await output_channel.send(
                             f'**{today.strftime("%B %d, %Y")}- {winner} vs. {loser} **\n'
                             f'{self.cache.crews_by_name[winner].rank} crew defeats'
                             f' {self.cache.crews_by_name[loser].rank} crew in a '
-                            f'{self._current(ctx).team1.num_players}v{self._current(ctx).team2.num_players} battle!\n'
+                            f'{current.team1.num_players}v{current.team2.num_players} battle!\n'
                             f'from  {ctx.channel.mention}.')
-                        link = await send_sheet(output_channel, self._current(ctx))
-                    battle_id = add_finished_battle(self._current(ctx), link.jump_url, league_id)
+                        link = await send_sheet(output_channel, current)
+                    battle_id = add_finished_battle(current, link.jump_url, league_id)
                     await ctx.send(
-                        f'The battle between {self._current(ctx).team1.name} and {self._current(ctx).team2.name} '
+                        f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
-                    await self._clear_current(ctx)
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
@@ -668,6 +702,31 @@ class ScoreSheetBot(commands.Cog):
             emoji = string_to_emote(char[1], self.bot)
             embed.add_field(name=emoji, value=f'{char[0]}', inline=True)
         await ctx.send(embed=embed)
+
+    @commands.command(**help_doc['history'])
+    @main_only
+    async def history(self, ctx, *, name: str = None):
+        if name:
+            member = member_lookup(name, self)
+
+        else:
+            member = ctx.author
+        if member.id == 775586622241505281:
+            await ctx.send('Don\'t use EvilJett for this')
+            return
+        embed = discord.Embed(title=f'Crew History for {str(member)}', color=member.color)
+        desc = []
+        current = member_crew_and_date(member)
+        if current:
+            desc.append(f'Current crew: {current[0]} Joined: {current[1].strftime("%m/%d/%Y")}')
+        past = member_crew_history(member)
+        desc.append('Past Crew              Joined            Left')
+        for cr_name, joined, left in past:
+            j = joined.strftime('%m/%d/%Y')
+            l = left.strftime('%m/%d/%Y')
+            desc.append(f'{cr_name}: {j}       {l}')
+        embed.description = '\n'.join(desc)
+        await send_long_embed(ctx, embed)
 
     @commands.command(**help_doc['crewstats'])
     @main_only
@@ -815,7 +874,10 @@ class ScoreSheetBot(commands.Cog):
         except ValueError:
             await response_message(ctx, f'You can\'t promote someone who is not in a crew.')
             return
-
+        if check_roles(member, [LEAD_RESTRICT]):
+            await response_message(ctx,
+                                   f'{member.mention} is leadership restricted and can\'t be made a leader or advisor.')
+            return
         if not check_roles(ctx.author, STAFF_LIST):
             author_crew = crew(ctx.author, self)
             if author_crew is not target_crew:
@@ -886,6 +948,9 @@ class ScoreSheetBot(commands.Cog):
         if check_roles(member, [LEADER]):
             await response_message(ctx, f'{member.mention} is already a leader.')
             return
+        if check_roles(member, [LEAD_RESTRICT]):
+            await response_message(ctx, f'{member.mention} is leadership restricted and can\'t be made a leader.')
+            return
         before = set(member.roles)
         await promote(member, self)
         await promote(member, self)
@@ -937,6 +1002,17 @@ class ScoreSheetBot(commands.Cog):
         before = set(member.roles)
         await unflair(member, ctx.author, self)
         await response_message(ctx, f'Successfully unflaired {member.mention} from {user_crew.name}.')
+        if check_roles(member, [JOIN_CD]):
+            mod_slot(user_crew, 1)
+            unflairs, left, total = record_unflair(member, user_crew, True)
+            await ctx.send(
+                f'{str(member)} was on 24h cooldown so {user_crew.name} gets back a slot ({left}/{total})')
+        else:
+            unflairs, remaining, total = record_unflair(member, user_crew, False)
+            if unflairs == 3:
+                await ctx.send(f'{user_crew.name} got a flair slot back for 3 unflairs. {remaining}/{total} left.')
+            else:
+                await ctx.send(f'{unflairs}/3 unflairs for returning a slot.')
         after = set(ctx.guild.get_member(member.id).roles)
         if user_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
@@ -983,6 +1059,12 @@ class ScoreSheetBot(commands.Cog):
                                        f'{member.mention} is not in the overflow server and '
                                        f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
                 return
+
+        left, total = slots(flairing_crew)
+        if left <= 0:
+            await response_message(ctx, f'{flairing_crew.name} has no flairing slots left ({left}/{total})')
+            return
+
         of_before, of_after = None, None
         if flairing_crew.overflow:
             of_user = self.cache.overflow_server.get_member(member.id)
@@ -992,20 +1074,18 @@ class ScoreSheetBot(commands.Cog):
             await response_message(ctx, f'{str(member)} is already flaired for {user_crew}!')
             return
         if user_crew:
-            if author_pl == 3:
-                await unflair(member, ctx.author, self)
-                await response_message(ctx, f'Unflaired {member.mention} from {user_crew}.')
-            else:
-                await response_message(ctx, f'{member.display_name} '
-                                            f'must be unflaired for their current crew before they can be flaired. ')
-                return
+            await response_message(ctx, f'{member.display_name} '
+                                        f'must be unflaired for their current crew before they can be flaired. ')
+            return
         try:
             await flair(member, flairing_crew, self, check_roles(ctx.author, STAFF_LIST))
         except ValueError as ve:
             await response_message(ctx, str(ve))
             return
         await response_message(ctx, f'Successfully flaired {member.mention} for {flairing_crew.name}.')
-
+        mod_slot(flairing_crew, -1)
+        record_flair(member, flairing_crew)
+        await ctx.send(f'{flairing_crew.name} now has ({left - 1}/{total}) slots.')
         after = set(ctx.guild.get_member(member.id).roles)
         if flairing_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
@@ -1020,11 +1100,246 @@ class ScoreSheetBot(commands.Cog):
         for member in set(members):
             await self.flair(ctx, member, new_crew=new_crew)
 
+    ''' ***********************************GAMBIT COMMANDS ************************************************'''
+
+    @commands.command(**help_doc['coins'])
+    @main_only
+    async def coins(self, ctx: Context, member: Optional[discord.Member] = None):
+        member = member or ctx.author
+        await ctx.send(f'{str(member)} has {member_gcoins(member)} G-Coins.')
+
+    @commands.group(name='gamb', invoke_without_command=True)
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def gamb(self, ctx: Context):
+        if current_gambit():
+            await ctx.send(f'{current_gambit()}')
+        else:
+            await ctx.send('No Current gambit.')
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def start(self, ctx: Context, c1: str, c2: str):
+        cg = current_gambit()
+        if cg:
+            await response_message(ctx, f'Gambit is already started between {cg.team1} and {cg.team2}')
+            return
+        crew1, crew2 = crew_lookup(c1, self), crew_lookup(c2, self)
+        msg = await ctx.send(f'Would you like to start a gambit between {crew1.name} and {crew2.name}?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        msg = await self.cache.channels.gambit_announce.send(
+            f'{self.cache.roles.gambit.mention} a new gambit has started between {crew1.name} and {crew2.name}!'
+            f'\nPlace your bets by typing `,bet AMOUNT CREW_NAME` in {self.cache.channels.gambit_bot.mention} '
+            f'and find out the odds by typing `,odds`.')
+        new_gambit(crew1, crew2, msg.id)
+        await ctx.send(f'Gambit started between {crew1.name} and {crew2.name}.')
+        self._gambit_message = msg
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def close(self, ctx: Context, stream: Optional[str] = ''):
+        cg = current_gambit()
+        if not cg:
+            await response_message(ctx, f'Gambit not started, please use `,gamb start`')
+            return
+        if cg.locked:
+            msg = await ctx.send(f'Gambit between {cg.team1} and {cg.team2} is already locked, do you want to unlock?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            lock_gambit(False)
+            await msg.delete()
+            await response_message(ctx, f'Gambit between {cg.team1} and {cg.team2} unlocked by {ctx.author.mention}.')
+        else:
+            lock_gambit(True)
+            cg = current_gambit()
+            await response_message(ctx, f'Gambit between {cg.team1} and {cg.team2} locked by {ctx.author.mention}.')
+            await self.cache.channels.gambit_announce.send(
+                f'{self.cache.roles.gambit.mention}: {cg.team1} vs {cg.team2} has started! {stream}',
+                embed=cg.embed(crew_lookup(cg.team1, self).abbr, crew_lookup(cg.team2, self).abbr))
+            if self._gambit_message:
+                await self._gambit_message.delete()
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def cancel(self, ctx: Context):
+        cg = current_gambit()
+        if not cg:
+            await response_message(ctx, f'Gambit not started, please use `,gamb start`')
+            return
+        msg = await ctx.send(f'Are you sure you want to cancel the gambit between {cg.team1} and {cg.team2}?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        for member_id, amount, cr in all_bets():
+            member = self.bot.get_user(member_id)
+            total = refund_member_gcoins(member, amount)
+            await member.send(f'The gambit between {cg.team1} and {cg.team2} was canceled, '
+                              f'you have been refunded {amount} G-Coins for your bet on {cr}.\n'
+                              f'You now have {total} G-Coins.')
+        cancel_gambit()
+        await ctx.send(f'Gambit between {cg.team1} and {cg.team2} cancelled. All participants have been refunded.')
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def finish(self, ctx: Context, *, winner: str):
+        cg = current_gambit()
+        if not cg:
+            await response_message(ctx, f'Gambit not started, please use `,gamb start`')
+            return
+        win = crew_lookup(winner, self)
+        if win.name == cg.team1:
+            loser = cg.team2
+            winning_bets = cg.bets_1
+            losing_bets = cg.bets_2
+            winner = 1
+
+        elif win.name == cg.team2:
+            loser = cg.team1
+            winning_bets = cg.bets_2
+            losing_bets = cg.bets_1
+            winner = 2
+        else:
+            await response_message(ctx, f'{win.name} is not in the current gambit between {cg.team1} and {cg.team2}.')
+            return
+        msg = await ctx.send(f'Are you sure you want to end the gambit as {win.name} beat {loser}?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+
+        await ctx.send('This might take awhile, so please do not repeat the command.')
+        if winning_bets == 0:
+            ratio = 0
+        else:
+            ratio = losing_bets / winning_bets
+        gambit_id = archive_gambit(win.name, loser, winning_bets, losing_bets)
+        top_win, top_loss = (0, None), (0, None)
+        for member_id, amount, cr in all_bets():
+            member = self.bot.get_user(member_id)
+            if not member:
+                continue
+            try:
+                if cr == win.name:
+                    final = amount + math.ceil(amount * ratio)
+                    if final == 0:
+                        # Reset win
+                        final = 220
+                    total = refund_member_gcoins(member, final)
+                    if final > top_win[0]:
+                        top_win = [final, str(member)]
+
+                    await member.send(f'You won {final} G-Coins on your bet of {amount} on {cr} over {loser}! '
+                                      f'Congrats you now have {total} G-Coins!')
+                else:
+                    total = member_gcoins(member)
+                    final = -amount
+
+                    if final > top_loss[0]:
+                        top_loss = [final, str(member)]
+                    await member.send(f'You lost {amount} G-Coins on your bet on {cr} over {win.name}.')
+                    if total > 0:
+                        await member.send(f'You now have {total} coins remaining.')
+                    else:
+                        await member.send('You are all out of G-Coins, but worry not! If you place a 0 G-Coin bet'
+                                          ' when you are bankrupt, if you win, you get 220 G-Coins!')
+            except discord.errors.Forbidden:
+                await ctx.send(f'{str(member)} is not accepting dms.')
+            archive_bet(member, final, gambit_id)
+        cancel_gambit()
+        await ctx.send(f'Gambit concluded! {win.name} beat {loser}, {winning_bets} G-Coins were placed on {win.name} '
+                       f'and {losing_bets} G-Coins were placed on {loser}.')
+
+        update_gambit_sheet()
+        await update_finished_gambit(cg, winner, self, top_win, top_loss)
+
+    @gamb.command()
+    @main_only
+    @role_call([MINION, ADMIN])
+    async def update(self, ctx):
+        cg = current_gambit()
+        if cg:
+            await update_gambit_message(cg, self)
+
+        update_gambit_sheet()
+
+    @commands.command(**help_doc['bet'])
+    @gambit_channel
+    async def bet(self, ctx: Context, *, everything: str):
+        cg = current_gambit()
+        split = everything.split()
+        current = member_gcoins(ctx.author)
+        if split[0] == 'all':
+            amount = current
+            team = ' '.join(split[1:])
+        elif split[-1] == 'all':
+            team = ' '.join(split[:-1])
+            amount = current
+        elif split[0].isdigit():
+            team = ' '.join(split[1:])
+            amount = int(split[0])
+        elif split[-1].isdigit():
+            team = ' '.join(split[:-1])
+            amount = int(split[-1])
+        else:
+            await response_message(ctx, f'{everything} needs to start or end with a bet amount.')
+            return
+
+        if not cg:
+            await ctx.send('No gambit is currently running, please wait for one to start before betting.')
+            return
+        if cg.locked:
+            await ctx.send(f'The gambit between {cg.team1} and {cg.team2} is locked as the battle has already started.'
+                           f'\nUse `,odds` to see the current odds.')
+            return
+        if not is_gambiter(ctx.author):
+            if not await join_gambit(ctx.author, self):
+                await ctx.send(f'{str(ctx.author)} isn\'t a gambiter and didn\'t join. (check your dms and try again)')
+                return
+        cr = crew_lookup(team, self)
+        validate_bet(ctx.author, cr, amount, self)
+        if await confirm_bet(ctx, cr, amount, self):
+            await ctx.message.delete()
+
+            await update_gambit_message(current_gambit(), self)
+
+    @commands.command(**help_doc['odds'])
+    @gambit_channel
+    async def odds(self, ctx: Context):
+        cg = current_gambit()
+        if not cg:
+            await ctx.send('No gambit is currently running, please wait for one to start before betting.')
+            return
+        await ctx.send(f'If you win a bet on {cg.team1} you will get {cg.odds_1} extra G-Coins.'
+                       f'\nIf you win bet on {cg.team2} you will get {cg.odds_2} extra G-Coins.')
+
     ''' ***********************************STAFF COMMANDS ************************************************'''
 
     @commands.group(name='staff', brief='Commands for staff', invoke_without_command=True)
     async def staff(self, ctx):
         await self.help(ctx, 'staff')
+
+    @commands.command(**help_doc['setslots'])
+    @role_call(STAFF_LIST)
+    @main_only
+    async def setslots(self, ctx, num: int, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        new = cur_slot_set(actual_crew, num)
+        await ctx.send(f'Set {actual_crew.name} slots to {new}.')
 
     @commands.command(**help_doc['cooldown'], hidden=True)
     @role_call(STAFF_LIST)
@@ -1082,6 +1397,51 @@ class ScoreSheetBot(commands.Cog):
         self.cache.flairing_allowed = True
         await ctx.send('Flairing has been re-enabled.')
 
+    @commands.command(**help_doc['disable'])
+    @role_call(STAFF_LIST)
+    async def disable(self, ctx: Context, channel: discord.TextChannel):
+        if channel.id in disabled_channels():
+            msg = await ctx.send(f'{channel.name} is already disabled, re-enable?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            remove_disabled_channel(channel.id)
+            await ctx.send(f'{channel.name} undisabled.')
+        else:
+            msg = await ctx.send(f'Really disable the bot in {channel.name}?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            add_disabled_channel(channel.id)
+            await ctx.send(f'JettBot disabled in {channel.name}.')
+
+    @commands.command(**help_doc['deactivate'])
+    @role_call(STAFF_LIST)
+    async def deactivate(self, ctx: Context, command: str):
+        command_name = closest_command(command, self)
+        db_command = command_lookup(command_name)
+        if db_command[1]:
+            msg = await ctx.send(f'`{command_name}` is already deactivated, re-activate?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            set_command_activation(command_name, False)
+            await ctx.send(f'{command_name} reactivated.')
+        else:
+            msg = await ctx.send(f'really deactivate `{command_name}`?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            set_command_activation(command_name, True)
+            await ctx.send(f'`{command_name}` deactivated.')
+
+    @commands.command(**help_doc['usage'])
+    @role_call([DOCS, MINION, ADMIN, CERTIFIED])
+    async def usage(self, ctx: Context):
+        pages = menus.MenuPages(source=Paged(command_leaderboard(), title='Command usage counts'),
+                                clear_reactions_after=True)
+        await pages.start(ctx)
+
     @commands.command(**help_doc['pending'], hidden=True)
     @role_call(STAFF_LIST)
     async def pending(self, ctx: Context):
@@ -1096,6 +1456,78 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     async def po(self, ctx: Context):
         await ctx.send(embed=playoff_summary(self))
+
+    @commands.command(**help_doc['register'])
+    @main_only
+    @role_call(STAFF_LIST)
+    @flairing_required
+    async def register(self, ctx: Context, members: Greedy[discord.Member], new_crew: str = None):
+
+        await self.cache.update(self)
+        success = []
+        fail_not_overflow = []
+        fail_on_crew = []
+        flairing_crew = crew_lookup(new_crew, self)
+        for member in members:
+            try:
+                user_crew = crew(member, self)
+            except ValueError:
+                user_crew = None
+
+            if user_crew:
+                await response_message(ctx, f'{member.display_name} '
+                                            f'must be unflaired for their current crew before they can be flaired. ')
+                fail_on_crew.append(member)
+                continue
+            overflow_mem = discord.utils.get(self.cache.overflow_server.members, id=member.id)
+            if flairing_crew.overflow and not overflow_mem:
+                await response_message(ctx,
+                                       f'{member.mention} is not in the overflow server and '
+                                       f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
+                fail_not_overflow.append(member)
+                continue
+            of_before, of_after = None, None
+            if flairing_crew.overflow:
+                of_user = self.cache.overflow_server.get_member(member.id)
+                of_before = set(of_user.roles)
+            before = set(member.roles)
+            try:
+                await flair(member, flairing_crew, self, True, True)
+                record_flair(member, flairing_crew)
+            except ValueError as ve:
+                await response_message(ctx, str(ve))
+                return
+
+            after = set(ctx.guild.get_member(member.id).roles)
+            if flairing_crew.overflow:
+                overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
+                of_after = set(overflow_server.get_member(member.id).roles)
+            await self.cache.channels.flair_log.send(
+                embed=role_change(before, after, ctx.author, member, of_before, of_after))
+            success.append(member)
+        desc = ['Successful flairs']
+        for s in success:
+            desc.append(f'{s.display_name}: {s.mention}')
+        if fail_not_overflow or fail_on_crew:
+            desc.append('Unsuccessful flairs')
+            if fail_not_overflow:
+                desc.append('Not in overflow:')
+                for s in fail_not_overflow:
+                    desc.append(f'{s.display_name}: {s.mention}')
+            if fail_on_crew:
+                desc.append('Already on a crew, needs to unflair')
+                for s in fail_on_crew:
+                    desc.append(f'{s.display_name}: {s.mention}')
+        _, total = slots(flairing_crew)
+        if total == 0:
+            calced = calc_reg_slots(len(members))
+            total_slot_set(flairing_crew, calced)
+            desc.append(f'Initiated with {calced} slots.')
+
+        embed = discord.Embed(title=f'Crew Reg for {flairing_crew.name}', description='\n'.join(desc),
+                              color=flairing_crew.color)
+        await send_long_embed(ctx, embed)
+        await send_long_embed(self.cache.channels.flair_log, embed)
 
     @commands.command(**help_doc['freeze'])
     @role_call(STAFF_LIST)
@@ -1327,6 +1759,13 @@ class ScoreSheetBot(commands.Cog):
 
         await ctx.send(embed=thank_board(ctx.author))
 
+    @commands.command(**help_doc['disablelist'])
+    async def disablelist(self, ctx: Context):
+        ids = disabled_channels()
+        out = [f'<#{id_num}>' for id_num in ids]
+        out.insert(0, 'List of channels the bot is disabled in:')
+        await ctx.send('\n'.join(out))
+
     @commands.command(**help_doc['guide'])
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
@@ -1335,6 +1774,9 @@ class ScoreSheetBot(commands.Cog):
     async def listroles(self, ctx, *, role: str):
         actual, mems = members_with_str_role(role, self)
         mems.sort(key=lambda x: str(x))
+        if 'everyone' in actual:
+            await ctx.send('I will literally ban you if you try this again.')
+            return
         if len(mems) > 150:
             await ctx.send(f'{actual} is too large of a role, use `.listroles`.')
             return
@@ -1364,8 +1806,12 @@ class ScoreSheetBot(commands.Cog):
     async def overlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            return
         best = best_of_possibilities(two_roles, self)
         mems = overlap_members(best[0], best[1], self)
+        if 'everyone' in best[0] or 'everyone' in best[1]:
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            return
         out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([escape(str(mem)) for mem in mems])
 
         await send_long(ctx, out, ',')
@@ -1375,8 +1821,13 @@ class ScoreSheetBot(commands.Cog):
     async def pingoverlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            return
         best = best_of_possibilities(two_roles, self)
         mems = overlap_members(best[0], best[1], self)
+
+        if 'everyone' in best[0] or 'everyone' in best[1]:
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            return
         if len(mems) > 10:
             resp = f'You are attempting to ping the overlap between {best[0]} and {best[1]} this ' \
                    f'is {len(mems)} members, are you sure?'
@@ -1384,7 +1835,9 @@ class ScoreSheetBot(commands.Cog):
             if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
                 await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
+
         out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([mem.mention for mem in mems])
+
         await send_long(ctx, out, ',')
 
     @commands.command(hidden=True, **help_doc['bigcrew'])
@@ -1400,6 +1853,124 @@ class ScoreSheetBot(commands.Cog):
 
         embed = discord.Embed(title=f'These Crews have {over} members or more', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
+
+    @commands.command(hidden=True, **help_doc['softlock'])
+    @role_call(STAFF_LIST)
+    async def softlock(self, ctx, cr: Optional[str] = ''):
+        if cr:
+            actual = crew_lookup(cr, self)
+            usage = crew_usage(actual)
+            desc = []
+            for mem_id, links in usage.items():
+                link_str = ''
+                for link in links:
+                    link_str += f'[link]({link}) '
+                member = self.bot.get_user(mem_id)
+                if not member:
+                    desc.append(f'{mem_id}: {link_str} (name not found for some reason)')
+                    continue
+                desc.append(f'{member.display_name}: {link_str}')
+            desc.sort()
+            embed = discord.Embed(title=f'Usage of each member of {actual.name} from last month ({len(usage)} total)',
+                                  description='\n'.join(desc), color=discord.Color.random())
+            await send_long_embed(ctx, embed)
+        else:
+            pass
+            #TODO Fix this
+            # usage = all_crew_usage()
+            # desc = []
+            # for number, name, _ in usage:
+            #     desc.append(f'{name}: {number}')
+            # embed = discord.Embed(title='Number of unique players in cbs last month by each crew',
+            #                       description='\n'.join(desc), color=discord.Color.random())
+            # await send_long_embed(ctx, embed)
+
+    @commands.command(hidden=True, **help_doc['crnumbers'])
+    @role_call(STAFF_LIST)
+    async def crnumbers(self, ctx):
+        crews = list(self.cache.crews_by_name.values())
+
+        embed = discord.Embed(title=f'Crew numbers for analysis')
+        embed.add_field(name='number', value=str(len(crews)))
+        embed.add_field(name='average size', value='{:.2f}'.format(crew_avg(crews)))
+        embed.add_field(name='stdev of size', value='{:.2f}'.format(crew_stdev(crews)))
+        crew_bar_chart(crews)
+        await ctx.send(embed=embed, file=discord.File('cr.png'))
+
+    @commands.command(**help_doc['slots'])
+    @main_only
+    async def slots(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        left, total, unflairs = extra_slots(actual_crew)
+        await ctx.send(f'{actual_crew.name} has ({left}/{total} slots) and {unflairs}/3 unflairs till a new slot.')
+
+    @commands.command(hidden=True, **help_doc['slottotals'])
+    @role_call(STAFF_LIST)
+    async def slottotals(self, ctx):
+        crews = list(self.cache.crews_by_name.values())
+        desc = []
+        crew_msg = {}
+        for cr in crews:
+            if cr.member_count == 0:
+                continue
+            total, base, modifer, rollover = calc_total_slots(cr)
+            desc.append(f'{cr.name}: {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
+            total_slot_set(cr, total)
+            message = f'{cr.name} has {total} flairing slots this month:\n' \
+                      f'{base} base slots\n' \
+                      f'{modifer} from size modifier\n' \
+                      f'{rollover} rollover slots\n' \
+                      f'with an overall minimum of 5 slots\n' \
+                      'For more information, refer to message link in #lead_announcements. ' \
+                      'This bot will not be able to respond to any questions you have, so use #questions_feedback'
+            crew_msg[cr.name] = message
+
+        # for member in self.cache.scs.members:
+        #     if self.cache.roles.leader in member.roles:
+        #         msg = ''
+        #         try:
+        #             cr = crew(member, self)
+        #             msg = crew_msg[cr]
+        #         except ValueError:
+        #             await ctx.send(f'{str(member)} is a leader with no crew.')
+        #         if msg:
+        #             try:
+        #                 await member.send(msg)
+        #             except discord.errors.Forbidden:
+        #                 await ctx.send(f'{str(member)} is not accepting dms.')
+
+        embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
+        await send_long_embed(ctx, embed)
+
+    @commands.command(hidden=True, **help_doc['flaircounts'])
+    @role_call(STAFF_LIST)
+    async def flaircounts(self, ctx, long: Optional[str]):
+        crews = list(self.cache.crews_by_name.values())
+        flairs = crew_flairs()
+        flair_list = []
+        for cr in crews:
+            if cr.name in flairs:
+                flair_list.append((cr.name, flairs[cr.name]))
+            else:
+                flair_list.append((cr.name, 0))
+        flair_list.sort(key=lambda x: x[1])
+        embed = discord.Embed(title=f'Crew flair numbers for analysis')
+        embed.add_field(name='number of crews', value=str(len(crews)))
+        embed.add_field(name='average flairs', value='{:.2f}'.format(avg_flairs(flair_list)))
+        embed.add_field(name='stdev of flairs', value='{:.2f}'.format(flair_stdev(flair_list)))
+        flair_bar_chart(flair_list)
+        await ctx.send(embed=embed, file=discord.File('fl.png'))
+        if long:
+            await send_long(ctx, '\n'.join([f'{fl[0]}: {fl[1]}' for fl in flair_list]), '\n')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error):
@@ -1488,7 +2059,8 @@ class ScoreSheetBot(commands.Cog):
 def main():
     load_dotenv()
     token = os.getenv('DISCORD_TOKEN')
-    bot = commands.Bot(command_prefix=os.getenv('PREFIX'), intents=discord.Intents.all(), case_insensitive=True)
+    bot = commands.Bot(command_prefix=os.getenv('PREFIX'), intents=discord.Intents.all(), case_insensitive=True,
+                       allowed_mentions=discord.AllowedMentions(everyone=False))
     bot.remove_command('help')
     cache = src.cache.Cache()
     bot.add_cog(ScoreSheetBot(bot, cache))
