@@ -792,7 +792,11 @@ async def update_gambit_message(gambit: Gambit, bot: 'ScoreSheetBot'):
 async def update_finished_gambit(gambit: Gambit, winner: int, bot: 'ScoreSheetBot', top_win, top_loss):
     message = await bot.gambit_message(gambit.message_id)
     if message:
-        await message.delete()
+        try:
+            await message.delete()
+        except discord.errors.NotFound:
+            pass
+
     crew1 = crew_lookup(gambit.team1, bot)
     crew2 = crew_lookup(gambit.team2, bot)
     await bot.cache.channels.gambit_announce.send(

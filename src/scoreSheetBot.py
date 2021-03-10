@@ -1159,12 +1159,12 @@ class ScoreSheetBot(commands.Cog):
         else:
             lock_gambit(True)
             cg = current_gambit()
-            if self._gambit_message:
-                await self._gambit_message.delete()
             await response_message(ctx, f'Gambit between {cg.team1} and {cg.team2} locked by {ctx.author.mention}.')
             await self.cache.channels.gambit_announce.send(
-                f' {cg.team1} vs {cg.team2} has started! {stream}',
+                f'{self.cache.roles.gambit.mention}: {cg.team1} vs {cg.team2} has started! {stream}',
                 embed=cg.embed(crew_lookup(cg.team1, self).abbr, crew_lookup(cg.team2, self).abbr))
+            if self._gambit_message:
+                await self._gambit_message.delete()
 
     @gamb.command()
     @main_only
@@ -1256,8 +1256,9 @@ class ScoreSheetBot(commands.Cog):
         cancel_gambit()
         await ctx.send(f'Gambit concluded! {win.name} beat {loser}, {winning_bets} G-Coins were placed on {win.name} '
                        f'and {losing_bets} G-Coins were placed on {loser}.')
-        await update_finished_gambit(cg, winner, self, top_win, top_loss)
+
         update_gambit_sheet()
+        await update_finished_gambit(cg, winner, self, top_win, top_loss)
 
     @gamb.command()
     @main_only
