@@ -105,7 +105,7 @@ def add_member_and_roles(member: discord.Member) -> None:
      values(%s, %s, %s) ON CONFLICT DO NOTHING;"""
     add_role = """INSERT into roles (id, name, guild_id)
      values(%s, %s, %s) ON CONFLICT DO NOTHING;"""
-    add_member_role = """INSERT into current_member_roles (member_id, role_id, gained)
+    add_mem_role = """INSERT into current_member_roles (member_id, role_id, gained)
      values(%s, %s, current_timestamp) ON CONFLICT DO NOTHING;"""
     conn = None
     try:
@@ -115,7 +115,7 @@ def add_member_and_roles(member: discord.Member) -> None:
         cur.execute(add_member, (member.id, member.display_name, member.name))
         for role in member.roles:
             cur.execute(add_role, (role.id, role.name, role.guild.id))
-            cur.execute(add_member_role, (member.id, role.id))
+            cur.execute(add_mem_role, (member.id, role.id))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -137,7 +137,7 @@ def update_member_roles(member: discord.Member) -> None:
                             and roles.name != '@everyone';"""
     add_role = """INSERT into roles (id, name, guild_id)
      values(%s, %s, %s) ON CONFLICT DO NOTHING;"""
-    add_member_role = """INSERT into current_member_roles (member_id, role_id, gained)
+    add_mem_role = """INSERT into current_member_roles (member_id, role_id, gained)
      values(%s, %s, current_timestamp);"""
     delete_current = """DELETE FROM current_member_roles 
         where member_id = %s
@@ -162,7 +162,7 @@ def update_member_roles(member: discord.Member) -> None:
         for role_id in gained:
             role = member.guild.get_role(role_id)
             cur.execute(add_role, (role.id, role.name, role.guild.id))
-            cur.execute(add_member_role, (member.id, role.id))
+            cur.execute(add_mem_role, (member.id, role.id))
         for role_id in lost:
             cur.execute(delete_current, (member.id, role_id,))
             gained = cur.fetchone()[0]
@@ -269,6 +269,77 @@ def find_member_roles(member: discord.Member) -> List[str]:
             conn.close()
     return everything
 
+
+def all_member_roles(member_id: int) -> List[int]:
+    roles = """SELECT roles.id from current_member_roles, roles, members 
+                        where members.id = %s 
+                            and current_member_roles.member_id = members.id 
+                            and roles.id = current_member_roles.role_id
+                            and roles.name != '@everyone';"""
+    conn = None
+    everything = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(roles, (str(member_id),))
+        everything = [row[0] for row in cur.fetchall()]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return everything
+
+
+def remove_member_role(member_id: int, role_id: int) -> None:
+    delete_current = """DELETE FROM current_member_roles 
+        where member_id = %s
+        and role_id = %s
+        returning gained;"""
+
+    add_member_history = """INSERT into member_roles_history (member_id, role_id, gained, lost)
+     values(%s, %s, %s, current_timestamp);"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+
+        cur.execute(delete_current, (member_id, role_id,))
+        gained = cur.fetchone()[0]
+        cur.execute(add_member_history, (member_id, role_id, gained))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def add_member_role(member_id: int, role_id: int) -> None:
+
+    add_mem_role = """INSERT into current_member_roles (member_id, role_id, gained)
+     values(%s, %s, current_timestamp);"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+
+        cur.execute(add_mem_role, (member_id, role_id,))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
 
 def crew_id_from_crews(cr: Crew, cursor):
     fr_id = crew_id_from_role_id(cr.role_id, cursor)
@@ -571,7 +642,7 @@ def update_crew_tomain(crew: Crew, new_role_id: int) -> None:
             conn.close()
 
 
-def update_member_crew(member: discord.Member, new_crew: Crew) -> None:
+def update_member_crew(member_id: int, new_crew: Crew) -> None:
     delete_current = """DELETE FROM current_member_crews where member_id = %s RETURNING member_id, crew_id, joined;"""
     old_crew = """INSERT into member_crews_history (member_id, crew_id, joined, leave)
      values(%s, %s, %s, current_timestamp);"""
@@ -582,14 +653,14 @@ def update_member_crew(member: discord.Member, new_crew: Crew) -> None:
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
-        cur.execute(delete_current, (member.id,))
+        cur.execute(delete_current, (member_id,))
         current = cur.fetchone()
         if current:
             cur.execute(old_crew, (current[0], current[1], current[2],))
         if new_crew:
             new_id = crew_id_from_role_id(new_crew.role_id, cur)
             if new_id:
-                cur.execute(add_member_crew, (member.id, new_id,))
+                cur.execute(add_member_crew, (member_id, new_id,))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1763,6 +1834,37 @@ def record_unflair(member: discord.Member, crew: Crew, join_cd: bool) -> Tuple[i
         cur = conn.cursor()
         cr_id = crew_id_from_crews(crew, cur)
         cur.execute(record, (member.id, cr_id))
+        if not join_cd:
+            cur.execute(cr_record, (cr_id,))
+            unflairs = cur.fetchone()[0]
+            if unflairs == 3:
+                cur.execute(reset, (cr_id,))
+        cur.execute(slot, (cr_id,))
+        remaining, total = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return unflairs, remaining, total
+
+
+def record_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int, int]:
+    record = """INSERT into unflairs (member_id, crew_id, leave_time)
+     values(%s, %s, current_timestamp);"""
+    cr_record = """update crews set unflair = unflair + 1 where id = %s returning unflair;"""
+    reset = """update crews set unflair = 0, slotsleft = slotsleft+1  where id = %s;"""
+    slot = """SELECT slotsleft, slotstotal FROM crews where id = %s;"""
+    conn = None
+    unflairs, remaining, total = 0, 0, 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(record, (member_id, cr_id))
         if not join_cd:
             cur.execute(cr_record, (cr_id,))
             unflairs = cur.fetchone()[0]

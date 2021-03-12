@@ -118,12 +118,11 @@ class ScoreSheetBot(commands.Cog):
                 if not crew_correct(after, after_crew):
                     if after_crew:
                         after_crew = crew_lookup(after_crew, self)
-                    update_member_crew(after, after_crew)
+                    update_member_crew(after.id, after_crew)
                     self.cache.minor_update(self)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-
         if os.getenv('VERSION') == 'PROD':
             role_ids = find_member_roles(member)
             if role_ids:
@@ -968,7 +967,10 @@ class ScoreSheetBot(commands.Cog):
             try:
                 member = user_by_id(user, self)
             except ValueError as e:
-                await response_message(ctx, str(e))
+                if 'on this server' in str(e):
+                    await unflair_gone_member(ctx, user, self)
+                else:
+                    await response_message(ctx, str(e))
                 return
             if not check_roles(ctx.author, STAFF_LIST):
                 if member.id == ctx.author.id:
@@ -1010,7 +1012,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(
                 f'{str(member)} was on 24h cooldown so {user_crew.name} gets back a slot ({left}/{total})')
         else:
-            unflairs, remaining, total = record_unflair(member, user_crew, False)
+            unflairs, remaining, total = record_unflair(member.id, user_crew, False)
             if unflairs == 3:
                 await ctx.send(f'{user_crew.name} got a flair slot back for 3 unflairs. {remaining}/{total} left.')
             else:
