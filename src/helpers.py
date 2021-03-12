@@ -10,7 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
-    current_gambit, member_bet, member_gcoins, make_bet, slots
+    current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
+    remove_member_role, mod_slot, record_unflair, add_member_role
 from .gambit import Gambit
 
 if TYPE_CHECKING:
@@ -880,3 +881,77 @@ def calc_reg_slots(members: int) -> int:
         modifer_loc += 1
 
     return base + modifiers[modifer_loc]
+
+
+async def unflair_gone_member(ctx: Context, user: str, bot: 'ScoreSheetBot'):
+    try:
+        user_id = int(user.strip("<!@>"))
+    except ValueError:
+        raise ValueError(f'{user} is not a mention or an id. Try again.')
+    # Get crew of gone member
+    cr = find_member_crew(user_id)
+    # Check if author is leader of that crew or admin
+    pl = power_level(ctx.author)
+    if pl < 3:
+        author_crew = crew(ctx.author, bot)
+        if author_crew != cr:
+            await response_message(ctx, f'{ctx.author.mention} on {author_crew} cannot unflair {user} on {cr}')
+            return
+        if pl < 1:
+            await response_message(ctx, f'{ctx.author.mention} needs to be an advisor or leader to unflair others.')
+            return
+    crew_name = find_member_crew(user_id)
+    if not crew_name:
+        await response_message(ctx, f'{user} is not on a crew and not on the server.')
+        return
+    # Remove crew role
+    cr = crew_lookup(crew_name, bot)
+    roles = bot.cache.roles
+    remove_member_role(user_id, cr.role_id)
+    desc = [f'Roles lost by {user_id}:', cr.name]
+    member_roles = all_member_roles(user_id)
+    # Remove leadership + overflow role
+    roles_to_remove = [roles.overflow, roles.leader, roles.advisor]
+    for role in roles_to_remove:
+        if role.id in member_roles:
+            desc.append(role.name)
+            remove_member_role(user_id, role.id)
+
+    # Remove from current crews
+    update_member_crew(user_id, None)
+
+    # Unflair log in db
+    # Refund slot if 24h cd (do not remove)
+    if roles.join_cd.id in member_roles:
+        mod_slot(cr, 1)
+        unflairs, remaining, total = record_unflair(user_id, cr, True)
+
+        await ctx.send(f'{str(user_id)} was on 24h cooldown so {cr.name} gets back a slot ({remaining}/{total})')
+    # Else refund 1/3 slot
+    else:
+        unflairs, remaining, total = record_unflair(user_id, cr, False)
+
+        if unflairs == 3:
+            await ctx.send(f'{cr.name} got a flair slot back for 3 unflairs. {remaining}/{total} left.')
+        else:
+            await ctx.send(f'{unflairs}/3 unflairs for returning a slot.')
+    # Track Cycle
+    tracks = [roles.track1, roles.track2, roles.track3]
+    track = -1
+    if roles.true_locked.id not in member_roles:
+        for i in range(len(tracks)):
+            if tracks[i].id in member_roles:
+                track = i
+        if track < 2:
+            if track >= 0:
+                desc.append(tracks[track].name)
+                remove_member_role(user_id, tracks[track].id)
+            add_member_role(user_id, tracks[track+1].id)
+            desc.append('Roles Added:')
+            desc.append(tracks[track+1].name)
+    desc.append(f'\nChanges Made By: {str(ctx.author)} {ctx.author.id}')
+    # Unflair log in flaring logs
+    embed = discord.Embed(title=f'{user_id} unflaired while not in server', color=cr.color, description='\n'.join(desc))
+    await bot.cache.channels.flair_log.send(embed=embed)
+    # Respond in the channel
+    await response_message(ctx, f'successfully unflaired {user_id}.')
