@@ -2,6 +2,8 @@ import os
 import sys
 import traceback
 import time
+import logging
+
 import discord
 import math
 import functools
@@ -12,6 +14,7 @@ from discord.ext.commands import Greedy
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
 
+from discord_slash import SlashCommand, cog_ext, SlashContext
 from src.gambit_helpers import update_gambit_sheet
 from .db_helpers import *
 import src.cache
@@ -19,7 +22,6 @@ from .character import all_emojis, string_to_emote, all_alts, CHARACTERS
 from .decorators import *
 from .help import help_doc
 from .constants import *
-import logging
 
 logging.basicConfig(level=logging.INFO)
 
@@ -1772,8 +1774,9 @@ class ScoreSheetBot(commands.Cog):
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
-    @commands.command(**help_doc['listroles'])
-    async def listroles(self, ctx, *, role: str):
+    @cog_ext.cog_slash(name='listroles', description='Find the users with this role', connector={'role': 'role'},
+                       guild_ids=[430361913369690113])
+    async def listroles(self, ctx: SlashContext, *, role: str):
         actual, mems = members_with_str_role(role, self)
         mems.sort(key=lambda x: str(x))
         if 'everyone' in actual:
@@ -1878,7 +1881,7 @@ class ScoreSheetBot(commands.Cog):
             await send_long_embed(ctx, embed)
         else:
             pass
-            #TODO Fix this
+            # TODO Fix this
             # usage = all_crew_usage()
             # desc = []
             # for number, name, _ in usage:
@@ -2063,6 +2066,7 @@ def main():
     token = os.getenv('DISCORD_TOKEN')
     bot = commands.Bot(command_prefix=os.getenv('PREFIX'), intents=discord.Intents.all(), case_insensitive=True,
                        allowed_mentions=discord.AllowedMentions(everyone=False))
+    slash = SlashCommand(bot, override_type=True)
     bot.remove_command('help')
     cache = src.cache.Cache()
     bot.add_cog(ScoreSheetBot(bot, cache))

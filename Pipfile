@@ -47,6 +47,7 @@ psycopg2 = "*"
 oauth2client = "*"
 matplotlib = "*"
 gspread = "*"
+discord-py-slash-command = "*"
 
 [dev-packages]
 coverage = ">=5.3"
