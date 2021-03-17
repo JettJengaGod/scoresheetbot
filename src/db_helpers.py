@@ -1819,7 +1819,7 @@ def record_flair(member: discord.Member, crew: Crew):
     return
 
 
-def record_unflair(member: discord.Member, crew: Crew, join_cd: bool) -> Tuple[int, int, int]:
+def record_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int, int]:
     record = """INSERT into unflairs (member_id, crew_id, leave_time)
      values(%s, %s, current_timestamp);"""
     cr_record = """update crews set unflair = unflair + 1 where id = %s returning unflair;"""
@@ -1832,7 +1832,7 @@ def record_unflair(member: discord.Member, crew: Crew, join_cd: bool) -> Tuple[i
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cr_id = crew_id_from_crews(crew, cur)
-        cur.execute(record, (member.id, cr_id))
+        cur.execute(record, (member_id, cr_id))
         if not join_cd:
             cur.execute(cr_record, (cr_id,))
             unflairs = cur.fetchone()[0]
