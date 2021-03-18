@@ -1008,7 +1008,7 @@ class ScoreSheetBot(commands.Cog):
         await response_message(ctx, f'Successfully unflaired {member.mention} from {user_crew.name}.')
         if check_roles(member, [JOIN_CD]):
             mod_slot(user_crew, 1)
-            unflairs, left, total = record_unflair(member, user_crew, True)
+            unflairs, left, total = record_unflair(member.id, user_crew, True)
             await ctx.send(
                 f'{str(member)} was on 24h cooldown so {user_crew.name} gets back a slot ({left}/{total})')
         else:

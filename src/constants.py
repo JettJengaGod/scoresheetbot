@@ -35,6 +35,8 @@ TEMP_ROLES_FILE = 'temp_roles.txt'
 FLAIRING_CHANNEL_NAME = 'crew_flairing'
 FLAIRING_INFO = 'flairing_info'
 DOC_KEEPER_CHAT = 'scs_doc_keepers'
+
+SHEET_HISTORY = 'scoresheet_history'
 GAMBIT_ANNOUNCE = 819098161221468200
 GAMBIT_BOT_ID = 813645001271672852
 GAMBIT_ROLE = 'Gambit'

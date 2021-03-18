@@ -82,6 +82,7 @@ class Cache:
             doc_keeper = discord.utils.get(server.channels, name=DOC_KEEPER_CHAT)
             gambit_announce = discord.utils.get(server.channels, id=GAMBIT_ANNOUNCE)
             gambit_bot = discord.utils.get(server.channels, id=GAMBIT_BOT_ID)
+            sheet_history = discord.utils.get(server.channels, id=SHEET_HISTORY)
 
         return Channels
 
