@@ -5,7 +5,7 @@ class Categories:
     misc = 'misc'
     flairing = 'flairing'
     gambit = 'gambit'
-    arena = 'arena'
+    ba = 'ba'
 
 
 class HelpDoc(dict):
@@ -145,5 +145,6 @@ help_doc = dict(
                      'Member1 Member2 Member3 Crew'),
     coins=HelpDoc(Categories.gambit, 'Shows your gcoins'),
     bet=HelpDoc(Categories.gambit, 'Bets an amount on a crew, only valid while a gambit is active.', '', 'amount crew'),
-    odds=HelpDoc(Categories.gambit, 'Tells you the current odds for the gambit.')
+    odds=HelpDoc(Categories.gambit, 'Tells you the current odds for the gambit'),
+    result=HelpDoc(Categories.ba, 'Submits a battle arena result')
 )

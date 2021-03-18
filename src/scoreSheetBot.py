@@ -627,6 +627,42 @@ class ScoreSheetBot(commands.Cog):
 
         await send_long(ctx.author, "".join(out), ']')
 
+    ''' *************************************** BATTLE ARENA COMMANDS ********************************************'''
+
+    @commands.group(name='ba', brief='Commands for battle_arena', invoke_without_command=True)
+    async def ba(self, ctx):
+        await self.help(ctx, 'crews')
+
+    @commands.command(**help_doc['result'])
+    async def result(self, ctx: Context, opponent: discord.Member, *, everything: str):
+        split = everything.split()
+        score_split = 0
+        while not split[score_split].isdigit():
+            score_split += 1
+            if score_split == len(split):
+                await response_message(ctx, f'Format of result is: '
+                                            f'`@opponent yourchar yourchar2 yourscore opponentscore opponentchar\n'
+                                            f'eg `,result @EvilJett#0995 ness3 pika4 3 2 palu1`')
+                return
+        p1_chars = ' '.join([str(Character(sp, self.bot)) for sp in split[0:score_split]])
+        p2_chars = ' '.join([str(Character(sp, self.bot)) for sp in split[score_split + 2:]])
+        p1_score = int(split[score_split])
+        if not split[score_split + 1].isdigit():
+            await response_message(ctx, f'Format of result is: '
+                                        f'`@opponent yourchar yourchar2 yourscore opponentscore opponentchar\n'
+                                        f'eg `,result @EvilJett#0995 ness3 pika4 3 2 palu1`')
+            return
+        p2_score = int(split[score_split + 1])
+        # TODO confirm score is accurate
+        embed = discord.Embed(title=f'{ctx.author.display_name} vs {opponent.display_name}',
+                              color=discord.Color.random())
+        embed.add_field(name=f'{p1_score}', value=p1_chars, inline=True)
+        embed.add_field(name=f'{p2_score}', value=p2_chars, inline=True)
+        msg = await ctx.send(f'{opponent.mention} please confirm this match.', embed=embed)
+        if not await wait_for_reaction_on_message(YES, NO, msg, opponent, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+
     ''' *************************************** CREW COMMANDS ********************************************'''
 
     @commands.group(name='crews', brief='Commands for crews, including stats and rankings', invoke_without_command=True)
@@ -1878,7 +1914,7 @@ class ScoreSheetBot(commands.Cog):
             await send_long_embed(ctx, embed)
         else:
             pass
-            #TODO Fix this
+            # TODO Fix this
             # usage = all_crew_usage()
             # desc = []
             # for number, name, _ in usage:
