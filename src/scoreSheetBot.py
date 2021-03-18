@@ -1048,7 +1048,7 @@ class ScoreSheetBot(commands.Cog):
             flairing_crew = crew_lookup(crew(ctx.author, self), self)
         if flairing_crew.freeze and not new_crew:
             await response_message(ctx,
-                                   f'WEE OOO WEE OO {flairing_crew.name} is recruitment frozen till '
+                                   f'{flairing_crew.name} is recruitment frozen till '
                                    f'{flairing_crew.freeze} and can\'t flair people!')
             return
         if member.id == ctx.author.id and user_crew == flairing_crew.name:
