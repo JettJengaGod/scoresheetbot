@@ -428,6 +428,14 @@ class ScoreSheetBot(commands.Cog):
             await self._reject_outsiders(ctx)
             current_crew = await self._battle_crew(ctx, ctx.author)
             if current_crew == await self._battle_crew(ctx, user):
+                if check_roles(user, [WATCHLIST]):
+                    await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
+                    return
+                if check_roles(user, [JOIN_CD]):
+                    await ctx.send(
+                        f'{user.mention} joined this crew less than '
+                        f'24 hours ago and must wait to play ranked battles.')
+                    return
                 if self._current(ctx).playoff and check_roles(user, [PLAYOFF_LIMITED]):
                     await ctx.send(f'{user.mention} is playoff limited and cannot play in playoff battles.')
                     return
