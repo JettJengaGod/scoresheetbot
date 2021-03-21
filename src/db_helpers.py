@@ -8,8 +8,10 @@ import discord
 import psycopg2
 
 from src.battle import Battle, InfoMatch, TimerMatch
+from src.character import Character
 from src.crew import Crew
 from src.db_config import config
+from src.elo_helpers import EloPlayer
 from src.gambit import Gambit
 
 
@@ -321,7 +323,6 @@ def remove_member_role(member_id: int, role_id: int) -> None:
 
 
 def add_member_role(member_id: int, role_id: int) -> None:
-
     add_mem_role = """INSERT into current_member_roles (member_id, role_id, gained)
      values(%s, %s, current_timestamp);"""
     conn = None
@@ -339,6 +340,7 @@ def add_member_role(member_id: int, role_id: int) -> None:
         if conn is not None:
             conn.close()
     return
+
 
 def crew_id_from_crews(cr: Crew, cursor):
     fr_id = crew_id_from_role_id(cr.role_id, cursor)
@@ -488,7 +490,7 @@ def all_crews() -> List[List]:
 
 def all_crew_usage() -> List[List]:
     # TODO Update this to handle year too
-    everything = """select coalesce(t1.players,0) + coalesce(t2. players, 0) as total, 
+    everything = """select coalesce(t1.players,0) + coalesce(t2.players, 0) as total, 
         coalesce(t1.name, t2.name) as name, coalesce(t1.id, t2.id) as id
         from (select count(distinct(p1)) as players, crews.name, crews.id
             from match, battle, crews
@@ -1879,3 +1881,75 @@ def record_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int,
         if conn is not None:
             conn.close()
     return unflairs, remaining, total
+
+
+def get_member_elo(member_id: int) -> Optional[EloPlayer]:
+    member_elo = """select elo, k from arena_members where member_id = %s;"""
+    add_new_member = """insert into arena_members (member_id) values(%s)
+      returning elo, k;"""
+    conn = None
+    player = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+
+        cur.execute(member_elo, (member_id,))
+        elo = cur.fetchone()
+        if not elo:
+            cur.execute(add_new_member, (member_id,))
+            elo = cur.fetchone()
+        player = EloPlayer(member_id, elo[0], elo[1])
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return player
+
+
+def add_ba_match(winner: EloPlayer, loser: EloPlayer, winner_chars: List[Character], loser_chars: List[Character],
+                 winner_rating_change,
+                 loser_rating_change, winner_score, loser_score):
+    add_winner_match = """insert into arena_matches 
+    (member_id, win, characters, score, elo_before, elo_after, opponent_score) 
+        values (%s, True, %s, %s, %s, %s, %s) returning match_number;"""
+    add_loser_match = """insert into arena_matches 
+    (match_number, member_id, win, characters, score, elo_before, elo_after, opponent_score) 
+        values (%s, %s, FALSE, %s, %s, %s, %s, %s) returning match_number;"""
+    update_elo = """
+    update arena_members
+    set elo = %s
+        where member_id = %s;"""
+    conn = None
+    try:
+
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        winner_char_ids = [char_id_from_name(char.base, cur) for char in winner_chars]
+        cur.execute(add_winner_match, (
+            winner.member_id, winner_char_ids, winner_score, winner.rating, winner.rating + winner_rating_change,
+            loser_score))
+
+        match_number = cur.fetchone()[0]
+
+        loser_char_ids = [char_id_from_name(char.base, cur) for char in loser_chars]
+        cur.execute(add_loser_match, (
+            match_number, loser.member_id, loser_char_ids, loser_score, loser.rating,
+            loser.rating + loser_rating_change,
+            winner_score))
+
+        cur.execute(update_elo, (winner.rating+winner_rating_change, winner.member_id))
+        cur.execute(update_elo, (loser.rating+loser_rating_change, loser.member_id))
+
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return

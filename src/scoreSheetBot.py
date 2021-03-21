@@ -12,6 +12,7 @@ from discord.ext.commands import Greedy
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
 
+from src.elo_helpers import rating_update
 from src.gambit_helpers import update_gambit_sheet
 from .db_helpers import *
 import src.cache
@@ -644,8 +645,14 @@ class ScoreSheetBot(commands.Cog):
                                             f'`@opponent yourchar yourchar2 yourscore opponentscore opponentchar\n'
                                             f'eg `,result @EvilJett#0995 ness3 pika4 3 2 palu1`')
                 return
-        p1_chars = ' '.join([str(Character(sp, self.bot)) for sp in split[0:score_split]])
-        p2_chars = ' '.join([str(Character(sp, self.bot)) for sp in split[score_split + 2:]])
+        p1_chars = [Character(sp, self.bot) for sp in split[0:score_split]]
+        p2_chars = [Character(sp, self.bot) for sp in split[score_split + 2:]]
+        if not p1_chars or not p2_chars:
+            await response_message(ctx, f'Both players need at least 1 character.\n'
+                                        f'Format of result is: '
+                                        f'`@opponent yourchar yourchar2 yourscore opponentscore opponentchar\n'
+                                        f'eg `,result @EvilJett#0995 ness3 pika4 3 2 palu1`')
+            return
         p1_score = int(split[score_split])
         if not split[score_split + 1].isdigit():
             await response_message(ctx, f'Format of result is: '
@@ -653,15 +660,47 @@ class ScoreSheetBot(commands.Cog):
                                         f'eg `,result @EvilJett#0995 ness3 pika4 3 2 palu1`')
             return
         p2_score = int(split[score_split + 1])
-        # TODO confirm score is accurate
+        if not ((p1_score == 3) != (p2_score == 3)) or not (0 <= p1_score <= 3 and 0 <= p2_score <= 3):
+            await response_message(ctx, f'A score of {p1_score} - {p2_score} is not valid for a best of 5')
+            return
+        if p1_score > p2_score:
+            winner_score = p1_score
+            loser_score = p2_score
+            winner_member = ctx.author
+            winner_chars = p1_chars
+            loser_member = opponent
+            loser_chars = p2_chars
+        else:
+            winner_score = p2_score
+            loser_score = p1_score
+            winner_member = opponent
+            loser_member = ctx.author
+            winner_chars = p2_chars
+            loser_chars = p1_chars
+
         embed = discord.Embed(title=f'{ctx.author.display_name} vs {opponent.display_name}',
                               color=discord.Color.random())
-        embed.add_field(name=f'{p1_score}', value=p1_chars, inline=True)
-        embed.add_field(name=f'{p2_score}', value=p2_chars, inline=True)
+        embed.add_field(name=f'{p1_score}', value=' '.join([str(char) for char in p1_chars]), inline=True)
+        embed.add_field(name=f'{p2_score}', value=' '.join([str(char) for char in p2_chars]), inline=True)
+        embed.add_field(name=f'**Winner: {winner_member.display_name}**', inline=False,
+                        value=f'Loser: {loser_member.display_name}')
         msg = await ctx.send(f'{opponent.mention} please confirm this match.', embed=embed)
         if not await wait_for_reaction_on_message(YES, NO, msg, opponent, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
+        win_elo = get_member_elo(winner_member.id)
+        lose_elo = get_member_elo(loser_member.id)
+        winner_change, loser_change = rating_update(win_elo, lose_elo, 1)
+        add_ba_match(win_elo, lose_elo, winner_chars, loser_chars, winner_change, loser_change, winner_score,
+                     loser_score)
+        result_embed = discord.Embed(
+            title=f'{winner_member.display_name} {winner_score}-{loser_score} {loser_member.display_name}',
+            color=winner_member.color)
+        result_embed.add_field(name=f'{winner_member.display_name}', value=f'{win_elo.rating}+{winner_change}',
+                               inline=True)
+        result_embed.add_field(name=f'{loser_member.display_name}', value=f'{lose_elo.rating}{loser_change}',
+                               inline=True)
+        await ctx.send(embed=result_embed)
 
     ''' *************************************** CREW COMMANDS ********************************************'''
 
