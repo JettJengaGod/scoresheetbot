@@ -7,7 +7,7 @@ from typing import List, Tuple, Optional, Iterable, Dict
 import discord
 import psycopg2
 
-from src.battle import Battle, InfoMatch, TimerMatch
+from src.battle import Battle, InfoMatch, TimerMatch, ForfeitMatch
 from src.crew import Crew
 from src.db_config import config
 from src.gambit import Gambit
@@ -413,7 +413,7 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
         ))
         battle_id = cur.fetchone()[0]
         for order, match in enumerate(battle.matches):
-            if isinstance(match, TimerMatch) or isinstance(match, InfoMatch):
+            if isinstance(match, TimerMatch) or isinstance(match, InfoMatch) or isinstance(match, ForfeitMatch):
                 continue
             winner_id = match.p1.id if match.winner == 1 else match.p2.id
             cur.execute(add_match, (

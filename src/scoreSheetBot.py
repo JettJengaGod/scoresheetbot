@@ -385,6 +385,9 @@ class ScoreSheetBot(commands.Cog):
                 if self._current(ctx).ext_used(team):
                     await ctx.send(f'{team} has already used their extension.')
                     return
+                else:
+                    await ctx.send(f'{team} just used their extension. '
+                                   f'They now get 5 more minutes for their next player to be in the arena.')
             else:
                 await ctx.send(f'During a mock you need to use your extension, like this'
                                f' `,ext teamname`.')
@@ -401,6 +404,37 @@ class ScoreSheetBot(commands.Cog):
                                f'They now get 5 more minutes for their next player to be in the arena.')
                 return
         await send_sheet(ctx, battle=self._current(ctx))
+
+    @commands.command(**help_doc['forfeit'])
+    @main_only
+    @has_sheet
+    @ss_channel
+    @is_lead
+    async def forfeit(self, ctx: Context, team: str = None):
+        if self._current(ctx).mock:
+            if team:
+                msg = await ctx.send(f'{ctx.author.mention}:{team} has {self._current(ctx).lookup(team).stocks} stocks '
+                                     f'left, are you sure you want to forfeit?')
+                if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                    await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                    return
+                self._current(ctx).forfeit(team)
+            else:
+                await ctx.send(f'During a mock you need to forfeit, like this'
+                               f' `,forfeit teamname`')
+                return
+        else:
+            await self._reject_outsiders(ctx)
+            author_crew = await self._battle_crew(ctx, ctx.author)
+            msg = await ctx.send(f'{ctx.author.mention}:{author_crew} has '
+                                 f'{self._current(ctx).lookup(author_crew).stocks} stocks left, '
+                                 f'are you sure you want to forfeit?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+            self._current(ctx).forfeit(author_crew)
+        await send_sheet(ctx, battle=self._current(ctx))
+
 
     @commands.command(**help_doc['ext'])
     @main_only
