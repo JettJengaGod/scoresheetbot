@@ -3,15 +3,14 @@ from datetime import date
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict, Sequence, ValuesView
 
 from dateutil.relativedelta import relativedelta
-import matplotlib.pyplot as plt;
-
-plt.rcdefaults()
-import numpy as np
 import matplotlib.pyplot as plt
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
 from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
-    remove_member_role, mod_slot, record_unflair, add_member_role
+    remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings
 from .gambit import Gambit
 
 if TYPE_CHECKING:
@@ -946,12 +945,31 @@ async def unflair_gone_member(ctx: Context, user: str, bot: 'ScoreSheetBot'):
             if track >= 0:
                 desc.append(tracks[track].name)
                 remove_member_role(user_id, tracks[track].id)
-            add_member_role(user_id, tracks[track+1].id)
+            add_member_role(user_id, tracks[track + 1].id)
             desc.append('Roles Added:')
-            desc.append(tracks[track+1].name)
+            desc.append(tracks[track + 1].name)
     desc.append(f'\nChanges Made By: {str(ctx.author)} {ctx.author.id}')
     # Unflair log in flaring logs
     embed = discord.Embed(title=f'{user_id} unflaired while not in server', color=cr.color, description='\n'.join(desc))
     await bot.cache.channels.flair_log.send(embed=embed)
     # Respond in the channel
     await response_message(ctx, f'successfully unflaired {user_id}.')
+
+
+def update_ba_sheet():
+    scope = [
+        'https://www.googleapis.com/auth/drive',
+        'https://www.googleapis.com/auth/drive.file'
+    ]
+    file_name = '../client_key.json'
+    creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
+    client = gspread.authorize(creds)
+    sheet = client.open('Battle Arena').sheet1
+    player_rows = []
+    for name, elo, wins, total in ba_standings():
+        player_rows.append([name, elo, '', wins, total - wins])
+
+    sheet.batch_update([{
+        'range': f'B9:F{9 + len(player_rows)}',
+        'values': player_rows
+    }])

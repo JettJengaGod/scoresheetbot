@@ -1953,3 +1953,30 @@ def add_ba_match(winner: EloPlayer, loser: EloPlayer, winner_chars: List[Charact
         if conn is not None:
             conn.close()
     return
+
+
+def ba_standings() -> Tuple[Tuple[str, int, int, int]]:
+    leaderboard = """select members.nickname, arena_members.elo, count(distinct(wins.match_number)) as wins, count(distinct (total.match_number)) as combined
+    from arena_members, arena_matches as wins, arena_matches as total, members
+        where arena_members.member_id = wins.member_id
+            and members.id = wins.member_id and wins.member_id = total.member_id
+                and wins.win = True
+                    group by members.id, arena_members.member_id
+                        order by arena_members.elo desc;
+"""
+    conn = None
+    standings = ()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(leaderboard)
+        standings = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return standings

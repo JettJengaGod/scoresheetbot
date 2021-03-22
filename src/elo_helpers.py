@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Tuple
 
 
+
 @dataclass
 class EloPlayer:
     member_id: int
@@ -30,3 +31,14 @@ def rating_update(p1: EloPlayer, p2: EloPlayer, result: int) -> Tuple[int, int]:
         p1_change = math.floor(p1.k * (0 - prob_1))
         p2_change = math.ceil(p2.k * (1 - prob_2))
     return p1_change, p2_change
+
+
+def colnum_string(n):
+    string = ""
+    while n > 0:
+        n, remainder = divmod(n - 1, 26)
+        string = chr(65 + remainder) + string
+    return string
+
+
+

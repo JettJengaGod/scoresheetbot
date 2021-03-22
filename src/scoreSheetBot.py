@@ -701,6 +701,7 @@ class ScoreSheetBot(commands.Cog):
         result_embed.add_field(name=f'{loser_member.display_name}', value=f'{lose_elo.rating}{loser_change}',
                                inline=True)
         await ctx.send(embed=result_embed)
+        update_ba_sheet()
 
     ''' *************************************** CREW COMMANDS ********************************************'''
 
