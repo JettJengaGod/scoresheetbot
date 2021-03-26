@@ -1903,7 +1903,7 @@ class ScoreSheetBot(commands.Cog):
     async def softlock(self, ctx, cr: Optional[str] = ''):
         if cr:
             actual = crew_lookup(cr, self)
-            usage = crew_usage(actual)
+            usage = crew_usage(actual, 1)
             desc = []
             for mem_id, links in usage.items():
                 link_str = ''
@@ -1918,16 +1918,36 @@ class ScoreSheetBot(commands.Cog):
             embed = discord.Embed(title=f'Usage of each member of {actual.name} from last month ({len(usage)} total)',
                                   description='\n'.join(desc), color=discord.Color.random())
             await send_long_embed(ctx, embed)
+            usage = crew_usage(actual, 0)
+            desc = []
+            for mem_id, links in usage.items():
+                link_str = ''
+                for link in links:
+                    link_str += f'[link]({link}) '
+                member = self.bot.get_user(mem_id)
+                if not member:
+                    desc.append(f'{mem_id}: {link_str} (name not found for some reason)')
+                    continue
+                desc.append(f'{member.display_name}: {link_str}')
+            desc.sort()
+            embed = discord.Embed(title=f'Usage of each member of {actual.name} from this month ({len(usage)} total)',
+                                  description='\n'.join(desc), color=discord.Color.random())
+            await send_long_embed(ctx, embed)
         else:
-            pass
-            #TODO Fix this
-            # usage = all_crew_usage()
-            # desc = []
-            # for number, name, _ in usage:
-            #     desc.append(f'{name}: {number}')
-            # embed = discord.Embed(title='Number of unique players in cbs last month by each crew',
-            #                       description='\n'.join(desc), color=discord.Color.random())
-            # await send_long_embed(ctx, embed)
+            usage = all_crew_usage(1)
+            desc = []
+            for number, name, _ in usage:
+                desc.append(f'{name}: {number}')
+            embed = discord.Embed(title='Number of unique players in cbs last month by each crew',
+                                  description='\n'.join(desc), color=discord.Color.random())
+            await send_long_embed(ctx, embed)
+            usage = all_crew_usage()
+            desc = []
+            for number, name, _ in usage:
+                desc.append(f'{name}: {number}')
+            embed = discord.Embed(title='Number of unique players in cbs this month by each crew',
+                                  description='\n'.join(desc), color=discord.Color.random())
+            await send_long_embed(ctx, embed)
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
