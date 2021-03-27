@@ -322,7 +322,6 @@ def remove_member_role(member_id: int, role_id: int) -> None:
 
 
 def add_member_role(member_id: int, role_id: int) -> None:
-
     add_mem_role = """INSERT into current_member_roles (member_id, role_id, gained)
      values(%s, %s, current_timestamp);"""
     conn = None
@@ -340,6 +339,7 @@ def add_member_role(member_id: int, role_id: int) -> None:
         if conn is not None:
             conn.close()
     return
+
 
 def crew_id_from_crews(cr: Crew, cursor):
     fr_id = crew_id_from_role_id(cr.role_id, cursor)
@@ -487,32 +487,33 @@ def all_crews() -> List[List]:
     return crews
 
 
-def all_crew_usage() -> List[List]:
+def all_crew_usage(offset: int = 0) -> List[List]:
     # TODO Update this to handle year too
-    everything = """select coalesce(t1.players,0) + coalesce(t2. players, 0) as total, 
-        coalesce(t1.name, t2.name) as name, coalesce(t1.id, t2.id) as id
-        from (select count(distinct(p1)) as players, crews.name, crews.id
-            from match, battle, crews
-                where match.battle_id = battle.id and crews.id = battle.crew_1
-                and extract(month from battle.finished) = extract(month from current_timestamp) - 1
-                    group by crews.name, crews.id
-                        order by players desc) as t1
-            full outer join 
-            (select count(distinct(p2)) as players, crews.name, crews.id
-            from match, battle, crews
-                where match.battle_id = battle.id and crews.id = battle.crew_2
-                and extract(month from battle.finished) = extract(month from current_timestamp) - 1
-                    group by crews.name, crews.id
-                        order by players desc) as t2
-                on t1.id = t2.id
-                    order by total desc;"""
+    everything = """select count(distinct (players.player)) as total, crews.name, crews.id
+from (
+         select p1 as player, crew_1 as cr
+         from match,
+              battle
+         where match.battle_id = battle.id
+           and extract(month from battle.finished) = extract(month from current_timestamp) - %s
+         union
+         select p2 as player, crew_2 as cr
+         from match,
+              battle
+         where match.battle_id = battle.id
+           and extract(month from battle.finished) = extract(month from current_timestamp) - %s)
+         as players,
+     crews
+where crews.id = players.cr
+group by crews.id
+order by total desc;"""
     conn = None
     crews = [[]]
     try:
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
-        cur.execute(everything)
+        cur.execute(everything, (offset, offset))
         crews = cur.fetchall()
         conn.commit()
         cur.close()
@@ -524,16 +525,16 @@ def all_crew_usage() -> List[List]:
     return crews
 
 
-def crew_usage(cr: Crew) -> Dict[int, List[str]]:
+def crew_usage(cr: Crew, month_mod: int = 0) -> Dict[int, List[str]]:
     team_1 = """select distinct(p1) as players, battle.link
         from match, battle, crews
             where match.battle_id = battle.id and crews.id = battle.crew_1 and crews.id = %s
-            and extract(month from battle.finished) = extract(month from current_timestamp) - 1;
+            and extract(month from battle.finished) = extract(month from current_timestamp) - %s;
             """
     team_2 = """select distinct(p2) as players, battle.link
         from match, battle, crews
             where match.battle_id = battle.id and crews.id = battle.crew_2 and crews.id = %s
-            and extract(month from battle.finished) = extract(month from current_timestamp) - 1;
+            and extract(month from battle.finished) = extract(month from current_timestamp) - %s;
             """
     conn = None
     players = {}
@@ -542,7 +543,7 @@ def crew_usage(cr: Crew) -> Dict[int, List[str]]:
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cr_id = crew_id_from_crews(cr, cur)
-        cur.execute(team_1, (cr_id,))
+        cur.execute(team_1, (cr_id, month_mod))
         t1 = cur.fetchall()
         if t1:
             for member, link in t1:
@@ -551,7 +552,7 @@ def crew_usage(cr: Crew) -> Dict[int, List[str]]:
                 else:
                     players[member] = [link]
 
-        cur.execute(team_2, (cr_id,))
+        cur.execute(team_2, (cr_id, month_mod))
         t2 = cur.fetchall()
         if t2:
             for member, link in t2:
