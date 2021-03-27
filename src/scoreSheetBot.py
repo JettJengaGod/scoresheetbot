@@ -1770,7 +1770,8 @@ class ScoreSheetBot(commands.Cog):
         out.insert(0, 'List of channels the bot is disabled in:')
         await ctx.send('\n'.join(out))
 
-    @commands.command(**help_doc['guide'])
+    @cog_ext.cog_slash(name='guide', description='Shows the guide',
+                       guild_ids=[430361913369690113])
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
@@ -1798,7 +1799,8 @@ class ScoreSheetBot(commands.Cog):
                             description='\n'.join(desc), color=color)
         await send_long_embed(ctx, out)
 
-    @commands.command(**help_doc['pingrole'])
+    @cog_ext.cog_slash(name='pingrole', description='Ping the users with this role', connector={'role': 'role'},
+                       guild_ids=[430361913369690113])
     @role_call(STAFF_LIST)
     async def pingrole(self, ctx, *, role: str):
         actual, mems = members_with_str_role(role, self)
@@ -2066,7 +2068,7 @@ def main():
     token = os.getenv('DISCORD_TOKEN')
     bot = commands.Bot(command_prefix=os.getenv('PREFIX'), intents=discord.Intents.all(), case_insensitive=True,
                        allowed_mentions=discord.AllowedMentions(everyone=False))
-    slash = SlashCommand(bot, override_type=True)
+    slash = SlashCommand(bot, sync_commands=True)
     bot.remove_command('help')
     cache = src.cache.Cache()
     bot.add_cog(ScoreSheetBot(bot, cache))
