@@ -1898,9 +1898,11 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'These Crews have {over} members or more', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 
-    @commands.command(hidden=True, **help_doc['softlock'])
-    @role_call(STAFF_LIST)
-    async def softlock(self, ctx, cr: Optional[str] = ''):
+    @commands.command(hidden=True, **help_doc['softcap'])
+    async def softcap(self, ctx, cr: Optional[str] = ''):
+        if not cr:
+            if not check_roles(ctx.author, STAFF_LIST):
+                cr = crew(ctx.author, self)
         if cr:
             actual = crew_lookup(cr, self)
             usage = crew_usage(actual, 1)
