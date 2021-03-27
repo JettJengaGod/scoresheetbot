@@ -164,6 +164,15 @@ class TimerMatch(Match):
         return f'{self.player.name} on {self.team.name} lost a stock to the timer.'
 
 
+class ForfeitMatch(Match):
+    def __init__(self, team: Team, stocks: int):
+        self.stocks = stocks
+        self.team = team
+
+    def __str__(self):
+        return f'{self.team.name} forfeited with {self.stocks} left.'
+
+
 class Battle:
     def __init__(self, name1: str, name2: str, players: int, mock: bool = False, playoff: bool = False):
         self.team1 = Team(name1, players, players * PLAYER_STOCKS)
@@ -200,6 +209,12 @@ class Battle:
         team = self.lookup(team_name)
         team.add_player(player_name, player_id)
         team.leader.add(leader)
+
+    def forfeit(self, team_name: str):
+        team = self.lookup(team_name)
+        current = team.stocks
+        team.stocks = 0
+        self.matches.append(ForfeitMatch(team, current))
 
     def ext_used(self, team_name: str) -> bool:
         team = self.lookup(team_name)
@@ -333,6 +348,9 @@ class Battle:
 
             last.team.current_player.left += 1
             last.team.stocks += 1
+            return True
+        if isinstance(last, ForfeitMatch):
+            last.team.stocks = last.stocks
             return True
         self.team1.undo_match(last.p2_taken, last.p1_taken, last.p1)
         self.team2.undo_match(last.p1_taken, last.p2_taken, last.p2)

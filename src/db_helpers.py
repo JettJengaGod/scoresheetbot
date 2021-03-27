@@ -7,7 +7,7 @@ from typing import List, Tuple, Optional, Iterable, Dict
 import discord
 import psycopg2
 from db_config import config
-from battle import Battle, InfoMatch, TimerMatch
+from battle import Battle, InfoMatch, TimerMatch, ForfeitMatch
 from crew import Crew
 import discord
 import datetime
@@ -414,7 +414,7 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
         ))
         battle_id = cur.fetchone()[0]
         for order, match in enumerate(battle.matches):
-            if isinstance(match, TimerMatch) or isinstance(match, InfoMatch):
+            if isinstance(match, TimerMatch) or isinstance(match, InfoMatch) or isinstance(match, ForfeitMatch):
                 continue
             winner_id = match.p1.id if match.winner == 1 else match.p2.id
             cur.execute(add_match, (

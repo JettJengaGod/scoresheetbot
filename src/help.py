@@ -52,6 +52,7 @@ help_doc = dict(
     timerstock=HelpDoc(Categories.cb, 'Your current player will lose a stock to the timer'),
     lock=HelpDoc(Categories.cb, 'Locks the cb room to only crews playing in it'),
     unlock=HelpDoc(Categories.cb, 'Unlocks cb room to everyone'),
+    forfeit=HelpDoc(Categories.cb, 'Forfeits a crew battle'),
     crew=HelpDoc(Categories.crews, 'If provided with an argument, will search for a user\'s crew or '
                                    'crew and output that, otherwise provides author\'s crew', '',
                  'Optional<User/Crew>'),
