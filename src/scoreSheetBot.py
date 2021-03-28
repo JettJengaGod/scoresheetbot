@@ -1921,7 +1921,7 @@ class ScoreSheetBot(commands.Cog):
             desc.sort()
             embed = discord.Embed(title=f'Usage of each member of {actual.name} from last month ({len(usage)} total)',
                                   description='\n'.join(desc), color=discord.Color.random())
-            await send_long_embed(ctx, embed)
+            await send_long_embed(ctx.author, embed)
             usage = crew_usage(actual, 0)
             desc = []
             for mem_id, links in usage.items():
@@ -1936,7 +1936,8 @@ class ScoreSheetBot(commands.Cog):
             desc.sort()
             embed = discord.Embed(title=f'Usage of each member of {actual.name} from this month ({len(usage)} total)',
                                   description='\n'.join(desc), color=discord.Color.random())
-            await send_long_embed(ctx, embed)
+            await send_long_embed(ctx.author, embed)
+            await ctx.message.delete()
         else:
             usage = all_crew_usage(1)
             desc = []
@@ -1944,14 +1945,15 @@ class ScoreSheetBot(commands.Cog):
                 desc.append(f'{name}: {number}')
             embed = discord.Embed(title='Number of unique players in cbs last month by each crew',
                                   description='\n'.join(desc), color=discord.Color.random())
-            await send_long_embed(ctx, embed)
+            await send_long_embed(ctx.author, embed)
             usage = all_crew_usage()
             desc = []
             for number, name, _ in usage:
                 desc.append(f'{name}: {number}')
             embed = discord.Embed(title='Number of unique players in cbs this month by each crew',
                                   description='\n'.join(desc), color=discord.Color.random())
-            await send_long_embed(ctx, embed)
+            await send_long_embed(ctx.author, embed)
+            await ctx.message.delete()
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
