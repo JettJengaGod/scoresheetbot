@@ -1937,7 +1937,7 @@ class ScoreSheetBot(commands.Cog):
             embed = discord.Embed(title=f'Usage of each member of {actual.name} from this month ({len(usage)} total)',
                                   description='\n'.join(desc), color=discord.Color.random())
             await send_long_embed(ctx.author, embed)
-            await ctx.message.delete()
+            await ctx.message.add_reaction(emoji='✉')
         else:
             usage = all_crew_usage(1)
             desc = []
@@ -1953,7 +1953,7 @@ class ScoreSheetBot(commands.Cog):
             embed = discord.Embed(title='Number of unique players in cbs this month by each crew',
                                   description='\n'.join(desc), color=discord.Color.random())
             await send_long_embed(ctx.author, embed)
-            await ctx.message.delete()
+            await ctx.message.add_reaction(emoji='✉')
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
