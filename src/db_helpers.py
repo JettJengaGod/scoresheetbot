@@ -923,6 +923,77 @@ def player_stocks(member: discord.Member) -> Tuple[int, int]:
     return vals if vals else (0, 0)
 
 
+def player_mvps(member: discord.Member) -> int:
+    mvps = """
+    select count(distinct (battle_id)) as mvps
+from (select mvps.battle_id, mvp, sent.id, sent.name
+      from (select battle_id, max(taken) as mvp
+            from (select battle_id, members.id, fighters.name, sum(p1_taken) as taken
+                  from match,
+                       members,
+                       fighters,
+                       battle
+                  where members.id = match.p1
+                    and fighters.id = match.p1_char_id
+                    and match.battle_id = battle.id
+                  group by battle_id, members.id, fighters.name) as play
+            group by battle_id) as mvps
+               inner join
+           (select battle_id, members.id, fighters.name, sum(p1_taken) as taken
+            from match,
+                 members,
+                 fighters,
+                 battle
+            where members.id = match.p1
+              and fighters.id = match.p1_char_id
+              and match.battle_id = battle.id
+            group by battle_id, members.id, fighters.name) as sent
+           on sent.battle_id = mvps.battle_id
+               and mvps.mvp = sent.taken
+      union
+      select mvps.battle_id, mvp, sent.id, sent.name
+      from (select battle_id, max(taken) as mvp
+            from (select battle_id, members.id, fighters.name, sum(p2_taken) as taken
+                  from match,
+                       members,
+                       fighters,
+                       battle
+                  where members.id = match.p2
+                    and fighters.id = match.p2_char_id
+                    and match.battle_id = battle.id
+                  group by battle_id, members.id, fighters.name) as play
+            group by battle_id) as mvps
+               inner join
+           (select battle_id, members.id, fighters.name, sum(p2_taken) as taken
+            from match,
+                 members,
+                 fighters,
+                 battle
+            where members.id = match.p2
+              and fighters.id = match.p2_char_id
+              and match.battle_id = battle.id
+            group by battle_id, members.id, fighters.name) as sent
+           on sent.battle_id = mvps.battle_id
+               and mvps.mvp = sent.taken) as everything
+    where everything.id = %s;
+;"""
+    conn = None
+    out = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(mvps, (member.id,))
+        out = cur.fetchone()[0]
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return out
+
+
 def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
     chars = """
         select coalesce(p1.battle_count,0)+coalesce(p2.battle_count,0) as battle_count, coalesce(p1.name, p2.name) from
@@ -943,6 +1014,29 @@ def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cur.execute(chars, (member.id, member.id,))
+        vals = cur.fetchall()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return vals
+
+def ba_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
+    chars = """
+        select count(distinct(arena_matches.match_number)) as battle_count, fighters.name
+            from arena_matches, fighters where arena_matches.member_id = %s
+            and fighters.id = any(arena_matches.characters)
+            group by fighters.name;"""
+    conn = None
+    out = []
+    vals = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(chars, (member.id,))
         vals = cur.fetchall()
 
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1000,6 +1094,34 @@ select p1_total.battles+p2_total.battles as battles, p2_wins.battle_wins+p1_wins
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cur.execute(win_loss, (member.id, member.id, member.id, member.id,))
+        vals = cur.fetchone()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return vals if vals else (0, 0)
+
+
+def ba_record(member: discord.Member) -> Tuple[int, int]:
+    win_loss = """
+select wins.number, losses.number
+from (select count(distinct (match_number)) as number
+      from arena_matches
+      where win = True
+        and member_id = %s) as wins,
+     (select count(distinct (match_number)) as number
+      from arena_matches
+      where win = False
+        and member_id = %s) as losses;"""
+    conn = None
+    vals = (0, 0)
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(win_loss, (member.id, member.id))
         vals = cur.fetchone()
 
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1883,6 +2005,27 @@ def record_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int,
     return unflairs, remaining, total
 
 
+def ba_elo(member: discord.Member) -> int:
+    member_elo = """select elo, k from arena_members where member_id = %s;"""
+    conn = None
+    out = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(member_elo, (member.id,))
+        res = cur.fetchone()
+        if res:
+            out = res[0]
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return out
+
+
 def get_member_elo(member_id: int) -> Optional[EloPlayer]:
     member_elo = """select elo, k from arena_members where member_id = %s;"""
     add_new_member = """insert into arena_members (member_id) values(%s)
@@ -1942,8 +2085,8 @@ def add_ba_match(winner: EloPlayer, loser: EloPlayer, winner_chars: List[Charact
             loser.rating + loser_rating_change,
             winner_score))
 
-        cur.execute(update_elo, (winner.rating+winner_rating_change, winner.member_id))
-        cur.execute(update_elo, (loser.rating+loser_rating_change, loser.member_id))
+        cur.execute(update_elo, (winner.rating + winner_rating_change, winner.member_id))
+        cur.execute(update_elo, (loser.rating + loser_rating_change, loser.member_id))
 
         conn.commit()
         cur.close()

@@ -636,6 +636,10 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['result'])
     async def result(self, ctx: Context, opponent: discord.Member, *, everything: str):
+        if ctx.channel.id != 808957203447808000:
+            msg = await response_message(ctx, 'This command can only be used in <#808957203447808000>')
+            await msg.delete(delay=3)
+            return
         split = everything.split()
         score_split = 0
         while not split[score_split].isdigit():
@@ -686,7 +690,10 @@ class ScoreSheetBot(commands.Cog):
                         value=f'Loser: {loser_member.display_name}')
         msg = await ctx.send(f'{opponent.mention} please confirm this match.', embed=embed)
         if not await wait_for_reaction_on_message(YES, NO, msg, opponent, self.bot):
-            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await resp.delete(delay=10)
+            await ctx.message.delete()
+            await msg.delete(delay=5)
             return
         win_elo = get_member_elo(winner_member.id)
         lose_elo = get_member_elo(loser_member.id)
@@ -765,18 +772,35 @@ class ScoreSheetBot(commands.Cog):
 
         else:
             member = ctx.author
-        taken, lost = player_stocks(member)
-        total, wins = player_record(member)
-        title = f'Stats for {str(member)}'
-        embed = discord.Embed(title=title, color=member.color)
-        embed.add_field(name='Crews record while participating:', value=f'{wins}/{total - wins}', inline=False)
-        embed.add_field(name='Stocks Taken/Lost', value=f'{taken}/{lost}', inline=False)
-        pc = player_chars(member)
-        embed.add_field(name='Characters played', value='how many battles played in ', inline=False)
-        for char in pc:
-            emoji = string_to_emote(char[1], self.bot)
-            embed.add_field(name=emoji, value=f'{char[0]}', inline=True)
-        await ctx.send(embed=embed)
+        pages = menus.MenuPages(source=PlayerStatsPaged(member, self))
+        await pages.start(ctx)
+
+    @commands.command(**help_doc['stats'])
+    @main_only
+    async def stats(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+
+                pages = menus.MenuPages(source=PlayerStatsPaged(ambiguous, self))
+                await pages.start(ctx)
+                return
+            else:
+                actual_crew = ambiguous
+        else:
+            pages = menus.MenuPages(source=PlayerStatsPaged(ctx.author, self))
+            await pages.start(ctx)
+            return
+        record = crew_record(actual_crew)
+        if not record[2]:
+            await ctx.send(f'{actual_crew.name} does not have any recorded crew battles with the bot.')
+            return
+        title = f'{actual_crew.name}: {record[1]}-{int(record[2]) - int(record[1])}'
+        pages = menus.MenuPages(
+            source=Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon),
+            clear_reactions_after=True)
+        await pages.start(ctx)
+
 
     @commands.command(**help_doc['history'])
     @main_only
