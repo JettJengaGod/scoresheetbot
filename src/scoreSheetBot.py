@@ -21,6 +21,8 @@ from help import help_doc
 from constants import *
 
 from gambit_helpers import update_gambit_sheet
+
+from elo_helpers import rating_update
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -671,6 +673,88 @@ class ScoreSheetBot(commands.Cog):
 
         await send_long(ctx.author, "".join(out), ']')
 
+    ''' *************************************** BATTLE ARENA COMMANDS ********************************************'''
+
+    @commands.group(name='ba', brief='Commands for battle_arena', invoke_without_command=True)
+    async def ba(self, ctx):
+        await self.help(ctx, 'crews')
+
+    @commands.command(**help_doc['result'])
+    async def result(self, ctx: Context, opponent: discord.Member, *, everything: str):
+        if ctx.channel.id != 808957203447808000:
+            msg = await response_message(ctx, 'This command can only be used in <#808957203447808000>')
+            await msg.delete(delay=3)
+            return
+        split = everything.split()
+        score_split = 0
+        while not split[score_split].isdigit():
+            score_split += 1
+            if score_split == len(split):
+                await response_message(ctx, f'Format of result is: '
+                                            f'`@opponent yourchar yourchar2 yourscore opponentscore opponentchar\n'
+                                            f'eg `,result @EvilJett#0995 ness3 pika4 3 2 palu1`')
+                return
+        p1_chars = [Character(sp, self.bot) for sp in split[0:score_split]]
+        p2_chars = [Character(sp, self.bot) for sp in split[score_split + 2:]]
+        if not p1_chars or not p2_chars:
+            await response_message(ctx, f'Both players need at least 1 character.\n'
+                                        f'Format of result is: '
+                                        f'`@opponent yourchar yourchar2 yourscore opponentscore opponentchar\n'
+                                        f'eg `,result @EvilJett#0995 ness3 pika4 3 2 palu1`')
+            return
+        p1_score = int(split[score_split])
+        if not split[score_split + 1].isdigit():
+            await response_message(ctx, f'Format of result is: '
+                                        f'`@opponent yourchar yourchar2 yourscore opponentscore opponentchar\n'
+                                        f'eg `,result @EvilJett#0995 ness3 pika4 3 2 palu1`')
+            return
+        p2_score = int(split[score_split + 1])
+        if not ((p1_score == 3) != (p2_score == 3)) or not (0 <= p1_score <= 3 and 0 <= p2_score <= 3):
+            await response_message(ctx, f'A score of {p1_score} - {p2_score} is not valid for a best of 5')
+            return
+        if p1_score > p2_score:
+            winner_score = p1_score
+            loser_score = p2_score
+            winner_member = ctx.author
+            winner_chars = p1_chars
+            loser_member = opponent
+            loser_chars = p2_chars
+        else:
+            winner_score = p2_score
+            loser_score = p1_score
+            winner_member = opponent
+            loser_member = ctx.author
+            winner_chars = p2_chars
+            loser_chars = p1_chars
+
+        embed = discord.Embed(title=f'{ctx.author.display_name} vs {opponent.display_name}',
+                              color=discord.Color.random())
+        embed.add_field(name=f'{p1_score}', value=' '.join([str(char) for char in p1_chars]), inline=True)
+        embed.add_field(name=f'{p2_score}', value=' '.join([str(char) for char in p2_chars]), inline=True)
+        embed.add_field(name=f'**Winner: {winner_member.display_name}**', inline=False,
+                        value=f'Loser: {loser_member.display_name}')
+        msg = await ctx.send(f'{opponent.mention} please confirm this match.', embed=embed)
+        if not await wait_for_reaction_on_message(YES, NO, msg, opponent, self.bot):
+            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await resp.delete(delay=10)
+            await ctx.message.delete()
+            await msg.delete(delay=5)
+            return
+        win_elo = get_member_elo(winner_member.id)
+        lose_elo = get_member_elo(loser_member.id)
+        winner_change, loser_change = rating_update(win_elo, lose_elo, 1)
+        add_ba_match(win_elo, lose_elo, winner_chars, loser_chars, winner_change, loser_change, winner_score,
+                     loser_score)
+        result_embed = discord.Embed(
+            title=f'{winner_member.display_name} {winner_score}-{loser_score} {loser_member.display_name}',
+            color=winner_member.color)
+        result_embed.add_field(name=f'{winner_member.display_name}', value=f'{win_elo.rating}+{winner_change}',
+                               inline=True)
+        result_embed.add_field(name=f'{loser_member.display_name}', value=f'{lose_elo.rating}{loser_change}',
+                               inline=True)
+        await ctx.send(embed=result_embed)
+        update_ba_sheet()
+
     ''' *************************************** CREW COMMANDS ********************************************'''
 
     @commands.group(name='crews', brief='Commands for crews, including stats and rankings', invoke_without_command=True)
@@ -733,18 +817,35 @@ class ScoreSheetBot(commands.Cog):
 
         else:
             member = ctx.author
-        taken, lost = player_stocks(member)
-        total, wins = player_record(member)
-        title = f'Stats for {str(member)}'
-        embed = discord.Embed(title=title, color=member.color)
-        embed.add_field(name='Crews record while participating:', value=f'{wins}/{total - wins}', inline=False)
-        embed.add_field(name='Stocks Taken/Lost', value=f'{taken}/{lost}', inline=False)
-        pc = player_chars(member)
-        embed.add_field(name='Characters played', value='how many battles played in ', inline=False)
-        for char in pc:
-            emoji = string_to_emote(char[1], self.bot)
-            embed.add_field(name=emoji, value=f'{char[0]}', inline=True)
-        await ctx.send(embed=embed)
+        pages = menus.MenuPages(source=PlayerStatsPaged(member, self))
+        await pages.start(ctx)
+
+    @commands.command(**help_doc['stats'])
+    @main_only
+    async def stats(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+
+                pages = menus.MenuPages(source=PlayerStatsPaged(ambiguous, self))
+                await pages.start(ctx)
+                return
+            else:
+                actual_crew = ambiguous
+        else:
+            pages = menus.MenuPages(source=PlayerStatsPaged(ctx.author, self))
+            await pages.start(ctx)
+            return
+        record = crew_record(actual_crew)
+        if not record[2]:
+            await ctx.send(f'{actual_crew.name} does not have any recorded crew battles with the bot.')
+            return
+        title = f'{actual_crew.name}: {record[1]}-{int(record[2]) - int(record[1])}'
+        pages = menus.MenuPages(
+            source=Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon),
+            clear_reactions_after=True)
+        await pages.start(ctx)
+
 
     @commands.command(**help_doc['history'])
     @main_only

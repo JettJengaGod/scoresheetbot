@@ -7,11 +7,18 @@ import matplotlib.pyplot as plt;
 plt.rcdefaults()
 import numpy as np
 from dateutil.relativedelta import relativedelta
+from gambit import Gambit
+from dateutil.relativedelta import relativedelta
+import matplotlib.pyplot as plt
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+from character import string_to_emote
 from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
-    remove_member_role, mod_slot, record_unflair, add_member_role
-from gambit import Gambit
+    remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
+    player_mvps, player_chars, ba_record, ba_elo, ba_chars
 
 if TYPE_CHECKING:
     from scoreSheetBot import ScoreSheetBot
@@ -395,7 +402,7 @@ async def demote(member: discord.Member, bot: 'ScoreSheetBot') -> str:
     return ''
 
 
-async def response_message(ctx: Context, msg: str):
+async def response_message(ctx: Context, msg: str) -> discord.Message:
     msg = await ctx.send(f'{ctx.author.mention}: {msg}')
     await ctx.message.delete(delay=1)
     return msg
@@ -605,6 +612,50 @@ class Paged(menus.ListPageSource):
         if self.thumbnail:
             embed.set_thumbnail(url=self.thumbnail)
         return embed
+
+
+class PlayerStatsPaged(menus.ListPageSource):
+    def __init__(self, member: discord.Member, bot: 'ScoreSheetBot'):
+        taken, lost = player_stocks(member)
+        total, wins = player_record(member)
+        mvps = player_mvps(member)
+        title = f'Crew Battle Stats for {str(member)}'
+        cb_stats = discord.Embed(title=title, color=member.color)
+        cb_stats.add_field(name='Crews record while participating', value=f'{wins}/{total - wins}', inline=True)
+
+        cb_stats.add_field(name='MVPs', value=f'{mvps}', inline=True)
+        cb_stats.add_field(name='Stocks Taken/Lost', value=f'{taken}/{lost}', inline=False)
+        cb_stats.add_field(name='Ratio', value=f'{round(taken / max(lost, 1))}', inline=True)
+        pc = player_chars(member)
+        cb_stats.add_field(name='Characters played', value='how many battles played in ', inline=False)
+        for char in pc:
+            emoji = string_to_emote(char[1], bot.bot)
+            cb_stats.add_field(name=emoji, value=f'{char[0]}', inline=True)
+
+        ba_stats = discord.Embed(title=f'Battle Arena Stats for {str(member)}', color=member.color)
+        elo = ba_elo(member)
+        if elo:
+
+            wins, losses = ba_record(member)
+            elo = ba_elo(member)
+            ba_stats.add_field(name='record', value=f'{wins}/{losses}', inline=True)
+            ba_stats.add_field(name='winrate', value=f'{round(wins / (losses + wins), 2) * 100}%', inline=True)
+
+            ba_stats.add_field(name='Rating', value=f'{elo}', inline=False)
+            # TODO Add ranking here
+
+            ba_stats.add_field(name='Characters played', value='how many matches played in ', inline=False)
+            chars = ba_chars(member)
+            for char in chars:
+                emoji = string_to_emote(char[1], bot.bot)
+                ba_stats.add_field(name=emoji, value=f'{char[0]}', inline=True)
+        else:
+            ba_stats.description = 'This member has no battle arena history.'
+        data = [cb_stats, ba_stats]
+        super().__init__(data, per_page=1)
+
+    async def format_page(self, menu, entries) -> discord.Embed:
+        return entries
 
 
 class PoolPaged(menus.ListPageSource):
@@ -945,12 +996,31 @@ async def unflair_gone_member(ctx: Context, user: str, bot: 'ScoreSheetBot'):
             if track >= 0:
                 desc.append(tracks[track].name)
                 remove_member_role(user_id, tracks[track].id)
-            add_member_role(user_id, tracks[track+1].id)
+            add_member_role(user_id, tracks[track + 1].id)
             desc.append('Roles Added:')
-            desc.append(tracks[track+1].name)
+            desc.append(tracks[track + 1].name)
     desc.append(f'\nChanges Made By: {str(ctx.author)} {ctx.author.id}')
     # Unflair log in flaring logs
     embed = discord.Embed(title=f'{user_id} unflaired while not in server', color=cr.color, description='\n'.join(desc))
     await bot.cache.channels.flair_log.send(embed=embed)
     # Respond in the channel
     await response_message(ctx, f'successfully unflaired {user_id}.')
+
+
+def update_ba_sheet():
+    scope = [
+        'https://www.googleapis.com/auth/drive',
+        'https://www.googleapis.com/auth/drive.file'
+    ]
+    file_name = 'client_key.json'
+    creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
+    client = gspread.authorize(creds)
+    sheet = client.open('Battle Arena').sheet1
+    player_rows = []
+    for name, elo, wins, total in ba_standings():
+        player_rows.append([name, elo, '', wins, total - wins])
+
+    sheet.batch_update([{
+        'range': f'B9:F{9 + len(player_rows)}',
+        'values': player_rows
+    }])

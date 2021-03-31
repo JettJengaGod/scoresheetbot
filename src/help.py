@@ -5,6 +5,7 @@ class Categories:
     misc = 'misc'
     flairing = 'flairing'
     gambit = 'gambit'
+    ba = 'ba'
 
 
 class HelpDoc(dict):
@@ -88,6 +89,7 @@ help_doc = dict(
     history=HelpDoc(Categories.crews, 'Crew history of a member'),
     vod=HelpDoc(Categories.crews, 'Used for a streamer or admin to set the vod of a match', '', 'battle_id vod_url'),
     playerstats=HelpDoc(Categories.crews, 'Stats for a player'),
+    stats=HelpDoc(Categories.crews, 'Stats for a player or crew, depending on what you send in'),
     battles=HelpDoc(Categories.crews, 'All battles that have been recorded with the bot'),
     unflair=HelpDoc(Categories.flairing, 'Unflairs you from your crew or a member from your crew if you are a leader '
                                          'if you are an admin, unflairs anyone', '', 'Optional<Member>'),
@@ -145,5 +147,6 @@ help_doc = dict(
                      'Member1 Member2 Member3 Crew'),
     coins=HelpDoc(Categories.gambit, 'Shows your gcoins'),
     bet=HelpDoc(Categories.gambit, 'Bets an amount on a crew, only valid while a gambit is active.', '', 'amount crew'),
-    odds=HelpDoc(Categories.gambit, 'Tells you the current odds for the gambit.')
+    odds=HelpDoc(Categories.gambit, 'Tells you the current odds for the gambit'),
+    result=HelpDoc(Categories.ba, 'Submits a battle arena result')
 )
