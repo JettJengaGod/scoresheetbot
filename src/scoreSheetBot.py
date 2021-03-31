@@ -436,7 +436,6 @@ class ScoreSheetBot(commands.Cog):
             self._current(ctx).forfeit(author_crew)
         await send_sheet(ctx, battle=self._current(ctx))
 
-
     @commands.command(**help_doc['ext'])
     @main_only
     @has_sheet
@@ -842,7 +841,6 @@ class ScoreSheetBot(commands.Cog):
             source=Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon),
             clear_reactions_after=True)
         await pages.start(ctx)
-
 
     @commands.command(**help_doc['history'])
     @main_only
@@ -2091,8 +2089,11 @@ class ScoreSheetBot(commands.Cog):
             if cr.member_count == 0:
                 continue
             total, base, modifer, rollover = calc_total_slots(cr)
-            desc.append(f'{cr.name}: {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
-            total_slot_set(cr, total)
+            left, cur_total = slots(cr)
+            desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
+                        f'Next month {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
+
+            # total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \
                       f'{modifer} from size modifier\n' \

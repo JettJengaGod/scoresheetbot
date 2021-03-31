@@ -1024,6 +1024,7 @@ def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
             conn.close()
     return vals
 
+
 def ba_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
     chars = """
         select count(distinct(arena_matches.match_number)) as battle_count, fighters.name
