@@ -84,6 +84,11 @@ class ScoreSheetBot(commands.Cog):
             msg = await ctx.send(f'Jettbot is disabled for this channel please use <#{BOT_CORNER_ID}> instead.')
             await msg.delete(delay=5)
             raise ValueError('Jettbot is Disabled for this channel.')
+        if ctx.channel.id in BOT_LIMITED_CHANNELS and not check_roles(ctx.author, STAFF_LIST):
+            await ctx.message.delete()
+            msg = await ctx.send(f'Jettbot is disabled for non staff in channel please use <#{BOT_CORNER_ID}> instead.')
+            await msg.delete(delay=5)
+            raise ValueError('Jettbot is Disabled for non staff in this channel.')
         if command_lookup(ctx.command.name)[1]:
             await ctx.message.delete(delay=2)
             msg = await ctx.send(f'{ctx.command.name} is deactivated, and cannot be used for now.')
