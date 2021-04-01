@@ -2,7 +2,7 @@ import datetime
 import os
 import sys
 import traceback
-from typing import List, Tuple, Optional, Iterable, Dict
+from typing import List, Tuple, Optional, Iterable, Dict, Sequence
 
 import discord
 import psycopg2
@@ -2126,3 +2126,46 @@ def ba_standings() -> Tuple[Tuple[str, int, int, int]]:
         if conn is not None:
             conn.close()
     return standings
+
+
+def record_nicknames(member_nicks: Sequence[Tuple[int, str]]):
+    record = """update members set nickname = %s where id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        for i, nick in enumerate(member_nicks):
+            print(i)
+            cur.execute(record, (nick[1], nick[0]))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def return_nicknames():
+    record = """select nickname, id from members;"""
+    conn = None
+    out = {}
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+
+        cur.execute(record)
+        nicks = cur.fetchall()
+        for nick, mem_id in nicks:
+            out[mem_id] = nick
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return out
