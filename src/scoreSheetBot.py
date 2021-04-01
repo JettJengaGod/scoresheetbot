@@ -2181,8 +2181,8 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['slots'])
     @role_call(STAFF_LIST)
-    async def setnicks(self, ctx, members: Greedy[discord.Member]):
-        # members = ctx.guild.members
+    async def setnicks(self, ctx):
+        members = sorted(ctx.guild.members, key=lambda x: x.id, reverse=True)
         for i, mem in enumerate(members):
             print(i)
             try:
@@ -2193,8 +2193,8 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['slots'])
     @role_call(STAFF_LIST)
     @main_only
-    async def resetnicks(self, ctx, members: Greedy[discord.Member]):
-        # members = ctx.guild.members
+    async def resetnicks(self, ctx):
+        members = ctx.guild.members
         nickname = return_nicknames()
         for i, mem in enumerate(members):
             print(i)
