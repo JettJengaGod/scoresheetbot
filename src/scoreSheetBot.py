@@ -2186,7 +2186,7 @@ class ScoreSheetBot(commands.Cog):
         for i, mem in enumerate(members):
             print(i)
             try:
-                await mem.edit(nick='Don ')
+                await mem.edit(nick='Don Corneo')
             except discord.errors.Forbidden:
                 pass
 
