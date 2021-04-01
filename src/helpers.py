@@ -897,17 +897,17 @@ def flair_bar_chart(flairs: List[Tuple[str, int]]):
 
 def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
     if cr.rank < RANK_CUTOFF:
-        base = 7
+        base = 8
         rollover_max = 3
     else:
-        base = 6
+        base = 7
         rollover_max = 2
     sl = slots(cr)
-    if sl:
+    if sl and not cr.freeze:
         rollover = sl[0]
     else:
         rollover = 0
-    modifiers = [2, 1, 0, -1, -2]
+    modifiers = [6, 4, 2, 0, -1, -2]
     modifer_loc = 0
     while modifer_loc < 4 and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
         modifer_loc += 1

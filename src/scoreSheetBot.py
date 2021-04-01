@@ -2125,6 +2125,82 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 
+    @commands.command(hidden=True, **help_doc['slottotals'])
+    @role_call(STAFF_LIST)
+    async def slotfinals(self, ctx):
+        crews = list(self.cache.crews_by_name.values())
+        desc = []
+        crew_msg = {}
+        for cr in crews:
+            if cr.member_count == 0:
+                continue
+            total, base, modifer, rollover = calc_total_slots(cr)
+            left, cur_total = slots(cr)
+            desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
+                        f'Next month {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
+
+            total_slot_set(cr, total)
+            message = f'{cr.name} has {total} flairing slots this month:\n' \
+                      f'{base} base slots\n' \
+                      f'{modifer} from size modifier\n' \
+                      f'{rollover} rollover slots\n' \
+                      f'with an overall minimum of 5 slots\n' \
+                      'For more information, refer to message link in #lead_announcements. ' \
+                      'This bot will not be able to respond to any questions you have, so use #questions_feedback'
+            crew_msg[cr.name] = message
+
+        for member in self.cache.scs.members:
+            if self.cache.roles.leader in member.roles:
+                msg = ''
+                try:
+                    cr = crew(member, self)
+                    msg = crew_msg[cr]
+                except ValueError:
+                    await ctx.send(f'{str(member)} is a leader with no crew.')
+                if msg:
+                    try:
+                        await member.send(msg)
+                    except discord.errors.Forbidden:
+                        await ctx.send(f'{str(member)} is not accepting dms.')
+
+        embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
+        await send_long_embed(ctx, embed)
+
+    @commands.command(**help_doc['slots'])
+    @role_call(STAFF_LIST)
+    @main_only
+    async def savenicks(self, ctx):
+        members = ctx.guild.members
+        tuples = []
+        for mem in members:
+            tuples.append((mem.id, mem.display_name))
+        record_nicknames(tuples)
+
+    @commands.command(**help_doc['slots'])
+    @role_call(STAFF_LIST)
+    async def setnicks(self, ctx, members: Greedy[discord.Member]):
+        # members = ctx.guild.members
+        for i, mem in enumerate(members):
+            print(i)
+            try:
+                await mem.edit(nick='Don ')
+            except discord.errors.Forbidden:
+                pass
+
+    @commands.command(**help_doc['slots'])
+    @role_call(STAFF_LIST)
+    @main_only
+    async def resetnicks(self, ctx, members: Greedy[discord.Member]):
+        # members = ctx.guild.members
+        nickname = return_nicknames()
+        for i, mem in enumerate(members):
+            print(i)
+            try:
+                if mem.id in nickname:
+                    await mem.edit(nick=nickname[mem.id])
+            except discord.errors.Forbidden:
+                pass
+
     @commands.command(hidden=True, **help_doc['flaircounts'])
     @role_call(STAFF_LIST)
     async def flaircounts(self, ctx, long: Optional[str]):
