@@ -11,7 +11,7 @@ from src.battle import Battle, InfoMatch, TimerMatch, ForfeitMatch
 from src.character import Character
 from src.crew import Crew
 from src.db_config import config
-from src.elo_helpers import EloPlayer
+from src.elo_helpers import EloPlayer, rating_update
 from src.gambit import Gambit
 
 
@@ -399,6 +399,7 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
 
     add_match = """INSERT into match (p1, p2, p1_taken, p2_taken, winner, battle_id, p1_char_id, p2_char_id, match_order)
      values(%s, %s, %s, %s, %s, %s, %s, %s, %s);"""
+
     conn = None
     battle_id = -1
     try:
@@ -437,6 +438,67 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
         if conn is not None:
             conn.close()
     return battle_id
+
+
+def battle_elo_changes(battle_id: int) -> Tuple[int, int, int, int]:
+    # TODO modify this to handle MC/BF matches
+    find_battle = """
+     select winner,
+       Case
+           when winner = crew_1 then crew_2
+           else crew_1 END as loser,
+       league_id
+from battle
+where battle.id = %s;"""
+
+    crew_rating = """with current as (
+    insert into crew_ratings(crew_id, league_id) values (%s, %s) on conflict do nothing returning rating, k)
+select rating, k from current
+union all
+select rating, k from crew_ratings where crew_id = %s and league_id = %s;"""
+
+    battle_rating = """insert into battle_ratings (battle_id, crew_id, rating_before, rating_after, league_id)
+values (%s, %s, %s, %s, %s);"""
+
+    set_crew_rating = """update crew_ratings
+    set rating = 1400
+        where crew_id = 69;"""
+    winner_elo, winner_change, loser_elo, loser_change = 0, 0, 0, 0
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        # Find the battle
+        cur.execute(find_battle, (battle_id,))
+        winner, loser, league_id = cur.fetchone()[0]
+        # Get the winner rating
+        cur.execute(crew_rating, (winner, league_id, winner, league_id))
+        winner_elo, winner_k = cur.fetchone()[0]
+        winner_player = EloPlayer(winner, winner_elo, winner_k)
+        # Get the loser rating
+        cur.execute(crew_rating, (loser, league_id, loser, league_id))
+        loser_elo, loser_k = cur.fetchone()[0]
+        loser_player = EloPlayer(loser, loser_elo, loser_k)
+        # Calculate changes
+        winner_change, loser_change = rating_update(winner_player, loser_player, 1)
+        # Add battle results
+        winner_new_elo = winner_elo + winner_change
+        cur.execute(battle_rating, (battle_id, winner, winner_elo, winner_new_elo, league_id))
+        loser_new_elo = loser_elo + loser_change
+        cur.execute(battle_rating, (battle_id, loser, loser_elo, loser_new_elo, league_id))
+        # Update team ratings
+        cur.execute(set_crew_rating, (winner_new_elo, winner))
+        cur.execute(set_crew_rating, (loser_new_elo, loser))
+
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return winner_elo, winner_change, loser_elo, loser_change
 
 
 def crew_correct(member: discord.Member, current: str) -> bool:

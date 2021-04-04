@@ -33,12 +33,4 @@ def rating_update(p1: EloPlayer, p2: EloPlayer, result: int) -> Tuple[int, int]:
     return p1_change, p2_change
 
 
-def colnum_string(n):
-    string = ""
-    while n > 0:
-        n, remainder = divmod(n - 1, 26)
-        string = chr(65 + remainder) + string
-    return string
-
-
 
