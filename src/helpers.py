@@ -112,7 +112,7 @@ def check_roles(user: discord.Member, roles: Iterable) -> bool:
     return any((role.name in roles for role in user.roles))
 
 
-async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battle):
+async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battle) -> discord.Message:
     embed_split = split_embed(embed=battle.embed(), length=2000)
     if battle.battle_over():
         if not all(battle.confirms):

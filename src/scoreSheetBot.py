@@ -593,16 +593,20 @@ class ScoreSheetBot(commands.Cog):
                     if not current:
                         return
                     await self._clear_current(ctx)
+                    links = []
                     for output_channel in output_channels:
-                        await output_channel.send(
-                            f'**{today.strftime("%B %d, %Y")}- {winner} vs. {loser} **\n'
-                            f'Rank {self.cache.crews_by_name[winner].rank} crew defeats'
-                            f' Rank {self.cache.crews_by_name[loser].rank} crew in a '
-                            f'{current.team1.num_players}v{current.team2.num_players} battle!\n'
-                            f'from  {ctx.channel.mention}.')
                         link = await send_sheet(output_channel, current)
-                    battle_id = add_finished_battle(current, link.jump_url, league_id)
+                        links.append(link)
+                    battle_id = add_finished_battle(current, links[-1].jump_url, league_id)
+
                     winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
+                    for link in links:
+                        await link.edit(content=
+                                        f'**{today.strftime("%B %d, %Y")} - {winner} ({winner_elo})+{winner_change} ⚔ '
+                                        f'{loser} ({loser_elo}){loser_change}**\n'
+                                        f'{current.team1.num_players}v{current.team2.num_players} battle!\n'
+                                        f'from  {ctx.channel.mention}.\n'
+                                        f'Battle number: {battle_id}')
                     await ctx.send(
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
@@ -2166,7 +2170,6 @@ class ScoreSheetBot(commands.Cog):
 
         embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
-
 
     @commands.command(hidden=True, **help_doc['flaircounts'])
     @role_call(STAFF_LIST)
