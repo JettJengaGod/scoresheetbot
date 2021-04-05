@@ -622,6 +622,15 @@ class ScoreSheetBot(commands.Cog):
             await self._reject_outsiders(ctx)
         if self._current(ctx).mock:
             await ctx.send('If you just cleared a crew battle to troll people, be warned this is a bannable offence.')
+
+        msg = await ctx.send(f'Are you sure you want to clear this crew battle?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await resp.delete(delay=10)
+            await ctx.message.delete()
+            await msg.delete(delay=5)
+            return
+
         await self._clear_current(ctx)
         await ctx.send(f'{ctx.author.mention} cleared the crew battle.')
 
@@ -2169,40 +2178,6 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 
-    @commands.command(**help_doc['slots'])
-    @role_call(STAFF_LIST)
-    @main_only
-    async def savenicks(self, ctx):
-        members = ctx.guild.members
-        tuples = []
-        for mem in members:
-            tuples.append((mem.id, mem.display_name))
-        record_nicknames(tuples)
-
-    @commands.command(**help_doc['slots'])
-    @role_call(STAFF_LIST)
-    async def setnicks(self, ctx):
-        members = sorted(ctx.guild.members, key=lambda x: x.id, reverse=True)
-        for i, mem in enumerate(members):
-            print(i)
-            try:
-                await mem.edit(nick='Don Corneo')
-            except discord.errors.Forbidden:
-                pass
-
-    @commands.command(**help_doc['slots'])
-    @role_call(STAFF_LIST)
-    @main_only
-    async def resetnicks(self, ctx):
-        members = ctx.guild.members
-        nickname = return_nicknames()
-        for i, mem in enumerate(members):
-            print(i)
-            try:
-                if mem.id in nickname:
-                    await mem.edit(nick=nickname[mem.id])
-            except discord.errors.Forbidden:
-                pass
 
     @commands.command(hidden=True, **help_doc['flaircounts'])
     @role_call(STAFF_LIST)
