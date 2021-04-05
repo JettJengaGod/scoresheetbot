@@ -76,26 +76,26 @@ class ScoreSheetBot(commands.Cog):
     def cog_unload(self):
         self.auto_cache.cancel()
 
-    async def cog_before_invoke(self, ctx):
-        if ctx.channel.id in disabled_channels():
-            await ctx.message.delete()
-            msg = await ctx.send(f'Jettbot is disabled for this channel please use <#{BOT_CORNER_ID}> instead.')
-            await msg.delete(delay=5)
-            raise ValueError('Jettbot is Disabled for this channel.')
-        if ctx.channel.id in BOT_LIMITED_CHANNELS and not check_roles(ctx.author, STAFF_LIST):
-            await ctx.message.delete()
-            msg = await ctx.send(f'Jettbot is disabled for non staff in channel please use <#{BOT_CORNER_ID}> instead.')
-            await msg.delete(delay=5)
-            raise ValueError('Jettbot is Disabled for non staff in this channel.')
-        if command_lookup(ctx.command.name)[1]:
-            await ctx.message.delete(delay=2)
-            msg = await ctx.send(f'{ctx.command.name} is deactivated, and cannot be used for now.')
-            await msg.delete(delay=5)
-            raise ValueError(f'{ctx.command.name} is deactivated, and cannot be used for now.')
+    # async def cog_before_invoke(self, ctx):
+    #     if ctx.channel.id in disabled_channels():
+    #         await ctx.message.delete()
+    #         msg = await ctx.send(f'Jettbot is disabled for this channel please use <#{BOT_CORNER_ID}> instead.')
+    #         await msg.delete(delay=5)
+    #         raise ValueError('Jettbot is Disabled for this channel.')
+    #     if ctx.channel.id in BOT_LIMITED_CHANNELS and not check_roles(ctx.author, STAFF_LIST):
+    #         await ctx.message.delete()
+    #         msg = await ctx.send(f'Jettbot is disabled for non staff in channel please use <#{BOT_CORNER_ID}> instead.')
+    #         await msg.delete(delay=5)
+    #         raise ValueError('Jettbot is Disabled for non staff in this channel.')
+    #     if command_lookup(ctx.command.name)[1]:
+    #         await ctx.message.delete(delay=2)
+    #         msg = await ctx.send(f'{ctx.command.name} is deactivated, and cannot be used for now.')
+    #         await msg.delete(delay=5)
+    #         raise ValueError(f'{ctx.command.name} is deactivated, and cannot be used for now.')
 
-    async def cog_after_invoke(self, ctx):
-        if os.getenv('VERSION') == 'PROD':
-            increment_command_used(ctx.command.name)
+    # async def cog_after_invoke(self, ctx):
+    #     if os.getenv('VERSION') == 'PROD':
+    #         increment_command_used(ctx.command.name)
 
     @tasks.loop(seconds=CACHE_TIME_SECONDS)
     async def auto_cache(self):
@@ -619,6 +619,15 @@ class ScoreSheetBot(commands.Cog):
             await self._reject_outsiders(ctx)
         if self._current(ctx).mock:
             await ctx.send('If you just cleared a crew battle to troll people, be warned this is a bannable offence.')
+
+        msg = await ctx.send(f'Are you sure you want to clear this crew battle?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await resp.delete(delay=10)
+            await ctx.message.delete()
+            await msg.delete(delay=5)
+            return
+
         await self._clear_current(ctx)
         await ctx.send(f'{ctx.author.mention} cleared the crew battle.')
 
