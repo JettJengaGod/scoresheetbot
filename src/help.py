@@ -116,6 +116,9 @@ help_doc = dict(
 
     pingrole=HelpDoc(Categories.staff, 'Same As listroles, but pings instead', '', 'role'),
     setslots=HelpDoc(Categories.staff, 'Sets the slots for a crew to a specific number', '', 'number Crew'),
+    setreturnslots=HelpDoc(Categories.staff,
+                           'Sets the return slots for a crew to a specific number (Only values 1,2,3)', '',
+                           'number Crew'),
     cooldown=HelpDoc(Categories.staff,
                      'Finds the current cooldown for each of recently flaired users and fixes any that might have been missed'),
     non_crew=HelpDoc(Categories.staff, 'Returns a list of all non crew roles (should be small)'),

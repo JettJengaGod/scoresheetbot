@@ -1501,8 +1501,35 @@ class ScoreSheetBot(commands.Cog):
         else:
             actual_crew = crew_lookup(crew(ctx.author, self), self)
             await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        left, total, uf = extra_slots(actual_crew)
+
+        await ctx.send(f'{actual_crew.name} current slots: {left}/{total}  ({uf}/3) for unflair.')
         new = cur_slot_set(actual_crew, num)
         await ctx.send(f'Set {actual_crew.name} slots to {new}.')
+
+    @commands.command(**help_doc['setreturnslots'])
+    @role_call(STAFF_LIST)
+    @main_only
+    async def setreturnslots(self, ctx, num: int, *, name: str = None):
+        if num not in (0, 1, 2, 3):
+            msg = await response_message(ctx, f'{num} must be 0,1,2 or 3 ')
+            await msg.delete(delay=5)
+            return
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        left, total, uf = extra_slots(actual_crew)
+
+        await ctx.send(f'{actual_crew.name} current slots: {left}/{total}  ({uf}/3) for unflair.')
+        uf, left, total = set_return_slots(actual_crew, num)
+        await ctx.send(f'Set {actual_crew.name} new slots: {left}/{total}  ({uf}/3) for unflair.')
 
     @commands.command(**help_doc['cooldown'], hidden=True)
     @role_call(STAFF_LIST)
@@ -2181,7 +2208,6 @@ class ScoreSheetBot(commands.Cog):
 
         embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
-
 
     @commands.command(hidden=True, **help_doc['flaircounts'])
     @role_call(STAFF_LIST)
