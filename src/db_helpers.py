@@ -461,8 +461,8 @@ select rating, k from crew_ratings where crew_id = %s and league_id = %s;"""
 values (%s, %s, %s, %s, %s);"""
 
     set_crew_rating = """update crew_ratings
-    set rating = 1400
-        where crew_id = 69;"""
+    set rating = %s
+        where crew_id = %s and league_id = %s;"""
     winner_elo, winner_change, loser_elo, loser_change = 0, 0, 0, 0
     conn = None
     try:
@@ -488,8 +488,8 @@ values (%s, %s, %s, %s, %s);"""
         loser_new_elo = loser_elo + loser_change
         cur.execute(battle_rating, (battle_id, loser, loser_elo, loser_new_elo, league_id))
         # Update team ratings
-        cur.execute(set_crew_rating, (winner_new_elo, winner))
-        cur.execute(set_crew_rating, (loser_new_elo, loser))
+        cur.execute(set_crew_rating, (winner_new_elo, winner, league_id))
+        cur.execute(set_crew_rating, (loser_new_elo, loser, league_id))
 
         conn.commit()
         cur.close()
@@ -501,22 +501,101 @@ values (%s, %s, %s, %s, %s);"""
     return winner_elo, winner_change, loser_elo, loser_change
 
 
+# def battle_weight_changes(battle_id: int) -> Tuple[int, int, int, int]:
+#     # TODO modify this to handle MC/BF matches
+#     find_matches = """select p1, p2, p1_taken, p2_taken from match where battle_id = %s;"""
+#     crew_rating = """with current as (
+#         insert into crew_ratings(crew_id, league_id) values (%s, %s) on conflict do nothing returning rating, k)
+#     select rating, k from current
+#     union all
+#     select rating, k from crew_ratings where crew_id = %s and league_id = %s;"""
+#     current_weight = """
+#     with current as (
+#         insert into member_weights(member_id) values (%s) on conflict do nothing returning weighted_taken, lost)
+#     select  greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from current
+#     union all
+#     select weighted_taken, lost from member_weights where member_id = %s;"""
+#
+#     update_weight = """update member_weights set weighted_taken = weighted_taken + %s, lost = lost %s
+#         where member_id = %s;"""
+#     conn = None
+#     try:
+#         params = config()
+#         conn = psycopg2.connect(**params)
+#         cur = conn.cursor()
+#         # Find the matches
+#         cur.execute(find_matches, (battle_id,))
+#         matches = cur.fetchall()
+#         # Get each performance
+#         player_weights = {}
+#         for p1, p2, p1_taken, p2_taken in matches:
+#             if p1 not in player_weights:
+#                 cur.execute(current_weight, (p1,p1))
+#
+#                 player_weights[p1] =
+#
+#         cur.execute(crew_rating, (winner, league_id, winner, league_id))
+#         winner_elo, winner_k = cur.fetchone()[0]
+#         winner_player = EloPlayer(winner, winner_elo, winner_k)
+#         # Get the loser rating
+#         cur.execute(crew_rating, (loser, league_id, loser, league_id))
+#         loser_elo, loser_k = cur.fetchone()[0]
+#         loser_player = EloPlayer(loser, loser_elo, loser_k)
+#         # Calculate changes
+#         winner_change, loser_change = rating_update(winner_player, loser_player, 1)
+#         # Add battle results
+#         winner_new_elo = winner_elo + winner_change
+#         cur.execute(battle_rating, (battle_id, winner, winner_elo, winner_new_elo, league_id))
+#         loser_new_elo = loser_elo + loser_change
+#         cur.execute(battle_rating, (battle_id, loser, loser_elo, loser_new_elo, league_id))
+#         # Update team ratings
+#         cur.execute(set_crew_rating, (winner_new_elo, winner, league_id))
+#         cur.execute(set_crew_rating, (loser_new_elo, loser, league_id))
+#
+#         conn.commit()
+#         cur.close()
+#     except (Exception, psycopg2.DatabaseError) as error:
+#         log_error_and_reraise(error)
+#     finally:
+#         if conn is not None:
+#             conn.close()
+#     return winner_elo, winner_change, loser_elo, loser_change
+
+
+def all_battle_ids() -> Iterable[int]:
+    everything = """SELECT battle.id FROM battle;"""
+    conn = None
+    ids = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(everything)
+        ids = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return ids
+
 def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
     # TODO modify this to handle MC/BF matches and finish implementation
-    find_battle = """
-     select winner,
-       Case
-           when winner = crew_1 then crew_2
-           else crew_1 END as loser,
-       league_id
-from battle
-where battle.id = %s;"""
+    move_matches = """with deleted_match as (
+        DELETE FROM match where match.battle_id = %s
+        returning *
+    )
+    insert into canceled_matches
+    select * from deleted_battle;"""
 
-    crew_rating = """with current as (
-    insert into crew_ratings(crew_id, league_id) values (%s, %s) on conflict do nothing returning rating, k)
-select rating, k from current
-union all
-select rating, k from crew_ratings where crew_id = %s and league_id = %s;"""
+    crew_rating = """with deleted_battle as (
+        DELETE FROM battle where battle.id = %s
+        returning *
+    )
+    insert into canceled_battle
+    select * from deleted_battle;"""
 
     battle_rating = """insert into battle_ratings (battle_id, crew_id, rating_before, rating_after, league_id)
 values (%s, %s, %s, %s, %s);"""

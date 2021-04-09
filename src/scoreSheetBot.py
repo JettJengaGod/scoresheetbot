@@ -2089,6 +2089,22 @@ class ScoreSheetBot(commands.Cog):
         left, total, unflairs = extra_slots(actual_crew)
         await ctx.send(f'{actual_crew.name} has ({left}/{total} slots) and {unflairs}/3 unflairs till a new slot.')
 
+    @commands.command(**help_doc['slots'])
+    @main_only
+    async def update_elos(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        left, total, unflairs = extra_slots(actual_crew)
+        await ctx.send(f'{actual_crew.name} has ({left}/{total} slots) and {unflairs}/3 unflairs till a new slot.')
+
     @commands.command(hidden=True, **help_doc['slottotals'])
     @role_call(STAFF_LIST)
     async def slottotals(self, ctx):
