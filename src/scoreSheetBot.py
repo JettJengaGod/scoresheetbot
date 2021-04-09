@@ -619,6 +619,15 @@ class ScoreSheetBot(commands.Cog):
             await self._reject_outsiders(ctx)
         if self._current(ctx).mock:
             await ctx.send('If you just cleared a crew battle to troll people, be warned this is a bannable offence.')
+
+        msg = await ctx.send(f'Are you sure you want to clear this crew battle?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await resp.delete(delay=10)
+            await ctx.message.delete()
+            await msg.delete(delay=5)
+            return
+
         await self._clear_current(ctx)
         await ctx.send(f'{ctx.author.mention} cleared the crew battle.')
 
