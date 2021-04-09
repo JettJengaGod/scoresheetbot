@@ -1247,6 +1247,13 @@ class ScoreSheetBot(commands.Cog):
         for member in set(members):
             await self.flair(ctx, member, new_crew=new_crew)
 
+    @commands.command(**help_doc['multiunflair'])
+    @main_only
+    @flairing_required
+    async def multiunflair(self, ctx: Context, members: Greedy[discord.Member]):
+        for member in set(members):
+            await self.unflair(ctx, str(member.id))
+
     ''' ***********************************GAMBIT COMMANDS ************************************************'''
 
     @commands.command(**help_doc['coins'])
