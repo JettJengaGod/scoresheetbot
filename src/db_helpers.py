@@ -2122,3 +2122,52 @@ def ba_standings() -> Tuple[Tuple[str, int, int, int]]:
         if conn is not None:
             conn.close()
     return standings
+
+
+def db_crew_members(cr: Crew) -> List[int]:
+    mems = """select member_id
+    from current_member_crews
+    where crew_id = %s;
+"""
+    conn = None
+    members = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        crew_id = crew_id_from_crews(cr, cur)
+        cur.execute(mems, (crew_id,))
+        members = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return [mem[0] for mem in members]
+
+
+def name_from_id(mem_id: int) -> str:
+    get_name = """select discord_name
+        from members
+        where id = %s;
+    """
+    conn = None
+    name = ''
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(get_name, (mem_id,))
+        ret = cur.fetchone()
+        if ret:
+            name = ret[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return name
