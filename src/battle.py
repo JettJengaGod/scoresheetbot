@@ -222,6 +222,7 @@ class Battle:
         if ext:
             return True
         else:
+            self.matches.append(InfoMatch(info=f'{team_name} used their extension'))
             team.ext_used = True
             return False
 

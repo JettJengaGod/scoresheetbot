@@ -18,7 +18,8 @@ from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
-    player_mvps, player_chars, ba_record, ba_elo, ba_chars
+    player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members
+from .gambit import Gambit
 
 if TYPE_CHECKING:
     from scoreSheetBot import ScoreSheetBot
@@ -316,6 +317,8 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
 
 async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreSheetBot'):
     user_crew = crew(member, bot)
+
+    flairing_info = bot.cache.channels.flairing_info
     if check_roles(member, [bot.cache.roles.overflow.name]):
         user = discord.utils.get(bot.cache.overflow_server.members, id=member.id)
 
@@ -328,8 +331,11 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
         await member.remove_roles(role, reason=f'Unflaired by {author.name}')
     if await track_cycle(member, bot.cache.scs) == 2:
         pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
-        flairing_info = bot.cache.channels.flairing_info
         await flairing_info.send(f'{pepper.mention} {member.mention} is locked on next join.')
+    if check_roles(member, [LEADER]):
+        cr = crew_lookup(user_crew, bot)
+        if len(cr.leaders) == 1:
+            await flairing_info.send(f'{bot.cache.roles.docs.mention}: {user_crew}\'s last leader just unflaired')
     await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader,
                               reason=f'Unflaired by {author.name}')
 
@@ -446,7 +452,7 @@ def best_of_possibilities(combined: str, bot: 'ScoreSheetBot'):
     return best
 
 
-def members_with_str_role(role: str, bot: 'ScoreSheetBot'):
+def members_with_str_role(role: str, bot: 'ScoreSheetBot') -> Tuple[str, List[discord.Member], List[int]]:
     all_role_names = {role.name for role in bot.cache.scs.roles}
     all_role_names = set.union(set(bot.cache.crews), all_role_names)
 
@@ -454,19 +460,23 @@ def members_with_str_role(role: str, bot: 'ScoreSheetBot'):
     if role.lower() in bot.cache.crews_by_tag:
         actual = bot.cache.crews_by_tag[role.lower()].name
     out = []
+    extra = []
     if actual in bot.cache.crews:
-        for member in bot.cache.scs.members:
-            try:
-                if crew(member, bot) == actual:
-                    out.append(member)
-            except ValueError:
-                continue
+        cr = crew_lookup(actual, bot)
+        db_members = db_crew_members(cr)
+        mems = crew_members(cr, bot)
+        for mem in mems:
+            if mem.id in db_members:
+                db_members.remove(mem.id)
+            out.append(mem)
+        extra = db_members
+
     else:
         for member in bot.cache.scs.members:
             role_names = {r.name for r in member.roles}
             if actual in role_names:
                 out.append(member)
-    return actual, out
+    return actual, out, extra
 
 
 def search_two_roles_in_list(first_role: str, second_role: str, everything):

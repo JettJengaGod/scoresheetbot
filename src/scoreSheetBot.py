@@ -228,7 +228,7 @@ class ScoreSheetBot(commands.Cog):
 
             crew_overwrite = discord.PermissionOverwrite(send_messages=True, add_reactions=True)
             if crew_lookup(current.team1.name, self).overflow:
-                _, mems = members_with_str_role(current.team1.name, self)
+                _, mems, _ = members_with_str_role(current.team1.name, self)
                 for mem in mems:
                     overwrites[mem] = crew_overwrite
             else:
@@ -236,7 +236,7 @@ class ScoreSheetBot(commands.Cog):
                 overwrites[cr_role_1] = crew_overwrite
 
             if crew_lookup(current.team2.name, self).overflow:
-                _, mems = members_with_str_role(current.team2.name, self)
+                _, mems, _ = members_with_str_role(current.team2.name, self)
                 for mem in mems:
                     overwrites[mem] = crew_overwrite
             else:
@@ -1965,7 +1965,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['listroles'])
     async def listroles(self, ctx, *, role: str):
-        actual, mems = members_with_str_role(role, self)
+        actual, mems, extra = members_with_str_role(role, self)
         mems.sort(key=lambda x: str(x))
         if 'everyone' in actual:
             await ctx.send('I will literally ban you if you try this again.')
@@ -1974,6 +1974,9 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{actual} is too large of a role, use `.listroles`.')
             return
         desc = ['\n'.join([f'{str(member)} {member.mention}' for member in mems])]
+        if extra:
+            desc.append('These members are flaired for the crew, but not in the server')
+            desc.extend(['\n'.join([f'{name_from_id(mem_id)}: {str(mem_id)}' for mem_id in extra])])
         if actual in self.cache.crews_by_name:
             cr = crew_lookup(actual, self)
             title = f'All {len(mems)} members on crew {actual}'
@@ -1989,7 +1992,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['pingrole'])
     @role_call(STAFF_LIST)
     async def pingrole(self, ctx, *, role: str):
-        actual, mems = members_with_str_role(role, self)
+        actual, mems, _ = members_with_str_role(role, self)
         out = [f'Pinging all members of role {actual}: ']
         for mem in mems:
             out.append(mem.mention)
@@ -2113,6 +2116,21 @@ class ScoreSheetBot(commands.Cog):
         embed.add_field(name='stdev of size', value='{:.2f}'.format(crew_stdev(crews)))
         crew_bar_chart(crews)
         await ctx.send(embed=embed, file=discord.File('cr.png'))
+
+    @commands.command(hidden=True, **help_doc['ofrank'])
+    @role_call(STAFF_LIST)
+    async def ofrank(self, ctx):
+        crews = list(self.cache.crews_by_name.values())
+
+        crews.sort(key=lambda x: int(x.ladder[1:x.ladder.index('/')]))
+        desc = []
+        for cr in crews:
+            if cr.overflow:
+                desc.append(
+                    f'{cr.name}: {cr.ladder}, Rank {cr.rank}, members, {cr.member_count} {str(first_crew_flair(cr))}')
+        embed = discord.Embed(title=f'Overflow crew numbers', description='\n'.join(desc))
+
+        await send_long_embed(ctx, embed)
 
     @commands.command(**help_doc['slots'])
     @main_only
