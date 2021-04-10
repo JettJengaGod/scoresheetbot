@@ -8,10 +8,6 @@ plt.rcdefaults()
 import numpy as np
 from dateutil.relativedelta import relativedelta
 from gambit import Gambit
-from dateutil.relativedelta import relativedelta
-import matplotlib.pyplot as plt
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 from character import string_to_emote
 from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
@@ -19,7 +15,6 @@ from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
     player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members
-from .gambit import Gambit
 
 if TYPE_CHECKING:
     from scoreSheetBot import ScoreSheetBot
