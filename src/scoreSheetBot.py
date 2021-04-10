@@ -744,7 +744,7 @@ class ScoreSheetBot(commands.Cog):
         embed.add_field(name=f'**Winner: {winner_member.display_name}**', inline=False,
                         value=f'Loser: {loser_member.display_name}')
         msg = await ctx.send(f'{opponent.mention} please confirm this match.', embed=embed)
-        if not await wait_for_reaction_on_message(YES, NO, msg, opponent, self.bot):
+        if not await wait_for_reaction_on_message(YES, NO, msg, opponent, self.bot, 600.0):
             resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             await resp.delete(delay=10)
             await ctx.message.delete()
