@@ -1977,10 +1977,8 @@ def record_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int,
     return unflairs, remaining, total
 
 
-def record_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int, int]:
-    record = """INSERT into unflairs (member_id, crew_id, leave_time)
-     values(%s, %s, current_timestamp);"""
-    cr_record = """update crews set unflair = unflair + 1 where id = %s returning unflair;"""
+def set_return_slots(crew: Crew, number: int) -> Tuple[int, int, int]:
+    cr_record = """update crews set unflair = %s where id = %s returning unflair;"""
     reset = """update crews set unflair = 0, slotsleft = slotsleft+1  where id = %s;"""
     slot = """SELECT slotsleft, slotstotal FROM crews where id = %s;"""
     conn = None
@@ -1990,12 +1988,11 @@ def record_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int,
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cr_id = crew_id_from_crews(crew, cur)
-        cur.execute(record, (member_id, cr_id))
-        if not join_cd:
-            cur.execute(cr_record, (cr_id,))
-            unflairs = cur.fetchone()[0]
-            if unflairs == 3:
-                cur.execute(reset, (cr_id,))
+        cur.execute(cr_record, (number, cr_id,))
+        unflairs = cur.fetchone()[0]
+        if unflairs == 3:
+            cur.execute(reset, (cr_id,))
+            unflairs = 0
         cur.execute(slot, (cr_id,))
         remaining, total = cur.fetchone()
         conn.commit()

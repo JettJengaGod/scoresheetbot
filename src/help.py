@@ -97,6 +97,10 @@ help_doc = dict(
                        'Flairs multiple people for your crew or for a specific crew if you are an admin.'
                        'Only use spaces between members, and mention mention each one', '',
                        'Member1 Member2 Member3 Optional<Crew>'),
+    multiunflair=HelpDoc(Categories.flairing,
+                         'Unflairs multiple people for your crew or for a specific crew if you are an admin.'
+                         'Only use spaces between members, and mention mention each one', '',
+                         'Member1 Member2 Member3'),
     flair=HelpDoc(Categories.flairing, 'Flairs someone for your crew or for a specific crew if you are an admin', '',
                   'Member Optional<Crew>'),
     promote=HelpDoc(Categories.flairing, 'Used by leaders to promote users to advoisrs or staff to promote to leaders',
@@ -112,6 +116,9 @@ help_doc = dict(
 
     pingrole=HelpDoc(Categories.staff, 'Same As listroles, but pings instead', '', 'role'),
     setslots=HelpDoc(Categories.staff, 'Sets the slots for a crew to a specific number', '', 'number Crew'),
+    setreturnslots=HelpDoc(Categories.staff,
+                           'Sets the return slots for a crew to a specific number (Only values 1,2,3)', '',
+                           'number Crew'),
     cooldown=HelpDoc(Categories.staff,
                      'Finds the current cooldown for each of recently flaired users and fixes any that might have been missed'),
     non_crew=HelpDoc(Categories.staff, 'Returns a list of all non crew roles (should be small)'),
@@ -135,8 +142,8 @@ help_doc = dict(
     make_lead=HelpDoc(Categories.staff, 'Makes a user a leader on their crew', '', 'User'),
     bigcrew=HelpDoc(Categories.staff, 'Returns all the crews that are bigger than x, default 40', '', 'Crew min'),
     softcap=HelpDoc(Categories.crews,
-                     'Returns the number of unique players used by crews last month or the players and each cb'
-                     'for a specific crew', '', 'Optional[Crew]'),
+                    'Returns the number of unique players used by crews last month or the players and each cb'
+                    'for a specific crew', '', 'Optional[Crew]'),
     crnumbers=HelpDoc(Categories.staff, 'Helpful numbers for crew analysis'),
     slottotals=HelpDoc(Categories.staff, 'Prints all the max slots for crews'),
     flaircounts=HelpDoc(Categories.staff, 'Helpful numbers for flair analysis'),

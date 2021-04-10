@@ -505,7 +505,8 @@ def overlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[disco
 
 
 async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
-                                       message: discord.Message, author: discord.Member, bot: discord.Client) -> bool:
+                                       message: discord.Message, author: discord.Member, bot: discord.Client,
+                                       timeout: float = 30.0) -> bool:
     await message.add_reaction(confirm)
     await message.add_reaction(cancel)
 
@@ -514,7 +515,7 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
 
     while True:
         try:
-            react, reactor = await bot.wait_for('reaction_add', timeout=30.0, check=check)
+            react, reactor = await bot.wait_for('reaction_add', timeout=timeout, check=check)
         except asyncio.TimeoutError:
             return False
         if react.message.id != message.id:
@@ -710,6 +711,21 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
         crew_name = find_member_crew(mem_id)
         out_str = f'{str(mem)} left the overflow server and lost their roles here.'
         if crew_name:
+            cr = crew_lookup(crew_name, bot)
+            if bot.cache.roles.join_cd.id in all_member_roles(mem_id):
+                mod_slot(cr, 1)
+                unflairs, remaining, total = record_unflair(mem_id, cr, True)
+
+                out_str += (
+                    f'\n{str(mem_id)} was on 24h cooldown so {cr.name} gets back a slot ({remaining}/{total})')
+            # Else refund 1/3 slot
+            else:
+                unflairs, remaining, total = record_unflair(mem_id, cr, False)
+
+                if unflairs == 3:
+                    out_str += f'{cr.name} got a flair slot back for 3 unflairs. {remaining}/{total} left.'
+                else:
+                    out_str += f'{unflairs}/3 unflairs for returning a slot.'
             out_str += f'They were previously on {crew_name}'
         await bot.cache.channels.flair_log.send(out_str)
     second = other_set - overflow_role
@@ -717,10 +733,26 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
         mem = bot.cache.overflow_server.get_member(mem_id)
         for role in mem.roles:
             if role.name in bot.cache.crews:
+                out_str = \
+                    (f'{str(mem)} no longer has the overflow role in the main server so they have been unflaired from'
+                     f'{role.name}.')
+                cr = crew_lookup(role.name, bot)
+                if bot.cache.roles.join_cd.id in all_member_roles(mem_id):
+                    mod_slot(cr, 1)
+                    unflairs, remaining, total = record_unflair(mem_id, cr, True)
+
+                    out_str += (
+                        f'\n{str(mem_id)} was on 24h cooldown so {cr.name} gets back a slot ({remaining}/{total})')
+                # Else refund 1/3 slot
+                else:
+                    unflairs, remaining, total = record_unflair(mem_id, cr, False)
+
+                    if unflairs == 3:
+                        out_str += f'{cr.name} got a flair slot back for 3 unflairs. {remaining}/{total} left.'
+                    else:
+                        out_str += f'{unflairs}/3 unflairs for returning a slot.'
                 await mem.remove_roles(role)
-                await bot.cache.channels.flair_log.send(
-                    f'{str(mem)} no longer has the overflow role in the main server so they have been unflaired from'
-                    f'{role.name}.')
+                await bot.cache.channels.flair_log.send(out_str)
 
     return first, second
 
