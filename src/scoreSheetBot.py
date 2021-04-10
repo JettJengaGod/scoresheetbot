@@ -2114,6 +2114,21 @@ class ScoreSheetBot(commands.Cog):
         crew_bar_chart(crews)
         await ctx.send(embed=embed, file=discord.File('cr.png'))
 
+    @commands.command(hidden=True, **help_doc['ofrank'])
+    @role_call(STAFF_LIST)
+    async def ofrank(self, ctx):
+        crews = list(self.cache.crews_by_name.values())
+
+        crews.sort(key=lambda x: int(x.ladder[1:x.ladder.index('/')]))
+        desc = []
+        for cr in crews:
+            if cr.overflow:
+                desc.append(
+                    f'{cr.name}: {cr.ladder}, Rank {cr.rank}, members, {cr.member_count} {str(first_crew_flair(cr))}')
+        embed = discord.Embed(title=f'Overflow crew numbers', description='\n'.join(desc))
+
+        await send_long_embed(ctx, embed)
+
     @commands.command(**help_doc['slots'])
     @main_only
     async def slots(self, ctx, *, name: str = None):

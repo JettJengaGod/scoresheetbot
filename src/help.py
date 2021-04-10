@@ -123,6 +123,7 @@ help_doc = dict(
                      'Finds the current cooldown for each of recently flaired users and fixes any that might have been missed'),
     non_crew=HelpDoc(Categories.staff, 'Returns a list of all non crew roles (should be small)'),
     overflow=HelpDoc(Categories.staff, 'Returns a two lists of overflow incorrectly tagged members'),
+    ofrank=HelpDoc(Categories.staff, 'Returns all overflow crews and info about them'),
     flairing_off=HelpDoc(Categories.staff, 'Turns flairing off until restart or staff turns it back on'),
     flairing_on=HelpDoc(Categories.staff, 'Turns flairing back on'),
     freeze=HelpDoc(Categories.staff, 'Freezes a crews registration for a time.',
