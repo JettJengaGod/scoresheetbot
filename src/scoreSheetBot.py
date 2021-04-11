@@ -2063,6 +2063,16 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
+    async def rate(self, ctx):
+        all_ids = all_battle_ids()
+        for i, battle_id in enumerate(all_ids):
+            print(f'{i}/{len(all_ids)}: {battle_id}')
+            winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
+            battle_weight_changes(battle_id)
+            print(winner_elo, winner_change, loser_elo, loser_change)
+
+    @commands.command(hidden=True, **help_doc['crnumbers'])
+    @role_call(STAFF_LIST)
     async def crnumbers(self, ctx):
         crews = list(self.cache.crews_by_name.values())
 
