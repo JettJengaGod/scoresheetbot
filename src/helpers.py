@@ -962,8 +962,8 @@ def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
 
 
 def calc_reg_slots(members: int) -> int:
-    base = 7
-    modifiers = [2, 1, 0, -1, -2]
+    base = 8
+    modifiers = [6, 4, 2, 0, -1, -2]
     modifer_loc = 0
     while modifer_loc < 4 and members >= SLOT_CUTOFFS[modifer_loc]:
         modifer_loc += 1
