@@ -8,7 +8,8 @@ plt.rcdefaults()
 import numpy as np
 from dateutil.relativedelta import relativedelta
 from gambit import Gambit
-
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 from character import string_to_emote
 from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
