@@ -508,9 +508,9 @@ def battle_weight_changes(battle_id: int):
     current_weight = """
     with current as (
         insert into member_weights(member_id) values (%s) on conflict do nothing returning weighted_taken, lost)
-    select  greatest(weighted_taken, 0) as weighted_taken, greatest(lost, 1) as lost from current
+    select  greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from current
     union all
-    select greatest(weighted_taken, 0) as weighted_taken, greatest(lost, 1) as lost from member_weights where member_id = %s;"""
+    select greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from member_weights where member_id = %s;"""
 
     update_weight = """update member_weights set weighted_taken = weighted_taken + %s, lost = lost + %s
         where member_id = %s;"""

@@ -2067,9 +2067,7 @@ class ScoreSheetBot(commands.Cog):
         all_ids = all_battle_ids()
         for i, battle_id in enumerate(all_ids):
             print(f'{i}/{len(all_ids)}: {battle_id}')
-            winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
             battle_weight_changes(battle_id)
-            print(winner_elo, winner_change, loser_elo, loser_change)
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
