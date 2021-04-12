@@ -67,7 +67,6 @@ class Cache:
             true_locked = discord.utils.get(server.roles, name=TRUE_LOCKED)
             free_agent = discord.utils.get(server.roles, name=FREE_AGENT)
             join_cd = discord.utils.get(server.roles, name=JOIN_CD)
-            playoff = discord.utils.get(server.roles, name=PLAYOFF_LIMITED)
             everyone = discord.utils.get(server.roles, name='@everyone')
 
         return Roles
