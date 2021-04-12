@@ -374,9 +374,6 @@ class ScoreSheetBot(commands.Cog):
                         f'{user.mention} joined this crew less than '
                         f'24 hours ago and must wait to play ranked battles.')
                     return
-                if self._current(ctx).playoff and check_roles(user, [PLAYOFF_LIMITED]):
-                    await ctx.send(f'{user.mention} is playoff locked and cannot play in playoff battles.')
-                    return
                 self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
             else:
                 await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
@@ -475,9 +472,6 @@ class ScoreSheetBot(commands.Cog):
                     await ctx.send(
                         f'{user.mention} joined this crew less than '
                         f'24 hours ago and must wait to play ranked battles.')
-                    return
-                if self._current(ctx).playoff and check_roles(user, [PLAYOFF_LIMITED]):
-                    await ctx.send(f'{user.mention} is playoff limited and cannot play in playoff battles.')
                     return
                 self._current(ctx).replace_player(current_crew, escape(user.display_name), ctx.author.mention, user.id)
 
@@ -1002,10 +996,7 @@ class ScoreSheetBot(commands.Cog):
             except ValueError:
                 cr = None
             if cr == actual_crew.name:
-                if check_roles(member, [PLAYOFF_LIMITED]):
-                    disallowed.append(f'> {str(member)} {member.mention}')
-                else:
-                    allowed.append(f'> {escape(str(member))} {member.mention}')
+                allowed.append(f'> {escape(str(member))} {member.mention}')
         desc = [f'Allowed players ({len(allowed)}):', '\n'.join(allowed), f'Disallowed players ({len(disallowed)}):',
                 '\n'.join(disallowed)]
         out = discord.Embed(title=f'Eligibility of {actual_crew.name} players for playoffs',
