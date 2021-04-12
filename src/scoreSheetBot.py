@@ -283,18 +283,19 @@ class ScoreSheetBot(commands.Cog):
                            f'Please contact an admin if this is incorrect.')
             return
         if user_crew != opp_crew:
-            await ctx.send(f'If you are in a playoff battle, please use `{self.bot.command_prefix}playoffbattle`')
+            await ctx.send(
+                f'If you are in a final stand battle, please use `{self.bot.command_prefix}finalstandbattle` or `,fsb`')
             await self._set_current(ctx, Battle(user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['playoffbattle'], aliases=['pob', 'playoff'], group='CB')
+    @commands.command(**help_doc['finalstandbattle'], aliases=['fsb', 'finalstand'], group='CB')
     @main_only
     @no_battle
     @is_lead
     @ss_channel
-    async def playoffbattle(self, ctx: Context, user: discord.Member, size: int):
+    async def finalstandbattle(self, ctx: Context, user: discord.Member, size: int):
         if size < 1:
             await ctx.send('Please enter a size greater than 0.')
             return
@@ -311,12 +312,6 @@ class ScoreSheetBot(commands.Cog):
                            f'Please contact an admin if this is incorrect.')
             return
         if user_crew != opp_crew:
-            user_cr = crew_lookup(user_crew, self)
-            opp_cr = crew_lookup(opp_crew, self)
-            if user_cr.playoff != opp_cr.playoff or user_cr.playoff == PlayoffType.NO_PLAYOFF:
-                await ctx.send(
-                    f'{user_crew} and {opp_crew} are not in the same playoffs or are not in playoffs at all.')
-                return
             await self._set_current(ctx, Battle(user_crew, opp_crew, size, playoff=True))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
@@ -576,11 +571,11 @@ class ScoreSheetBot(commands.Cog):
                     winner = current.winner().name
                     loser = current.loser().name
                     if current.playoff:
-                        league_id = crew_lookup(winner, self).playoff.value
+                        league_id = 6
                         output_channels.pop(0)
                         output_channels.insert(0,
                                                discord.utils.get(ctx.guild.channels,
-                                                                 name=PLAYOFF_CHANNEL_NAMES[league_id - 1]))
+                                                                 name=FINAL_STAND_CHANNEL))
                     else:
                         league_id = 1
                     current = self._current(ctx)

@@ -394,8 +394,8 @@ def char_id_from_name(name: str, cursor) -> int:
 
 
 def add_finished_battle(battle: Battle, link: str, league: int) -> int:
-    add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id)
-     values(%s, %s, %s, %s, %s, current_timestamp, %s)  RETURNING id;"""
+    add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id, players)
+     values(%s, %s, %s, %s, %s, current_timestamp, %s, %s)  RETURNING id;"""
 
     add_match = """INSERT into match (p1, p2, p1_taken, p2_taken, winner, battle_id, p1_char_id, p2_char_id, match_order)
      values(%s, %s, %s, %s, %s, %s, %s, %s, %s);"""
@@ -412,6 +412,7 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
             link,
             crew_id_from_name(battle.winner().name, cur),
             league,
+            battle.team1.num_players,
         ))
         battle_id = cur.fetchone()[0]
         for order, match in enumerate(battle.matches):
