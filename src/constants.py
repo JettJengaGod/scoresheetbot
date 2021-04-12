@@ -125,6 +125,7 @@ EXPECTED_NON_CREW_ROLES = {
 }
 PLAYOFF_CHANNEL_NAMES = ['', 'first_class_playoffs_results', 'cm-extreme_playoffs_results',
                          'cm-tempered_playoffs_results']
+FINAL_STAND_CHANNEL = 'final_stand_submissions'
 
 WLED_CREWS = ['Royal Knights']
 

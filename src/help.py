@@ -27,10 +27,10 @@ help_doc = dict(
     battle=HelpDoc(Categories.cb,
                    'Start a Scoresheet in this channel against the tagged players crew with a specific size',
                    '', "@OpponentName size"),
-    playoffbattle=HelpDoc(Categories.cb,
-                          'Start a playoff Scoresheet in this channel against'
-                          ' the tagged players crew with a specific size',
-                          '', "@OpponentName size"),
+    finalstandbattle=HelpDoc(Categories.cb,
+                             'Start a finalstand Scoresheet in this channel against'
+                             ' the tagged players crew with a specific size',
+                             '', "@OpponentName size"),
     mock=HelpDoc(Categories.cb, 'Start a Scoresheet in this channel with two team names and a size', '',
                  'Team1 Team2 size'),
     groups=HelpDoc(Categories.cb, 'Show the groups and records of the crews in playoffs, optionally send in `tempered`',
