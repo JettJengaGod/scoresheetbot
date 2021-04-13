@@ -1019,3 +1019,14 @@ def update_ba_sheet():
         'range': f'B9:F{9 + len(player_rows)}',
         'values': player_rows
     }])
+
+def crew_count(flairing_crew: Crew, bot: 'ScoreSheetBot'):
+    members = []
+    for member in discord.utils.get(bot.bot.guilds, name=SCS).members:
+        try:
+            cr = crew(member, bot)
+        except ValueError:
+            cr = None
+        if cr == flairing_crew.name:
+            members.append(member)
+    return members
