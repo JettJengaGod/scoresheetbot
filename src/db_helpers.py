@@ -311,8 +311,10 @@ def remove_member_role(member_id: int, role_id: int) -> None:
         cur = conn.cursor()
 
         cur.execute(delete_current, (member_id, role_id,))
-        gained = cur.fetchone()[0]
-        cur.execute(add_member_history, (member_id, role_id, gained))
+        ret = cur.fetchone()
+        if ret:
+            gained = [0]
+            cur.execute(add_member_history, (member_id, role_id, gained))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:

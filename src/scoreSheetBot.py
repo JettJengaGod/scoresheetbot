@@ -206,7 +206,7 @@ class ScoreSheetBot(commands.Cog):
     async def cb(self, ctx):
         await self.help(ctx, 'cb')
 
-    @commands.command(**help_doc['lock'])
+    @commands.command(**help_doc['lock'], aliases=['mohamed', 'nohamed'])
     @main_only
     @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
@@ -1248,9 +1248,10 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['multiunflair'])
     @main_only
     @flairing_required
-    async def multiunflair(self, ctx: Context, members: Greedy[discord.Member]):
+    async def multiunflair(self, ctx: Context, everything: str):
+        members = everything.split(' ')
         for member in set(members):
-            await self.unflair(ctx, str(member.id))
+            await self.unflair(ctx, member)
 
     ''' ***********************************GAMBIT COMMANDS ************************************************'''
 
