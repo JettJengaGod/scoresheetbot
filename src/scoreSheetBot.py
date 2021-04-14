@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
 
 from src.elo_helpers import rating_update
-from src.gambit_helpers import update_gambit_sheet
+from src.sheet_helpers import update_gambit_sheet, update_ba_sheet
 from .db_helpers import *
 import src.cache
 from .character import all_emojis, string_to_emote, all_alts, CHARACTERS
@@ -600,6 +600,8 @@ class ScoreSheetBot(commands.Cog):
                     battle_id = add_finished_battle(current, links[-1].jump_url, league_id)
 
                     winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
+                    battle_weight_changes(battle_id)
+
                     for link in links:
                         await link.edit(content=
                                         f'**{today.strftime("%B %d, %Y")} - {winner} ({winner_elo})+{winner_change} ⚔ '
@@ -2067,7 +2069,7 @@ class ScoreSheetBot(commands.Cog):
         all_ids = all_battle_ids()
         for i, battle_id in enumerate(all_ids):
             print(f'{i}/{len(all_ids)}: {battle_id}')
-            battle_weight_changes(battle_id)
+            battle_taken_changes(battle_id)
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)

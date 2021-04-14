@@ -3,7 +3,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pprint
 import datetime
 
-from src.db_helpers import gambit_standings, past_gambits, past_bets
+from src.db_helpers import gambit_standings, past_gambits, past_bets, ba_standings
 
 
 def colnum_string(n):
@@ -51,4 +51,23 @@ def update_gambit_sheet():
     }, {
         'range': f'E1:{colnum_string(len(gambit_list) + 5)}{6 + len(player_cols)}',
         'values': rows
+    }])
+
+
+def update_ba_sheet():
+    scope = [
+        'https://www.googleapis.com/auth/drive',
+        'https://www.googleapis.com/auth/drive.file'
+    ]
+    file_name = '../client_key.json'
+    creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
+    client = gspread.authorize(creds)
+    sheet = client.open('Battle Arena').sheet1
+    player_rows = []
+    for name, elo, wins, total in ba_standings():
+        player_rows.append([name, elo, '', wins, total - wins])
+
+    sheet.batch_update([{
+        'range': f'B9:F{9 + len(player_rows)}',
+        'values': player_rows
     }])

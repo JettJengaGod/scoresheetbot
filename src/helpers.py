@@ -1002,20 +1002,3 @@ async def unflair_gone_member(ctx: Context, user: str, bot: 'ScoreSheetBot'):
     await response_message(ctx, f'successfully unflaired {user_id}.')
 
 
-def update_ba_sheet():
-    scope = [
-        'https://www.googleapis.com/auth/drive',
-        'https://www.googleapis.com/auth/drive.file'
-    ]
-    file_name = '../client_key.json'
-    creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
-    client = gspread.authorize(creds)
-    sheet = client.open('Battle Arena').sheet1
-    player_rows = []
-    for name, elo, wins, total in ba_standings():
-        player_rows.append([name, elo, '', wins, total - wins])
-
-    sheet.batch_update([{
-        'range': f'B9:F{9 + len(player_rows)}',
-        'values': player_rows
-    }])
