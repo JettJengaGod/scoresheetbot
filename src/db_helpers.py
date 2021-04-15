@@ -397,7 +397,11 @@ def char_id_from_name(name: str, cursor) -> int:
 def add_finished_battle(battle: Battle, link: str, league: int) -> int:
     add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id)
      values(%s, %s, %s, %s, %s, current_timestamp, %s)  RETURNING id;"""
-
+    add_member_stats = """
+            insert into member_stats(member_id) values (%s) on conflict do nothing;"""
+    add_mvp = """
+        update member_stats set mvps = mvps + 1, where member_id = %s;
+    """
     add_match = """INSERT into match (p1, p2, p1_taken, p2_taken, winner, battle_id, p1_char_id, p2_char_id, match_order)
      values(%s, %s, %s, %s, %s, %s, %s, %s, %s);"""
 
@@ -416,6 +420,9 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
             league,
         ))
         battle_id = cur.fetchone()[0]
+        for mvp in battle.team1.mvp().extend(battle.team2.mvp()):
+            cur.execute(add_member_stats, (mvp.id,))
+            cur.execute(add_mvp, (mvp.id, ))
         for order, match in enumerate(battle.matches):
             if isinstance(match, TimerMatch) or isinstance(match, InfoMatch) or isinstance(match, ForfeitMatch):
                 continue
@@ -507,12 +514,13 @@ def battle_weight_changes(battle_id: int, reverse: bool = False):
     find_matches = """select p1, p2, p1_taken, p2_taken from match where battle_id = %s;"""
     current_weight = """
     with current as (
-        insert into member_weights(member_id) values (%s) on conflict do nothing returning weighted_taken, lost)
+        insert into member_stats(member_id) values (%s) on conflict do nothing returning weighted_taken, lost)
     select  greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from current
     union all
     select greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from member_weights where member_id = %s;"""
 
-    update_weight = """update member_weights set weighted_taken = weighted_taken + %s, taken = taken + %s lost = lost + %s
+    update_weight = """update member_stats set weighted_taken = weighted_taken + %s, taken = taken + %s,
+        lost = lost + %s, played += %s
         where member_id = %s;"""
     conn = None
     try:
@@ -553,9 +561,11 @@ def battle_weight_changes(battle_id: int, reverse: bool = False):
                 player_weighted_taken[p2] += p2_taken * player_weights[p1]
                 player_lost[p2] += p1_taken
 
+        played = 0 if reverse else 1
+
         for player in player_taken:
             cur.execute(update_weight,
-                        (player_weighted_taken[player], player_taken[player], player_lost[player], player))
+                        (player_weighted_taken[player], player_taken[player], player_lost[player], played, player))
 
         conn.commit()
         cur.close()
@@ -589,13 +599,14 @@ def all_battle_ids() -> Sequence[int]:
 
 def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
     # TODO modify this to handle MC/BF matches and finish implementation
+    find_mvps = """select mvps from battle where id = %s;"""
     move_matches = """with deleted_match as (
         DELETE FROM match where match.battle_id = %s
         returning *
     )
     insert into canceled_matches
     select * from deleted_battle;"""
-
+    decrement_mvp = """ update member_stats set mvps = mvps - 1 where member_id = %s;"""
     move_battle = """with deleted_battle as (
         DELETE FROM battle where battle.id = %s
         returning *
@@ -618,11 +629,16 @@ def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         # Find rating change per crew
+        cur.execute(find_mvps, (battle_id,))
+        ret = cur.fetchone()
+        if ret:
+            for mvp in ret:
+                cur.execute(decrement_mvp, (mvp,))
         cur.execute(find_rating_change, (battle_id,))
         changes = cur.fetchall()
         for crew_id, rating_before, rating_after, league_id in changes:
             # Update the crews ratings
-            rating_change = rating_after-rating_before
+            rating_change = rating_after - rating_before
             cur.execute(set_crew_rating, (rating_after - rating_before, crew_id, league_id))
         # Delete the rating changes
         cur.execute(del_battle_rating, (battle_id,))
