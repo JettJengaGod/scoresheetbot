@@ -312,7 +312,7 @@ def remove_member_role(member_id: int, role_id: int) -> None:
         cur.execute(delete_current, (member_id, role_id,))
         ret = cur.fetchone()
         if ret:
-            gained = [0]
+            gained = ret[0]
             cur.execute(add_member_history, (member_id, role_id, gained))
         conn.commit()
         cur.close()
