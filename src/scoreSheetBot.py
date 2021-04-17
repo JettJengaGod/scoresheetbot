@@ -770,31 +770,6 @@ class ScoreSheetBot(commands.Cog):
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
-    @commands.command(**help_doc['groups'])
-    async def groups(self, ctx, group: Optional[str]):
-        if not group:
-            group = 'legacy'
-        if group not in ['legacy', 'tempered']:
-            await ctx.send(f'`{group}` is not `legacy` or `tempered` try `{self.bot.command_prefix}groups legacy`')
-        if group == 'legacy':
-            playoff = PlayoffType.LEGACY
-            group_size = 5
-        else:
-            playoff = PlayoffType.TEMPERED
-            group_size = 4
-
-        playoff_crews = sorted([cr for cr in self.cache.crews_by_name.values() if cr.playoff == playoff],
-                               key=lambda x: x.pool)
-        playoff_crew_str = []
-        for cr in playoff_crews:
-            record = crew_record(cr, playoff.value)
-            playoff_crew_str.append(f'{cr.name} {record[1]}/{record[2] - record[1]}')
-
-        pages = menus.MenuPages(
-            source=PoolPaged(playoff_crew_str, title=f'{playoff.name} Playoffs Pools', per_page=group_size),
-            clear_reactions_after=True)
-        await pages.start(ctx)
-
     @commands.command(**help_doc['battles'])
     async def battles(self, ctx):
 
@@ -968,32 +943,6 @@ class ScoreSheetBot(commands.Cog):
             actual_crew = crew_lookup(crew(ctx.author, self), self)
             await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
         await ctx.send(embed=actual_crew.embed)
-
-    @commands.command()
-    @role_call([LEADER, ADMIN, MINION, ADVISOR, DOCS])
-    async def playoffs(self, ctx, *, name: str = None):
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-        allowed = []
-        disallowed = []
-        for member in self.cache.scs.members:
-            try:
-                cr = crew(member, self)
-            except ValueError:
-                cr = None
-            if cr == actual_crew.name:
-                allowed.append(f'> {escape(str(member))} {member.mention}')
-        desc = [f'Allowed players ({len(allowed)}):', '\n'.join(allowed), f'Disallowed players ({len(disallowed)}):',
-                '\n'.join(disallowed)]
-        out = discord.Embed(title=f'Eligibility of {actual_crew.name} players for playoffs',
-                            description='\n'.join(desc), color=actual_crew.color)
-        await send_long_embed(ctx, out)
 
     ''' ************************************FLAIRING COMMANDS ********************************************'''
 

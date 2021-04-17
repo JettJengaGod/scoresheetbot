@@ -33,9 +33,6 @@ help_doc = dict(
                              '', "@OpponentName size"),
     mock=HelpDoc(Categories.cb, 'Start a Scoresheet in this channel with two team names and a size', '',
                  'Team1 Team2 size'),
-    groups=HelpDoc(Categories.cb, 'Show the groups and records of the crews in playoffs, optionally send in `tempered`',
-                   '',
-                   '`legacy` or `tempered`'),
     send=HelpDoc(Categories.cb, 'Sends in the tagged player, if this is a mock you also need to send the team name', '',
                  '@Player Optional[TeamName]'),
     replace=HelpDoc(Categories.cb, 'Replaces current player with the tagged player', '', '@Player Optional[TeamName]'),
@@ -72,7 +69,7 @@ help_doc = dict(
     ext=HelpDoc(Categories.cb, 'Prints out extension status'),
     recache=HelpDoc(Categories.staff, 'Updates the cache. Admin only'),
     pending=HelpDoc(Categories.staff, 'Prints pending battles. Admin only'),
-    po=HelpDoc(Categories.staff, 'Prints all playoff cbs in a summary'),
+    po=HelpDoc(Categories.staff, 'Prints all final stand cbs in a summary'),
     disable=HelpDoc(Categories.staff, 'Disables the bot in a channel', '', 'ChannelMention'),
     usage=HelpDoc(Categories.staff, 'Shows the usage stats of each command'),
 
