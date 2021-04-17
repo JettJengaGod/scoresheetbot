@@ -12,7 +12,7 @@ from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_cre
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
-    player_mvps, player_chars, ba_record, ba_elo, ba_chars
+    player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members
 from .gambit import Gambit
 
 if TYPE_CHECKING:
@@ -306,11 +306,12 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         await flairing_info.send(f'{pepper.mention} {member.mention} is {TRUE_LOCKED}.')
     if not reg:
         await member.add_roles(bot.cache.roles.join_cd)
-        await member.add_roles(bot.cache.roles.playoff)
 
 
 async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreSheetBot'):
     user_crew = crew(member, bot)
+
+    flairing_info = bot.cache.channels.flairing_info
     if check_roles(member, [bot.cache.roles.overflow.name]):
         user = discord.utils.get(bot.cache.overflow_server.members, id=member.id)
 
@@ -323,8 +324,11 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
         await member.remove_roles(role, reason=f'Unflaired by {author.name}')
     if await track_cycle(member, bot.cache.scs) == 2:
         pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
-        flairing_info = bot.cache.channels.flairing_info
         await flairing_info.send(f'{pepper.mention} {member.mention} is locked on next join.')
+    if check_roles(member, [LEADER]):
+        cr = crew_lookup(user_crew, bot)
+        if len(cr.leaders) == 1:
+            await flairing_info.send(f'{bot.cache.roles.docs.mention}: {user_crew}\'s last leader just unflaired')
     await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader,
                               reason=f'Unflaired by {author.name}')
 
@@ -441,7 +445,7 @@ def best_of_possibilities(combined: str, bot: 'ScoreSheetBot'):
     return best
 
 
-def members_with_str_role(role: str, bot: 'ScoreSheetBot'):
+def members_with_str_role(role: str, bot: 'ScoreSheetBot') -> Tuple[str, List[discord.Member], List[int]]:
     all_role_names = {role.name for role in bot.cache.scs.roles}
     all_role_names = set.union(set(bot.cache.crews), all_role_names)
 
@@ -449,19 +453,23 @@ def members_with_str_role(role: str, bot: 'ScoreSheetBot'):
     if role.lower() in bot.cache.crews_by_tag:
         actual = bot.cache.crews_by_tag[role.lower()].name
     out = []
+    extra = []
     if actual in bot.cache.crews:
-        for member in bot.cache.scs.members:
-            try:
-                if crew(member, bot) == actual:
-                    out.append(member)
-            except ValueError:
-                continue
+        cr = crew_lookup(actual, bot)
+        db_members = db_crew_members(cr)
+        mems = crew_members(cr, bot)
+        for mem in mems:
+            if mem.id in db_members:
+                db_members.remove(mem.id)
+            out.append(mem)
+        extra = db_members
+
     else:
         for member in bot.cache.scs.members:
             role_names = {r.name for r in member.roles}
             if actual in role_names:
                 out.append(member)
-    return actual, out
+    return actual, out, extra
 
 
 def search_two_roles_in_list(first_role: str, second_role: str, everything):
@@ -501,7 +509,8 @@ def overlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[disco
 
 
 async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
-                                       message: discord.Message, author: discord.Member, bot: discord.Client) -> bool:
+                                       message: discord.Message, author: discord.Member, bot: discord.Client,
+                                       timeout: float = 30.0) -> bool:
     await message.add_reaction(confirm)
     await message.add_reaction(cancel)
 
@@ -510,7 +519,7 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
 
     while True:
         try:
-            react, reactor = await bot.wait_for('reaction_add', timeout=30.0, check=check)
+            react, reactor = await bot.wait_for('reaction_add', timeout=timeout, check=check)
         except asyncio.TimeoutError:
             return False
         if react.message.id != message.id:
@@ -620,7 +629,7 @@ class PlayerStatsPaged(menus.ListPageSource):
 
         cb_stats.add_field(name='MVPs', value=f'{mvps}', inline=True)
         cb_stats.add_field(name='Stocks Taken/Lost', value=f'{taken}/{lost}', inline=False)
-        cb_stats.add_field(name='Ratio', value=f'{round(taken / max(lost, 1))}', inline=True)
+        cb_stats.add_field(name='Ratio', value=f'{round(taken / max(lost, 1), 2)}', inline=True)
         pc = player_chars(member)
         cb_stats.add_field(name='Characters played', value='how many battles played in ', inline=False)
         for char in pc:
@@ -651,24 +660,6 @@ class PlayerStatsPaged(menus.ListPageSource):
 
     async def format_page(self, menu, entries) -> discord.Embed:
         return entries
-
-
-class PoolPaged(menus.ListPageSource):
-    def __init__(self, data, title: str, color: Optional[discord.Color] = discord.Color.purple(),
-                 thumbnail: Optional[str] = '', per_page: Optional[int] = 10):
-        super().__init__(data, per_page=per_page)
-        self.title = title
-        self.color = color
-        self.thumbnail = thumbnail
-
-    async def format_page(self, menu, entries) -> discord.Embed:
-        offset = menu.current_page * self.per_page
-        joined = f'Pool: {menu.current_page + 1}\n'
-        joined += '\n'.join(f'{i + 1 - offset}. {v}' for i, v in enumerate(entries, start=offset))
-        embed = discord.Embed(description=joined, title=self.title, colour=self.color)
-        if self.thumbnail:
-            embed.set_thumbnail(url=self.thumbnail)
-        return embed
 
 
 def playoff_summary(bot: 'ScoreSheetBot') -> discord.Embed:
@@ -705,6 +696,21 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
         crew_name = find_member_crew(mem_id)
         out_str = f'{str(mem)} left the overflow server and lost their roles here.'
         if crew_name:
+            cr = crew_lookup(crew_name, bot)
+            if bot.cache.roles.join_cd.id in all_member_roles(mem_id):
+                mod_slot(cr, 1)
+                unflairs, remaining, total = record_unflair(mem_id, cr, True)
+
+                out_str += (
+                    f'\n{str(mem_id)} was on 24h cooldown so {cr.name} gets back a slot ({remaining}/{total})')
+            # Else refund 1/3 slot
+            else:
+                unflairs, remaining, total = record_unflair(mem_id, cr, False)
+
+                if unflairs == 3:
+                    out_str += f'{cr.name} got a flair slot back for 3 unflairs. {remaining}/{total} left.'
+                else:
+                    out_str += f'{unflairs}/3 unflairs for returning a slot.'
             out_str += f'They were previously on {crew_name}'
         await bot.cache.channels.flair_log.send(out_str)
     second = other_set - overflow_role
@@ -712,10 +718,26 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
         mem = bot.cache.overflow_server.get_member(mem_id)
         for role in mem.roles:
             if role.name in bot.cache.crews:
+                out_str = \
+                    (f'{str(mem)} no longer has the overflow role in the main server so they have been unflaired from'
+                     f'{role.name}.')
+                cr = crew_lookup(role.name, bot)
+                if bot.cache.roles.join_cd.id in all_member_roles(mem_id):
+                    mod_slot(cr, 1)
+                    unflairs, remaining, total = record_unflair(mem_id, cr, True)
+
+                    out_str += (
+                        f'\n{str(mem_id)} was on 24h cooldown so {cr.name} gets back a slot ({remaining}/{total})')
+                # Else refund 1/3 slot
+                else:
+                    unflairs, remaining, total = record_unflair(mem_id, cr, False)
+
+                    if unflairs == 3:
+                        out_str += f'{cr.name} got a flair slot back for 3 unflairs. {remaining}/{total} left.'
+                    else:
+                        out_str += f'{unflairs}/3 unflairs for returning a slot.'
                 await mem.remove_roles(role)
-                await bot.cache.channels.flair_log.send(
-                    f'{str(mem)} no longer has the overflow role in the main server so they have been unflaired from'
-                    f'{role.name}.')
+                await bot.cache.channels.flair_log.send(out_str)
 
     return first, second
 
@@ -919,8 +941,8 @@ def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
 
 
 def calc_reg_slots(members: int) -> int:
-    base = 7
-    modifiers = [2, 1, 0, -1, -2]
+    base = 8
+    modifiers = [6, 4, 2, 0, -1, -2]
     modifer_loc = 0
     while modifer_loc < 4 and members >= SLOT_CUTOFFS[modifer_loc]:
         modifer_loc += 1

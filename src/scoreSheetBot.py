@@ -204,7 +204,7 @@ class ScoreSheetBot(commands.Cog):
     async def cb(self, ctx):
         await self.help(ctx, 'cb')
 
-    @commands.command(**help_doc['lock'])
+    @commands.command(**help_doc['lock'], aliases=['mohamed', 'nohamed'])
     @main_only
     @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
@@ -226,7 +226,7 @@ class ScoreSheetBot(commands.Cog):
 
             crew_overwrite = discord.PermissionOverwrite(send_messages=True, add_reactions=True)
             if crew_lookup(current.team1.name, self).overflow:
-                _, mems = members_with_str_role(current.team1.name, self)
+                _, mems, _ = members_with_str_role(current.team1.name, self)
                 for mem in mems:
                     overwrites[mem] = crew_overwrite
             else:
@@ -234,7 +234,7 @@ class ScoreSheetBot(commands.Cog):
                 overwrites[cr_role_1] = crew_overwrite
 
             if crew_lookup(current.team2.name, self).overflow:
-                _, mems = members_with_str_role(current.team2.name, self)
+                _, mems, _ = members_with_str_role(current.team2.name, self)
                 for mem in mems:
                     overwrites[mem] = crew_overwrite
             else:
@@ -283,18 +283,19 @@ class ScoreSheetBot(commands.Cog):
                            f'Please contact an admin if this is incorrect.')
             return
         if user_crew != opp_crew:
-            await ctx.send(f'If you are in a playoff battle, please use `{self.bot.command_prefix}playoffbattle`')
+            await ctx.send(
+                f'If you are in a final stand battle, please use `{self.bot.command_prefix}finalstandbattle` or `,fsb`')
             await self._set_current(ctx, Battle(user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['playoffbattle'], aliases=['pob', 'playoff'], group='CB')
+    @commands.command(**help_doc['finalstandbattle'], aliases=['fsb', 'finalstand'], group='CB')
     @main_only
     @no_battle
     @is_lead
     @ss_channel
-    async def playoffbattle(self, ctx: Context, user: discord.Member, size: int):
+    async def finalstandbattle(self, ctx: Context, user: discord.Member, size: int):
         if size < 1:
             await ctx.send('Please enter a size greater than 0.')
             return
@@ -311,12 +312,6 @@ class ScoreSheetBot(commands.Cog):
                            f'Please contact an admin if this is incorrect.')
             return
         if user_crew != opp_crew:
-            user_cr = crew_lookup(user_crew, self)
-            opp_cr = crew_lookup(opp_crew, self)
-            if user_cr.playoff != opp_cr.playoff or user_cr.playoff == PlayoffType.NO_PLAYOFF:
-                await ctx.send(
-                    f'{user_crew} and {opp_crew} are not in the same playoffs or are not in playoffs at all.')
-                return
             await self._set_current(ctx, Battle(user_crew, opp_crew, size, playoff=True))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
@@ -370,9 +365,6 @@ class ScoreSheetBot(commands.Cog):
                     await ctx.send(
                         f'{user.mention} joined this crew less than '
                         f'24 hours ago and must wait to play ranked battles.')
-                    return
-                if self._current(ctx).playoff and check_roles(user, [PLAYOFF_LIMITED]):
-                    await ctx.send(f'{user.mention} is playoff locked and cannot play in playoff battles.')
                     return
                 self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
             else:
@@ -472,9 +464,6 @@ class ScoreSheetBot(commands.Cog):
                     await ctx.send(
                         f'{user.mention} joined this crew less than '
                         f'24 hours ago and must wait to play ranked battles.')
-                    return
-                if self._current(ctx).playoff and check_roles(user, [PLAYOFF_LIMITED]):
-                    await ctx.send(f'{user.mention} is playoff limited and cannot play in playoff battles.')
                     return
                 self._current(ctx).replace_player(current_crew, escape(user.display_name), ctx.author.mention, user.id)
 
@@ -582,11 +571,11 @@ class ScoreSheetBot(commands.Cog):
                     winner = current.winner().name
                     loser = current.loser().name
                     if current.playoff:
-                        league_id = crew_lookup(winner, self).playoff.value
+                        league_id = 6
                         output_channels.pop(0)
                         output_channels.insert(0,
                                                discord.utils.get(ctx.guild.channels,
-                                                                 name=PLAYOFF_CHANNEL_NAMES[league_id - 1]))
+                                                                 name=FINAL_STAND_CHANNEL))
                     else:
                         league_id = 1
                     current = self._current(ctx)
@@ -744,7 +733,7 @@ class ScoreSheetBot(commands.Cog):
         embed.add_field(name=f'**Winner: {winner_member.display_name}**', inline=False,
                         value=f'Loser: {loser_member.display_name}')
         msg = await ctx.send(f'{opponent.mention} please confirm this match.', embed=embed)
-        if not await wait_for_reaction_on_message(YES, NO, msg, opponent, self.bot):
+        if not await wait_for_reaction_on_message(YES, NO, msg, opponent, self.bot, 600.0):
             resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             await resp.delete(delay=10)
             await ctx.message.delete()
@@ -779,31 +768,6 @@ class ScoreSheetBot(commands.Cog):
 
         pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Legacy Crews Rankings'),
                                 clear_reactions_after=True)
-        await pages.start(ctx)
-
-    @commands.command(**help_doc['groups'])
-    async def groups(self, ctx, group: Optional[str]):
-        if not group:
-            group = 'legacy'
-        if group not in ['legacy', 'tempered']:
-            await ctx.send(f'`{group}` is not `legacy` or `tempered` try `{self.bot.command_prefix}groups legacy`')
-        if group == 'legacy':
-            playoff = PlayoffType.LEGACY
-            group_size = 5
-        else:
-            playoff = PlayoffType.TEMPERED
-            group_size = 4
-
-        playoff_crews = sorted([cr for cr in self.cache.crews_by_name.values() if cr.playoff == playoff],
-                               key=lambda x: x.pool)
-        playoff_crew_str = []
-        for cr in playoff_crews:
-            record = crew_record(cr, playoff.value)
-            playoff_crew_str.append(f'{cr.name} {record[1]}/{record[2] - record[1]}')
-
-        pages = menus.MenuPages(
-            source=PoolPaged(playoff_crew_str, title=f'{playoff.name} Playoffs Pools', per_page=group_size),
-            clear_reactions_after=True)
         await pages.start(ctx)
 
     @commands.command(**help_doc['battles'])
@@ -979,35 +943,6 @@ class ScoreSheetBot(commands.Cog):
             actual_crew = crew_lookup(crew(ctx.author, self), self)
             await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
         await ctx.send(embed=actual_crew.embed)
-
-    @commands.command()
-    @role_call([LEADER, ADMIN, MINION, ADVISOR, DOCS])
-    async def playoffs(self, ctx, *, name: str = None):
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-        allowed = []
-        disallowed = []
-        for member in self.cache.scs.members:
-            try:
-                cr = crew(member, self)
-            except ValueError:
-                cr = None
-            if cr == actual_crew.name:
-                if check_roles(member, [PLAYOFF_LIMITED]):
-                    disallowed.append(f'> {str(member)} {member.mention}')
-                else:
-                    allowed.append(f'> {escape(str(member))} {member.mention}')
-        desc = [f'Allowed players ({len(allowed)}):', '\n'.join(allowed), f'Disallowed players ({len(disallowed)}):',
-                '\n'.join(disallowed)]
-        out = discord.Embed(title=f'Eligibility of {actual_crew.name} players for playoffs',
-                            description='\n'.join(desc), color=actual_crew.color)
-        await send_long_embed(ctx, out)
 
     ''' ************************************FLAIRING COMMANDS ********************************************'''
 
@@ -1256,6 +1191,14 @@ class ScoreSheetBot(commands.Cog):
         for member in set(members):
             await self.flair(ctx, member, new_crew=new_crew)
 
+    @commands.command(**help_doc['multiunflair'])
+    @main_only
+    @flairing_required
+    async def multiunflair(self, ctx: Context, everything: str):
+        members = everything.split(' ')
+        for member in set(members):
+            await self.unflair(ctx, member)
+
     ''' ***********************************GAMBIT COMMANDS ************************************************'''
 
     @commands.command(**help_doc['coins'])
@@ -1494,8 +1437,35 @@ class ScoreSheetBot(commands.Cog):
         else:
             actual_crew = crew_lookup(crew(ctx.author, self), self)
             await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        left, total, uf = extra_slots(actual_crew)
+
+        await ctx.send(f'{actual_crew.name} current slots: {left}/{total}  ({uf}/3) for unflair.')
         new = cur_slot_set(actual_crew, num)
         await ctx.send(f'Set {actual_crew.name} slots to {new}.')
+
+    @commands.command(**help_doc['setreturnslots'])
+    @role_call(STAFF_LIST)
+    @main_only
+    async def setreturnslots(self, ctx, num: int, *, name: str = None):
+        if num not in (0, 1, 2, 3):
+            msg = await response_message(ctx, f'{num} must be 0,1,2 or 3 ')
+            await msg.delete(delay=5)
+            return
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        left, total, uf = extra_slots(actual_crew)
+
+        await ctx.send(f'{actual_crew.name} current slots: {left}/{total}  ({uf}/3) for unflair.')
+        uf, left, total = set_return_slots(actual_crew, num)
+        await ctx.send(f'Set {actual_crew.name} new slots: {left}/{total}  ({uf}/3) for unflair.')
 
     @commands.command(**help_doc['cooldown'], hidden=True)
     @role_call(STAFF_LIST)
@@ -1928,7 +1898,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['listroles'])
     async def listroles(self, ctx, *, role: str):
-        actual, mems = members_with_str_role(role, self)
+        actual, mems, extra = members_with_str_role(role, self)
         mems.sort(key=lambda x: str(x))
         if 'everyone' in actual:
             await ctx.send('I will literally ban you if you try this again.')
@@ -1937,6 +1907,9 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{actual} is too large of a role, use `.listroles`.')
             return
         desc = ['\n'.join([f'{str(member)} {member.mention}' for member in mems])]
+        if extra:
+            desc.append('These members are flaired for the crew, but not in the server')
+            desc.extend(['\n'.join([f'{name_from_id(mem_id)}: {str(mem_id)}' for mem_id in extra])])
         if actual in self.cache.crews_by_name:
             cr = crew_lookup(actual, self)
             title = f'All {len(mems)} members on crew {actual}'
@@ -1952,7 +1925,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['pingrole'])
     @role_call(STAFF_LIST)
     async def pingrole(self, ctx, *, role: str):
-        actual, mems = members_with_str_role(role, self)
+        actual, mems, _ = members_with_str_role(role, self)
         out = [f'Pinging all members of role {actual}: ']
         for mem in mems:
             out.append(mem.mention)
@@ -2077,6 +2050,21 @@ class ScoreSheetBot(commands.Cog):
         crew_bar_chart(crews)
         await ctx.send(embed=embed, file=discord.File('cr.png'))
 
+    @commands.command(hidden=True, **help_doc['ofrank'])
+    @role_call(STAFF_LIST)
+    async def ofrank(self, ctx):
+        crews = list(self.cache.crews_by_name.values())
+
+        crews.sort(key=lambda x: int(x.ladder[1:x.ladder.index('/')]))
+        desc = []
+        for cr in crews:
+            if cr.overflow:
+                desc.append(
+                    f'{cr.name}: {cr.ladder}, Rank {cr.rank}, members, {cr.member_count} {str(first_crew_flair(cr))}')
+        embed = discord.Embed(title=f'Overflow crew numbers', description='\n'.join(desc))
+
+        await send_long_embed(ctx, embed)
+
     @commands.command(**help_doc['slots'])
     @main_only
     async def slots(self, ctx, *, name: str = None):
@@ -2174,7 +2162,6 @@ class ScoreSheetBot(commands.Cog):
 
         embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
-
 
     @commands.command(hidden=True, **help_doc['flaircounts'])
     @role_call(STAFF_LIST)

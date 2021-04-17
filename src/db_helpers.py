@@ -310,8 +310,10 @@ def remove_member_role(member_id: int, role_id: int) -> None:
         cur = conn.cursor()
 
         cur.execute(delete_current, (member_id, role_id,))
-        gained = cur.fetchone()[0]
-        cur.execute(add_member_history, (member_id, role_id, gained))
+        ret = cur.fetchone()
+        if ret:
+            gained = ret[0]
+            cur.execute(add_member_history, (member_id, role_id, gained))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -394,8 +396,8 @@ def char_id_from_name(name: str, cursor) -> int:
 
 
 def add_finished_battle(battle: Battle, link: str, league: int) -> int:
-    add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id)
-     values(%s, %s, %s, %s, %s, current_timestamp, %s)  RETURNING id;"""
+    add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id, players)
+     values(%s, %s, %s, %s, %s, current_timestamp, %s, %s)  RETURNING id;"""
 
     add_match = """INSERT into match (p1, p2, p1_taken, p2_taken, winner, battle_id, p1_char_id, p2_char_id, match_order)
      values(%s, %s, %s, %s, %s, %s, %s, %s, %s);"""
@@ -412,6 +414,7 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
             link,
             crew_id_from_name(battle.winner().name, cur),
             league,
+            battle.team1.num_players,
         ))
         battle_id = cur.fetchone()[0]
         for order, match in enumerate(battle.matches):
@@ -1976,10 +1979,8 @@ def record_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int,
     return unflairs, remaining, total
 
 
-def record_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int, int]:
-    record = """INSERT into unflairs (member_id, crew_id, leave_time)
-     values(%s, %s, current_timestamp);"""
-    cr_record = """update crews set unflair = unflair + 1 where id = %s returning unflair;"""
+def set_return_slots(crew: Crew, number: int) -> Tuple[int, int, int]:
+    cr_record = """update crews set unflair = %s where id = %s returning unflair;"""
     reset = """update crews set unflair = 0, slotsleft = slotsleft+1  where id = %s;"""
     slot = """SELECT slotsleft, slotstotal FROM crews where id = %s;"""
     conn = None
@@ -1989,12 +1990,11 @@ def record_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int,
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cr_id = crew_id_from_crews(crew, cur)
-        cur.execute(record, (member_id, cr_id))
-        if not join_cd:
-            cur.execute(cr_record, (cr_id,))
-            unflairs = cur.fetchone()[0]
-            if unflairs == 3:
-                cur.execute(reset, (cr_id,))
+        cur.execute(cr_record, (number, cr_id,))
+        unflairs = cur.fetchone()[0]
+        if unflairs == 3:
+            cur.execute(reset, (cr_id,))
+            unflairs = 0
         cur.execute(slot, (cr_id,))
         remaining, total = cur.fetchone()
         conn.commit()
@@ -2125,3 +2125,80 @@ def ba_standings() -> Tuple[Tuple[str, int, int, int]]:
         if conn is not None:
             conn.close()
     return standings
+
+
+def db_crew_members(cr: Crew) -> List[int]:
+    mems = """select member_id
+    from current_member_crews
+    where crew_id = %s;
+"""
+    conn = None
+    members = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        crew_id = crew_id_from_crews(cr, cur)
+        cur.execute(mems, (crew_id,))
+        members = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return [mem[0] for mem in members]
+
+
+def name_from_id(mem_id: int) -> str:
+    get_name = """select discord_name
+        from members
+        where id = %s;
+    """
+    conn = None
+    name = ''
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(get_name, (mem_id,))
+        ret = cur.fetchone()
+        if ret:
+            name = ret[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return name
+
+
+def first_crew_flair(cr: Crew) -> datetime.date:
+    get_first = """select joined
+    from current_member_crews where crew_id = %s
+union select joined
+    from member_crews_history where crew_id = %s
+order by joined
+limit 1;"""
+    conn = None
+    first = datetime.datetime.now()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        crew_id = crew_id_from_crews(cr, cur)
+        cur.execute(get_first, (crew_id, crew_id))
+        ret = cur.fetchone()
+        if ret:
+            first = ret[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return first.date()

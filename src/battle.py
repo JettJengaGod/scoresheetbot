@@ -187,7 +187,7 @@ class Battle:
         self.mock = mock
         self.playoff = playoff
         if self.playoff:
-            self.header = 'Playoff '
+            self.header = 'Final Stand '
         elif self.mock:
             self.header = 'Mock '
         else:
@@ -222,6 +222,7 @@ class Battle:
         if ext:
             return True
         else:
+            self.matches.append(InfoMatch(info=f'{team_name} used their extension'))
             team.ext_used = True
             return False
 
