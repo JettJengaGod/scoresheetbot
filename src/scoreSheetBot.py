@@ -506,6 +506,13 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     async def resize(self, ctx: Context, new_size: int):
         await self._reject_outsiders(ctx)
+        msg = await ctx.send(f'Are you sure you want to change the size of this crew battle?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await resp.delete(delay=10)
+            await ctx.message.delete()
+            await msg.delete(delay=5)
+            return
         self._current(ctx).resize(new_size)
         await send_sheet(ctx, battle=self._current(ctx))
 
