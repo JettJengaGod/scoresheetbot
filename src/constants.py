@@ -27,7 +27,6 @@ DOCS_UPDATES = 'scs_docs_updates'
 JOIN_CD = '24h Join Cooldown'
 FLAIRING_LOGS = 'jettbot_flairing_logs'
 FLAIR_VERIFY = '! Verify Flair Change !'
-PLAYOFF_LIMITED = 'Playoff Locked'
 BOT_CORNER_ID = 430367391227052054
 FLAIRING_QUESTIONS_ID = 786842350822490122
 COOLDOWN_TIME_SECONDS = 60 * 60 * 24  # 24 Hours
@@ -111,7 +110,6 @@ EXPECTED_NON_CREW_ROLES = {
     'SCS Violations Committee',
     'v2 Minion',
     'SCS Admin',
-    PLAYOFF_LIMITED,
     JOIN_CD,
     'BetaJettBot',
     'EVIL',
@@ -123,11 +121,11 @@ EXPECTED_NON_CREW_ROLES = {
     'DC Verify',
     'Double Counter',
     'Corneo Champion',
-    'CMC Tempered Leader',
-    PLAYOFF_LIMITED
+    'CMC Tempered Leader'
 }
 PLAYOFF_CHANNEL_NAMES = ['', 'first_class_playoffs_results', 'cm-extreme_playoffs_results',
                          'cm-tempered_playoffs_results']
+FINAL_STAND_CHANNEL = 'final_stand_submissions'
 
 WLED_CREWS = ['Royal Knights']
 

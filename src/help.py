@@ -27,15 +27,12 @@ help_doc = dict(
     battle=HelpDoc(Categories.cb,
                    'Start a Scoresheet in this channel against the tagged players crew with a specific size',
                    '', "@OpponentName size"),
-    playoffbattle=HelpDoc(Categories.cb,
-                          'Start a playoff Scoresheet in this channel against'
-                          ' the tagged players crew with a specific size',
-                          '', "@OpponentName size"),
+    finalstandbattle=HelpDoc(Categories.cb,
+                             'Start a finalstand Scoresheet in this channel against'
+                             ' the tagged players crew with a specific size',
+                             '', "@OpponentName size"),
     mock=HelpDoc(Categories.cb, 'Start a Scoresheet in this channel with two team names and a size', '',
                  'Team1 Team2 size'),
-    groups=HelpDoc(Categories.cb, 'Show the groups and records of the crews in playoffs, optionally send in `tempered`',
-                   '',
-                   '`legacy` or `tempered`'),
     send=HelpDoc(Categories.cb, 'Sends in the tagged player, if this is a mock you also need to send the team name', '',
                  '@Player Optional[TeamName]'),
     replace=HelpDoc(Categories.cb, 'Replaces current player with the tagged player', '', '@Player Optional[TeamName]'),
@@ -72,7 +69,7 @@ help_doc = dict(
     ext=HelpDoc(Categories.cb, 'Prints out extension status'),
     recache=HelpDoc(Categories.staff, 'Updates the cache. Admin only'),
     pending=HelpDoc(Categories.staff, 'Prints pending battles. Admin only'),
-    po=HelpDoc(Categories.staff, 'Prints all playoff cbs in a summary'),
+    po=HelpDoc(Categories.staff, 'Prints all final stand cbs in a summary'),
     disable=HelpDoc(Categories.staff, 'Disables the bot in a channel', '', 'ChannelMention'),
     usage=HelpDoc(Categories.staff, 'Shows the usage stats of each command'),
 
@@ -97,6 +94,10 @@ help_doc = dict(
                        'Flairs multiple people for your crew or for a specific crew if you are an admin.'
                        'Only use spaces between members, and mention mention each one', '',
                        'Member1 Member2 Member3 Optional<Crew>'),
+    multiunflair=HelpDoc(Categories.flairing,
+                         'Unflairs multiple people for your crew or for a specific crew if you are an admin.'
+                         'Only use spaces between members, and mention mention each one', '',
+                         'Member1 Member2 Member3'),
     flair=HelpDoc(Categories.flairing, 'Flairs someone for your crew or for a specific crew if you are an admin', '',
                   'Member Optional<Crew>'),
     promote=HelpDoc(Categories.flairing, 'Used by leaders to promote users to advoisrs or staff to promote to leaders',
@@ -112,10 +113,14 @@ help_doc = dict(
 
     pingrole=HelpDoc(Categories.staff, 'Same As listroles, but pings instead', '', 'role'),
     setslots=HelpDoc(Categories.staff, 'Sets the slots for a crew to a specific number', '', 'number Crew'),
+    setreturnslots=HelpDoc(Categories.staff,
+                           'Sets the return slots for a crew to a specific number (Only values 1,2,3)', '',
+                           'number Crew'),
     cooldown=HelpDoc(Categories.staff,
                      'Finds the current cooldown for each of recently flaired users and fixes any that might have been missed'),
     non_crew=HelpDoc(Categories.staff, 'Returns a list of all non crew roles (should be small)'),
     overflow=HelpDoc(Categories.staff, 'Returns a two lists of overflow incorrectly tagged members'),
+    ofrank=HelpDoc(Categories.staff, 'Returns all overflow crews and info about them'),
     flairing_off=HelpDoc(Categories.staff, 'Turns flairing off until restart or staff turns it back on'),
     flairing_on=HelpDoc(Categories.staff, 'Turns flairing back on'),
     freeze=HelpDoc(Categories.staff, 'Freezes a crews registration for a time.',
@@ -135,8 +140,8 @@ help_doc = dict(
     make_lead=HelpDoc(Categories.staff, 'Makes a user a leader on their crew', '', 'User'),
     bigcrew=HelpDoc(Categories.staff, 'Returns all the crews that are bigger than x, default 40', '', 'Crew min'),
     softcap=HelpDoc(Categories.crews,
-                     'Returns the number of unique players used by crews last month or the players and each cb'
-                     'for a specific crew', '', 'Optional[Crew]'),
+                    'Returns the number of unique players used by crews last month or the players and each cb'
+                    'for a specific crew', '', 'Optional[Crew]'),
     crnumbers=HelpDoc(Categories.staff, 'Helpful numbers for crew analysis'),
     slottotals=HelpDoc(Categories.staff, 'Prints all the max slots for crews'),
     flaircounts=HelpDoc(Categories.staff, 'Helpful numbers for flair analysis'),
