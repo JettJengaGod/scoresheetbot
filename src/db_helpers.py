@@ -639,8 +639,7 @@ def battle_cancel(battle_id: int) -> str:
     # TODO modify this to handle MC/BF matches and finish implementation
     find_mvps = """select mvps, link from battle where id = %s;"""
     move_matches = """with deleted_match as (
-        DELETE FROM match where match.battle_id = %s
-        returning *
+        select * FROM match where match.battle_id = %s
     )
     insert into canceled_matches
     select * from deleted_match;"""
@@ -648,12 +647,11 @@ def battle_cancel(battle_id: int) -> str:
         DELETE FROM match where match.battle_id = %s;"""
     decrement_mvp = """ update member_stats set mvps = mvps - 1 where member_id = %s;"""
     move_battle = """with deleted_battle as (
-        DELETE FROM battle where battle.id = %s
-        returning *
+        select * FROM battle where battle.id = %s
     )
     insert into canceled_battle
     select * from deleted_battle;"""
-    delete_batte = """
+    delete_battle = """
         DELETE FROM battle where battle.id = %s;"""
     find_rating_change = """
     select crew_id, rating_before, rating_after, league_id from battle_ratings
@@ -687,8 +685,10 @@ def battle_cancel(battle_id: int) -> str:
         cur.execute(del_battle_rating, (battle_id,))
         # Delete the matches
         cur.execute(move_matches, (battle_id,))
+        cur.execute(delete_matches, (battle_id,))
         # Delete the battle
         cur.execute(move_battle, (battle_id,))
+        cur.execute(delete_battle, (battle_id,))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
