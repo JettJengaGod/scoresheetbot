@@ -632,15 +632,17 @@ where c1.id = battle.crew_1
     return crew1, crew2, finished.date(), link
 
 
-def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
+def battle_cancel(battle_id: int) -> str:
     # TODO modify this to handle MC/BF matches and finish implementation
-    find_mvps = """select mvps from battle where id = %s;"""
+    find_mvps = """select mvps, link from battle where id = %s;"""
     move_matches = """with deleted_match as (
         DELETE FROM match where match.battle_id = %s
         returning *
     )
     insert into canceled_matches
     select * from deleted_match;"""
+    delete_matches = """
+        DELETE FROM match where match.battle_id = %s;"""
     decrement_mvp = """ update member_stats set mvps = mvps - 1 where member_id = %s;"""
     move_battle = """with deleted_battle as (
         DELETE FROM battle where battle.id = %s
@@ -648,6 +650,8 @@ def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
     )
     insert into canceled_battle
     select * from deleted_battle;"""
+    delete_batte = """
+        DELETE FROM battle where battle.id = %s;"""
     find_rating_change = """
     select crew_id, rating_before, rating_after, league_id from battle_ratings
     where battle_id = %s;
@@ -657,7 +661,7 @@ def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
     set_crew_rating = """update crew_ratings
     set rating = rating - %s
         where crew_id = %s and league_id = %s;"""
-    winner_elo, winner_change, loser_elo, loser_change = 0, 0, 0, 0
+    link = ''
     conn = None
     try:
         params = config()
@@ -667,6 +671,7 @@ def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
         cur.execute(find_mvps, (battle_id,))
         ret = cur.fetchone()
         if ret:
+            link = ret[1]
             for mvp in ret[0]:
                 cur.execute(decrement_mvp, (mvp,))
         cur.execute(find_rating_change, (battle_id,))
@@ -681,7 +686,6 @@ def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
         cur.execute(move_matches, (battle_id,))
         # Delete the battle
         cur.execute(move_battle, (battle_id,))
-
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -689,7 +693,7 @@ def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
     finally:
         if conn is not None:
             conn.close()
-    return winner_elo, winner_change, loser_elo, loser_change
+    return link
 
 
 def crew_correct(member: discord.Member, current: str) -> bool:

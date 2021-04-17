@@ -2086,7 +2086,14 @@ class ScoreSheetBot(commands.Cog):
             await msg.delete(delay=2)
             await resp.delete(delay=5)
             return
-        battle_cancel(battle_id)
+        link = battle_cancel(battle_id)
+        split = link.split('/')
+        channel_id = int(split[-2])
+        message_id = int(split[-1])
+        channel = ctx.guild.get_channel(channel_id)
+        message = await channel.fetch_message(message_id)
+        await message.edit(content=f'{NO}Canceled by {ctx.author} {reason}\n'+message.content)
+
         await ctx.send(f'Successfully canceled cb {battle_id}.')
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
