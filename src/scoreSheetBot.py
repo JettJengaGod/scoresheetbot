@@ -2066,10 +2066,28 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        all_ids = all_battle_ids()
+        all_ids = sorted(all_battle_ids())
         for i, battle_id in enumerate(all_ids):
+            battle_elo_changes(battle_id)
             print(f'{i}/{len(all_ids)}: {battle_id}')
-            battle_taken_changes(battle_id)
+            battle_weight_changes(battle_id)
+
+    @commands.command(hidden=True, **help_doc['crnumbers'])
+    @role_call(STAFF_LIST)
+    async def cancelcb(self, ctx, battle_id: int, *, reason: str = ''):
+        crew1, crew2, finished, link = battle_info(battle_id)
+        embed = discord.Embed(title='Are you sure you want to cancel this crew battle?',
+                              description=f'{crew1} vs {crew2}\n'
+                                          f'On: {finished} [link]({link})', color=discord.Color.random())
+        msg = await ctx.send(embed=embed)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await ctx.message.delete(delay=5)
+            await msg.delete(delay=2)
+            await resp.delete(delay=5)
+            return
+        battle_cancel(battle_id)
+        await ctx.send(f'Successfully canceled cb {battle_id}.')
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)

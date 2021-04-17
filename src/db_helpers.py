@@ -395,12 +395,12 @@ def char_id_from_name(name: str, cursor) -> int:
 
 
 def add_finished_battle(battle: Battle, link: str, league: int) -> int:
-    add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id)
-     values(%s, %s, %s, %s, %s, current_timestamp, %s)  RETURNING id;"""
+    add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id, mvps)
+     values(%s, %s, %s, %s, %s, current_timestamp, %s, %s)  RETURNING id;"""
     add_member_stats = """
             insert into member_stats(member_id) values (%s) on conflict do nothing;"""
     add_mvp = """
-        update member_stats set mvps = mvps + 1, where member_id = %s;
+        update member_stats set mvps = mvps + 1 where member_id = %s;
     """
     add_match = """INSERT into match (p1, p2, p1_taken, p2_taken, winner, battle_id, p1_char_id, p2_char_id, match_order)
      values(%s, %s, %s, %s, %s, %s, %s, %s, %s);"""
@@ -411,6 +411,12 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
+
+        mvps = []
+        for mvp in battle.team1.mvp() + battle.team2.mvp():
+            mvps.append(mvp.id)
+            cur.execute(add_member_stats, (mvp.id,))
+            cur.execute(add_mvp, (mvp.id,))
         cur.execute(add_battle, (
             crew_id_from_name(battle.team1.name, cur),
             crew_id_from_name(battle.team2.name, cur),
@@ -418,11 +424,9 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
             link,
             crew_id_from_name(battle.winner().name, cur),
             league,
+            mvps,
         ))
         battle_id = cur.fetchone()[0]
-        for mvp in battle.team1.mvp().extend(battle.team2.mvp()):
-            cur.execute(add_member_stats, (mvp.id,))
-            cur.execute(add_mvp, (mvp.id, ))
         for order, match in enumerate(battle.matches):
             if isinstance(match, TimerMatch) or isinstance(match, InfoMatch) or isinstance(match, ForfeitMatch):
                 continue
@@ -517,10 +521,10 @@ def battle_weight_changes(battle_id: int, reverse: bool = False):
         insert into member_stats(member_id) values (%s) on conflict do nothing returning weighted_taken, lost)
     select  greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from current
     union all
-    select greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from member_weights where member_id = %s;"""
+    select greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from member_stats where member_id = %s;"""
 
     update_weight = """update member_stats set weighted_taken = weighted_taken + %s, taken = taken + %s,
-        lost = lost + %s, played += %s
+        lost = lost + %s, played  = played + %s
         where member_id = %s;"""
     conn = None
     try:
@@ -597,6 +601,37 @@ def all_battle_ids() -> Sequence[int]:
     return ids
 
 
+def battle_info(battle_id: int) -> Tuple[str, str, datetime.date, str]:
+    everything = """select c1.name, c2.name, finished, link
+from battle,
+     crews as c1,
+     crews as c2
+where c1.id = battle.crew_1
+  and c2.id = battle.crew_2
+  and battle.id = %s;"""
+    conn = None
+    crew1, crew2, finished, link = '', '', datetime.datetime.now().date(), ''
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(everything, (battle_id,))
+        ret = cur.fetchone()
+        conn.commit()
+        cur.close()
+
+        if ret:
+            crew1, crew2, finished, link = ret
+        else:
+            raise ValueError(f'Battle id {battle_id} does not exist.')
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return crew1, crew2, finished.date(), link
+
+
 def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
     # TODO modify this to handle MC/BF matches and finish implementation
     find_mvps = """select mvps from battle where id = %s;"""
@@ -605,7 +640,7 @@ def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
         returning *
     )
     insert into canceled_matches
-    select * from deleted_battle;"""
+    select * from deleted_match;"""
     decrement_mvp = """ update member_stats set mvps = mvps - 1 where member_id = %s;"""
     move_battle = """with deleted_battle as (
         DELETE FROM battle where battle.id = %s
@@ -632,7 +667,7 @@ def battle_cancel(battle_id: int) -> Tuple[int, int, int, int]:
         cur.execute(find_mvps, (battle_id,))
         ret = cur.fetchone()
         if ret:
-            for mvp in ret:
+            for mvp in ret[0]:
                 cur.execute(decrement_mvp, (mvp,))
         cur.execute(find_rating_change, (battle_id,))
         changes = cur.fetchall()
