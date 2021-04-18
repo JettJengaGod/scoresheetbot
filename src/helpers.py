@@ -148,7 +148,7 @@ async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battl
 def crew(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
     roles = user.roles
     if any((role.name == OVERFLOW_ROLE for role in roles)):
-        overflow_user = bot.cache.overflow_server.get_member(user.id)
+        overflow_user = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER).get_member(user.id)
         if overflow_user:
             roles = overflow_user.roles
 
@@ -411,7 +411,7 @@ async def response_message(ctx: Context, msg: str) -> discord.Message:
 
 def crew_members(crew_input: Crew, bot: 'ScoreSheetBot') -> List[discord.Member]:
     members = []
-    for member in bot.cache.scs.members:
+    for member in discord.utils.get(bot.bot.guilds, name=SCS).members:
         try:
             cr = crew(member, bot)
         except ValueError:
