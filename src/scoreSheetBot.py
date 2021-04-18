@@ -1181,7 +1181,6 @@ class ScoreSheetBot(commands.Cog):
         if flairing_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
             of_after = set(overflow_server.get_member(member.id).roles)
-        flaired_crew = crew_members(flairing_crew, self)
         if len(crew_members(flairing_crew, self)) == 40:
             message = """You have just flaired the 40th person for your crew. When the first of the month hits, 
             this will make you eligible for soft cap restrictions. Check out the SCS rules or use the 
@@ -1190,6 +1189,8 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.author.send(message)
             except discord.errors.Forbidden:
                 await ctx.send(f'{ctx.author.mention}  {message}')
+        await self.cache.channels.flair_log.send(
+            embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
     @commands.command(**help_doc['multiflair'])
     @main_only
