@@ -2459,3 +2459,74 @@ limit 1;"""
         if conn is not None:
             conn.close()
     return first.date()
+
+
+def battle_frontier_crews() -> Sequence[Tuple[str, str, datetime.datetime, str, int]]:
+    # TODO update this to be actual battle frontier instead of qualifier
+    bf_crews = """
+select crews.name,
+       crews.tag,
+       last_battle.finished,
+       last_battle.opp,
+       crew_ratings.rating
+from crew_ratings,
+     crews
+         left join (select battle.finished as finished, opp_crew.name as opp, newest_battle.crew_id as cid
+                    from (select max(battle.id) as battle_id, crews.id as crew_id
+                          from battle,
+                               crews
+                          where (crews.id = battle.crew_1
+                              or crews.id = battle.crew_2)
+                          group by crews.id)
+                             as newest_battle,
+                         battle,
+                         crews as opp_crew
+                    where newest_battle.battle_id = battle.id
+                      and opp_crew.id = case
+                                            when newest_battle.crew_id = battle.crew_2 then battle.crew_1
+                                            else battle.crew_2 end) as last_battle on last_battle.cid = crews.id
+
+where crew_ratings.crew_id = crews.id
+  and crew_ratings.league_id = 8
+order by rating desc;
+"""
+    conn = None
+    ret = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(bf_crews)
+        ret = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return ret
+
+
+def init_rating(crew: Crew, rating: int):
+    set_rating = """insert into crew_ratings (crew_id, league_id, rating, k) 
+    values (%s, 8, %s, 50);
+    """
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        if not cr_id:
+            print(f'{crew.name} not in DB!')
+            return
+        cur.execute(set_rating, (cr_id, rating))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return

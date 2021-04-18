@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
 
 from src.elo_helpers import rating_update
-from src.sheet_helpers import update_gambit_sheet, update_ba_sheet
+from src.sheet_helpers import update_gambit_sheet, update_ba_sheet, update_bf_sheet
 from .db_helpers import *
 import src.cache
 from .character import all_emojis, string_to_emote, all_alts, CHARACTERS
@@ -2048,11 +2048,12 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        all_ids = sorted(all_battle_ids())
-        for i, battle_id in enumerate(all_ids):
-            battle_elo_changes(battle_id)
-            print(f'{i}/{len(all_ids)}: {battle_id}')
-            battle_weight_changes(battle_id)
+        update_bf_sheet()
+        # all_ids = sorted(all_battle_ids())
+        # for i, battle_id in enumerate(all_ids):
+        #     battle_elo_changes(battle_id)
+        #     print(f'{i}/{len(all_ids)}: {battle_id}')
+        #     battle_weight_changes(battle_id)
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
@@ -2104,6 +2105,19 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'Overflow crew numbers', description='\n'.join(desc))
 
         await send_long_embed(ctx, embed)
+
+    @commands.command(hidden=True, **help_doc['ofrank'])
+    @role_call(STAFF_LIST)
+    async def initalize_ratings(self, ctx):
+        crews = list(self.cache.crews_by_name.values())
+
+        crews.sort(key=lambda x: x.rank)
+        for i, cr in enumerate(crews):
+            print(cr.name)
+            base = 1000
+            calculated = base + 75*(cr.rank-1)
+            init_rating(cr, calculated)
+            print(f'{cr.name}: {calculated} {i}/{len(crews)}')
 
     @commands.command(**help_doc['slots'])
     @main_only
