@@ -1182,9 +1182,9 @@ class ScoreSheetBot(commands.Cog):
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
             of_after = set(overflow_server.get_member(member.id).roles)
         if len(crew_members(flairing_crew, self)) == 40:
-            message = """You have just flaired the 40th person for your crew. When the first of the month hits, 
-            this will make you eligible for soft cap restrictions. Check out the SCS rules or use the 
-            <#492166249174925312> channel if you are unsure what this means."""
+            message = 'You have just flaired the 40th person for your crew. When the first of the month hits, ' \
+                      'this will make you eligible for soft cap restrictions. Check out the SCS rules or use the ' \
+                      '<#492166249174925312> channel if you are unsure what this means.'
             try:
                 await ctx.author.send(message)
             except discord.errors.Forbidden:
