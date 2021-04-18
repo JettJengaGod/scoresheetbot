@@ -119,7 +119,6 @@ class Cache:
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
         crew_info_range = 'Crew Information!A4:E2160'
         qualifier_range = 'SCL Qualifiers Ladder!A4:L800'
-        playoff_range = 'Bot Playoffs!A2:M41'
 
         # Call the Sheets API
         sheet = service.spreadsheets()
@@ -128,12 +127,9 @@ class Cache:
 
         qualifiers = sheet.values().get(spreadsheetId=docs_id,
                                         range=qualifier_range).execute()
-        playoff = sheet.values().get(spreadsheetId=docs_id,
-                                     range=playoff_range).execute()
         values = result.get('values', [])
 
         qualifiers = qualifiers.get('values', [])
-        playoff = playoff.get('values', [])
 
         crews_by_name = {}
         issues = []
@@ -156,20 +152,6 @@ class Cache:
                     ranking += 1
                 elif row[0] and row[0] not in ('Pending Crew', 'Pending Unregistered Crew'):
                     issues.append(row[0])
-        if not playoff:
-            raise ValueError('Playoff Sheet Not Found')
-        else:
-            for row in playoff:
-                if row[1] in crews_by_name.keys():
-                    crews_by_name[row[1]].playoff = PlayoffType.LEGACY
-                    crews_by_name[row[1]].pool = int(row[3])
-                if len(row) > 6:
-                    if row[6] in crews_by_name.keys():
-                        crews_by_name[row[6]].playoff = PlayoffType.EXTREME
-                if len(row) > 10:
-                    if row[10] in crews_by_name.keys():
-                        crews_by_name[row[10]].playoff = PlayoffType.TEMPERED
-                        crews_by_name[row[10]].pool = int(row[12])
 
         if issues:
             issue_string = '\n'.join(issues)

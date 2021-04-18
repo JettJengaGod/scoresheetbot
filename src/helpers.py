@@ -631,7 +631,7 @@ class PlayerStatsPaged(menus.ListPageSource):
 
         cb_stats.add_field(name='MVPs', value=f'{mvps}', inline=True)
         cb_stats.add_field(name='Stocks Taken/Lost', value=f'{taken}/{lost}', inline=False)
-        cb_stats.add_field(name='Ratio', value=f'{round(taken / max(lost, 1))}', inline=True)
+        cb_stats.add_field(name='Ratio', value=f'{round(taken / max(lost, 1), 2)}', inline=True)
         pc = player_chars(member)
         cb_stats.add_field(name='Characters played', value='how many battles played in ', inline=False)
         for char in pc:
@@ -662,24 +662,6 @@ class PlayerStatsPaged(menus.ListPageSource):
 
     async def format_page(self, menu, entries) -> discord.Embed:
         return entries
-
-
-class PoolPaged(menus.ListPageSource):
-    def __init__(self, data, title: str, color: Optional[discord.Color] = discord.Color.purple(),
-                 thumbnail: Optional[str] = '', per_page: Optional[int] = 10):
-        super().__init__(data, per_page=per_page)
-        self.title = title
-        self.color = color
-        self.thumbnail = thumbnail
-
-    async def format_page(self, menu, entries) -> discord.Embed:
-        offset = menu.current_page * self.per_page
-        joined = f'Pool: {menu.current_page + 1}\n'
-        joined += '\n'.join(f'{i + 1 - offset}. {v}' for i, v in enumerate(entries, start=offset))
-        embed = discord.Embed(description=joined, title=self.title, colour=self.color)
-        if self.thumbnail:
-            embed.set_thumbnail(url=self.thumbnail)
-        return embed
 
 
 def playoff_summary(bot: 'ScoreSheetBot') -> discord.Embed:
