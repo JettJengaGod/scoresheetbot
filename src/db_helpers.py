@@ -2,7 +2,7 @@ import datetime
 import os
 import sys
 import traceback
-from typing import List, Tuple, Optional, Iterable, Dict, Sequence
+from typing import List, Tuple, Optional, Iterable, Dict, Sequence, Any
 from collections import defaultdict
 
 import discord
@@ -2530,3 +2530,56 @@ def init_rating(crew: Crew, rating: int):
         if conn is not None:
             conn.close()
     return
+
+
+def mc_stats() -> Sequence[Tuple[str, int, int, float, int, int, int, List[str]]]:
+    get_stats = """select members.discord_name,
+       crews.tag,
+       members.id,
+       member_stats.taken,
+       member_stats.weighted_taken,
+       member_stats.lost,
+       member_stats.mvps,
+       member_stats.played
+from members,
+     current_member_crews,
+     crews,
+     member_stats
+where members.id = current_member_crews.member_id
+    and current_member_crews.crew_id = crews.id
+    and member_stats.member_id = members.id;
+    """
+    # TODO update this to order by usage and only use master class
+    get_chars = """select fighters.name, picks.pid
+from (
+         select distinct(match.p1_char_id) as cid, p1 as pid
+         from match
+         union
+         select distinct (match.p2_char_id) as cid, p2 as pid
+         from match) as picks,
+     fighters
+where fighters.id = picks.cid;
+    """
+    conn = None
+    out = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(get_chars)
+        chars = defaultdict(list)
+        for name, pid in cur.fetchall():
+            chars[pid].append(name)
+
+        cur.execute(get_stats)
+        ret = cur.fetchall()
+        for name, tag, pid, taken, weighted_taken, lost, mvps, played in ret:
+            out.append((name, tag, pid, taken, weighted_taken, lost, mvps, played, chars[pid]))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return out

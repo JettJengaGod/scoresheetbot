@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
 
 from src.elo_helpers import rating_update
-from src.sheet_helpers import update_gambit_sheet, update_ba_sheet, update_bf_sheet
+from src.sheet_helpers import update_gambit_sheet, update_ba_sheet, update_bf_sheet, update_mc_player_sheet
 from .db_helpers import *
 import src.cache
 from .character import all_emojis, string_to_emote, all_alts, CHARACTERS
@@ -2048,12 +2048,14 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        update_bf_sheet()
+        # update_bf_sheet()
         # all_ids = sorted(all_battle_ids())
         # for i, battle_id in enumerate(all_ids):
         #     battle_elo_changes(battle_id)
         #     print(f'{i}/{len(all_ids)}: {battle_id}')
         #     battle_weight_changes(battle_id)
+
+        update_mc_player_sheet()
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)

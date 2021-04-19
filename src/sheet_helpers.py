@@ -3,7 +3,15 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pprint
 import datetime
 
-from src.db_helpers import gambit_standings, past_gambits, past_bets, ba_standings, battle_frontier_crews
+from src.db_helpers import gambit_standings, past_gambits, past_bets, ba_standings, battle_frontier_crews, mc_stats
+
+scope = [
+    'https://www.googleapis.com/auth/drive',
+    'https://www.googleapis.com/auth/drive.file'
+]
+file_name = '../client_key.json'
+creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
+client = gspread.authorize(creds)
 
 
 def colnum_string(n):
@@ -15,13 +23,6 @@ def colnum_string(n):
 
 
 def update_gambit_sheet():
-    scope = [
-        'https://www.googleapis.com/auth/drive',
-        'https://www.googleapis.com/auth/drive.file'
-    ]
-    file_name = '../client_key.json'
-    creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
-    client = gspread.authorize(creds)
     sheet = client.open('Fake Gambit').sheet1
     player_to_rank = {}
     player_cols = []
@@ -55,13 +56,6 @@ def update_gambit_sheet():
 
 
 def update_ba_sheet():
-    scope = [
-        'https://www.googleapis.com/auth/drive',
-        'https://www.googleapis.com/auth/drive.file'
-    ]
-    file_name = '../client_key.json'
-    creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
-    client = gspread.authorize(creds)
     sheet = client.open('Battle Arena').sheet1
     player_rows = []
     for name, elo, wins, total in ba_standings():
@@ -74,13 +68,6 @@ def update_ba_sheet():
 
 
 def update_bf_sheet():
-    scope = [
-        'https://www.googleapis.com/auth/drive',
-        'https://www.googleapis.com/auth/drive.file'
-    ]
-    file_name = '../client_key.json'
-    creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
-    client = gspread.authorize(creds)
     sheet = client.open('Practice Docs').worksheet('SCL 2021 BF Mock Up')
     crew_rows = []
     ratings = []
@@ -89,7 +76,59 @@ def update_bf_sheet():
         crew_rows.append([name, tag, '', opp or '', finished])
         ratings.append([rating])
     cutoff = round(len(crew_rows) * .4)
-    while ratings[cutoff-1] == ratings[cutoff] and cutoff < len(ratings) - 1:
+    while ratings[cutoff - 1] == ratings[cutoff] and cutoff < len(ratings) - 1:
+        cutoff += 1
+
+    sheet.batch_update([{
+        'range': f'A8:E{8 + cutoff}',
+        'values': crew_rows[:cutoff]
+    }, {
+        'range': f'J8:J{8 + cutoff}',
+        'values': ratings[:cutoff]
+    }])
+
+    sheet = client.open('Practice Docs').worksheet('SCL 2021 RC Mock Up')
+
+    sheet.batch_update([{
+        'range': f'A8:E{8 + len(crew_rows) - cutoff}',
+        'values': crew_rows[cutoff:]
+    }, {
+        'range': f'J8:J{8 + len(crew_rows) - cutoff}',
+        'values': ratings[cutoff:]
+    }])
+
+
+def update_mc_player_sheet():
+    sheet = client.open('Practice Docs').worksheet('SCL 2021 Master Stat Mock Up')
+    pt1, pt2, pt3 = [], [], []
+    stats = sorted(mc_stats(), key=lambda x: x[4] / max(x[5], 1), reverse=True)
+    for name, tag, pid, taken, weighted_taken, lost, mvps, played, chars in stats:
+        pt1.append([name, ', '.join(chars), tag, pid])
+        pt2.append([taken, round(weighted_taken, 2), lost])
+        pt3.append([mvps, played])
+
+    sheet.batch_update([{
+        'range': f'B9:E{9 + len(pt1)}',
+        'values': pt1
+    }, {
+        'range': f'G9:I{9 + len(pt2)}',
+        'values': pt2
+    }, {
+        'range': f'M9:N{9 + len(pt3)}',
+        'values': pt3
+    }])
+
+
+def update_mc_sheet():
+    sheet = client.open('Practice Docs').worksheet('SCL 2021 Master Mock Up')
+    crew_rows = []
+    ratings = []
+    for name, tag, finished, opp, rating in battle_frontier_crews():
+        finished = finished.date().strftime("%m/%d/%y") if finished else ''
+        crew_rows.append([name, tag, '', opp or '', finished])
+        ratings.append([rating])
+    cutoff = round(len(crew_rows) * .4)
+    while ratings[cutoff - 1] == ratings[cutoff] and cutoff < len(ratings) - 1:
         cutoff += 1
 
     sheet.batch_update([{
