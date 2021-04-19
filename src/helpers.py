@@ -301,9 +301,9 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
     if check_roles(member, [TRACK[2]]):
         await member.remove_roles(bot.cache.roles.track3)
         await member.add_roles(bot.cache.roles.true_locked)
-        pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
+        cowy = discord.utils.get(bot.cache.scs.members, id=329321079917248514)
         flairing_info = bot.cache.channels.flairing_info
-        await flairing_info.send(f'{pepper.mention} {member.mention} is {TRUE_LOCKED}.')
+        await flairing_info.send(f'{cowy.mention} {member.mention} is {TRUE_LOCKED}.')
     if not reg:
         await member.add_roles(bot.cache.roles.join_cd)
 
@@ -323,8 +323,8 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
         role = discord.utils.get(bot.cache.scs.roles, name=user_crew)
         await member.remove_roles(role, reason=f'Unflaired by {author.name}')
     if await track_cycle(member, bot.cache.scs) == 2:
-        pepper = discord.utils.get(bot.cache.scs.members, id=456156481067286529)
-        await flairing_info.send(f'{pepper.mention} {member.mention} is locked on next join.')
+        cowy = discord.utils.get(bot.cache.scs.members, id=329321079917248514)
+        await flairing_info.send(f'{cowy.mention} {member.mention} is locked on next join.')
     if check_roles(member, [LEADER]):
         cr = crew_lookup(user_crew, bot)
         if len(cr.leaders) == 1:

@@ -518,7 +518,7 @@ fsg_role = MockRole(name=FSGood.name)
 bob = MockMember(name='Bob#0001', id=int('1' * 17), display_name='Bob')
 joe = MockMember(name='Joe#1234', id=int('2' * 17), display_name='Joe')
 steve = MockMember(name='Steve#5678', id=int('3' * 17), display_name='Steve')
-pepper = MockMember(name='pepper', id=456156481067286529, display_name='pepper')
+cowy = MockMember(name='cowy', id=329321079917248514, display_name='cowy')
 
 def cache() -> Cache:
     fake_cache = Cache()
@@ -533,7 +533,7 @@ def cache() -> Cache:
     fake_cache.crews = crews_by_name.keys()
     fake_cache.crews_by_tag = {crew.abbr.lower(): crew for crew in fake_cache.crews_by_name.values()}
 
-    fake_cache.scs.members = [bob, joe, steve, pepper]
+    fake_cache.scs.members = [bob, joe, steve, cowy]
     fake_cache.overflow_server.members = [steve]
     fake_cache.scs.roles = [
         MockRole(name=LEADER),
