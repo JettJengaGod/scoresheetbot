@@ -1504,6 +1504,66 @@ class ScoreSheetBot(commands.Cog):
         out.append('```')
         await ctx.send(''.join(out))
 
+    @commands.command(**help_doc['addsheet'])
+    @main_only
+    @role_call(STAFF_LIST)
+    async def addsheet(self, ctx: Context, *, everything: str):
+        today = date.today()
+
+        # if not ctx.message.attachments:
+        #     await response_message(ctx, 'You need to submit a screenshot of the scoresheet with this.')
+        #     return
+
+        everything = everything.split(' ')
+        try:
+            score = int(everything[-1])
+            players = int(everything[-2])
+        except ValueError:
+            await response_message(ctx,
+                                   'This command needs to be formatted like this `,addsheet WinningCrew LosingCrew '
+                                   'Size FinalScore`')
+            return
+        two_crews = ' '.join(everything[:-2])
+        best = best_of_possibilities(two_crews, self, True)
+
+        winning_crew = crew_lookup(best[0], self)
+        losing_crew = crew_lookup(best[1], self)
+
+        embed = discord.Embed(
+            title=f'{winning_crew.name}({winning_crew.abbr}) defeats {losing_crew.name}({losing_crew.abbr})',
+            description=f'{winning_crew.name} wins {score} - 0 in a {players} vs {players} battle'
+        )
+        files = [await attachment.to_file() for attachment in ctx.message.attachments]
+        msg = await ctx.send(f'{ctx.author.mention}: Are you sure you want to confirm this crew battle?', embed=embed,
+                             files=files)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+            await response_message(ctx, 'Canceled or timed out.')
+            return
+
+        output_channels = [discord.utils.get(ctx.guild.channels, name=DOCS_UPDATES),
+                           discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+        links = []
+        # for output_channel in output_channels:
+        #
+        #     link = await send_sheet(output_channel, current)
+        #     links.append(link)
+        # battle_id = add_finished_battle(current, links[-1].jump_url, league_id)
+        #
+        # winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
+        # battle_weight_changes(battle_id)
+        #
+        # for link in links:
+        #     await link.edit(content=
+        #                     f'**{today.strftime("%B %d, %Y")} - {winner} ({winner_elo})+{winner_change} ⚔ '
+        #                     f'{loser} ({loser_elo}){loser_change}**\n'
+        #                     f'{current.team1.num_players}v{current.team2.num_players} battle!\n'
+        #                     f'from  {ctx.channel.mention}.\n'
+        #                     f'Battle number: {battle_id}')
+        # await ctx.send(
+        #     f'The battle between {current.team1.name} and {current.team2.name} '
+        #     f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
+        #     f'(Battle number:{battle_id})')
+
     @commands.command(**help_doc['overflow'], hidden=True)
     @role_call([ADMIN, MINION])
     async def overflow(self, ctx: Context):
@@ -2049,13 +2109,13 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
         # update_bf_sheet()
-        # all_ids = sorted(all_battle_ids())
-        # for i, battle_id in enumerate(all_ids):
-        #     battle_elo_changes(battle_id)
-        #     print(f'{i}/{len(all_ids)}: {battle_id}')
-        #     battle_weight_changes(battle_id)
+        all_ids = sorted(all_battle_ids())
+        for i, battle_id in enumerate(all_ids):
+            battle_elo_changes(battle_id)
+            print(f'{i}/{len(all_ids)}: {battle_id}')
+            battle_weight_changes(battle_id)
 
-        update_mc_player_sheet()
+        # update_mc_player_sheet()
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
@@ -2077,7 +2137,7 @@ class ScoreSheetBot(commands.Cog):
         message_id = int(split[-1])
         channel = ctx.guild.get_channel(channel_id)
         message = await channel.fetch_message(message_id)
-        await message.edit(content=f'{NO}Canceled by {ctx.author} {reason}\n'+message.content)
+        await message.edit(content=f'{NO}Canceled by {ctx.author} {reason}\n' + message.content)
 
         await ctx.send(f'Successfully canceled cb {battle_id}.')
 
@@ -2117,7 +2177,7 @@ class ScoreSheetBot(commands.Cog):
         for i, cr in enumerate(crews):
             print(cr.name)
             base = 1000
-            calculated = base + 75*(cr.rank-1)
+            calculated = base + 75 * (cr.rank - 1)
             init_rating(cr, calculated)
             print(f'{cr.name}: {calculated} {i}/{len(crews)}')
 

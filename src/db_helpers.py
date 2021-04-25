@@ -407,6 +407,8 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
     add_match = """INSERT into match (p1, p2, p1_taken, p2_taken, winner, battle_id, p1_char_id, p2_char_id, match_order)
      values(%s, %s, %s, %s, %s, %s, %s, %s, %s);"""
 
+    update_view = """refresh MATERIALIZED view crew_stats;"""
+
     conn = None
     battle_id = -1
     try:
@@ -445,6 +447,39 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
                 char_id_from_name(match.p2.char.base, cur),
                 order
             ))
+        cur.execute(update_view)
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return battle_id
+
+
+def add_non_ss_battle(winner: Crew, loser: Crew, size: int, score: int, link: str, league: int) -> int:
+    add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id, players)
+     values(%s, %s, %s, %s, %s, current_timestamp, %s, %s)  RETURNING id;"""
+    update_view = """refresh MATERIALIZED view crew_stats;"""
+
+    conn = None
+    battle_id = -1
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(add_battle, (
+            crew_id_from_crews(winner, cur),
+            crew_id_from_crews(loser, cur),
+            score,
+            link,
+            crew_id_from_crews(winner, cur),
+            league,
+            size,
+        ))
+        battle_id = cur.fetchone()[0]
+        cur.execute(update_view)
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -2583,3 +2618,73 @@ where fighters.id = picks.cid;
         if conn is not None:
             conn.close()
     return out
+
+
+def master_league_crews() -> Sequence[Tuple[str, str, datetime.datetime, str, int]]:
+    # TODO update this to be actual battle frontier instead of qualifier
+    bf_crews = """
+select crews.name,
+       crews.tag,
+       last_battle.finished,
+       last_battle.opp,
+       crew_ratings.rating
+from crew_ratings,
+     crews
+         left join (select battle.finished as finished, opp_crew.name as opp, newest_battle.crew_id as cid
+                    from (select max(battle.id) as battle_id, crews.id as crew_id
+                          from battle,
+                               crews
+                          where (crews.id = battle.crew_1
+                              or crews.id = battle.crew_2)
+                          group by crews.id)
+                             as newest_battle,
+                         battle,
+                         crews as opp_crew
+                    where newest_battle.battle_id = battle.id
+                      and opp_crew.id = case
+                                            when newest_battle.crew_id = battle.crew_2 then battle.crew_1
+                                            else battle.crew_2 end) as last_battle on last_battle.cid = crews.id
+
+where crew_ratings.crew_id = crews.id
+  and crew_ratings.league_id = 8
+order by rating desc;
+"""
+    conn = None
+    ret = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(bf_crews)
+        ret = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return ret
+
+
+"""
+select crews.id,
+       sum(case when crews.id = calced.winner then 1 else 0 end)                       as wins,
+       count(calced.*)                                                                 as total,
+       crew_ratings.rating,
+       calced.league_id,
+       sum(case when crews.id = calced.winner then winner_stocks else loserstocks end) as crew_stocks,
+       sum(case when crews.id = calced.winner then loserstocks else winner_stocks end) as crew_lost
+from crew_ratings,
+     crews
+         join
+     (select players * 3                                           as winner_stocks,
+             players * 3 - battle.final_score                      as loserstocks,
+             winner,
+             battle.id,
+             battle.league_id,
+             case when crew_1 = winner then crew_2 else crew_1 end as loser
+      from battle) calced on (crews.id = calced.winner or crews.id = calced.loser)
+where crews.id = crew_ratings.crew_id
+  and crew_ratings.league_id = calced.league_id
+group by crews.id, calced.league_id, crew_ratings.rating"""

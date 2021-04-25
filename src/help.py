@@ -145,6 +145,8 @@ help_doc = dict(
     crnumbers=HelpDoc(Categories.staff, 'Helpful numbers for crew analysis'),
     slottotals=HelpDoc(Categories.staff, 'Prints all the max slots for crews'),
     flaircounts=HelpDoc(Categories.staff, 'Helpful numbers for flair analysis'),
+    addsheet=HelpDoc(Categories.staff, 'Adds a new non bot sheet to the database and in scoresheet_history', '',
+                     'Winner Loser Size FinalScore'),
     pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),
     register=HelpDoc(Categories.staff,
                      'Flairs multiple people for a new crew'

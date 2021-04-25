@@ -427,9 +427,9 @@ def split_possibilities(two_things: str, sep: Optional[str] = ' ') -> List[Tuple
     return out
 
 
-def best_of_possibilities(combined: str, bot: 'ScoreSheetBot'):
+def best_of_possibilities(combined: str, bot: 'ScoreSheetBot', only_use_crews=False):
     pos = split_possibilities(combined)
-    all_role_names = {role.name for role in bot.cache.scs.roles}
+    all_role_names = {} if only_use_crews else {role.name for role in bot.cache.scs.roles}
     all_role_names = set.union(set(bot.cache.crews), all_role_names)
     best = ['', '', 0]
     for sep in pos:
@@ -1022,5 +1022,3 @@ async def unflair_gone_member(ctx: Context, user: str, bot: 'ScoreSheetBot'):
     await bot.cache.channels.flair_log.send(embed=embed)
     # Respond in the channel
     await response_message(ctx, f'successfully unflaired {user_id}.')
-
-
