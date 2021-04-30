@@ -9,7 +9,6 @@ class Crew:
     name: str
     abbr: str
     social: str = ''
-    rank: int = 0
     scl_rating: int = 0
     member_count: int = 0
     ladder: str = ''
@@ -17,7 +16,7 @@ class Crew:
     leaders: List[str] = dataclasses.field(default_factory=list)
     advisors: List[str] = dataclasses.field(default_factory=list)
     overflow: bool = False
-    master_league: bool = False  # TODO: Populate this
+    master_class: bool = False
     role_id: int = -1
     color: discord.Color = discord.Color.default()
     pool: int = 0
@@ -31,7 +30,7 @@ class Crew:
     @property
     def embed(self) -> discord.Embed:
         title = f'{self.name}'
-        if self.master_league:
+        if self.master_class:
             title += f' (Master League) '
         if self.overflow:
             title += f' (Overflow) '
@@ -39,7 +38,9 @@ class Crew:
             title += ' WATCHLISTED'
         description = [f'Tag: {self.abbr}\n', f'Total Members: {self.member_count}\n']
         if self.ladder:
-            description.append(f'Ranking {self.ladder}\n')
+            description.append(f'{self.ladder}\n')
+        if self.scl_rating:
+            description.append(f'SCL Rating: {self.scl_rating}\n')
         if self.social:
             description.append(f'Social: {self.social}\n')
         if self.leaders:
@@ -65,7 +66,7 @@ class Crew:
             embed.set_thumbnail(url=self.icon)
         return embed
 
-    def dbattr(self, wl: bool, freeze: datetime, verify: bool, strikes: int, total: int, remaining: int):
+    def dbattr(self, wl: bool, freeze: datetime, verify: bool, strikes: int, total: int, remaining: int, master: bool):
         self.wl = wl
         self.verify = verify
         if freeze:
@@ -73,5 +74,9 @@ class Crew:
         self.strikes = strikes
         self.total_slots = total
         self.remaining_slots = remaining
+        self.master_class = master
 
-
+    def set_rankings(self, rank: int, rating: int, bf: bool, total: int):
+        self.ladder = 'Battle Frontier: ' if bf else 'Rookie Class: '
+        self.ladder += f'({rank}/{total})'
+        self.scl_rating = rating

@@ -118,18 +118,13 @@ class Cache:
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
         crew_info_range = 'Crew Information!A4:E2160'
-        qualifier_range = 'SCL Qualifiers Ladder!A4:L800'
 
         # Call the Sheets API
         sheet = service.spreadsheets()
         result = sheet.values().get(spreadsheetId=docs_id,
                                     range=crew_info_range).execute()
 
-        qualifiers = sheet.values().get(spreadsheetId=docs_id,
-                                        range=qualifier_range).execute()
         values = result.get('values', [])
-
-        qualifiers = qualifiers.get('values', [])
 
         crews_by_name = {}
         issues = []
@@ -140,17 +135,6 @@ class Cache:
                 while len(row) < 5:
                     row.append('')
                 crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=row[3], icon=row[4])
-        if not qualifiers:
-            raise ValueError('Qualifiers Sheet Not Found')
-        else:
-            ranking = 1
-            for pos, row in enumerate(qualifiers):
-                if row[0] in crews_by_name.keys():
-                    crews_by_name[row[0]].rank = int(row[7])
-                    crews_by_name[row[0]].ladder = f'({ranking}/{len(qualifiers) - 4})'
-                    ranking += 1
-                elif row[0] and row[0] not in ('Pending Crew', 'Pending Unregistered Crew'):
-                    issues.append(row[0])
 
         if issues:
             issue_string = '\n'.join(issues)

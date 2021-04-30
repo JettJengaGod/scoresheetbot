@@ -2,7 +2,7 @@ import datetime
 import os
 import sys
 import traceback
-from typing import List, Tuple, Optional, Iterable, Dict, Sequence, Any
+from typing import List, Tuple, Optional, Iterable, Dict, Sequence, Any, Mapping
 from collections import defaultdict
 
 import discord
@@ -490,7 +490,7 @@ def add_non_ss_battle(winner: Crew, loser: Crew, size: int, score: int, link: st
     return battle_id
 
 
-def battle_elo_changes(battle_id: int) -> Tuple[int, int, int, int]:
+def battle_elo_changes(battle_id: int, bf_dupe: bool = False) -> Tuple[int, int, int, int]:
     # TODO modify this to handle MC/BF matches
     find_battle = """
      select winner,
@@ -522,6 +522,8 @@ values (%s, %s, %s, %s, %s);"""
         # Find the battle
         cur.execute(find_battle, (battle_id,))
         winner, loser, league_id = cur.fetchone()
+        if bf_dupe:
+            league_id = 8
         # Get the winner rating
         cur.execute(crew_rating, (winner, league_id, winner, league_id))
         winner_elo, winner_k = cur.fetchone()
@@ -562,6 +564,73 @@ def battle_weight_changes(battle_id: int, reverse: bool = False):
     select greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from member_stats where member_id = %s;"""
 
     update_weight = """update member_stats set weighted_taken = weighted_taken + %s, taken = taken + %s,
+        lost = lost + %s, played  = played + %s
+        where member_id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        # Find the matches
+        cur.execute(find_matches, (battle_id,))
+        matches = cur.fetchall()
+        # Get each performance
+        player_weights = {}
+        player_taken = defaultdict(int)
+        player_weighted_taken = defaultdict(int)
+        player_lost = defaultdict(int)
+        for p1, p2, p1_taken, p2_taken in matches:
+            if p1 not in player_weights:
+                cur.execute(current_weight, (p1, p1))
+                ret = cur.fetchone()
+                if ret:
+                    player_weights[p1] = ret[0] / ret[1]
+            if p2 not in player_weights:
+                cur.execute(current_weight, (p2, p2))
+                ret = cur.fetchone()
+                if ret:
+                    player_weights[p2] = ret[0] / ret[1]
+            if reverse:
+                player_taken[p1] -= p1_taken
+                player_taken[p2] -= p2_taken
+                player_weighted_taken[p1] -= p1_taken * player_weights[p2]
+                player_lost[p1] -= p2_taken
+                player_weighted_taken[p2] -= p2_taken * player_weights[p1]
+                player_lost[p2] -= p1_taken
+            else:
+                player_taken[p1] += p1_taken
+                player_taken[p2] += p2_taken
+                player_weighted_taken[p1] += p1_taken * player_weights[p2]
+                player_lost[p1] += p2_taken
+                player_weighted_taken[p2] += p2_taken * player_weights[p1]
+                player_lost[p2] += p1_taken
+
+        played = 0 if reverse else 1
+
+        for player in player_taken:
+            cur.execute(update_weight,
+                        (player_weighted_taken[player], player_taken[player], player_lost[player], played, player))
+
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def master_weight_changes(battle_id: int, reverse: bool = False):
+    find_matches = """select p1, p2, p1_taken, p2_taken from match where battle_id = %s;"""
+    current_weight = """
+    with current as (
+        insert into master_member_stats(member_id) values (%s) on conflict do nothing returning weighted_taken, lost)
+    select  greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from current
+    union all
+    select greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from master_member_stats where member_id = %s;"""
+
+    update_weight = """update master_member_stats set weighted_taken = weighted_taken + %s, taken = taken + %s,
         lost = lost + %s, played  = played + %s
         where member_id = %s;"""
     conn = None
@@ -764,8 +833,19 @@ def crew_correct(member: discord.Member, current: str) -> bool:
 
 
 def all_crews() -> List[List]:
-    everything = """SELECT discord_id, tag, name, rank, overflow, watchlisted, freezedate,
-        verify, strikes, slotstotal, slotsleft  FROM crews;"""
+    everything = """SELECT discord_id,
+       tag,
+       name,
+       rank,
+       overflow,
+       watchlisted,
+       freezedate,
+       verify,
+       strikes,
+       slotstotal,
+       slotsleft,
+       case when (select count(*) from master_crews where crew_id = crews.id) > 0 then true else false end as master
+FROM crews;"""
     conn = None
     crews = [[]]
     try:
@@ -2622,7 +2702,6 @@ where fighters.id = picks.cid;
 
 
 def master_league_crews() -> Sequence[Tuple[int, str, int, int, int, int, int, int]]:
-    # TODO update this to be actual battle frontier instead of qualifier
     mc_crews = """
 select crews.id,
        crews.name,
@@ -2689,28 +2768,30 @@ order by group_id;
     return ret
 
 
-def crew_ranking(crew: Crew) -> Tuple[int, int, bool]:
-    ranking = """select crew_id, rank() over (order by rating desc), rating
-from crew_ratings
-where league_id = 8 and crew_id = %s;
+def crew_rankings() -> Mapping[str, Tuple[int, int, bool, int]]:
+    ranking = """
+    select name, crew_id, rank() over (order by rating desc), rating
+from crew_ratings, crews
+where league_id = 8 and crew_ratings.crew_id = crews.id;
     """
-    count = """select count(*)
-from crew_ratings
-where league_id = 8;"""
     conn = None
-    rank, total, bf = 0, 0, False
+    mapping = {}
     try:
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
-        cr_id = crew_id_from_crews(crew, cur)
 
-        cur.execute(ranking, (cr_id,))
-        ret = cur.fetchone()
+        cur.execute(ranking)
+        ret = cur.fetchall()
         if ret:
-            _, rank, rating = ret
-        cur.execute(count)
-        total = cur.fetchone()[0]
+
+            cutoff = round(len(ret) * .4)
+            while ret[cutoff - 1][2] == ret[cutoff][2] and cutoff < len(ret) - 1:
+                cutoff += 1
+            for name, _, rank, rating in ret[:cutoff]:
+                mapping[name] = (rank, rating, True, cutoff)
+            for name, _, rank, rating in ret[cutoff:]:
+                mapping[name] = (rank - cutoff, rating, False, len(ret) - cutoff)
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -2718,4 +2799,4 @@ where league_id = 8;"""
     finally:
         if conn is not None:
             conn.close()
-    return rank, total, bf
+    return mapping

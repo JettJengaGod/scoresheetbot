@@ -69,7 +69,7 @@ def update_ba_sheet():
 
 
 def update_bf_sheet():
-    sheet = client.open('Practice Docs').worksheet('SCL 2021 BF Mock Up')
+    sheet = client.open('SCS Crew Docs').worksheet('Battle Frontier Ladder')
     crew_rows = []
     ratings = []
     for name, tag, finished, opp, rating in battle_frontier_crews():
@@ -84,23 +84,23 @@ def update_bf_sheet():
         'range': f'A8:E{8 + cutoff}',
         'values': crew_rows[:cutoff]
     }, {
-        'range': f'J8:J{8 + cutoff}',
+        'range': f'H8:H{8 + cutoff}',
         'values': ratings[:cutoff]
     }])
 
-    sheet = client.open('Practice Docs').worksheet('SCL 2021 RC Mock Up')
+    sheet = client.open('SCS Crew Docs').worksheet('Rookie Class Ladder')
 
     sheet.batch_update([{
         'range': f'A8:E{8 + len(crew_rows) - cutoff}',
         'values': crew_rows[cutoff:]
     }, {
-        'range': f'J8:J{8 + len(crew_rows) - cutoff}',
+        'range': f'H8:H{8 + len(crew_rows) - cutoff}',
         'values': ratings[cutoff:]
     }])
 
 
 def update_mc_player_sheet():
-    sheet = client.open('Practice Docs').worksheet('SCL 2021 Master Stat Mock Up')
+    sheet = client.open('SCS Crew Docs').worksheet('SCL 2021 Master Stat Mock Up')
     pt1, pt2, pt3 = [], [], []
     stats = sorted(mc_stats(), key=lambda x: x[4] / max(x[5], 1), reverse=True)
     for name, tag, pid, taken, weighted_taken, lost, mvps, played, chars in stats:
@@ -121,7 +121,7 @@ def update_mc_player_sheet():
 
 
 def update_mc_sheet():
-    sheet = client.open('Practice Docs').worksheet('SCL 2021 Master Mock Up')
+    sheet = client.open('SCS Crew Docs').worksheet('Master Class Ranks')
     crew_stats = {}
     for cr_id, name, wins, matches, rating, _, st_taken, st_lost in master_league_crews():
         crew_stats[cr_id] = [name, wins, matches - wins, rating, st_taken, st_lost]

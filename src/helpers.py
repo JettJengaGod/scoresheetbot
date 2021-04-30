@@ -12,7 +12,7 @@ from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_cre
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
-    player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members
+    player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings
 from .gambit import Gambit
 
 if TYPE_CHECKING:
@@ -559,6 +559,7 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
 def crew_update(bot: 'ScoreSheetBot'):
     cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache.crews_by_name.values() if cr.role_id != -1}
     db_crews = all_crews()
+    rankings = crew_rankings()
     missing = []
     for db_crew in db_crews:
         if db_crew[0] in cached_crews:
@@ -570,6 +571,8 @@ def crew_update(bot: 'ScoreSheetBot'):
         if formatted != db_crew[0:5]:
             update_crew(cached)
         bot.cache.crews_by_name[cached.name].dbattr(*db_crew[5:])
+        bot.cache.crews_by_name[cached.name].set_rankings(*rankings[cached.name])
+
     for cr in cached_crews.values():
         update_crew(cr)
 
@@ -663,7 +666,7 @@ class PlayerStatsPaged(menus.ListPageSource):
 
 
 def playoff_summary(bot: 'ScoreSheetBot') -> discord.Embed:
-    embed = discord.Embed(title='Current Playoff Battles')
+    embed = discord.Embed(title='Current Master Class Battles')
     for key, battle in bot.battle_map.items():
         if battle:
             if battle.playoff:

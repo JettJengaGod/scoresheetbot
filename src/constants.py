@@ -24,6 +24,7 @@ SCS = 'ScoresheetBot' if os.getenv('VERSION') == 'ALPHA' else 'Smash Crew Server
 OUTPUT = 'scoresheet_output'
 BOT = 'Bots'
 DOCS_UPDATES = 'scs_docs_updates'
+SCORESHEET_HISTORY = 'scoresheet_history'
 JOIN_CD = '24h Join Cooldown'
 FLAIRING_LOGS = 'jettbot_flairing_logs'
 FLAIR_VERIFY = '! Verify Flair Change !'

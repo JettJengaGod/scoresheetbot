@@ -187,7 +187,7 @@ class Battle:
         self.mock = mock
         self.playoff = playoff
         if self.playoff:
-            self.header = 'Final Stand '
+            self.header = 'Master Class '
         elif self.mock:
             self.header = 'Mock '
         else:

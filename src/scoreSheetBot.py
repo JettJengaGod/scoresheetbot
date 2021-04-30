@@ -286,7 +286,7 @@ class ScoreSheetBot(commands.Cog):
         if user_crew != opp_crew:
             user_actual = crew_lookup(user_crew, self)
             opp_actual = crew_lookup(opp_crew, self)
-            if user_actual.master_league and opp_actual.master_league:
+            if user_actual.master_class and opp_actual.master_class:
                 await ctx.send(
                     f'If you are in a master league battle, please use '
                     f'`{self.bot.command_prefix}masterbattle` or `,mlb`.')
@@ -295,7 +295,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['masterbattle'], aliases=['mlb', 'masterleague'], group='CB')
+    @commands.command(**help_doc['masterbattle'], aliases=['mcb', 'masterleague'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -318,7 +318,7 @@ class ScoreSheetBot(commands.Cog):
             return
         user_actual = crew_lookup(user_crew, self)
         opp_actual = crew_lookup(opp_crew, self)
-        if not (user_actual.master_league and opp_actual.master_league):
+        if not (user_actual.master_class and opp_actual.master_class):
             await ctx.send(f'Both crews need to be master league crews to do a master league battle.')
             return
 
@@ -577,7 +577,7 @@ class ScoreSheetBot(commands.Cog):
                 if current.confirmed():
                     today = date.today()
 
-                    output_channels = [discord.utils.get(ctx.guild.channels, name=DOCS_UPDATES),
+                    output_channels = [discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
                                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
                     winner = current.winner().name
                     loser = current.loser().name
@@ -593,25 +593,42 @@ class ScoreSheetBot(commands.Cog):
                     for output_channel in output_channels:
                         link = await send_sheet(output_channel, current)
                         links.append(link)
-                    battle_id = add_finished_battle(current, links[-1].jump_url, league_id)
+                    battle_id = add_finished_battle(current, links[0].jump_url, league_id)
 
                     winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
                     battle_weight_changes(battle_id)
                     winner_crew = crew_lookup(winner, self)
                     loser_crew = crew_lookup(loser, self)
-
+                    new_message = (f'**{today.strftime("%B %d, %Y")} - {winner}⚔{loser}**\n'
+                                   f'**Winner:**  {winner_crew.abbr}'
+                                   f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
+                                   f'**Loser:** {loser_crew.abbr} '
+                                   f'[{loser_elo} {loser_change}={loser_elo + loser_change}]\n'
+                                   f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                    if current.playoff:
+                        bf_winner_elo, bf_winner_change, bf_loser_elo, bf_loser_change = battle_elo_changes(battle_id,
+                                                                                                            True)
+                        master_weight_changes(battle_id)
+                        new_message = (f'**{today.strftime("%B %d, %Y")} - {winner}⚔{loser}**\n'
+                                       '**Master Class**\n'
+                                       f'**Winner:**  {winner_crew.abbr}'
+                                       f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
+                                       f'**Loser:** {loser_crew.abbr} '
+                                       f'[{loser_elo} {loser_change}={loser_elo + loser_change}]\n'
+                                       f'** Battle Frontier**\n'
+                                       f'**Winner:**  {winner_crew.abbr}'
+                                       f'[{bf_winner_elo})+{bf_winner_change}={bf_winner_elo + bf_winner_change}]\n'
+                                       f'**Loser:** {loser_crew.abbr} '
+                                       f'[{bf_loser_elo} {bf_loser_change}={bf_loser_elo + bf_loser_change}]\n'
+                                       f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                        update_mc_sheet()
                     for link in links:
-                        await link.edit(content=
-                                        f'**{today.strftime("%B %d, %Y")} - {winner}⚔{loser}**\n'
-                                        f'**Winner:**  {winner_crew.abbr}'
-                                        f'[{winner_elo})+{winner_change}={winner_elo + winner_change}]\n'
-                                        f'**Loser:** {loser_crew.abbr} '
-                                        f'[{loser_elo} {loser_change}={loser_elo + loser_change}]\n'
-                                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                        await link.edit(content=new_message)
                     await ctx.send(
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
+                    update_bf_sheet()
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
@@ -2138,15 +2155,15 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['ofrank'])
     @role_call(STAFF_LIST)
     async def initalize_ratings(self, ctx):
-        crews = list(self.cache.crews_by_name.values())
-
-        crews.sort(key=lambda x: x.rank)
-        for i, cr in enumerate(crews):
-            print(cr.name)
-            base = 1000
-            calculated = base + 75 * (cr.rank - 1)
-            init_rating(cr, calculated)
-            print(f'{cr.name}: {calculated} {i}/{len(crews)}')
+        # crews = list(self.cache.crews_by_name.values())
+        #
+        # crews.sort(key=lambda x: x.rank)
+        # for i, cr in enumerate(crews):
+        #     base = 1000
+        #     calculated = base + 75 * (cr.rank - 1)
+        #     init_rating(cr, calculated)
+        #     print(f'{cr.name}: {calculated} {i}/{len(crews)}')
+        update_bf_sheet()
 
     @commands.command(**help_doc['slots'])
     @main_only
