@@ -27,9 +27,9 @@ help_doc = dict(
     battle=HelpDoc(Categories.cb,
                    'Start a Scoresheet in this channel against the tagged players crew with a specific size',
                    '', "@OpponentName size"),
-    finalstandbattle=HelpDoc(Categories.cb,
-                             'Start a finalstand Scoresheet in this channel against'
-                             ' the tagged players crew with a specific size',
+    masterbattle=HelpDoc(Categories.cb,
+                             'Start a master league Scoresheet in this channel against'
+                             ' the tagged players\' crew with a specific size',
                              '', "@OpponentName size"),
     mock=HelpDoc(Categories.cb, 'Start a Scoresheet in this channel with two team names and a size', '',
                  'Team1 Team2 size'),
@@ -77,9 +77,7 @@ help_doc = dict(
                                          'be able to use it till reactivation, also reactivates commands', '',
                        'CommandName'),
     countdown=HelpDoc(Categories.cb, 'Counts down for x seconds (defaults to 3).'),
-    rank=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s rank'),
     slots=HelpDoc(Categories.crews, 'Find out the remaining slots of a crew'),
-    merit=HelpDoc(Categories.crews, 'Find out a user\'s crew\'s merit'),
     logo=HelpDoc(Categories.crews, 'Find the logo of a crew'),
     rankings=HelpDoc(Categories.crews, 'Rankings of all legacy crews in order'),
     crewstats=HelpDoc(Categories.crews, 'Stats for a crew or the crew of a player'),

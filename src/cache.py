@@ -146,7 +146,6 @@ class Cache:
             ranking = 1
             for pos, row in enumerate(qualifiers):
                 if row[0] in crews_by_name.keys():
-                    crews_by_name[row[0]].merit = row[2]
                     crews_by_name[row[0]].rank = int(row[7])
                     crews_by_name[row[0]].ladder = f'({ranking}/{len(qualifiers) - 4})'
                     ranking += 1

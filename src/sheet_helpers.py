@@ -3,7 +3,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pprint
 import datetime
 
-from src.db_helpers import gambit_standings, past_gambits, past_bets, ba_standings, battle_frontier_crews, mc_stats
+from src.db_helpers import gambit_standings, past_gambits, past_bets, ba_standings, battle_frontier_crews, mc_stats, \
+    master_league_crews, master_listings
 
 scope = [
     'https://www.googleapis.com/auth/drive',
@@ -121,30 +122,29 @@ def update_mc_player_sheet():
 
 def update_mc_sheet():
     sheet = client.open('Practice Docs').worksheet('SCL 2021 Master Mock Up')
-    crew_rows = []
-    ratings = []
-    for name, tag, finished, opp, rating in battle_frontier_crews():
-        finished = finished.date().strftime("%m/%d/%y") if finished else ''
-        crew_rows.append([name, tag, '', opp or '', finished])
-        ratings.append([rating])
-    cutoff = round(len(crew_rows) * .4)
-    while ratings[cutoff - 1] == ratings[cutoff] and cutoff < len(ratings) - 1:
-        cutoff += 1
+    crew_stats = {}
+    for cr_id, name, wins, matches, rating, _, st_taken, st_lost in master_league_crews():
+        crew_stats[cr_id] = [name, wins, matches - wins, rating, st_taken, st_lost]
+
+    front = []
+    rear = []
+    i = 0
+    for cr_id, group_id, crew_name, group_name in master_listings():
+        if cr_id not in crew_stats:
+            crew_stats[cr_id] = [crew_name, 0, 0, 2000, 0, 0]
+        front.append(crew_stats[cr_id][0:4])
+        rear.append(crew_stats[cr_id][4:])
+        i += 1
+        if i % 4 == 0:
+            front.append([])
+            front.append([])
+            rear.append([])
+            rear.append([])
 
     sheet.batch_update([{
-        'range': f'A8:E{8 + cutoff}',
-        'values': crew_rows[:cutoff]
+        'range': f'B10:E{10 + len(front)}',
+        'values': front
     }, {
-        'range': f'J8:J{8 + cutoff}',
-        'values': ratings[:cutoff]
-    }])
-
-    sheet = client.open('Practice Docs').worksheet('SCL 2021 RC Mock Up')
-
-    sheet.batch_update([{
-        'range': f'A8:E{8 + len(crew_rows) - cutoff}',
-        'values': crew_rows[cutoff:]
-    }, {
-        'range': f'J8:J{8 + len(crew_rows) - cutoff}',
-        'values': ratings[cutoff:]
+        'range': f'G10:H{10 + len(front)}',
+        'values': rear
     }])

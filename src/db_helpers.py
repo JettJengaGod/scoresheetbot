@@ -447,7 +447,7 @@ def add_finished_battle(battle: Battle, link: str, league: int) -> int:
                 char_id_from_name(match.p2.char.base, cur),
                 order
             ))
-        cur.execute(update_view)
+        # cur.execute(update_view)
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -479,7 +479,7 @@ def add_non_ss_battle(winner: Crew, loser: Crew, size: int, score: int, link: st
             size,
         ))
         battle_id = cur.fetchone()[0]
-        cur.execute(update_view)
+        # cur.execute(update_view)
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -708,8 +708,9 @@ def battle_cancel(battle_id: int) -> str:
         ret = cur.fetchone()
         if ret:
             link = ret[1]
-            for mvp in ret[0]:
-                cur.execute(decrement_mvp, (mvp,))
+            if ret[0]:
+                for mvp in ret[0]:
+                    cur.execute(decrement_mvp, (mvp,))
         cur.execute(find_rating_change, (battle_id,))
         changes = cur.fetchall()
         for crew_id, rating_before, rating_after, league_id in changes:
@@ -2620,55 +2621,11 @@ where fighters.id = picks.cid;
     return out
 
 
-def master_league_crews() -> Sequence[Tuple[str, str, datetime.datetime, str, int]]:
+def master_league_crews() -> Sequence[Tuple[int, str, int, int, int, int, int, int]]:
     # TODO update this to be actual battle frontier instead of qualifier
-    bf_crews = """
-select crews.name,
-       crews.tag,
-       last_battle.finished,
-       last_battle.opp,
-       crew_ratings.rating
-from crew_ratings,
-     crews
-         left join (select battle.finished as finished, opp_crew.name as opp, newest_battle.crew_id as cid
-                    from (select max(battle.id) as battle_id, crews.id as crew_id
-                          from battle,
-                               crews
-                          where (crews.id = battle.crew_1
-                              or crews.id = battle.crew_2)
-                          group by crews.id)
-                             as newest_battle,
-                         battle,
-                         crews as opp_crew
-                    where newest_battle.battle_id = battle.id
-                      and opp_crew.id = case
-                                            when newest_battle.crew_id = battle.crew_2 then battle.crew_1
-                                            else battle.crew_2 end) as last_battle on last_battle.cid = crews.id
-
-where crew_ratings.crew_id = crews.id
-  and crew_ratings.league_id = 8
-order by rating desc;
-"""
-    conn = None
-    ret = []
-    try:
-        params = config()
-        conn = psycopg2.connect(**params)
-        cur = conn.cursor()
-        cur.execute(bf_crews)
-        ret = cur.fetchall()
-        conn.commit()
-        cur.close()
-    except (Exception, psycopg2.DatabaseError) as error:
-        log_error_and_reraise(error)
-    finally:
-        if conn is not None:
-            conn.close()
-    return ret
-
-
-"""
+    mc_crews = """
 select crews.id,
+       crews.name,
        sum(case when crews.id = calced.winner then 1 else 0 end)                       as wins,
        count(calced.*)                                                                 as total,
        crew_ratings.rating,
@@ -2687,4 +2644,78 @@ from crew_ratings,
       from battle) calced on (crews.id = calced.winner or crews.id = calced.loser)
 where crews.id = crew_ratings.crew_id
   and crew_ratings.league_id = calced.league_id
-group by crews.id, calced.league_id, crew_ratings.rating"""
+  and calced.league_id = 7
+group by crews.id, calced.league_id, crew_ratings.rating;"""
+    conn = None
+    ret = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(mc_crews)
+        ret = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return ret
+
+
+def master_listings() -> Sequence[Tuple[int, int, str, str]]:
+    listings = """ select crew_id, group_id, crews.name, group_name
+from master_crews,
+     crews
+where master_crews.crew_id = crews.id
+order by group_id;
+    """
+    conn = None
+    ret = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(listings)
+        ret = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return ret
+
+
+def crew_ranking(crew: Crew) -> Tuple[int, int, bool]:
+    ranking = """select crew_id, rank() over (order by rating desc), rating
+from crew_ratings
+where league_id = 8 and crew_id = %s;
+    """
+    count = """select count(*)
+from crew_ratings
+where league_id = 8;"""
+    conn = None
+    rank, total, bf = 0, 0, False
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+
+        cur.execute(ranking, (cr_id,))
+        ret = cur.fetchone()
+        if ret:
+            _, rank, rating = ret
+        cur.execute(count)
+        total = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return rank, total, bf

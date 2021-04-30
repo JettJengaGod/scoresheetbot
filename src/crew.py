@@ -10,13 +10,14 @@ class Crew:
     abbr: str
     social: str = ''
     rank: int = 0
-    merit: int = 0
+    scl_rating: int = 0
     member_count: int = 0
     ladder: str = ''
     icon: str = ''
     leaders: List[str] = dataclasses.field(default_factory=list)
     advisors: List[str] = dataclasses.field(default_factory=list)
     overflow: bool = False
+    master_league: bool = False  # TODO: Populate this
     role_id: int = -1
     color: discord.Color = discord.Color.default()
     pool: int = 0
@@ -30,15 +31,15 @@ class Crew:
     @property
     def embed(self) -> discord.Embed:
         title = f'{self.name}'
+        if self.master_league:
+            title += f' (Master League) '
         if self.overflow:
             title += f' (Overflow) '
-        if self.rank:
-            title += f' Qualifier {self.rank}'
         if self.wl:
             title += ' WATCHLISTED'
         description = [f'Tag: {self.abbr}\n', f'Total Members: {self.member_count}\n']
         if self.ladder:
-            description.append(f'Qualifiers Current Placement: {self.ladder}\n')
+            description.append(f'Ranking {self.ladder}\n')
         if self.social:
             description.append(f'Social: {self.social}\n')
         if self.leaders:
@@ -53,7 +54,6 @@ class Crew:
                 description.append(f'{name}, ')
             description[-1] = description[-1][:-2]
             description.append('\n')
-        description.append(f'Merit: {self.merit}')
         if self.freeze:
             description.append(f'\nRecruitment frozen till: {self.freeze}')
         if self.verify:
@@ -73,3 +73,5 @@ class Crew:
         self.strikes = strikes
         self.total_slots = total
         self.remaining_slots = remaining
+
+
