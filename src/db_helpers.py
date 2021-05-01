@@ -1272,7 +1272,7 @@ def crew_matches(cr: Crew) -> List[str]:
     return out
 
 
-def player_stocks(member: discord.Member) -> Tuple[int, int]:
+def player_stocks(member: discord.Member) -> Tuple[float, int, int]:
     taken = """
     select coalesce(p1.taken1,0)+coalesce(p2.taken2,0) as taken, coalesce(p1.lost1,0)+coalesce(p2.lost2,0) as lost from
         (select sum(player_1.p1_taken) as taken1, sum(player_1.p2_taken) as lost1, mem.nickname, mem.id
@@ -2382,7 +2382,7 @@ def set_return_slots(crew: Crew, number: int) -> Tuple[int, int, int]:
 
 
 def disband_crew(crew: Crew) -> None:
-    disband = """update crews set disbanded TRUE
+    disband = """update crews set disbanded = TRUE
     where crews.id = %s;"""
     conn = None
     try:
