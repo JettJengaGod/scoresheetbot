@@ -11,18 +11,16 @@ from discord.ext import commands, tasks, menus
 from discord.ext.commands import Greedy
 from dotenv import load_dotenv
 from typing import Dict, Optional, Union, Iterable
-from helpers import *
+
+from elo_helpers import rating_update
+from sheet_helpers import update_gambit_sheet, update_ba_sheet, update_bf_sheet, update_mc_player_sheet, \
+    update_mc_sheet
 from db_helpers import *
-from battle import Battle
-from cache import Cache
+import src.cache
 from character import all_emojis, string_to_emote, all_alts, CHARACTERS
 from decorators import *
 from help import help_doc
 from constants import *
-
-from gambit_helpers import update_gambit_sheet
-
-from elo_helpers import rating_update
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -285,19 +283,23 @@ class ScoreSheetBot(commands.Cog):
                            f'Please contact an admin if this is incorrect.')
             return
         if user_crew != opp_crew:
-            await ctx.send(
-                f'If you are in a final stand battle, please use `{self.bot.command_prefix}finalstandbattle` or `,fsb`')
+            user_actual = crew_lookup(user_crew, self)
+            opp_actual = crew_lookup(opp_crew, self)
+            if user_actual.master_class and opp_actual.master_class:
+                await ctx.send(
+                    f'If you are in a master league battle, please use '
+                    f'`{self.bot.command_prefix}masterbattle` or `,mlb`.')
             await self._set_current(ctx, Battle(user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['finalstandbattle'], aliases=['fsb', 'finalstand'], group='CB')
+    @commands.command(**help_doc['masterbattle'], aliases=['mcb', 'masterleague'], group='CB')
     @main_only
     @no_battle
     @is_lead
     @ss_channel
-    async def finalstandbattle(self, ctx: Context, user: discord.Member, size: int):
+    async def masterbattle(self, ctx: Context, user: discord.Member, size: int):
         if size < 1:
             await ctx.send('Please enter a size greater than 0.')
             return
@@ -313,6 +315,12 @@ class ScoreSheetBot(commands.Cog):
                            f'They might not be in a crew. '
                            f'Please contact an admin if this is incorrect.')
             return
+        user_actual = crew_lookup(user_crew, self)
+        opp_actual = crew_lookup(opp_crew, self)
+        if not (user_actual.master_class and opp_actual.master_class):
+            await ctx.send(f'Both crews need to be master league crews to do a master league battle.')
+            return
+
         if user_crew != opp_crew:
             await self._set_current(ctx, Battle(user_crew, opp_crew, size, playoff=True))
             await send_sheet(ctx, battle=self._current(ctx))
@@ -569,35 +577,58 @@ class ScoreSheetBot(commands.Cog):
                 if current.confirmed():
                     today = date.today()
 
-                    output_channels = [discord.utils.get(ctx.guild.channels, name=DOCS_UPDATES),
+                    output_channels = [discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
                                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
                     winner = current.winner().name
                     loser = current.loser().name
                     if current.playoff:
-                        league_id = 6
-                        output_channels.pop(0)
-                        output_channels.insert(0,
-                                               discord.utils.get(ctx.guild.channels,
-                                                                 name=FINAL_STAND_CHANNEL))
+                        league_id = 7
                     else:
-                        league_id = 1
+                        league_id = 8
                     current = self._current(ctx)
                     if not current:
                         return
                     await self._clear_current(ctx)
+                    links = []
                     for output_channel in output_channels:
-                        await output_channel.send(
-                            f'**{today.strftime("%B %d, %Y")}- {winner} vs. {loser} **\n'
-                            f'{self.cache.crews_by_name[winner].rank} crew defeats'
-                            f' {self.cache.crews_by_name[loser].rank} crew in a '
-                            f'{current.team1.num_players}v{current.team2.num_players} battle!\n'
-                            f'from  {ctx.channel.mention}.')
                         link = await send_sheet(output_channel, current)
-                    battle_id = add_finished_battle(current, link.jump_url, league_id)
+                        links.append(link)
+                    battle_id = add_finished_battle(current, links[0].jump_url, league_id)
+
+                    winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
+                    battle_weight_changes(battle_id)
+                    winner_crew = crew_lookup(winner, self)
+                    loser_crew = crew_lookup(loser, self)
+                    new_message = (f'**{today.strftime("%B %d, %Y")} - {winner}⚔{loser}**\n'
+                                   f'**Winner:**  {winner_crew.abbr}'
+                                   f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
+                                   f'**Loser:** {loser_crew.abbr} '
+                                   f'[{loser_elo} {loser_change}={loser_elo + loser_change}]\n'
+                                   f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                    if current.playoff:
+                        bf_winner_elo, bf_winner_change, bf_loser_elo, bf_loser_change = battle_elo_changes(battle_id,
+                                                                                                            True)
+                        master_weight_changes(battle_id)
+                        new_message = (f'**{today.strftime("%B %d, %Y")} - {winner}⚔{loser}**\n'
+                                       '**Master Class**\n'
+                                       f'**Winner:**  {winner_crew.abbr}'
+                                       f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
+                                       f'**Loser:** {loser_crew.abbr} '
+                                       f'[{loser_elo} {loser_change}={loser_elo + loser_change}]\n'
+                                       f'** Battle Frontier**\n'
+                                       f'**Winner:**  {winner_crew.abbr}'
+                                       f'[{bf_winner_elo})+{bf_winner_change}={bf_winner_elo + bf_winner_change}]\n'
+                                       f'**Loser:** {loser_crew.abbr} '
+                                       f'[{bf_loser_elo} {bf_loser_change}={bf_loser_elo + bf_loser_change}]\n'
+                                       f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                        update_mc_sheet()
+                    for link in links:
+                        await link.edit(content=new_message)
                     await ctx.send(
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
+                    update_bf_sheet()
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
@@ -765,11 +796,16 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['rankings'])
     async def rankings(self, ctx):
-        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.ladder],
-                                         key=lambda x: int(x.ladder[1:x.ladder.index('/')]))
-        crew_ranking_str = [f'{cr.name} {cr.rank}' for cr in crews_sorted_by_ranking]
+        # TODO split this by ladder
+        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.scl_rating],
+                                         key=lambda x: x.scl_rating, reverse=True)
+        cutoff = round(len(crews_sorted_by_ranking) * .4)
+        while (crews_sorted_by_ranking[cutoff - 1].scl_rating == crews_sorted_by_ranking[cutoff].scl_rating
+               and cutoff < len(crews_sorted_by_ranking) - 1):
+            cutoff += 1
+        crew_ranking_str = [f'{cr.name} {cr.scl_rating}' for cr in crews_sorted_by_ranking]
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Legacy Crews Rankings'),
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='SCL 2021 Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
@@ -870,50 +906,6 @@ class ScoreSheetBot(commands.Cog):
             source=Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon),
             clear_reactions_after=True)
         await pages.start(ctx)
-
-    @commands.command(**help_doc['rank'])
-    @main_only
-    async def rank(self, ctx, *, name: str = None):
-        user = None
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                user = ambiguous
-                crew_name = crew(user, self)
-            else:
-                crew_name = ambiguous.name
-        else:
-            user = ctx.author
-            crew_name = crew(user, self)
-
-        crew_rank = self.cache.crews_by_name[crew_name].rank
-        out = ''
-        if user:
-            out += f'{escape(user.display_name)}\'s crew '
-        out += f'{crew_name} is rank {crew_rank}.'
-        await ctx.send(out)
-
-    @commands.command(**help_doc['merit'])
-    @main_only
-    async def merit(self, ctx, *, name: str = None):
-        user = None
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                user = ambiguous
-                crew_name = crew(user, self)
-            else:
-                crew_name = ambiguous.name
-        else:
-            user = ctx.author
-            crew_name = crew(user, self)
-
-        crew_merit = self.cache.crews_by_name[crew_name].merit
-        out = ''
-        if user:
-            out += f'{escape(user.display_name)}\'s crew '
-        out += f'{crew_name} has {crew_merit} merit.'
-        await ctx.send(out)
 
     @commands.command(**help_doc['logo'])
     @main_only
@@ -1508,6 +1500,67 @@ class ScoreSheetBot(commands.Cog):
         out.append('```')
         await ctx.send(''.join(out))
 
+    @commands.command(**help_doc['addsheet'])
+    @main_only
+    @role_call(STAFF_LIST)
+    async def addsheet(self, ctx: Context, *, everything: str):
+        today = date.today()
+
+        if not ctx.message.attachments:
+            await response_message(ctx, 'You need to submit a screenshot of the scoresheet with this.')
+            return
+
+        everything = everything.split(' ')
+        try:
+            score = int(everything[-1])
+            players = int(everything[-2])
+        except ValueError:
+            await response_message(ctx,
+                                   'This command needs to be formatted like this `,addsheet WinningCrew LosingCrew '
+                                   'Size FinalScore`')
+            return
+        two_crews = ' '.join(everything[:-2])
+        best = best_of_possibilities(two_crews, self, True)
+
+        winning_crew = crew_lookup(best[0], self)
+        losing_crew = crew_lookup(best[1], self)
+
+        embed = discord.Embed(
+            title=f'{winning_crew.name}({winning_crew.abbr}) defeats {losing_crew.name}({losing_crew.abbr})',
+            description=f'{winning_crew.name} wins {score} - 0 in a {players} vs {players} battle'
+        )
+        msg = await ctx.send(f'{ctx.author.mention}: Are you sure you want to confirm this crew battle?', embed=embed)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+            await response_message(ctx, 'Canceled or timed out.')
+            return
+        files = [await attachment.to_file() for attachment in ctx.message.attachments]
+
+        output_channels = [discord.utils.get(ctx.guild.channels, name='⚔┊scoresheet_bot_testing_grounds'),
+                           # =DOCS_UPDATES),
+                           discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+        links = []
+        for output_channel in output_channels:
+            link = await output_channel.send(embed=embed, files=files)
+            links.append(link)
+        league_id = 8
+        battle_id = add_non_ss_battle(winning_crew, losing_crew, players, score, links[-1].jump_url, league_id)
+
+        winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
+
+        for link in links:
+            await link.edit(content=
+                            f'**{today.strftime("%B %d, %Y")} - {winning_crew.name}⚔{losing_crew.name}**\n'
+                            f'**Winner:**  {winning_crew.abbr}'
+                            f'[{winner_elo})+{winner_change}={winner_elo + winner_change}]\n'
+                            f'**Loser:** {losing_crew.abbr} '
+                            f'[{loser_elo} {loser_change}={loser_elo + loser_change}]\n'
+                            f'**Battle:** {battle_id} from {ctx.channel.mention}'
+                            f'Link to scoresheet: {ctx.message.attachments[0].url}')
+        await ctx.send(
+            f'The battle between {winning_crew.name} and {losing_crew.name} '
+            f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
+            f'(Battle number:{battle_id})')
+
     @commands.command(**help_doc['overflow'], hidden=True)
     @role_call([ADMIN, MINION])
     async def overflow(self, ctx: Context):
@@ -1660,9 +1713,11 @@ class ScoreSheetBot(commands.Cog):
             calced = calc_reg_slots(len(members))
             total_slot_set(flairing_crew, calced)
             desc.append(f'Initiated with {calced} slots.')
+        init_rating(flairing_crew, 1000)
 
         embed = discord.Embed(title=f'Crew Reg for {flairing_crew.name}', description='\n'.join(desc),
                               color=flairing_crew.color)
+
         await send_long_embed(ctx, embed)
         await send_long_embed(self.cache.channels.flair_log, embed)
 
@@ -1734,7 +1789,7 @@ class ScoreSheetBot(commands.Cog):
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
-
+        disband_crew(dis_crew)
         desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
         out = discord.Embed(title=f'{dis_crew.name} is disbanding, here is their players:',
                             description='\n'.join(desc), color=dis_crew.color)
@@ -2051,6 +2106,42 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
+    async def rate(self, ctx):
+        update_bf_sheet()
+        # all_ids = sorted(all_battle_ids())
+        # for i, battle_id in enumerate(all_ids):
+        #     battle_elo_changes(battle_id)
+        #     print(f'{i}/{len(all_ids)}: {battle_id}')
+        #     battle_weight_changes(battle_id)
+        # update_mc_sheet()
+        # update_mc_player_sheet()
+
+    @commands.command(hidden=True, **help_doc['crnumbers'])
+    @role_call(STAFF_LIST)
+    async def cancelcb(self, ctx, battle_id: int, *, reason: str = ''):
+        crew1, crew2, finished, link = battle_info(battle_id)
+        embed = discord.Embed(title='Are you sure you want to cancel this crew battle?',
+                              description=f'{crew1} vs {crew2}\n'
+                                          f'On: {finished} [link]({link})', color=discord.Color.random())
+        msg = await ctx.send(embed=embed)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await ctx.message.delete(delay=5)
+            await msg.delete(delay=2)
+            await resp.delete(delay=5)
+            return
+        link = battle_cancel(battle_id)
+        split = link.split('/')
+        channel_id = int(split[-2])
+        message_id = int(split[-1])
+        channel = ctx.guild.get_channel(channel_id)
+        message = await channel.fetch_message(message_id)
+        await message.edit(content=f'{NO}Canceled by {ctx.author} {reason}\n' + message.content)
+
+        await ctx.send(f'Successfully canceled cb {battle_id}.')
+
+    @commands.command(hidden=True, **help_doc['crnumbers'])
+    @role_call(STAFF_LIST)
     async def crnumbers(self, ctx):
         crews = list(self.cache.crews_by_name.values())
 
@@ -2076,9 +2167,38 @@ class ScoreSheetBot(commands.Cog):
 
         await send_long_embed(ctx, embed)
 
+    @commands.command(hidden=True, **help_doc['ofrank'])
+    @role_call(STAFF_LIST)
+    async def initalize_ratings(self, ctx):
+        # crews = list(self.cache.crews_by_name.values())
+        #
+        # crews.sort(key=lambda x: x.rank)
+        # for i, cr in enumerate(crews):
+        #     base = 1000
+        #     calculated = base + 75 * (cr.rank - 1)
+        #     init_rating(cr, calculated)
+        #     print(f'{cr.name}: {calculated} {i}/{len(crews)}')
+        update_bf_sheet()
+
     @commands.command(**help_doc['slots'])
     @main_only
     async def slots(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        left, total, unflairs = extra_slots(actual_crew)
+        await ctx.send(f'{actual_crew.name} has ({left}/{total} slots) and {unflairs}/3 unflairs till a new slot.')
+
+    @commands.command(**help_doc['slots'])
+    @main_only
+    async def update_elos(self, ctx, *, name: str = None):
         if name:
             ambiguous = ambiguous_lookup(name, self)
             if isinstance(ambiguous, discord.Member):

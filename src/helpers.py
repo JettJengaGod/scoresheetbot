@@ -2,12 +2,11 @@ import os
 from datetime import date
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict, Sequence, ValuesView
 
-import matplotlib.pyplot as plt;
+import matplotlib.pyplot as plt
 
 plt.rcdefaults()
 import numpy as np
 from dateutil.relativedelta import relativedelta
-from gambit import Gambit
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from character import string_to_emote
@@ -15,7 +14,8 @@ from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
-    player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members
+    player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id
+from gambit import Gambit
 
 if TYPE_CHECKING:
     from scoreSheetBot import ScoreSheetBot
@@ -114,7 +114,7 @@ def check_roles(user: discord.Member, roles: Iterable) -> bool:
     return any((role.name in roles for role in user.roles))
 
 
-async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battle):
+async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battle) -> discord.Message:
     embed_split = split_embed(embed=battle.embed(), length=2000)
     if battle.battle_over():
         if not all(battle.confirms):
@@ -429,9 +429,9 @@ def split_possibilities(two_things: str, sep: Optional[str] = ' ') -> List[Tuple
     return out
 
 
-def best_of_possibilities(combined: str, bot: 'ScoreSheetBot'):
+def best_of_possibilities(combined: str, bot: 'ScoreSheetBot', only_use_crews=False):
     pos = split_possibilities(combined)
-    all_role_names = {role.name for role in bot.cache.scs.roles}
+    all_role_names = {} if only_use_crews else {role.name for role in bot.cache.scs.roles}
     all_role_names = set.union(set(bot.cache.crews), all_role_names)
     best = ['', '', 0]
     for sep in pos:
@@ -485,7 +485,8 @@ def overlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[disco
     other_role = None
     if first in bot.cache.crews:
         if second in bot.cache.crews:
-            raise ValueError('You can\'t have members on two crews!')
+            raise ValueError(f'Interpreted as {first} and {second}. '
+                             f'You can\'t have members on two crews! Try to be more specific.')
         crew_role = first
         other_role = second
     if second in bot.cache.crews:
@@ -544,6 +545,7 @@ async def cache_process(bot: 'ScoreSheetBot'):
         await cooldown_handle(bot)
     if os.getenv('VERSION') == 'PROD':
         await bot.cache.channels.recache_logs.send('Successfully recached.')
+        update_all_sheets()
 
 
 def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
@@ -560,6 +562,7 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
 def crew_update(bot: 'ScoreSheetBot'):
     cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache.crews_by_name.values() if cr.role_id != -1}
     db_crews = all_crews()
+    rankings = crew_rankings()
     missing = []
     for db_crew in db_crews:
         if db_crew[0] in cached_crews:
@@ -571,6 +574,10 @@ def crew_update(bot: 'ScoreSheetBot'):
         if formatted != db_crew[0:5]:
             update_crew(cached)
         bot.cache.crews_by_name[cached.name].dbattr(*db_crew[5:])
+        bot.cache.crews_by_name[cached.name].set_rankings(*rankings[db_crew[2]])
+
+    for cr in missing:
+        disband_crew_from_id(cr[0])
     for cr in cached_crews.values():
         update_crew(cr)
 
@@ -584,7 +591,6 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
                 await bot.cache.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
             else:
                 remove_expired_cooldown(user_id)
-                print(str(member))
         else:
             remove_expired_cooldown(user_id)
 
@@ -665,7 +671,7 @@ class PlayerStatsPaged(menus.ListPageSource):
 
 
 def playoff_summary(bot: 'ScoreSheetBot') -> discord.Embed:
-    embed = discord.Embed(title='Current Playoff Battles')
+    embed = discord.Embed(title='Current Master Class Battles')
     for key, battle in bot.battle_map.items():
         if battle:
             if battle.playoff:
@@ -1024,22 +1030,3 @@ async def unflair_gone_member(ctx: Context, user: str, bot: 'ScoreSheetBot'):
     await bot.cache.channels.flair_log.send(embed=embed)
     # Respond in the channel
     await response_message(ctx, f'successfully unflaired {user_id}.')
-
-
-def update_ba_sheet():
-    scope = [
-        'https://www.googleapis.com/auth/drive',
-        'https://www.googleapis.com/auth/drive.file'
-    ]
-    file_name = 'client_key.json'
-    creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
-    client = gspread.authorize(creds)
-    sheet = client.open('Battle Arena').sheet1
-    player_rows = []
-    for name, elo, wins, total in ba_standings():
-        player_rows.append([name, elo, '', wins, total - wins])
-
-    sheet.batch_update([{
-        'range': f'B9:F{9 + len(player_rows)}',
-        'values': player_rows
-    }])
