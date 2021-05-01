@@ -12,8 +12,9 @@ from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_cre
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
-    player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings
+    player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id
 from .gambit import Gambit
+from .sheet_helpers import update_all_sheets
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
@@ -543,6 +544,7 @@ async def cache_process(bot: 'ScoreSheetBot'):
         await cooldown_handle(bot)
     if os.getenv('VERSION') == 'PROD':
         await bot.cache.channels.recache_logs.send('Successfully recached.')
+        update_all_sheets()
 
 
 def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
@@ -571,8 +573,10 @@ def crew_update(bot: 'ScoreSheetBot'):
         if formatted != db_crew[0:5]:
             update_crew(cached)
         bot.cache.crews_by_name[cached.name].dbattr(*db_crew[5:])
-        bot.cache.crews_by_name[cached.name].set_rankings(*rankings[cached.name])
+        bot.cache.crews_by_name[cached.name].set_rankings(*rankings[db_crew[2]])
 
+    for cr in missing:
+        disband_crew_from_id(cr[0])
     for cr in cached_crews.values():
         update_crew(cr)
 

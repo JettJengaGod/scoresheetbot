@@ -1705,9 +1705,11 @@ class ScoreSheetBot(commands.Cog):
             calced = calc_reg_slots(len(members))
             total_slot_set(flairing_crew, calced)
             desc.append(f'Initiated with {calced} slots.')
+        init_rating(flairing_crew, 1000)
 
         embed = discord.Embed(title=f'Crew Reg for {flairing_crew.name}', description='\n'.join(desc),
                               color=flairing_crew.color)
+
         await send_long_embed(ctx, embed)
         await send_long_embed(self.cache.channels.flair_log, embed)
 
@@ -1779,7 +1781,7 @@ class ScoreSheetBot(commands.Cog):
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
-
+        disband_crew(dis_crew)
         desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
         out = discord.Embed(title=f'{dis_crew.name} is disbanding, here is their players:',
                             description='\n'.join(desc), color=dis_crew.color)

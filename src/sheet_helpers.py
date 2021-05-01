@@ -100,7 +100,7 @@ def update_bf_sheet():
 
 
 def update_mc_player_sheet():
-    sheet = client.open('SCS Crew Docs').worksheet('SCL 2021 Master Stat Mock Up')
+    sheet = client.open('SCS Crew Docs').worksheet('Master Class Stats')
     pt1, pt2, pt3 = [], [], []
     stats = sorted(mc_stats(), key=lambda x: x[4] / max(x[5], 1), reverse=True)
     for name, tag, pid, taken, weighted_taken, lost, mvps, played, chars in stats:
@@ -148,3 +148,11 @@ def update_mc_sheet():
         'range': f'G10:H{10 + len(front)}',
         'values': rear
     }])
+
+
+def update_all_sheets():
+    update_mc_sheet()
+    update_bf_sheet()
+    update_ba_sheet()
+    update_mc_player_sheet()
+    update_gambit_sheet()

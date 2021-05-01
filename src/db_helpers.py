@@ -845,7 +845,8 @@ def all_crews() -> List[List]:
        slotstotal,
        slotsleft,
        case when (select count(*) from master_crews where crew_id = crews.id) > 0 then true else false end as master
-FROM crews;"""
+FROM crews
+where disbanded = false;"""
     conn = None
     crews = [[]]
     try:
@@ -2380,6 +2381,46 @@ def set_return_slots(crew: Crew, number: int) -> Tuple[int, int, int]:
     return unflairs, remaining, total
 
 
+def disband_crew(crew: Crew) -> None:
+    disband = """update crews set disbanded TRUE
+    where crews.id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(disband, (cr_id,))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def disband_crew_from_id(cr_id) -> None:
+    disband = """update crews set disbanded = TRUE
+    where crews.id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr_id, cur)
+        cur.execute(disband, (cr_id,))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
 def ba_elo(member: discord.Member) -> int:
     member_elo = """select elo, k from arena_members where member_id = %s;"""
     conn = None
@@ -2578,7 +2619,6 @@ limit 1;"""
 
 
 def battle_frontier_crews() -> Sequence[Tuple[str, str, datetime.datetime, str, int]]:
-    # TODO update this to be actual battle frontier instead of qualifier
     bf_crews = """
 select crews.name,
        crews.tag,
@@ -2604,6 +2644,7 @@ from crew_ratings,
 
 where crew_ratings.crew_id = crews.id
   and crew_ratings.league_id = 8
+  and crews.disbanded = false
 order by rating desc;
 """
     conn = None
@@ -2652,18 +2693,18 @@ def mc_stats() -> Sequence[Tuple[str, int, int, float, int, int, int, List[str]]
     get_stats = """select members.discord_name,
        crews.tag,
        members.id,
-       member_stats.taken,
-       member_stats.weighted_taken,
-       member_stats.lost,
-       member_stats.mvps,
-       member_stats.played
+       master_member_stats.taken,
+       master_member_stats.weighted_taken,
+       master_member_stats.lost,
+       master_member_stats.mvps,
+       master_member_stats.played
 from members,
      current_member_crews,
      crews,
-     member_stats
+     master_member_stats
 where members.id = current_member_crews.member_id
     and current_member_crews.crew_id = crews.id
-    and member_stats.member_id = members.id;
+    and master_member_stats.member_id = members.id;
     """
     # TODO update this to order by usage and only use master class
     get_chars = """select fighters.name, picks.pid
