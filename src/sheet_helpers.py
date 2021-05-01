@@ -24,7 +24,7 @@ def colnum_string(n):
 
 
 def update_gambit_sheet():
-    sheet = client.open('Fake Gambit').sheet1
+    sheet = client.open('SCS Crew Docs').worksheet('Gambit')
     player_to_rank = {}
     player_cols = []
     for rank, member_id, coins, name in gambit_standings():
@@ -57,7 +57,7 @@ def update_gambit_sheet():
 
 
 def update_ba_sheet():
-    sheet = client.open('Battle Arena').sheet1
+    sheet = client.open('SCS Crew Docs').worksheet('Battle Arena')
     player_rows = []
     for name, elo, wins, total in ba_standings():
         player_rows.append([name, elo, '', wins, total - wins])

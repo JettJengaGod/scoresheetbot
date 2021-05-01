@@ -796,11 +796,16 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['rankings'])
     async def rankings(self, ctx):
-        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.ladder],
-                                         key=lambda x: int(x.ladder[1:x.ladder.index('/')]))
-        crew_ranking_str = [f'{cr.name} {cr.rank}' for cr in crews_sorted_by_ranking]
+        # TODO split this by ladder
+        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.scl_rating],
+                                         key=lambda x: x.scl_rating, reverse=True)
+        cutoff = round(len(crews_sorted_by_ranking) * .4)
+        while (crews_sorted_by_ranking[cutoff - 1].scl_rating == crews_sorted_by_ranking[cutoff].scl_rating
+               and cutoff < len(crews_sorted_by_ranking) - 1):
+            cutoff += 1
+        crew_ranking_str = [f'{cr.name} {cr.scl_rating}' for cr in crews_sorted_by_ranking]
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Legacy Crews Rankings'),
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='SCL 2021 Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
