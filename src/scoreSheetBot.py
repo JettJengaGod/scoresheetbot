@@ -1542,7 +1542,7 @@ class ScoreSheetBot(commands.Cog):
             link = await output_channel.send(embed=embed, files=files)
             links.append(link)
         league_id = 8
-        battle_id = add_non_ss_battle(winning_crew, losing_crew, players, score, links[1].jump_url, league_id)
+        battle_id = add_non_ss_battle(winning_crew, losing_crew, players, score, links[0].jump_url, league_id)
 
         winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
 
