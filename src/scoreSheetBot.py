@@ -601,7 +601,7 @@ class ScoreSheetBot(commands.Cog):
                     battle_weight_changes(battle_id)
                     winner_crew = crew_lookup(winner, self)
                     loser_crew = crew_lookup(loser, self)
-                    new_message = (f'**{today.strftime("%B %d, %Y")} - {winner}⚔{loser}**\n'
+                    new_message = (f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winner}⚔{loser}**\n'
                                    f'**Winner:** {winner_crew.abbr} '
                                    f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
                                    f'**Loser:** {loser_crew.abbr} '
@@ -611,7 +611,7 @@ class ScoreSheetBot(commands.Cog):
                         bf_winner_elo, bf_winner_change, bf_loser_elo, bf_loser_change = battle_elo_changes(battle_id,
                                                                                                             True)
                         master_weight_changes(battle_id)
-                        new_message = (f'**{today.strftime("%B %d, %Y")} - {winner}⚔{loser}**\n'
+                        new_message = (f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winner}⚔{loser}**\n'
                                        '**Master Class**\n'
                                        f'**Winner:** {winner_crew.abbr} '
                                        f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
@@ -1550,9 +1550,9 @@ class ScoreSheetBot(commands.Cog):
 
         for link in links:
             await link.edit(content=
-                            f'**{today.strftime("%B %d, %Y")} - {winning_crew.name}⚔{losing_crew.name}**\n'
+                            f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winning_crew.name}⚔{losing_crew.name}**\n'
                             f'**Winner:** {winning_crew.abbr} '
-                            f'[{winner_elo})+{winner_change}={winner_elo + winner_change}]\n'
+                            f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
                             f'**Loser:** {losing_crew.abbr} '
                             f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
                             f'**Battle:** {battle_id} from {ctx.channel.mention}')
