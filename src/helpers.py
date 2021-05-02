@@ -573,7 +573,8 @@ def crew_update(bot: 'ScoreSheetBot'):
         if formatted != db_crew[0:5]:
             update_crew(cached)
         bot.cache.crews_by_name[cached.name].dbattr(*db_crew[5:])
-        bot.cache.crews_by_name[cached.name].set_rankings(*rankings[db_crew[2]])
+        if db_crew[2] in rankings:
+            bot.cache.crews_by_name[cached.name].set_rankings(*rankings[db_crew[2]])
 
     for cr in missing:
         disband_crew_from_id(cr[0])
