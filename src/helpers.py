@@ -16,6 +16,7 @@ from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
     player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id
 from gambit import Gambit
+from sheet_helpers import update_all_sheets
 
 if TYPE_CHECKING:
     from scoreSheetBot import ScoreSheetBot
