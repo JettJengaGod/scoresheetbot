@@ -1539,7 +1539,7 @@ class ScoreSheetBot(commands.Cog):
         links = []
         for output_channel in output_channels:
             files = [await attachment.to_file() for attachment in ctx.message.attachments]
-            link = await output_channel.send(embed=embed, files=files)
+            link = await output_channel.send(files=files)
             links.append(link)
         league_id = 8
         battle_id = add_non_ss_battle(winning_crew, losing_crew, players, score, links[0].jump_url, league_id)
