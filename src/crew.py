@@ -31,36 +31,36 @@ class Crew:
     def embed(self) -> discord.Embed:
         title = f'{self.name}'
         if self.master_class:
-            title += f' (Master League) '
+            title += f' (Master Class) '
         if self.overflow:
             title += f' (Overflow) '
         if self.wl:
             title += ' WATCHLISTED'
-        description = [f'Tag: {self.abbr}\n', f'Total Members: {self.member_count}\n']
+        description = [f'**Tag:** {self.abbr}\n', f'**Total Members:** {self.member_count}\n']
         if self.ladder:
             description.append(f'{self.ladder}\n')
         if self.scl_rating:
-            description.append(f'SCL Rating: {self.scl_rating}\n')
+            description.append(f'**SCL Rating:** {self.scl_rating}\n')
         if self.social:
-            description.append(f'Social: {self.social}\n')
+            description.append(f'**Social:** {self.social}\n')
         if self.leaders:
-            description.append(f'Leaders: ')
+            description.append(f'**Leaders:** ')
             for name in self.leaders:
                 description.append(f'{name}, ')
             description[-1] = description[-1][:-2]
             description.append('\n')
         if self.advisors:
-            description.append(f'Advisors: ')
+            description.append(f'**Advisors:** ')
             for name in self.advisors:
                 description.append(f'{name}, ')
             description[-1] = description[-1][:-2]
             description.append('\n')
         if self.freeze:
-            description.append(f'\nRecruitment frozen till: {self.freeze}')
+            description.append(f'**Recruitment frozen till:** {self.freeze}\n')
         if self.verify:
-            description.append('\nVerify required for flairing')
+            description.append('**Verify required for flairing**\n')
         if self.total_slots:
-            description.append(f'\nFlairing Slots: {self.remaining_slots}/{self.total_slots}')
+            description.append(f'**Flairing Slots:** {self.remaining_slots}/{self.total_slots}\n')
         embed = discord.Embed(title=title, description=''.join(description), color=self.color)
         if self.icon:
             embed.set_thumbnail(url=self.icon)
@@ -77,6 +77,6 @@ class Crew:
         self.master_class = master
 
     def set_rankings(self, rank: int, rating: int, bf: bool, total: int):
-        self.ladder = 'Battle Frontier: ' if bf else 'Rookie Class: '
+        self.ladder = '**Battle Frontier:** ' if bf else '**Rookie Class:** '
         self.ladder += f'({rank}/{total})'
         self.scl_rating = rating
