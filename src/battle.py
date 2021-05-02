@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Optional, Set, List
 from src.character import Character
 from discord import embeds, colour
@@ -21,6 +22,12 @@ DEFAULT_SIZE = 5
 def bold(s: str) -> str:
     return f'**{s}**'
 
+
+class BattleType(Enum):
+    RANKED = 1
+    MOCK = 2
+    REG = 3
+    PLAYOFF = 4
 
 @dataclass
 class Player:

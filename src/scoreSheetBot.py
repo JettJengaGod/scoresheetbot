@@ -1535,7 +1535,7 @@ class ScoreSheetBot(commands.Cog):
             return
         files = [await attachment.to_file() for attachment in ctx.message.attachments]
 
-        output_channels = [discord.utils.get(ctx.guild.channels, name=DOCS_UPDATES),
+        output_channels = [discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
                            discord.utils.get(ctx.guild.channels, name=OUTPUT)]
         links = []
         for output_channel in output_channels:
