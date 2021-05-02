@@ -1541,7 +1541,7 @@ class ScoreSheetBot(commands.Cog):
         links = []
         for output_channel in output_channels:
             files = [await attachment.to_file() for attachment in ctx.message.attachments]
-            link = await output_channel.send(embed=embed, files=files)
+            link = await output_channel.send(files=files)
             links.append(link)
         league_id = 8
         battle_id = add_non_ss_battle(winning_crew, losing_crew, players, score, links[0].jump_url, league_id)
@@ -1555,8 +1555,7 @@ class ScoreSheetBot(commands.Cog):
                             f'[{winner_elo})+{winner_change}={winner_elo + winner_change}]\n'
                             f'**Loser:** {losing_crew.abbr} '
                             f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
-                            f'**Battle:** {battle_id} from {ctx.channel.mention}'
-                            f'Link to scoresheet: {ctx.message.attachments[0].url}')
+                            f'**Battle:** {battle_id} from {ctx.channel.mention}')
         await ctx.send(
             f'The battle between {winning_crew.name} and {losing_crew.name} '
             f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
