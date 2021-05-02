@@ -289,14 +289,14 @@ class ScoreSheetBot(commands.Cog):
             opp_actual = crew_lookup(opp_crew, self)
             if user_actual.master_class and opp_actual.master_class:
                 await ctx.send(
-                    f'If you are in a master league battle, please use '
-                    f'`{self.bot.command_prefix}masterbattle` or `,mlb`.')
+                    f'If you are in a master class battle, please use '
+                    f'`{self.bot.command_prefix}masterbattle` or `,mcb`.')
             await self._set_current(ctx, Battle(user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['masterbattle'], aliases=['mcb', 'masterleague'], group='CB')
+    @commands.command(**help_doc['masterbattle'], aliases=['mcb', 'masterclass'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -602,10 +602,10 @@ class ScoreSheetBot(commands.Cog):
                     winner_crew = crew_lookup(winner, self)
                     loser_crew = crew_lookup(loser, self)
                     new_message = (f'**{today.strftime("%B %d, %Y")} - {winner}⚔{loser}**\n'
-                                   f'**Winner:**  {winner_crew.abbr}'
+                                   f'**Winner:** {winner_crew.abbr} '
                                    f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
                                    f'**Loser:** {loser_crew.abbr} '
-                                   f'[{loser_elo} {loser_change}={loser_elo + loser_change}]\n'
+                                   f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
                                    f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     if current.playoff:
                         bf_winner_elo, bf_winner_change, bf_loser_elo, bf_loser_change = battle_elo_changes(battle_id,
@@ -613,15 +613,15 @@ class ScoreSheetBot(commands.Cog):
                         master_weight_changes(battle_id)
                         new_message = (f'**{today.strftime("%B %d, %Y")} - {winner}⚔{loser}**\n'
                                        '**Master Class**\n'
-                                       f'**Winner:**  {winner_crew.abbr}'
+                                       f'**Winner:** {winner_crew.abbr} '
                                        f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
                                        f'**Loser:** {loser_crew.abbr} '
-                                       f'[{loser_elo} {loser_change}={loser_elo + loser_change}]\n'
+                                       f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
                                        f'** Battle Frontier**\n'
-                                       f'**Winner:**  {winner_crew.abbr}'
+                                       f'**Winner:** {winner_crew.abbr} '
                                        f'[{bf_winner_elo})+{bf_winner_change}={bf_winner_elo + bf_winner_change}]\n'
                                        f'**Loser:** {loser_crew.abbr} '
-                                       f'[{bf_loser_elo} {bf_loser_change}={bf_loser_elo + bf_loser_change}]\n'
+                                       f'[{bf_loser_elo}{bf_loser_change}={bf_loser_elo + bf_loser_change}]\n'
                                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
                         update_mc_sheet()
                     for link in links:
@@ -1537,8 +1537,7 @@ class ScoreSheetBot(commands.Cog):
             return
         files = [await attachment.to_file() for attachment in ctx.message.attachments]
 
-        output_channels = [discord.utils.get(ctx.guild.channels, name='⚔┊scoresheet_bot_testing_grounds'),
-                           # =DOCS_UPDATES),
+        output_channels = [discord.utils.get(ctx.guild.channels, name=DOCS_UPDATES),
                            discord.utils.get(ctx.guild.channels, name=OUTPUT)]
         links = []
         for output_channel in output_channels:
@@ -1552,10 +1551,10 @@ class ScoreSheetBot(commands.Cog):
         for link in links:
             await link.edit(content=
                             f'**{today.strftime("%B %d, %Y")} - {winning_crew.name}⚔{losing_crew.name}**\n'
-                            f'**Winner:**  {winning_crew.abbr}'
+                            f'**Winner:** {winning_crew.abbr} '
                             f'[{winner_elo})+{winner_change}={winner_elo + winner_change}]\n'
                             f'**Loser:** {losing_crew.abbr} '
-                            f'[{loser_elo} {loser_change}={loser_elo + loser_change}]\n'
+                            f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
                             f'**Battle:** {battle_id} from {ctx.channel.mention}'
                             f'Link to scoresheet: {ctx.message.attachments[0].url}')
         await ctx.send(
