@@ -1535,16 +1535,16 @@ class ScoreSheetBot(commands.Cog):
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
             await response_message(ctx, 'Canceled or timed out.')
             return
-        files = [await attachment.to_file() for attachment in ctx.message.attachments]
 
         output_channels = [discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
                            discord.utils.get(ctx.guild.channels, name=OUTPUT)]
         links = []
         for output_channel in output_channels:
+            files = [await attachment.to_file() for attachment in ctx.message.attachments]
             link = await output_channel.send(embed=embed, files=files)
             links.append(link)
         league_id = 8
-        battle_id = add_non_ss_battle(winning_crew, losing_crew, players, score, links[-1].jump_url, league_id)
+        battle_id = add_non_ss_battle(winning_crew, losing_crew, players, score, links[0].jump_url, league_id)
 
         winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
 
