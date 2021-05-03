@@ -1630,7 +1630,7 @@ class ScoreSheetBot(commands.Cog):
                             f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winning_crew.name}⚔{losing_crew}**\n'
                             f'**Winner:** {winning_crew.abbr} '
                             f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
-                            f'**Loser:** {losing_crew} (no rating, treated as 1000)'
+                            f'**Loser:** {losing_crew} (no rating, treated as 1000)\n'
                             f'**Battle:** {battle_id}')
         await ctx.send(
             f'The battle between {winning_crew.name} and {losing_crew} '
