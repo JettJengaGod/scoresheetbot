@@ -1573,7 +1573,7 @@ class ScoreSheetBot(commands.Cog):
                             f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
                             f'**Loser:** {losing_crew.abbr} '
                             f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
-                            f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                            f'**Battle:** {battle_id}')
         await ctx.send(
             f'The battle between {winning_crew.name} and {losing_crew.name} '
             f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
@@ -1630,7 +1630,8 @@ class ScoreSheetBot(commands.Cog):
                             f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winning_crew.name}⚔{losing_crew}**\n'
                             f'**Winner:** {winning_crew.abbr} '
                             f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
-                            f'**Loser:** {losing_crew} (no rating, treated as 1000)')
+                            f'**Loser:** {losing_crew} (no rating, treated as 1000)'
+                            f'**Battle:** {battle_id}')
         await ctx.send(
             f'The battle between {winning_crew.name} and {losing_crew} '
             f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
