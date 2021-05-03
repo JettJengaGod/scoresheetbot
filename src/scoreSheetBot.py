@@ -1483,6 +1483,24 @@ class ScoreSheetBot(commands.Cog):
                 out.append(f'{str(user)} was flaired {strfdelta(tdelta, "{hours} hours and {minutes} minutes ago")}')
         await send_long(ctx, '\n'.join(out), '\n')
 
+    @commands.command(**help_doc['charge'])
+    @role_call([MINION, ADMIN])
+    async def charge(self, ctx, member: discord.Member, amount: int, *, reason: str = 'None Specified'):
+        current = member_gcoins(member)
+        if amount > current:
+            await response_message(ctx,
+                                   f'{member.mention} only has {current} G-Coins, they cannot be charged {amount}.')
+            return
+        msg = await ctx.send(
+            f'{ctx.author.mention}: are you sure you want to charge {member.mention} {amount} G-Coins? For {reason}'
+        )
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+            await response_message(ctx, 'Canceled or timed out.')
+            return
+        final = charge(member.id, amount, reason)
+        await ctx.send(f'{member.mention} sucessfully was charged {amount} G-Coins for {reason}! They now have {final}'
+                       f' G-Coins.')
+
     @commands.command(**help_doc['non_crew'], hidden=True)
     @main_only
     @role_call(STAFF_LIST)

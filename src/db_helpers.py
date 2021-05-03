@@ -2890,3 +2890,30 @@ where league_id = 8 and crew_ratings.crew_id = crews.id;
         if conn is not None:
             conn.close()
     return mapping
+
+
+def charge(member_id: int, amount: int, reason: str = 'None Specified') -> int:
+    gcoins = """ update gambiters set gcoins = gcoins - %s 
+    where member_id = %s returning gcoins;"""
+    history = """insert into charge_history (member_id, amount, reason) VALUES (%s, %s, %s)
+    """
+    conn = None
+    coins = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(gcoins, (amount, member_id,))
+        res = cur.fetchone()
+        if res:
+            coins = res[0]
+        cur.execute(history, (member_id, amount, reason))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return coins
