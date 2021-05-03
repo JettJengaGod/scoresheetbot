@@ -446,6 +446,23 @@ def best_of_possibilities(combined: str, bot: 'ScoreSheetBot', only_use_crews=Fa
     return best
 
 
+def single_crew_plus_string(combined: str, bot: 'ScoreSheetBot'):
+    pos = split_possibilities(combined)
+    all_role_names = set(bot.cache.crews)
+    best = ['', '', 0]
+    for sep in pos:
+        if sep[0].lower() in bot.cache.crews_by_tag:
+            sep = (bot.cache.crews_by_tag[sep[0].lower()].name, sep[1])
+
+        if sep[1].lower() in bot.cache.crews_by_tag:
+            sep = (sep[0], bot.cache.crews_by_tag[sep[1].lower()].name)
+        first, second = search_two_roles_in_list(sep[0], sep[1], all_role_names)
+        value = max(first[1], second[1])
+        if value > best[2]:
+            best = [first[0], sep[1], value]
+    return best
+
+
 def members_with_str_role(role: str, bot: 'ScoreSheetBot') -> Tuple[str, List[discord.Member], List[int]]:
     all_role_names = {role.name for role in bot.cache.scs.roles}
     all_role_names = set.union(set(bot.cache.crews), all_role_names)
