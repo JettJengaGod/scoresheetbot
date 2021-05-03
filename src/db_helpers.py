@@ -501,7 +501,7 @@ def add_failed_reg_battle(winner: Crew, size: int, score: int, link: str, league
         cur = conn.cursor()
         cur.execute(add_battle, (
             crew_id_from_crews(winner, cur),
-            336,
+            339,
             score,
             link,
             crew_id_from_crews(winner, cur),
