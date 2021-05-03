@@ -1485,6 +1485,24 @@ class ScoreSheetBot(commands.Cog):
                 out.append(f'{str(user)} was flaired {strfdelta(tdelta, "{hours} hours and {minutes} minutes ago")}')
         await send_long(ctx, '\n'.join(out), '\n')
 
+    @commands.command(**help_doc['charge'])
+    @role_call([MINION, ADMIN])
+    async def charge(self, ctx, member: discord.Member, amount: int, *, reason: str = 'None Specified'):
+        current = member_gcoins(member)
+        if amount > current:
+            await response_message(ctx,
+                                   f'{member.mention} only has {current} G-Coins, they cannot be charged {amount}.')
+            return
+        msg = await ctx.send(
+            f'{ctx.author.mention}: are you sure you want to charge {member.mention} {amount} G-Coins? For {reason}'
+        )
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+            await response_message(ctx, 'Canceled or timed out.')
+            return
+        final = charge(member.id, amount, reason)
+        await ctx.send(f'{member.mention} sucessfully was charged {amount} G-Coins for {reason}! They now have {final}'
+                       f' G-Coins.')
+
     @commands.command(**help_doc['non_crew'], hidden=True)
     @main_only
     @role_call(STAFF_LIST)
@@ -1558,6 +1576,63 @@ class ScoreSheetBot(commands.Cog):
                             f'**Battle:** {battle_id} from {ctx.channel.mention}')
         await ctx.send(
             f'The battle between {winning_crew.name} and {losing_crew.name} '
+            f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
+            f'(Battle number:{battle_id})')
+
+    @commands.command(**help_doc['addsheet'])
+    @main_only
+    @role_call(STAFF_LIST)
+    async def failedreg(self, ctx: Context, *, everything: str):
+        today = date.today()
+
+        if not ctx.message.attachments:
+            await response_message(ctx, 'You need to submit a screenshot of the scoresheet with this.')
+            return
+
+        everything = everything.split(' ')
+        try:
+            score = int(everything[-1])
+            players = int(everything[-2])
+        except ValueError:
+            await response_message(ctx,
+                                   'This command needs to be formatted like this `,addsheet WinningCrew LosingCrew'
+                                   'Size FinalScore`')
+            return
+        two_crews = ' '.join(everything[:-2])
+        best = single_crew_plus_string(two_crews, self)
+
+        winning_crew = crew_lookup(best[0], self)
+        losing_crew = best[1]
+
+        embed = discord.Embed(
+            title=f'{winning_crew.name}({winning_crew.abbr}) defeats {losing_crew} in a failed registration battle',
+            description=f'{winning_crew.name} wins {score} - 0 in a {players} vs {players} battle'
+        )
+        msg = await ctx.send(f'{ctx.author.mention}: Are you sure you want to confirm this crew battle?', embed=embed)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+            await response_message(ctx, 'Canceled or timed out.')
+            return
+
+        output_channels = [discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
+                           discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+        links = []
+        for output_channel in output_channels:
+            files = [await attachment.to_file() for attachment in ctx.message.attachments]
+            link = await output_channel.send(files=files)
+            links.append(link)
+        league_id = 8
+        battle_id = add_failed_reg_battle(winning_crew, players, score, links[0].jump_url, league_id)
+
+        winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
+        reset_fake_crew_rating(league_id)
+        for link in links:
+            await link.edit(content=
+                            f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winning_crew.name}⚔{losing_crew}**\n'
+                            f'**Winner:** {winning_crew.abbr} '
+                            f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
+                            f'**Loser:** {losing_crew} (no rating, treated as 1000)')
+        await ctx.send(
+            f'The battle between {winning_crew.name} and {losing_crew} '
             f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
             f'(Battle number:{battle_id})')
 

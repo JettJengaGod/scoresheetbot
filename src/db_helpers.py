@@ -491,6 +491,35 @@ def add_non_ss_battle(winner: Crew, loser: Crew, size: int, score: int, link: st
     return battle_id
 
 
+def add_failed_reg_battle(winner: Crew, size: int, score: int, link: str, league: int) -> int:
+    add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id, players)
+     values(%s, %s, %s, %s, %s, current_timestamp, %s, %s)  RETURNING id;"""
+    conn = None
+    battle_id = -1
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(add_battle, (
+            crew_id_from_crews(winner, cur),
+            336,
+            score,
+            link,
+            crew_id_from_crews(winner, cur),
+            league,
+            size,
+        ))
+        battle_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return battle_id
+
+
 def battle_elo_changes(battle_id: int, bf_dupe: bool = False) -> Tuple[int, int, int, int]:
     # TODO modify this to handle MC/BF matches
     find_battle = """
@@ -2690,6 +2719,26 @@ def init_rating(crew: Crew, rating: int):
     return
 
 
+def reset_fake_crew_rating(league_id: int):
+    set_rating = """update crew_ratings
+    set rating = 1000
+        where crew_id = 336 and league_id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(set_rating, (league_id,))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
 def mc_stats() -> Sequence[Tuple[str, int, int, float, int, int, int, List[str]]]:
     get_stats = """select members.discord_name,
        crews.tag,
@@ -2842,3 +2891,30 @@ where league_id = 8 and crew_ratings.crew_id = crews.id;
         if conn is not None:
             conn.close()
     return mapping
+
+
+def charge(member_id: int, amount: int, reason: str = 'None Specified') -> int:
+    gcoins = """ update gambiters set gcoins = gcoins - %s 
+    where member_id = %s returning gcoins;"""
+    history = """insert into charge_history (member_id, amount, reason) VALUES (%s, %s, %s)
+    """
+    conn = None
+    coins = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(gcoins, (amount, member_id,))
+        res = cur.fetchone()
+        if res:
+            coins = res[0]
+        cur.execute(history, (member_id, amount, reason))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return coins
