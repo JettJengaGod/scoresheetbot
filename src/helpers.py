@@ -689,11 +689,11 @@ class PlayerStatsPaged(menus.ListPageSource):
         return entries
 
 
-def playoff_summary(bot: 'ScoreSheetBot') -> discord.Embed:
+def battle_summary(bot: 'ScoreSheetBot', playoff_only: Optional[bool] = True) -> discord.Embed:
     embed = discord.Embed(title='Current Master Class Battles')
     for key, battle in bot.battle_map.items():
         if battle:
-            if battle.playoff:
+            if battle.playoff or not playoff_only:
                 chan = discord.utils.get(bot.cache.scs.channels, id=channel_id_from_key(key))
                 title = f'{battle.team1.name} vs {battle.team2.name}: ' \
                         f'{battle.team1.num_players} vs {battle.team2.num_players}'
