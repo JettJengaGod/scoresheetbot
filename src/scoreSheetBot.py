@@ -2231,12 +2231,12 @@ class ScoreSheetBot(commands.Cog):
     async def ofrank(self, ctx):
         crews = list(self.cache.crews_by_name.values())
 
-        crews.sort(key=lambda x: int(x.ladder[1:x.ladder.index('/')]))
+        crews.sort(key=lambda x:x.scl_rating)
         desc = []
         for cr in crews:
             if cr.overflow:
                 desc.append(
-                    f'{cr.name}: {cr.ladder}, Rank {cr.rank}, members, {cr.member_count} {str(first_crew_flair(cr))}')
+                    f'{cr.name}: {cr.ladder}, Rank {cr.scl_rating}, members, {cr.member_count} {str(first_crew_flair(cr))}')
         embed = discord.Embed(title=f'Overflow crew numbers', description='\n'.join(desc))
 
         await send_long_embed(ctx, embed)
