@@ -17,6 +17,8 @@ from .crew import *
 # If modifying these scopes, delete the file token.pickle.
 
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+
+
 class Cache:
     def __init__(self):
         self.crews_by_name: Dict[str, Crew] = {}
@@ -134,7 +136,21 @@ class Cache:
             for row in values:
                 while len(row) < 5:
                     row.append('')
-                crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=row[3], icon=row[4])
+                if row[3]:
+                    social = []
+                    for link in row[3].split(' '):
+                        if 'discord.gg' in link or 'smashcrewserver.com' in link:
+                            social.append(f'[Discord]({link})')
+                        elif 'twitter.com' in link:
+                            social.append(f'[Twitter]({link})')
+                        elif 'instagram.com' in link:
+                            social.append(f'[Insta]({link})')
+                        elif 'youtube.com' in link:
+                            social.append(f'[Youtube]({link})')
+                        elif len(link) > 4:
+                            social.append(f'[Other]({link})')
+
+                crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=' '.join(social), icon=row[4])
 
         if issues:
             issue_string = '\n'.join(issues)
