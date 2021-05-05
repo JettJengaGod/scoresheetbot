@@ -136,8 +136,9 @@ class Cache:
             for row in values:
                 while len(row) < 5:
                     row.append('')
+
+                social = []
                 if row[3]:
-                    social = []
                     for link in row[3].split(' '):
                         if 'discord.gg' in link or 'smashcrewserver.com' in link:
                             social.append(f'[Discord]({link})')

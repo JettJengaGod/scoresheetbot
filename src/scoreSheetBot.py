@@ -1719,7 +1719,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['po'], hidden=True)
     @main_only
     async def po(self, ctx: Context):
-        await ctx.send(embed=playoff_summary(self))
+        await ctx.send(embed=battle_summary(self))
 
     @commands.command(**help_doc['register'])
     @main_only
