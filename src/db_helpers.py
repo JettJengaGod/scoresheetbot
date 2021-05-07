@@ -1303,15 +1303,7 @@ def crew_matches(cr: Crew) -> List[str]:
 
 def player_stocks(member: discord.Member) -> Tuple[float, int, int]:
     taken = """
-    select coalesce(p1.taken1,0)+coalesce(p2.taken2,0) as taken, coalesce(p1.lost1,0)+coalesce(p2.lost2,0) as lost from
-        (select sum(player_1.p1_taken) as taken1, sum(player_1.p2_taken) as lost1, mem.nickname, mem.id
-            from members as mem
-                join match as player_1 on player_1.p1 = mem.id where mem.id = %s
-                group by mem.id) as p1
-            full outer join (select sum(player_2.p2_taken) as taken2, sum(player_2.p1_taken) as lost2, mem.nickname, mem.id
-                from members as mem
-                join match as player_2 on player_2.p2 = mem.id where mem.id = %s
-            group by mem.id) as p2 on p2.nickname = p1.nickname;"""
+    select weighted_taken, taken, lost from member_stats where member_id = %s;"""
     conn = None
     out = []
     vals = (0, 0)
@@ -1319,7 +1311,7 @@ def player_stocks(member: discord.Member) -> Tuple[float, int, int]:
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
-        cur.execute(taken, (member.id, member.id,))
+        cur.execute(taken, (member.id,))
         vals = cur.fetchone()
 
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1327,7 +1319,7 @@ def player_stocks(member: discord.Member) -> Tuple[float, int, int]:
     finally:
         if conn is not None:
             conn.close()
-    return vals if vals else (0, 0)
+    return vals if vals else (0, 0, 0)
 
 
 def player_mvps(member: discord.Member) -> int:
