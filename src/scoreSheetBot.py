@@ -617,7 +617,7 @@ class ScoreSheetBot(commands.Cog):
                                        f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
                                        f'** Battle Frontier**\n'
                                        f'**Winner:** {winner_crew.abbr} '
-                                       f'[{bf_winner_elo})+{bf_winner_change}={bf_winner_elo + bf_winner_change}]\n'
+                                       f'[{bf_winner_elo}+{bf_winner_change}={bf_winner_elo + bf_winner_change}]\n'
                                        f'**Loser:** {loser_crew.abbr} '
                                        f'[{bf_loser_elo}{bf_loser_change}={bf_loser_elo + bf_loser_change}]\n'
                                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
