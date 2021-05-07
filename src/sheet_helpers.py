@@ -79,13 +79,20 @@ def update_bf_sheet():
     cutoff = round(len(crew_rows) * .4)
     while ratings[cutoff - 1] == ratings[cutoff] and cutoff < len(ratings) - 1:
         cutoff += 1
-
+    blank_rows = [[None, None, None, None, None] for _ in range(50)]
+    blank_col = [[None] for _ in range(50)]
     sheet.batch_update([{
         'range': f'A8:E{8 + cutoff}',
         'values': crew_rows[:cutoff]
     }, {
         'range': f'H8:H{8 + cutoff}',
         'values': ratings[:cutoff]
+    }, {
+        'range': f'A{8+cutoff}:E{8 + cutoff + 50}',
+        'values': blank_rows
+    }, {
+        'range': f'H{8+cutoff}:H{8 + cutoff + 50}',
+        'values': blank_col
     }])
 
     sheet = client.open('SCS Crew Docs').worksheet('Rookie Class Ladder')
@@ -96,6 +103,12 @@ def update_bf_sheet():
     }, {
         'range': f'H8:H{8 + len(crew_rows) - cutoff}',
         'values': ratings[cutoff:]
+    }, {
+        'range': f'A{8 + len(crew_rows) - cutoff}:E{8 + len(crew_rows) - cutoff + 50}',
+        'values': blank_rows
+    }, {
+        'range': f'H{8 + len(crew_rows) - cutoff}:H{8 + len(crew_rows) - cutoff + 50}',
+        'values': blank_col
     }])
 
 

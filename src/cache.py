@@ -138,8 +138,8 @@ class Cache:
                     row.append('')
 
                 social = []
-                if row[3]:
-                    for link in row[3].split(' '):
+                if row[2]:
+                    for link in row[2].split(' '):
                         if 'discord.gg' in link or 'smashcrewserver.com' in link:
                             social.append(f'[Discord]({link})')
                         elif 'twitter.com' in link:
@@ -151,7 +151,7 @@ class Cache:
                         elif len(link) > 4:
                             social.append(f'[Other]({link})')
 
-                crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=' '.join(social), icon=row[4])
+                crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=' '.join(social), icon=row[3])
 
         if issues:
             issue_string = '\n'.join(issues)
