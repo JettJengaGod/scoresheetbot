@@ -79,8 +79,8 @@ def update_bf_sheet():
     cutoff = round(len(crew_rows) * .4)
     while ratings[cutoff - 1] == ratings[cutoff] and cutoff < len(ratings) - 1:
         cutoff += 1
-    blank_rows = [[None, None, None, None, None] for _ in range(50)]
-    blank_col = [[None] for _ in range(50)]
+    blank_rows = [['', '', '', '', ''] for _ in range(50)]
+    blank_col = [[''] for _ in range(50)]
     sheet.batch_update([{
         'range': f'A8:E{8 + cutoff}',
         'values': crew_rows[:cutoff]

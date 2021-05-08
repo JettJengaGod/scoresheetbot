@@ -647,7 +647,7 @@ class Paged(menus.ListPageSource):
 
 class PlayerStatsPaged(menus.ListPageSource):
     def __init__(self, member: discord.Member, bot: 'ScoreSheetBot'):
-        taken, lost = player_stocks(member)
+        weighted, taken, lost = player_stocks(member)
         total, wins = player_record(member)
         mvps = player_mvps(member)
         title = f'Crew Battle Stats for {str(member)}'
@@ -656,7 +656,9 @@ class PlayerStatsPaged(menus.ListPageSource):
 
         cb_stats.add_field(name='MVPs', value=f'{mvps}', inline=True)
         cb_stats.add_field(name='Stocks Taken/Lost', value=f'{taken}/{lost}', inline=False)
+        cb_stats.add_field(name='Weighted Taken', value=f'{round(weighted, 2)}', inline=True)
         cb_stats.add_field(name='Ratio', value=f'{round(taken / max(lost, 1), 2)}', inline=True)
+        cb_stats.add_field(name='Weighted Ratio', value=f'{round(weighted / max(lost, 1), 2)}', inline=True)
         pc = player_chars(member)
         cb_stats.add_field(name='Characters played', value='how many battles played in ', inline=False)
         for char in pc:
