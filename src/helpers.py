@@ -579,7 +579,7 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
 
 def crew_update(bot: 'ScoreSheetBot'):
     cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache.crews_by_name.values() if cr.role_id != -1}
-    db_crews = all_crews()
+    db_crews = sorted(all_crews(), key=lambda x: x[2])
     rankings = crew_rankings()
     missing = []
     for db_crew in db_crews:
@@ -594,9 +594,6 @@ def crew_update(bot: 'ScoreSheetBot'):
         bot.cache.crews_by_name[cached.name].dbattr(*db_crew[5:])
         if db_crew[2] in rankings:
             bot.cache.crews_by_name[cached.name].set_rankings(*rankings[db_crew[2]])
-
-    for cr in missing:
-        disband_crew_from_id(cr[0])
     for cr in cached_crews.values():
         update_crew(cr)
 
@@ -655,7 +652,9 @@ class PlayerStatsPaged(menus.ListPageSource):
         cb_stats.add_field(name='Crews record while participating', value=f'{wins}/{total - wins}', inline=True)
 
         cb_stats.add_field(name='MVPs', value=f'{mvps}', inline=True)
-        cb_stats.add_field(name='Stocks Taken/Lost', value=f'{taken}/{lost}', inline=False)
+        cb_stats.add_field(name='Stocks', value=f'(See .weighted)', inline=False)
+        cb_stats.add_field(name='Taken', value=f'{taken}', inline=True)
+        cb_stats.add_field(name='Lost', value=f'{lost}', inline=True)
         cb_stats.add_field(name='Weighted Taken', value=f'{round(weighted, 2)}', inline=True)
         cb_stats.add_field(name='Ratio', value=f'{round(taken / max(lost, 1), 2)}', inline=True)
         cb_stats.add_field(name='Weighted Ratio', value=f'{round(weighted / max(lost, 1), 2)}', inline=True)
