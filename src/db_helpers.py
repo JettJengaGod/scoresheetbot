@@ -2714,7 +2714,7 @@ def init_rating(crew: Crew, rating: int):
 def reset_fake_crew_rating(league_id: int):
     set_rating = """update crew_ratings
     set rating = 1000
-        where crew_id = 336 and league_id = %s;"""
+        where crew_id = 339 and league_id = %s;"""
     conn = None
     try:
         params = config()
