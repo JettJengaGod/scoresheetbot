@@ -26,6 +26,7 @@ BOT = 'Bots'
 DOCS_UPDATES = 'scs_docs_updates'
 SCORESHEET_HISTORY = 'scoresheet_history'
 JOIN_CD = '24h Join Cooldown'
+NOT_VERIFIED = 'Not Verified'
 FLAIRING_LOGS = 'jettbot_flairing_logs'
 FLAIR_VERIFY = '! Verify Flair Change !'
 BOT_CORNER_ID = 430367391227052054

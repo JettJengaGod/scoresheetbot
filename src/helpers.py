@@ -281,6 +281,10 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
 
     if check_roles(member, [JOIN_CD]):
         raise ValueError(f'{member.mention} cannot be flaired because they have {JOIN_CD}.')
+    if check_roles(member, [NOT_VERIFIED]):
+        raise ValueError(f'{member.mention} has just joined SCS server and must verify with Double Counter'
+                         f' before being flaired. They can do so by responding to the dm that Double Counter '
+                         f'sent them when joining..')
     if not staff:
         if check_roles(member, [FLAIR_VERIFY]):
             raise ValueError(f'{member.mention} needs to be verified before flairing. \n'
