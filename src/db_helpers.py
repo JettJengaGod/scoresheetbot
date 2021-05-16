@@ -8,7 +8,7 @@ from collections import defaultdict
 import discord
 import psycopg2
 
-from src.battle import Battle, InfoMatch, TimerMatch, ForfeitMatch
+from src.battle import Battle, InfoMatch, TimerMatch, ForfeitMatch, BattleType
 from src.character import Character
 from src.crew import Crew
 from src.db_config import config
