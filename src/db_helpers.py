@@ -8,7 +8,7 @@ from collections import defaultdict
 import discord
 import psycopg2
 from db_config import config
-from battle import Battle, InfoMatch, TimerMatch, ForfeitMatch
+from battle import Battle, InfoMatch, TimerMatch, ForfeitMatch, BattleType
 from crew import Crew
 import discord
 import datetime

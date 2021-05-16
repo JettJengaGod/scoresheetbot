@@ -59,7 +59,7 @@ class ScoreSheetBot(commands.Cog):
         return None
 
     async def _reject_outsiders(self, ctx: Context):
-        if self._current(ctx).mock:
+        if self._current(ctx).battle_type == BattleType.MOCK:
             return
         if not await self._battle_crew(ctx, ctx.author):
             if not check_roles(ctx.author, [DOCS, ADMIN, ADVISOR, LEADER]):
@@ -221,7 +221,7 @@ class ScoreSheetBot(commands.Cog):
         except ValueError:
             await ctx.send('There needs to be a ranked battle running to use this command.')
             return
-        if current and not current.mock:
+        if current and not current.battle_type == BattleType.MOCK:
             if not check_roles(ctx.author, STAFF_LIST):
                 await self._reject_outsiders(ctx)
             overwrites = ctx.channel.overwrites
@@ -324,7 +324,7 @@ class ScoreSheetBot(commands.Cog):
             return
 
         if user_crew != opp_crew:
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, playoff=True))
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.MASTER))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -337,7 +337,7 @@ class ScoreSheetBot(commands.Cog):
         if size < 1:
             await ctx.send('Please enter a size greater than 0.')
             return
-        await self._set_current(ctx, Battle(team1, team2, size, mock=True))
+        await self._set_current(ctx, Battle(team1, team2, size, BattleType.MOCK))
         await ctx.send(embed=self._current(ctx).embed())
 
     @commands.command(**help_doc['countdown'])
@@ -359,7 +359,10 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def send(self, ctx: Context, user: discord.Member, team: str = None):
-        if self._current(ctx).mock:
+        if self._current(ctx).battle_type == BattleType.REG:
+            # TODO Finish implementation here
+            pass
+        elif self._current(ctx).battle_type == BattleType.MOCK:
             if team:
                 self._current(ctx).add_player(team, escape(user.display_name), ctx.author.mention, user.id)
             else:
@@ -391,7 +394,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def use_ext(self, ctx: Context, team: str = None):
-        if self._current(ctx).mock:
+        if self._current(ctx).battle_type == BattleType.MOCK:
             if team:
                 if self._current(ctx).ext_used(team):
                     await ctx.send(f'{team} has already used their extension.')
@@ -422,7 +425,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def forfeit(self, ctx: Context, team: str = None):
-        if self._current(ctx).mock:
+        if self._current(ctx).battle_type == BattleType.MOCK:
             if team:
                 msg = await ctx.send(f'{ctx.author.mention}:{team} has {self._current(ctx).lookup(team).stocks} stocks '
                                      f'left, are you sure you want to forfeit?')
@@ -459,7 +462,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def replace(self, ctx: Context, user: discord.Member, team: str = None):
-        if self._current(ctx).mock:
+        if self._current(ctx).battle_type == BattleType.MOCK:
             if team:
                 self._current(ctx).replace_player(team, escape(user.display_name), ctx.author.mention, user.id)
             else:
@@ -528,7 +531,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     async def arena(self, ctx: Context, id_str: str = ''):
         if id_str and (check_roles(ctx.author, [LEADER, ADVISOR, ADMIN, MINION, STREAMER, CERTIFIED]
-                                   ) or self._current(ctx).mock):
+                                   ) or self._current(ctx).battle_type == BattleType.MOCK):
             self._current(ctx).id = id_str
             await ctx.send(f'Updated the id to {id_str}')
             return
@@ -540,7 +543,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     async def stream(self, ctx: Context, stream: str = ''):
         if stream and (check_roles(ctx.author, [LEADER, ADVISOR, ADMIN, MINION, STREAMER, CERTIFIED]
-                                   ) or self._current(ctx).mock):
+                                   ) or self._current(ctx).battle_type == BattleType.MOCK):
             if '/' not in stream:
                 stream = 'https://twitch.tv/' + stream
             self._current(ctx).stream = stream
@@ -570,7 +573,7 @@ class ScoreSheetBot(commands.Cog):
         await self._reject_outsiders(ctx)
         current = self._current(ctx)
         if current.battle_over():
-            if current.mock:
+            if current.battle_type == BattleType.MOCK:
                 await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
             else:
@@ -583,7 +586,7 @@ class ScoreSheetBot(commands.Cog):
                                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
                     winner = current.winner().name
                     loser = current.loser().name
-                    if current.playoff:
+                    if current.battle_type == BattleType.MASTER:
                         league_id = 7
                     else:
                         league_id = 8
@@ -607,7 +610,7 @@ class ScoreSheetBot(commands.Cog):
                                    f'**Loser:** {loser_crew.abbr} '
                                    f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
                                    f'**Battle:** {battle_id} from {ctx.channel.mention}')
-                    if current.playoff:
+                    if current.battle_type == BattleType.MASTER:
                         bf_winner_elo, bf_winner_change, bf_loser_elo, bf_loser_change = battle_elo_changes(battle_id,
                                                                                                             True)
                         master_weight_changes(battle_id)
@@ -642,7 +645,7 @@ class ScoreSheetBot(commands.Cog):
     async def clear(self, ctx):
         if not check_roles(ctx.author, STAFF_LIST):
             await self._reject_outsiders(ctx)
-        if self._current(ctx).mock:
+        if self._current(ctx).battle_type == BattleType.MOCK:
             await ctx.send('If you just cleared a crew battle to troll people, be warned this is a bannable offence.')
 
         msg = await ctx.send(f'Are you sure you want to clear this crew battle?')
@@ -676,7 +679,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def timerstock(self, ctx, team: str = None):
-        if self._current(ctx).mock:
+        if self._current(ctx).battle_type == BattleType.MOCK:
             if team:
                 self._current(ctx).timer_stock(team, ctx.author.mention)
             else:
