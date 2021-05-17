@@ -57,8 +57,23 @@ class ScoreSheetBot(commands.Cog):
             return crew_name
         return None
 
+    async def _reg_crew_lookup(self, ctx: Context):
+        author_crew = crew_or_none(ctx.author, self)
+        if author_crew:
+            if author_crew != self._current(ctx).team1.name:
+                await response_message(ctx, f'You are on {author_crew} which is not participating in this battle.'
+                                            f'If you should no longer be on this crew, please unflair.')
+                return
+            if not check_roles(ctx.author, [LEADER, ADVISOR, MINION, ADMIN]):
+                await response_message(ctx, f'You need to be a leader to run this command.')
+                return
+
+        if not author_crew:
+            author_crew = self._current(ctx).team2.name
+        return author_crew
+
     async def _reject_outsiders(self, ctx: Context):
-        if self._current(ctx).battle_type == BattleType.MOCK:
+        if self._current(ctx).battle_type in (BattleType.MOCK, BattleType.REG):
             return
         if not await self._battle_crew(ctx, ctx.author):
             if not check_roles(ctx.author, [DOCS, ADMIN, ADVISOR, LEADER]):
@@ -339,9 +354,36 @@ class ScoreSheetBot(commands.Cog):
         await self._set_current(ctx, Battle(team1, team2, size, BattleType.MOCK))
         await ctx.send(embed=self._current(ctx).embed())
 
+    @commands.command(**help_doc['reg'])
+    @main_only
+    @no_battle
+    @is_lead
+    @ss_channel
+    async def reg(self, ctx: Context, *, everything: str):
+        split = everything.split(' ')
+        if not split:
+            await response_message(ctx, 'Format for this command is `,reg RegisteringCrewName size`')
+            return
+        try:
+            size = int(split[-1])
+        except ValueError:
+            await response_message(ctx, 'Format for this command is `,reg RegisteringCrewName size`')
+            return
+        registering_crew = ' '.join(split[:-1])
+        if size < 1:
+            await ctx.send('Please enter a size greater than 0.')
+            return
+        try:
+            real_crew = crew(ctx.author, self)
+        except ValueError:
+            await response_message(ctx, f'You have to be on a crew to challenge a registering crew.')
+            return
+        await self._set_current(ctx, Battle(real_crew, registering_crew, size, BattleType.REG))
+        await ctx.send(embed=self._current(ctx).embed())
+
     @commands.command(**help_doc['countdown'])
     @ss_channel
-    async def countdown(self, ctx: Context, seconds: Optional[int] = 3):
+    async def countdown(self, ctx: Context, seconds: Optional[int] = 10):
         if seconds > 10 or seconds < 1:
             await ctx.send('You can only countdown from 10 or less!')
         await ctx.send(f'Counting down from {seconds}')
@@ -358,8 +400,39 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     async def send(self, ctx: Context, user: discord.Member, team: str = None):
         if self._current(ctx).battle_type == BattleType.REG:
-            # TODO Finish implementation here
-            pass
+            author_crew = crew_or_none(ctx.author, self)
+            if author_crew:
+                if author_crew != self._current(ctx).team1.name:
+                    await response_message(ctx, f'You are on {author_crew} which is not participating in this battle.'
+                                                f'If you should no longer be on this crew, please unflair.')
+                    return
+                if not check_roles(ctx.author, [LEADER, ADVISOR, MINION, ADMIN]):
+                    await response_message(ctx, f'You need to be a leader to run this command.')
+                    return
+                player_crew = await self._battle_crew(ctx, user)
+                if author_crew == player_crew:
+                    if check_roles(user, [WATCHLIST]):
+                        await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
+                        return
+                    if check_roles(user, [JOIN_CD]):
+                        await ctx.send(
+                            f'{user.mention} joined this crew less than '
+                            f'24 hours ago and must wait to play ranked battles.')
+                        return
+                    self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
+                else:
+                    await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
+                    return
+            if not author_crew:
+                author_crew = self._current(ctx).team2.name
+                player_crew = crew_or_none(user, self)
+                if player_crew:
+                    await response_message(ctx, f'{user.mention} is on {player_crew} which is not participating '
+                                                f'in this battle.'
+                                                f'If they should no longer be on this crew, please unflair.')
+                else:
+                    self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
+
         elif self._current(ctx).battle_type == BattleType.MOCK:
             if team:
                 self._current(ctx).add_player(team, escape(user.display_name), ctx.author.mention, user.id)
@@ -392,7 +465,17 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def use_ext(self, ctx: Context, team: str = None):
-        if self._current(ctx).battle_type == BattleType.MOCK:
+        if self._current(ctx).battle_type == BattleType.REG:
+            author_crew = await self._reg_crew_lookup(ctx)
+            if self._current(ctx).ext_used(author_crew):
+                await ctx.send(f'{team} has already used their extension.')
+                return
+            else:
+                await ctx.send(f'{author_crew} just used their extension. '
+                               f'They now get 5 more minutes for their next player to be in the arena.')
+                return
+
+        elif self._current(ctx).battle_type == BattleType.MOCK:
             if team:
                 if self._current(ctx).ext_used(team):
                     await ctx.send(f'{team} has already used their extension.')
@@ -423,7 +506,15 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def forfeit(self, ctx: Context, team: str = None):
-        if self._current(ctx).battle_type == BattleType.MOCK:
+        if self._current(ctx).battle_type == BattleType.REG:
+            author_crew = await self._reg_crew_lookup(ctx)
+            msg = await ctx.send(f'{ctx.author.mention}:{author_crew} has '
+                                 f'{self._current(ctx).lookup(author_crew).stocks} stocks left, '
+                                 f'are you sure you want to forfeit?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+        elif self._current(ctx).battle_type == BattleType.MOCK:
             if team:
                 msg = await ctx.send(f'{ctx.author.mention}:{team} has {self._current(ctx).lookup(team).stocks} stocks '
                                      f'left, are you sure you want to forfeit?')
@@ -460,7 +551,42 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def replace(self, ctx: Context, user: discord.Member, team: str = None):
-        if self._current(ctx).battle_type == BattleType.MOCK:
+        if self._current(ctx).battle_type == BattleType.REG:
+            author_crew = crew_or_none(ctx.author, self)
+            if author_crew:
+                if author_crew != self._current(ctx).team1.name:
+                    await response_message(ctx, f'You are on {author_crew} which is not participating in this battle.'
+                                                f'If you should no longer be on this crew, please unflair.')
+                    return
+                if not check_roles(ctx.author, [LEADER, ADVISOR, MINION, ADMIN]):
+                    await response_message(ctx, f'You need to be a leader to run this command.')
+                    return
+                player_crew = await self._battle_crew(ctx, user)
+                if author_crew == player_crew:
+                    if check_roles(user, [WATCHLIST]):
+                        await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
+                        return
+                    if check_roles(user, [JOIN_CD]):
+                        await ctx.send(
+                            f'{user.mention} joined this crew less than '
+                            f'24 hours ago and must wait to play ranked battles.')
+                        return
+                    self._current(ctx).replace_player(author_crew, escape(user.display_name), ctx.author.mention,
+                                                      user.id)
+                else:
+                    await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
+                    return
+            if not author_crew:
+                author_crew = self._current(ctx).team2.name
+                player_crew = crew_or_none(user, self)
+                if player_crew:
+                    await response_message(ctx, f'{user.mention} is on {player_crew} which is not participating '
+                                                f'in this battle.'
+                                                f'If they should no longer be on this crew, please unflair.')
+                else:
+                    self._current(ctx).replace_player(author_crew, escape(user.display_name), ctx.author.mention,
+                                                      user.id)
+        elif self._current(ctx).battle_type == BattleType.MOCK:
             if team:
                 self._current(ctx).replace_player(team, escape(user.display_name), ctx.author.mention, user.id)
             else:
@@ -571,7 +697,77 @@ class ScoreSheetBot(commands.Cog):
         await self._reject_outsiders(ctx)
         current = self._current(ctx)
         if current.battle_over():
-            if current.battle_type == BattleType.MOCK:
+
+            if current.battle_type == BattleType.REG:
+
+                current.confirm(await self._reg_crew_lookup(ctx))
+                await send_sheet(ctx, battle=current)
+                if current.confirmed():
+                    today = date.today()
+
+                    output_channels = [discord.utils.get(ctx.guild.channels, name=DOCS_UPDATES),
+                                       discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+                    winner = current.winner().name
+                    final_score = current.winner().stocks
+                    loser = current.loser().name
+                    current = self._current(ctx)
+                    if not current:
+                        return
+                    await self._clear_current(ctx)
+                    links = []
+                    for output_channel in output_channels:
+                        link = await send_sheet(output_channel, current)
+                        links.append(link)
+                    successful = (current.winner() == current.team2 or final_score < 5)
+
+                    new_message = (f'**{today.strftime("%B %d, %Y")} (SCL 2021 Registration) - {winner}⚔{loser}**\n'
+                                   f'**Winner:** {winner} '
+                                   f'**Loser:** {loser}\n')
+                    if successful:
+                        new_message += (f'Successful registration battle! Please allow doc keepers to finish the'
+                                        f' registration process and submit this crew battle using `,addsheet '
+                                        f'{winner} {loser} {current.team1.num_players} {final_score}`')
+                    else:
+                        new_message += (f'{current.team2.name} failed to register. Doc keepers can submit this battle'
+                                        f'using `,failedreg {winner} {loser} {current.team1.num_players} '
+                                        f'{final_score}`')
+                    for link in links:
+                        await link.edit(content=new_message)
+                    # TODO Make this work for registration battles
+                    # winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
+                    # battle_weight_changes(battle_id)
+                    # winner_crew = crew_lookup(winner, self)
+                    # loser_crew = crew_lookup(loser, self)
+                    # new_message = (f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winner}⚔{loser}**\n'
+                    #                f'**Winner:** {winner_crew.abbr} '
+                    #                f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
+                    #                f'**Loser:** {loser_crew.abbr} '
+                    #                f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
+                    #                f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                    # if current.battle_type == BattleType.MASTER:
+                    #     bf_winner_elo, bf_winner_change, bf_loser_elo, bf_loser_change = battle_elo_changes(battle_id,
+                    #                                                                                         True)
+                    #     master_weight_changes(battle_id)
+                    #     new_message = (f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winner}⚔{loser}**\n'
+                    #                    '**Master Class**\n'
+                    #                    f'**Winner:** {winner_crew.abbr} '
+                    #                    f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
+                    #                    f'**Loser:** {loser_crew.abbr} '
+                    #                    f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
+                    #                    f'** Battle Frontier**\n'
+                    #                    f'**Winner:** {winner_crew.abbr} '
+                    #                    f'[{bf_winner_elo}+{bf_winner_change}={bf_winner_elo + bf_winner_change}]\n'
+                    #                    f'**Loser:** {loser_crew.abbr} '
+                    #                    f'[{bf_loser_elo}{bf_loser_change}={bf_loser_elo + bf_loser_change}]\n'
+                    #                    f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                    #     update_mc_sheet()
+                    # for link in links:
+                    #     await link.edit(content=new_message)
+                    await ctx.send(
+                        f'The battle between {current.team1.name} and {current.team2.name} '
+                        f'has been confirmed by both sides and posted in {output_channels[0].mention}. ')
+                    # f'(Battle number:{battle_id})')
+            elif current.battle_type == BattleType.MOCK:
                 await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
             else:

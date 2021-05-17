@@ -101,7 +101,7 @@ def is_lead(func):
 
         battle = self.battle_map.get(str(ctx.guild) + '|' + str(ctx.channel.id))
         mock = False
-        if battle and battle.battle_type == BattleType.MOCK:
+        if battle and battle.battle_type in (BattleType.MOCK, BattleType.REG):
             mock = True
         if not mock:
             user = ctx.author
