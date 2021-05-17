@@ -2649,7 +2649,9 @@ select crews.name,
        crew_ratings.rating
 from crew_ratings,
      crews
-         left join (select battle.finished as finished, opp_crew.name as opp, newest_battle.crew_id as cid
+         left join (select battle.finished                                                         as finished,
+                           opp_crew.name || case when battle.winner = crew_id then '(W)' else '(L)' end as opp,
+                           newest_battle.crew_id                                                         as cid
                     from (select max(battle.id) as battle_id, crews.id as crew_id
                           from battle,
                                crews

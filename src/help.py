@@ -28,11 +28,13 @@ help_doc = dict(
                    'Start a Scoresheet in this channel against the tagged players crew with a specific size',
                    '', "@OpponentName size"),
     masterbattle=HelpDoc(Categories.cb,
-                             'Start a master league Scoresheet in this channel against'
-                             ' the tagged players\' crew with a specific size',
-                             '', "@OpponentName size"),
-    mock=HelpDoc(Categories.cb, 'Start a Scoresheet in this channel with two team names and a size', '',
+                         'Start a master league Scoresheet in this channel against'
+                         ' the tagged players\' crew with a specific size',
+                         '', "@OpponentName size"),
+    mock=HelpDoc(Categories.cb, 'Start a Mock Scoresheet in this channel with two team names and a size', '',
                  'Team1 Team2 size'),
+    reg=HelpDoc(Categories.cb, 'Start a Registration Scoresheet in this channel with two team names and a size', '',
+                'RegisteringCrewName size'),
     send=HelpDoc(Categories.cb, 'Sends in the tagged player, if this is a mock you also need to send the team name', '',
                  '@Player Optional[TeamName]'),
     replace=HelpDoc(Categories.cb, 'Replaces current player with the tagged player', '', '@Player Optional[TeamName]'),

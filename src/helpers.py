@@ -121,7 +121,7 @@ async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battl
         if not all(battle.confirms):
             footer = ''
             footer += '\nPlease confirm: '
-            if battle.mock:
+            if battle.battle_type == BattleType.MOCK:
                 footer += 'anyone can confirm or clear a mock.'
             else:
                 if not battle.confirms[0]:
@@ -157,6 +157,14 @@ def crew(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
         if role.name in bot.cache.crews:
             return role.name
     raise ValueError(f'{str(user)} has no crew or something is wrong.')
+
+
+def crew_or_none(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
+    try:
+        ret = crew(user, bot)
+    except ValueError:
+        ret = None
+    return ret
 
 
 async def track_cycle(user: discord.Member, scs: discord.Guild) -> int:
@@ -1054,3 +1062,6 @@ async def unflair_gone_member(ctx: Context, user: str, bot: 'ScoreSheetBot'):
     await bot.cache.channels.flair_log.send(embed=embed)
     # Respond in the channel
     await response_message(ctx, f'successfully unflaired {user_id}.')
+
+
+
