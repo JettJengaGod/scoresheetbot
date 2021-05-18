@@ -2912,3 +2912,22 @@ def charge(member_id: int, amount: int, reason: str = 'None Specified') -> int:
         if conn is not None:
             conn.close()
     return coins
+
+
+def record_nicknames(member_nicks: Sequence[Tuple[int, str]]):
+    record = """update members set nickname = %s where id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        for i, nick in enumerate(member_nicks):
+            cur.execute(record, (nick[1], nick[0]))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return

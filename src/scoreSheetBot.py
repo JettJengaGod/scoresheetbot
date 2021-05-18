@@ -131,6 +131,8 @@ class ScoreSheetBot(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         if os.getenv('VERSION') == 'PROD':
+            if before.display_name != after.display_name:
+                record_nicknames([(after.id, after.display_name)])
             if before.roles != after.roles:
                 update_member_roles(after)
                 try:
@@ -2564,6 +2566,18 @@ class ScoreSheetBot(commands.Cog):
 
         embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
+
+    @commands.command(**help_doc['slots'])
+    @role_call(STAFF_LIST)
+    @main_only
+    async def savenicks(self, ctx):
+        members = ctx.guild.members
+        tuples = []
+        for i, mem in enumerate(members):
+            tuples.append((mem.id, mem.display_name))
+            print(f'{i+1}/{len(members)}')
+        record_nicknames(tuples)
+
 
     @commands.command(hidden=True, **help_doc['flaircounts'])
     @role_call(STAFF_LIST)
