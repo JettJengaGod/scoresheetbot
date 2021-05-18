@@ -150,7 +150,8 @@ class ScoreSheetBot(commands.Cog):
         if os.getenv('VERSION') == 'PROD':
             role_ids = find_member_roles(member)
             if role_ids:
-                roles = [discord.utils.get(member.guild.roles, id=role_id) for role_id in role_ids]
+                roles = [discord.utils.get(member.guild.roles, id=role_id) for role_id in role_ids if
+                         role_id not in (803364975539781662, 842888594519097394)]
                 await member.add_roles(*roles)
             else:
                 add_member_and_roles(member)
@@ -2575,9 +2576,8 @@ class ScoreSheetBot(commands.Cog):
         tuples = []
         for i, mem in enumerate(members):
             tuples.append((mem.id, mem.display_name))
-            print(f'{i+1}/{len(members)}')
+            print(f'{i + 1}/{len(members)}')
         record_nicknames(tuples)
-
 
     @commands.command(hidden=True, **help_doc['flaircounts'])
     @role_call(STAFF_LIST)
