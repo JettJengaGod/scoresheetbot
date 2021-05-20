@@ -1,5 +1,5 @@
 import os
-from datetime import date
+from datetime import date, timedelta
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict, Sequence, ValuesView
 
 from dateutil.relativedelta import relativedelta
@@ -12,7 +12,8 @@ from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_cre
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
-    player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id
+    player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id, \
+    battle_frontier_crews, elo_decay, reset_decay
 from .gambit import Gambit
 from .sheet_helpers import update_all_sheets
 
@@ -566,6 +567,7 @@ async def cache_process(bot: 'ScoreSheetBot'):
 
     await bot.cache.update(bot)
     crew_update(bot)
+    await handle_decay(bot)
     if os.getenv('VERSION') == 'PROD':
         await handle_unfreeze(bot)
         if bot.cache.scs:
@@ -574,6 +576,54 @@ async def cache_process(bot: 'ScoreSheetBot'):
     if os.getenv('VERSION') == 'PROD':
         await bot.cache.channels.recache_logs.send('Successfully recached.')
         update_all_sheets()
+
+
+async def handle_decay(bot: 'ScoreSheetBot'):
+    cutoffs = [10, 14, 21, 30, 37]
+    elo_loss = [0, 25, 50, 100, 300]
+    crews = bot.cache.crews_by_name.values()
+    bf = battle_frontier_crews()
+    last_played = {cr[0]: cr[2] for cr in bf}
+    crews_to_message = []
+    exempt = ['EFB', 'EVIL', 'S~R']
+    for cr in crews:
+        if cr.abbr in exempt:
+            continue
+        if cr.name in last_played:
+            timing = last_played[cr.name]
+        timing = timing or datetime(2021, 5, 9)
+        if datetime(2021, 5, 9) > timing:
+            timing = datetime(2021, 5, 9)
+        time_since = datetime.now() - timing
+
+        if time_since.days > cutoffs[cr.decay_level]:
+            crews_to_message.append((cr, timing))
+            elo_decay(cr, elo_loss[cr.decay_level])
+        elif cr.decay_level > 0 and time_since.days < cutoffs[0]:
+            reset_decay(cr)
+
+    for cr, timing in crews_to_message:
+        next_cutoff = timing + timedelta(days=cutoffs[cr.decay_level + 1])
+        next_loss = elo_loss[cr.decay_level + 1]
+        current_loss = elo_loss[cr.decay_level]
+        message = f'This is an automated courtesy reminder that the last crew battle for {cr.name}' \
+                  f' was on or before {timing.date().strftime("%m/%d/%y")}.\n'
+        if cr.decay_level >= 1:
+            message = f'Your crew {cr.name} has lost {current_loss} SCL Rating from inactivity. Your last cb was on ' \
+                      f'{timing.date().strftime("%m/%d/%y")}.'
+        message += f'If you do not play a cb by {next_cutoff.strftime("%m/%d/%y %H:%M")} EDT,' \
+                   f' you will automatically lose {next_loss} SCL Rating from decay.'
+        if cr.decay_level >= 2:
+            message += '\nYour crew may also be subject to being disbanded ' \
+                       'if it has been more than a month since your last ranked crew battle.'
+        message += '\nIf you have any questions you can ask in <#492166249174925312>.'
+        for leader_id in cr.leader_ids:
+            leader = bot.bot.get_user(leader_id)
+            try:
+                await leader.send(message)
+            except discord.errors.Forbidden:
+                await bot.cache.channels.flairing_questions.send(f'{leader.mention}: {message}')
+
 
 
 def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
@@ -704,7 +754,7 @@ def battle_summary(bot: 'ScoreSheetBot', playoff_only: Optional[bool] = True) ->
     embed = discord.Embed(title='Current Master Class Battles')
     for key, battle in bot.battle_map.items():
         if battle:
-            if battle.battle_type==BattleType.MASTER or not playoff_only:
+            if battle.battle_type == BattleType.MASTER or not playoff_only:
                 chan = discord.utils.get(bot.cache.scs.channels, id=channel_id_from_key(key))
                 title = f'{battle.team1.name} vs {battle.team2.name}: ' \
                         f'{battle.team1.num_players} vs {battle.team2.num_players}'
@@ -1060,6 +1110,3 @@ async def unflair_gone_member(ctx: Context, user: str, bot: 'ScoreSheetBot'):
     await bot.cache.channels.flair_log.send(embed=embed)
     # Respond in the channel
     await response_message(ctx, f'successfully unflaired {user_id}.')
-
-
-

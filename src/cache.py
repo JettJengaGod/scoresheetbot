@@ -84,6 +84,7 @@ class Cache:
             gambit_announce = discord.utils.get(server.channels, id=GAMBIT_ANNOUNCE)
             gambit_bot = discord.utils.get(server.channels, id=GAMBIT_BOT_ID)
             sheet_history = discord.utils.get(server.channels, id=SHEET_HISTORY)
+            testing = discord.utils.get(server.channels, id=776644633349849108)
 
         return Channels
 
@@ -169,6 +170,7 @@ class Cache:
                 for r2 in member.roles:
                     if r2.name == LEADER:
                         self.crews_by_name[crew].leaders.append(str(member))
+                        self.crews_by_name[crew].leader_ids.append(member.id)
                     if r2.name == ADVISOR:
                         self.crews_by_name[crew].advisors.append(str(member))
         for role in self.scs.roles:

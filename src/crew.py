@@ -26,6 +26,10 @@ class Crew:
     strikes: int = 0
     total_slots: int = 0
     remaining_slots: int = 0
+    decay_level: int = -1
+    last_opp: str = ''
+    last_match: datetime = None
+    leader_ids: List[int] = dataclasses.field(default_factory=list)
 
     @property
     def embed(self) -> discord.Embed:
@@ -41,6 +45,8 @@ class Crew:
             description.append(f'{self.ladder}\n')
         if self.scl_rating:
             description.append(f'**SCL Rating:** {self.scl_rating}\n')
+        if self.last_opp:
+            description.append(f'**Last Match:** {self.last_match.date().strftime("%m/%d/%y")} {self.last_opp}\n')
         if self.social:
             description.append(f'**Social:** {self.social}\n')
         if self.leaders:
@@ -66,7 +72,8 @@ class Crew:
             embed.set_thumbnail(url=self.icon)
         return embed
 
-    def dbattr(self, wl: bool, freeze: datetime, verify: bool, strikes: int, total: int, remaining: int, master: bool):
+    def dbattr(self, wl: bool, freeze: datetime, verify: bool, strikes: int, total: int, remaining: int, master: bool,
+               decay: int, finished: datetime, last_opp: str):
         self.wl = wl
         self.verify = verify
         if freeze:
@@ -75,8 +82,11 @@ class Crew:
         self.total_slots = total
         self.remaining_slots = remaining
         self.master_class = master
+        self.decay_level = decay
+        self.last_match = finished
+        self.last_opp = last_opp
 
     def set_rankings(self, rank: int, rating: int, bf: bool, total: int):
         self.ladder = '**Battle Frontier:** ' if bf else '**Rookie Class:** '
-        self.ladder += f'({rank}/{total})'
+        self.ladder += f'{rank}/{total}'
         self.scl_rating = rating
