@@ -567,8 +567,8 @@ async def cache_process(bot: 'ScoreSheetBot'):
 
     await bot.cache.update(bot)
     crew_update(bot)
-    await handle_decay(bot)
     if os.getenv('VERSION') == 'PROD':
+        await handle_decay(bot)
         await handle_unfreeze(bot)
         if bot.cache.scs:
             await overflow_anomalies(bot)

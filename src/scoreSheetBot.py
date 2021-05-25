@@ -2380,13 +2380,14 @@ class ScoreSheetBot(commands.Cog):
             await send_long_embed(ctx.author, embed)
             await ctx.message.add_reaction(emoji='✉')
 
-    # @commands.command(hidden=True, **help_doc['crnumbers'])
-    # @role_call(STAFF_LIST)
-    # async def rate(self, ctx):
-    #     all_ids = sorted(all_battle_ids())
-    #     for i, battle_id in enumerate(all_ids):
-    #         print(f'{i}/{len(all_ids)}: {battle_id}')
-    #         master_weight_changes(battle_id)
+    @commands.command(hidden=True, **help_doc['crnumbers'])
+    @role_call(STAFF_LIST)
+    async def rate(self, ctx):
+        battle_elo_changes(1792)
+        all_ids = sorted(all_battle_ids())
+        for i, battle_id in enumerate(all_ids):
+            print(f'{i+1}/{len(all_ids)}: {battle_id}')
+            master_weight_changes(battle_id)
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
