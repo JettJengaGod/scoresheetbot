@@ -164,7 +164,8 @@ def pre_process(input_str: str) -> Tuple[str, str, int]:
         canonical_name = CANONICAL_NAMES_MAP[character]
         return character, canonical_name, alt_num
     else:
-        raise ValueError('Unknown character: \'{}\', try `,chars` '.format(character))
+        raise ValueError('Unknown character: \'{}\' remember no spaces in character names, '
+                         'try `,chars` '.format(character))
 
 
 def string_to_canonical(input_str: str) -> Optional[str]:

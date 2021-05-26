@@ -874,8 +874,27 @@ def all_crews() -> List[List]:
        strikes,
        slotstotal,
        slotsleft,
-       case when (select count(*) from master_crews where crew_id = crews.id) > 0 then true else false end as master
+       case when (select count(*) from master_crews where crew_id = crews.id) > 0 then true else false end as master,
+       decay_level,
+       last_battle.finished,
+       last_battle.opp
 FROM crews
+         left join (select battle.finished                                                         as finished,
+                           opp_crew.name || case when battle.winner = crew_id then '(W)' else '(L)' end as opp,
+                           newest_battle.crew_id                                                         as cid
+                    from (select max(battle.id) as battle_id, crews.id as crew_id
+                          from battle,
+                               crews
+                          where (crews.id = battle.crew_1
+                              or crews.id = battle.crew_2)
+                          group by crews.id)
+                             as newest_battle,
+                         battle,
+                         crews as opp_crew
+                    where newest_battle.battle_id = battle.id
+                      and opp_crew.id = case
+                                            when newest_battle.crew_id = battle.crew_2 then battle.crew_1
+                                            else battle.crew_2 end) as last_battle on last_battle.cid = crews.id
 where disbanded = false;"""
     conn = None
     crews = [[]]
@@ -2923,6 +2942,49 @@ def record_nicknames(member_nicks: Sequence[Tuple[int, str]]):
         cur = conn.cursor()
         for i, nick in enumerate(member_nicks):
             cur.execute(record, (nick[1], nick[0]))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def elo_decay(crew: Crew, amount: int):
+    modify = """update crews set decay_level = decay_level+1 where id = %s;"""
+    record = """insert into elo_decay (crew_id, amount, league_id, happened) values
+    (%s, %s, 8, CURRENT_TIMESTAMP);"""
+    reduce = """update crew_ratings set rating = rating - %s 
+    where crew_id = %s and league_id = 8;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(modify, (cr_id,))
+        cur.execute(record, (cr_id, amount))
+        cur.execute(reduce, (amount, cr_id))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+def reset_decay(crew: Crew):
+    modify = """update crews set decay_level = 0 where id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(modify, (cr_id,))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
