@@ -15,7 +15,7 @@ from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
     player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id, \
-    battle_frontier_crews, elo_decay, reset_decay
+    battle_frontier_crews, elo_decay, reset_decay, first_crew_flair
 from gambit import Gambit
 from sheet_helpers import update_all_sheets
 
@@ -569,9 +569,9 @@ async def cache_process(bot: 'ScoreSheetBot'):
 
     await bot.cache.update(bot)
     crew_update(bot)
-    await handle_decay(bot)
     if os.getenv('VERSION') == 'PROD':
         await handle_unfreeze(bot)
+        await handle_decay(bot)
         if bot.cache.scs:
             await overflow_anomalies(bot)
         await cooldown_handle(bot)
@@ -587,15 +587,20 @@ async def handle_decay(bot: 'ScoreSheetBot'):
     bf = battle_frontier_crews()
     last_played = {cr[0]: cr[2] for cr in bf}
     crews_to_message = []
-    exempt = ['EFB', 'EVIL', 'S~R']
+    exempt = ['EFB', 'EVIL', 'S~R', 'JettFakes']
     for cr in crews:
         if cr.abbr in exempt:
             continue
         if cr.name in last_played:
             timing = last_played[cr.name]
         timing = timing or datetime(2021, 5, 9)
+
         if datetime(2021, 5, 9) > timing:
             timing = datetime(2021, 5, 9)
+        first_flair = first_crew_flair(cr)
+        first_flair = datetime(first_flair.year, first_flair.month, first_flair.day)
+        if first_flair > timing:
+            timing = first_flair
         time_since = datetime.now() - timing
 
         if time_since.days > cutoffs[cr.decay_level]:

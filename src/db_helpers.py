@@ -586,6 +586,7 @@ values (%s, %s, %s, %s, %s);"""
 def battle_weight_changes(battle_id: int, reverse: bool = False):
     # TODO modify this to handle MC/BF matches
     find_matches = """select p1, p2, p1_taken, p2_taken from match where battle_id = %s;"""
+    mvps = """select mvps from battle where id = %s;"""
     current_weight = """
     with current as (
         insert into member_stats(member_id) values (%s) on conflict do nothing returning weighted_taken, lost)
@@ -636,10 +637,13 @@ def battle_weight_changes(battle_id: int, reverse: bool = False):
                 player_lost[p2] += p1_taken
 
         played = 0 if reverse else 1
+        cur.execute(mvps, (battle_id,))
+        mvp_list = cur.fetchone()[0]
 
         for player in player_taken:
+            mvp = 1 if player in mvp_list else 0
             cur.execute(update_weight,
-                        (player_weighted_taken[player], player_taken[player], player_lost[player], played, player))
+                        (player_weighted_taken[player], player_taken[player], player_lost[player], played, mvp, player))
 
         conn.commit()
         cur.close()
@@ -653,6 +657,7 @@ def battle_weight_changes(battle_id: int, reverse: bool = False):
 
 def master_weight_changes(battle_id: int, reverse: bool = False):
     find_matches = """select p1, p2, p1_taken, p2_taken from match where battle_id = %s;"""
+    mvps = """select mvps from battle where id = %s;"""
     current_weight = """
     with current as (
         insert into master_member_stats(member_id) values (%s) on conflict do nothing returning weighted_taken, lost)
@@ -661,7 +666,7 @@ def master_weight_changes(battle_id: int, reverse: bool = False):
     select greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from master_member_stats where member_id = %s;"""
 
     update_weight = """update master_member_stats set weighted_taken = weighted_taken + %s, taken = taken + %s,
-        lost = lost + %s, played  = played + %s
+        lost = lost + %s, played  = played + %s, mvps = mvps + %s
         where member_id = %s;"""
     conn = None
     try:
@@ -704,9 +709,13 @@ def master_weight_changes(battle_id: int, reverse: bool = False):
 
         played = 0 if reverse else 1
 
+        cur.execute(mvps, (battle_id,))
+        mvp_list = cur.fetchone()[0]
+
         for player in player_taken:
+            mvp = 1 if player in mvp_list else 0
             cur.execute(update_weight,
-                        (player_weighted_taken[player], player_taken[player], player_lost[player], played, player))
+                        (player_weighted_taken[player], player_taken[player], player_lost[player], played, mvp, player))
 
         conn.commit()
         cur.close()
@@ -719,7 +728,7 @@ def master_weight_changes(battle_id: int, reverse: bool = False):
 
 
 def all_battle_ids() -> Sequence[int]:
-    everything = """SELECT battle.id FROM battle;"""
+    everything = """SELECT battle.id FROM battle where league_id=7;"""
     conn = None
     ids = []
     try:
@@ -2975,6 +2984,7 @@ def elo_decay(crew: Crew, amount: int):
         if conn is not None:
             conn.close()
     return
+
 
 def reset_decay(crew: Crew):
     modify = """update crews set decay_level = 0 where id = %s;"""
