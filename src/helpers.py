@@ -570,6 +570,7 @@ async def cache_process(bot: 'ScoreSheetBot'):
     await bot.cache.update(bot)
     crew_update(bot)
     if os.getenv('VERSION') == 'PROD':
+        await handle_decay(bot)
         await handle_unfreeze(bot)
         await handle_decay(bot)
         if bot.cache.scs:
@@ -581,7 +582,7 @@ async def cache_process(bot: 'ScoreSheetBot'):
 
 
 async def handle_decay(bot: 'ScoreSheetBot'):
-    cutoffs = [10, 14, 21, 30, 37]
+    cutoffs = [11, 15, 22, 31, 38]
     elo_loss = [0, 25, 50, 100, 300]
     crews = bot.cache.crews_by_name.values()
     bf = battle_frontier_crews()
@@ -601,6 +602,7 @@ async def handle_decay(bot: 'ScoreSheetBot'):
         first_flair = datetime(first_flair.year, first_flair.month, first_flair.day)
         if first_flair > timing:
             timing = first_flair
+        timing = datetime(timing.year, timing.month, timing.day)
         time_since = datetime.now() - timing
 
         if time_since.days > cutoffs[cr.decay_level]:

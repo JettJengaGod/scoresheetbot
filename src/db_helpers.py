@@ -595,7 +595,7 @@ def battle_weight_changes(battle_id: int, reverse: bool = False):
     select greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from member_stats where member_id = %s;"""
 
     update_weight = """update member_stats set weighted_taken = weighted_taken + %s, taken = taken + %s,
-        lost = lost + %s, played  = played + %s
+        lost = lost + %s, played  = played + %s, mvps = mvps + %s
         where member_id = %s;"""
     conn = None
     try:
