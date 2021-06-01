@@ -2494,7 +2494,8 @@ class ScoreSheetBot(commands.Cog):
         crews = list(self.cache.crews_by_name.values())
         desc = []
         crew_msg = {}
-        for cr in crews:
+        for i, cr in enumerate(crews):
+            print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
             total, base, modifer, rollover = calc_total_slots(cr)
@@ -2535,7 +2536,8 @@ class ScoreSheetBot(commands.Cog):
         crews = list(self.cache.crews_by_name.values())
         desc = []
         crew_msg = {}
-        for cr in crews:
+        for i, cr in enumerate(crews):
+            print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
             total, base, modifer, rollover = calc_total_slots(cr)
@@ -2553,7 +2555,9 @@ class ScoreSheetBot(commands.Cog):
                       'This bot will not be able to respond to any questions you have, so use #questions_feedback'
             crew_msg[cr.name] = message
 
-        for member in self.cache.scs.members:
+        for i, member in enumerate(self.cache.scs.members):
+            if i % 100 == 0:
+                print(f'{i}/{len(self.cache.scs.members)} pt 2')
             if self.cache.roles.leader in member.roles:
                 msg = ''
                 try:
