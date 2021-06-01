@@ -1447,7 +1447,7 @@ class ScoreSheetBot(commands.Cog):
     @gamb.command()
     @main_only
     @role_call([MINION, ADMIN])
-    async def close(self, ctx: Context, stream: Optional[str] = ''):
+    async def close(self, ctx: Context, stream: Optional[str] = '', channel: Optional[discord.TextChannel] = ''):
         cg = current_gambit()
         if not cg:
             await response_message(ctx, f'Gambit not started, please use `,gamb start`')
@@ -1463,9 +1463,10 @@ class ScoreSheetBot(commands.Cog):
         else:
             lock_gambit(True)
             cg = current_gambit()
+            ch = channel.mention if channel else ''
             await response_message(ctx, f'Gambit between {cg.team1} and {cg.team2} locked by {ctx.author.mention}.')
             await self.cache.channels.gambit_announce.send(
-                f'{self.cache.roles.gambit.mention}: {cg.team1} vs {cg.team2} has started! {stream}',
+                f'{self.cache.roles.gambit.mention}: {cg.team1} vs {cg.team2} has started! {stream} {ch} ',
                 embed=cg.embed(crew_lookup(cg.team1, self).abbr, crew_lookup(cg.team2, self).abbr))
             if self._gambit_message:
                 await self._gambit_message.delete()
@@ -1923,7 +1924,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['po'], hidden=True)
     @main_only
     async def po(self, ctx: Context):
-        await ctx.send(embed=battle_summary(self))
+        await send_long_embed(ctx, battle_summary(self))
 
     @commands.command(**help_doc['register'])
     @main_only
@@ -2388,7 +2389,7 @@ class ScoreSheetBot(commands.Cog):
         battle_elo_changes(1792)
         all_ids = sorted(all_battle_ids())
         for i, battle_id in enumerate(all_ids):
-            print(f'{i+1}/{len(all_ids)}: {battle_id}')
+            print(f'{i + 1}/{len(all_ids)}: {battle_id}')
             master_weight_changes(battle_id)
 
     @commands.command(hidden=True, **help_doc['crnumbers'])

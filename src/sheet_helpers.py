@@ -13,7 +13,7 @@ scope = [
 file_name = 'client_key.json'
 creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
 client = gspread.authorize(creds)
-
+crew_docs_name = 'SCS Crew Docs'
 
 def colnum_string(n):
     string = ""
@@ -24,7 +24,7 @@ def colnum_string(n):
 
 
 def update_gambit_sheet():
-    sheet = client.open('SCS Crew Docs').worksheet('Gambit')
+    sheet = client.open(crew_docs_name).worksheet('Gambit')
     player_to_rank = {}
     player_cols = []
     for rank, member_id, coins, name in gambit_standings():
@@ -57,7 +57,7 @@ def update_gambit_sheet():
 
 
 def update_ba_sheet():
-    sheet = client.open('SCS Crew Docs').worksheet('Battle Arena')
+    sheet = client.open(crew_docs_name).worksheet('Battle Arena')
     player_rows = []
     for name, elo, wins, total in ba_standings():
         player_rows.append([name, elo, '', wins, total - wins])
@@ -69,51 +69,55 @@ def update_ba_sheet():
 
 
 def update_bf_sheet():
-    sheet = client.open('SCS Crew Docs').worksheet('Battle Frontier Ladder')
+    sheet = client.open(crew_docs_name).worksheet('Battle Frontier Ladder')
     crew_rows = []
     ratings = []
-    for name, tag, finished, opp, rating in battle_frontier_crews():
+    rc_crew_rows = []
+    rc_ratings = []
+    for name, tag, finished, opp, rating, bf in battle_frontier_crews():
+
         finished = finished.date().strftime("%m/%d/%y") if finished else ''
-        crew_rows.append([name, tag, '', opp or '', finished])
-        ratings.append([rating])
-    cutoff = round(len(crew_rows) * .4)
-    while ratings[cutoff - 1] == ratings[cutoff] and cutoff < len(ratings) - 1:
-        cutoff += 1
+        if bf:
+            crew_rows.append([name, tag, '', opp or '', finished])
+            ratings.append([rating])
+        else:
+            rc_crew_rows.append([name, tag, '', opp or '', finished])
+            rc_ratings.append([rating])
     blank_rows = [['', '', '', '', ''] for _ in range(50)]
     blank_col = [[''] for _ in range(50)]
     sheet.batch_update([{
-        'range': f'A8:E{8 + cutoff}',
-        'values': crew_rows[:cutoff]
+        'range': f'A8:E{8 + len(crew_rows)}',
+        'values': crew_rows
     }, {
-        'range': f'H8:H{8 + cutoff}',
-        'values': ratings[:cutoff]
+        'range': f'H8:H{8 + len(ratings)}',
+        'values': ratings
     }, {
-        'range': f'A{8+cutoff}:E{8 + cutoff + 50}',
+        'range': f'A{8+len(crew_rows)}:E{8 + len(crew_rows) + 50}',
         'values': blank_rows
     }, {
-        'range': f'H{8+cutoff}:H{8 + cutoff + 50}',
+        'range': f'H{8+len(crew_rows)}:H{8 +  len(crew_rows) + 50}',
         'values': blank_col
     }])
 
-    sheet = client.open('SCS Crew Docs').worksheet('Rookie Class Ladder')
+    sheet = client.open(crew_docs_name).worksheet('Rookie Class Ladder')
 
     sheet.batch_update([{
-        'range': f'A8:E{8 + len(crew_rows) - cutoff}',
-        'values': crew_rows[cutoff:]
+        'range': f'A8:E{8 + len(rc_crew_rows)}',
+        'values': rc_crew_rows
     }, {
-        'range': f'H8:H{8 + len(crew_rows) - cutoff}',
-        'values': ratings[cutoff:]
+        'range': f'H8:H{8 + len(rc_crew_rows)}',
+        'values': rc_ratings
     }, {
-        'range': f'A{8 + len(crew_rows) - cutoff}:E{8 + len(crew_rows) - cutoff + 50}',
+        'range': f'A{8 + len(rc_crew_rows)}:E{8 + len(rc_crew_rows) + 50}',
         'values': blank_rows
     }, {
-        'range': f'H{8 + len(crew_rows) - cutoff}:H{8 + len(crew_rows) - cutoff + 50}',
+        'range': f'H{8 + len(rc_crew_rows)}:H{8 + len(rc_crew_rows) + 50}',
         'values': blank_col
     }])
 
 
 def update_mc_player_sheet():
-    sheet = client.open('SCS Crew Docs').worksheet('Master Class Stats')
+    sheet = client.open(crew_docs_name).worksheet('Master Class Stats')
     pt1, pt2, pt3 = [], [], []
     stats = sorted(mc_stats(), key=lambda x: x[4] / max(x[5], 1), reverse=True)
     for name, tag, pid, taken, weighted_taken, lost, mvps, played, chars in stats:
@@ -134,7 +138,7 @@ def update_mc_player_sheet():
 
 
 def update_mc_sheet():
-    sheet = client.open('SCS Crew Docs').worksheet('Master Class Ranks')
+    sheet = client.open(crew_docs_name).worksheet('Master Class Ranks')
     crew_stats = {}
     for cr_id, name, wins, matches, rating, _, st_taken, st_lost in master_league_crews():
         crew_stats[cr_id] = [name, wins, matches - wins, rating, st_taken, st_lost]

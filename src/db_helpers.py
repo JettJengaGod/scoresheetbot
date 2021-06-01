@@ -2668,36 +2668,40 @@ limit 1;"""
     return first.date()
 
 
-def battle_frontier_crews() -> Sequence[Tuple[str, str, datetime.datetime, str, int]]:
+def battle_frontier_crews() -> Sequence[Tuple[str, str, datetime.datetime, str, int, bool]]:
     bf_crews = """
-select crews.name,
-       crews.tag,
-       last_battle.finished,
-       last_battle.opp,
-       crew_ratings.rating
-from crew_ratings,
-     crews
-         left join (select battle.finished                                                         as finished,
-                           opp_crew.name || case when battle.winner = crew_id then '(W)' else '(L)' end as opp,
-                           newest_battle.crew_id                                                         as cid
-                    from (select max(battle.id) as battle_id, crews.id as crew_id
-                          from battle,
-                               crews
-                          where (crews.id = battle.crew_1
-                              or crews.id = battle.crew_2)
-                          group by crews.id)
-                             as newest_battle,
-                         battle,
-                         crews as opp_crew
-                    where newest_battle.battle_id = battle.id
-                      and opp_crew.id = case
-                                            when newest_battle.crew_id = battle.crew_2 then battle.crew_1
-                                            else battle.crew_2 end) as last_battle on last_battle.cid = crews.id
-
-where crew_ratings.crew_id = crews.id
-  and crew_ratings.league_id = 8
-  and crews.disbanded = false
-order by rating desc;
+    select crews.name,
+           crews.tag,
+           last_battle.finished,
+           last_battle.opp,
+           crew_ratings.rating,
+           case
+               when (rank() over (order by rating desc)) < (.4 * crew_count.cc) then True
+               else false end bf
+    from crew_ratings,
+         (select count(*) as cc from crew_ratings where league_id = 8) crew_count,
+         crews
+             left join (select battle.finished                                                              as finished,
+                               opp_crew.name || case when battle.winner = crew_id then '(W)' else '(L)' end as opp,
+                               newest_battle.crew_id                                                        as cid
+                        from (select max(battle.id) as battle_id, crews.id as crew_id
+                              from battle,
+                                   crews
+                              where (crews.id = battle.crew_1
+                                  or crews.id = battle.crew_2)
+                              group by crews.id)
+                                 as newest_battle,
+                             battle,
+                             crews as opp_crew
+                        where newest_battle.battle_id = battle.id
+                          and opp_crew.id = case
+                                                when newest_battle.crew_id = battle.crew_2 then battle.crew_1
+                                                else battle.crew_2 end) as last_battle on last_battle.cid = crews.id
+    
+    where crew_ratings.crew_id = crews.id
+      and crew_ratings.league_id = 8
+      and crews.disbanded = false
+    order by rating desc;
 """
     conn = None
     ret = []
@@ -2883,9 +2887,20 @@ order by group_id;
 
 def crew_rankings() -> Mapping[str, Tuple[int, int, bool, int]]:
     ranking = """
-    select name, crew_id, rank() over (order by rating desc), rating
-from crew_ratings, crews
-where league_id = 8 and crew_ratings.crew_id = crews.id;
+    select crews.name,
+           crew_id,
+           rank() over (order by rating desc) placement,
+           rating,
+           case
+               when (rank() over (order by rating desc)) < (.4 * crew_count.cc) then True
+               else false end bf,
+            crew_count.cc
+    from crew_ratings,
+         crews,
+         (select count(*) as cc from crew_ratings where league_id = 8) crew_count
+    where league_id = 8
+      and crew_ratings.crew_id = crews.id
+      and crews.disbanded = false;
     """
     conn = None
     mapping = {}
@@ -2897,14 +2912,17 @@ where league_id = 8 and crew_ratings.crew_id = crews.id;
         cur.execute(ranking)
         ret = cur.fetchall()
         if ret:
+            first_rc = -1
+            for _, _, rank, _, bf, _ in ret:
+                if not bf:
+                    first_rc = rank
+                    break
 
-            cutoff = round(len(ret) * .4)
-            while ret[cutoff - 1][2] == ret[cutoff][2] and cutoff < len(ret) - 1:
-                cutoff += 1
-            for name, _, rank, rating in ret[:cutoff]:
-                mapping[name] = (rank, rating, True, cutoff)
-            for name, _, rank, rating in ret[cutoff:]:
-                mapping[name] = (rank - cutoff, rating, False, len(ret) - cutoff)
+            for name, _, rank, rating, bf, count in ret:
+                if bf:
+                    mapping[name] = (rank, rating, bf, first_rc - 1)
+                else:
+                    mapping[name] = (rank - first_rc + 1, rating, bf, len(ret) - first_rc + 1)
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
