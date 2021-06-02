@@ -347,7 +347,6 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('You can\'t battle your own crew.')
 
     @commands.command(**help_doc['mock'])
-    @main_only
     @no_battle
     @ss_channel
     async def mock(self, ctx: Context, team1: str, team2: str, size: int):
@@ -397,7 +396,6 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send('Finished!')
 
     @commands.command(**help_doc['send'])
-    @main_only
     @has_sheet
     @ss_channel
     @is_lead
@@ -437,6 +435,8 @@ class ScoreSheetBot(commands.Cog):
                     self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
 
         elif self._current(ctx).battle_type == BattleType.MOCK:
+            if not team:
+                team = self._current(ctx).team_from_member(ctx.author.mention)
             if team:
                 self._current(ctx).add_player(team, escape(user.display_name), ctx.author.mention, user.id)
             else:
@@ -463,7 +463,6 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help_doc['use_ext'])
-    @main_only
     @has_sheet
     @ss_channel
     @is_lead
@@ -479,6 +478,8 @@ class ScoreSheetBot(commands.Cog):
                 return
 
         elif self._current(ctx).battle_type == BattleType.MOCK:
+            if not team:
+                team = self._current(ctx).team_from_member(ctx.author.mention)
             if team:
                 if self._current(ctx).ext_used(team):
                     await ctx.send(f'{team} has already used their extension.')
@@ -504,7 +505,6 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help_doc['forfeit'])
-    @main_only
     @has_sheet
     @ss_channel
     @is_lead
@@ -518,6 +518,8 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
         elif self._current(ctx).battle_type == BattleType.MOCK:
+            if not team:
+                team = self._current(ctx).team_from_member(ctx.author.mention)
             if team:
                 msg = await ctx.send(f'{ctx.author.mention}:{team} has {self._current(ctx).lookup(team).stocks} stocks '
                                      f'left, are you sure you want to forfeit?')
@@ -542,14 +544,12 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help_doc['ext'])
-    @main_only
     @has_sheet
     @ss_channel
     async def ext(self, ctx):
         await ctx.send(self._current(ctx).ext_str())
 
     @commands.command(**help_doc['replace'])
-    @main_only
     @has_sheet
     @ss_channel
     @is_lead
@@ -590,6 +590,8 @@ class ScoreSheetBot(commands.Cog):
                     self._current(ctx).replace_player(author_crew, escape(user.display_name), ctx.author.mention,
                                                       user.id)
         elif self._current(ctx).battle_type == BattleType.MOCK:
+            if not team:
+                team = self._current(ctx).team_from_member(ctx.author.mention)
             if team:
                 self._current(ctx).replace_player(team, escape(user.display_name), ctx.author.mention, user.id)
             else:
@@ -616,7 +618,6 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help_doc['end'])
-    @main_only
     @has_sheet
     @ss_channel
     async def end(self, ctx: Context, char1: Union[str, discord.Emoji], stocks1: int, char2: Union[str, discord.Emoji],
@@ -629,7 +630,6 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help_doc['endlag'])
-    @main_only
     @has_sheet
     @ss_channel
     async def endlag(self, ctx: Context, char1: Union[str, discord.Emoji], stocks1: int,
@@ -643,7 +643,6 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help_doc['resize'])
-    @main_only
     @is_lead
     @has_sheet
     @ss_channel
@@ -653,7 +652,6 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help_doc['arena'], aliases=['id', 'arena_id', 'lobby'])
-    @main_only
     @has_sheet
     @ss_channel
     async def arena(self, ctx: Context, id_str: str = ''):
@@ -665,7 +663,6 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'The lobby id is {self._current(ctx).id}')
 
     @commands.command(**help_doc['stream'], aliases=['streamer', 'stream_link'])
-    @main_only
     @has_sheet
     @ss_channel
     async def stream(self, ctx: Context, stream: str = ''):
@@ -692,7 +689,6 @@ class ScoreSheetBot(commands.Cog):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help_doc['confirm'])
-    @main_only
     @has_sheet
     @ss_channel
     @is_lead
@@ -835,7 +831,6 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
     @commands.command(**help_doc['clear'])
-    @main_only
     @has_sheet
     @ss_channel
     @is_lead
@@ -857,26 +852,25 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'{ctx.author.mention} cleared the crew battle.')
 
     @commands.command(**help_doc['status'])
-    @main_only
     @has_sheet
     @ss_channel
     async def status(self, ctx):
         await send_sheet(ctx, battle=self._current(ctx))
 
     @commands.command(**help_doc['timer'])
-    @main_only
     @has_sheet
     @ss_channel
     async def timer(self, ctx):
         await ctx.send(self._current(ctx).timer())
 
     @commands.command(**help_doc['timerstock'])
-    @main_only
     @has_sheet
     @ss_channel
     @is_lead
     async def timerstock(self, ctx, team: str = None):
         if self._current(ctx).battle_type == BattleType.MOCK:
+            if not team:
+                team = self._current(ctx).team_from_member(ctx.author.mention)
             if team:
                 self._current(ctx).timer_stock(team, ctx.author.mention)
             else:

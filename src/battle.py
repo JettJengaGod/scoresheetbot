@@ -236,6 +236,13 @@ class Battle:
             team.ext_used = True
             return False
 
+    def team_from_member(self, leader: str) -> Optional[str]:
+        if leader in self.team1.leader:
+            return self.team1.name
+        if leader in self.team2.leader:
+            return self.team2.name
+        return None
+
     def ext_str(self) -> str:
         return f'Teams extension status:\n' \
                f'{self.team1.name} Extension used: {self.team1.ext_used}\n' \
