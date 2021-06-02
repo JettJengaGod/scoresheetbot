@@ -1782,7 +1782,7 @@ class ScoreSheetBot(commands.Cog):
             f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
             f'(Battle number:{battle_id})')
 
-    @commands.command(**help_doc['addsheet'])
+    @commands.command(**help_doc['failedreg'])
     @main_only
     @role_call(STAFF_LIST)
     async def failedreg(self, ctx: Context, *, everything: str):
@@ -1793,6 +1793,7 @@ class ScoreSheetBot(commands.Cog):
             return
 
         everything = everything.split(' ')
+
         try:
             score = int(everything[-1])
             players = int(everything[-2])
@@ -1837,6 +1838,65 @@ class ScoreSheetBot(commands.Cog):
                             f'**Battle:** {battle_id}')
         await ctx.send(
             f'The battle between {winning_crew.name} and {losing_crew} '
+            f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
+            f'(Battle number:{battle_id})')
+
+    @commands.command(**help_doc['weirdreg'])
+    @main_only
+    @role_call(STAFF_LIST)
+    async def weirdreg(self, ctx: Context, *, everything: str):
+        today = date.today()
+
+        if not ctx.message.attachments:
+            await response_message(ctx, 'You need to submit a screenshot of the scoresheet with this.')
+            return
+
+        everything = everything.split(' ')
+
+        try:
+            score = int(everything[-1])
+            players = int(everything[-2])
+        except ValueError:
+            await response_message(ctx,
+                                   'This command needs to be formatted like this `,addsheet LosingCrew WinningRegCrew'
+                                   'Size FinalScore`')
+            return
+        two_crews = ' '.join(everything[:-2])
+        best = single_crew_plus_string(two_crews, self)
+
+        losing_crew = crew_lookup(best[0], self)
+        winning_crew = best[1]
+
+        embed = discord.Embed(
+            title=f'{winning_crew} defeats {losing_crew.name}({losing_crew.abbr}) in a failed registration battle',
+            description=f'{winning_crew} wins {score} - 0 in a {players} vs {players} battle'
+        )
+        msg = await ctx.send(f'{ctx.author.mention}: Are you sure you want to confirm this crew battle?', embed=embed)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+            await response_message(ctx, 'Canceled or timed out.')
+            return
+
+        output_channels = [discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
+                           discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+        links = []
+        for output_channel in output_channels:
+            files = [await attachment.to_file() for attachment in ctx.message.attachments]
+            link = await output_channel.send(files=files)
+            links.append(link)
+        league_id = 8
+        battle_id = add_weird_reg_battle(losing_crew, players, score, links[0].jump_url, league_id)
+
+        winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
+        reset_fake_crew_rating(league_id)
+        for link in links:
+            await link.edit(content=
+                            f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winning_crew}⚔{losing_crew.name}**\n'
+                            f'**Winner:** {winning_crew} '
+                            f'[{winner_elo}+{winner_change} (no rating, treated as 1000)\n'
+                            f'**Loser:** {losing_crew.abbr}={loser_elo + loser_change}]\n'
+                            f'**Battle:** {battle_id}')
+        await ctx.send(
+            f'The battle between {winning_crew} and {losing_crew.name} '
             f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
             f'(Battle number:{battle_id})')
 

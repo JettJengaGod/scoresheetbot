@@ -520,6 +520,35 @@ def add_failed_reg_battle(winner: Crew, size: int, score: int, link: str, league
     return battle_id
 
 
+def add_weird_reg_battle(loser: Crew, size: int, score: int, link: str, league: int) -> int:
+    add_battle = """INSERT into battle (crew_1, crew_2, final_score, link, winner, finished, league_id, players)
+     values(%s, %s, %s, %s, %s, current_timestamp, %s, %s)  RETURNING id;"""
+    conn = None
+    battle_id = -1
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(add_battle, (
+            crew_id_from_crews(loser, cur),
+            339,
+            score,
+            link,
+            339,
+            league,
+            size,
+        ))
+        battle_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return battle_id
+
+
 def battle_elo_changes(battle_id: int, bf_dupe: bool = False) -> Tuple[int, int, int, int]:
     # TODO modify this to handle MC/BF matches
     find_battle = """
