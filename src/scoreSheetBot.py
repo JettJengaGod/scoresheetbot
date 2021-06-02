@@ -1780,7 +1780,7 @@ class ScoreSheetBot(commands.Cog):
             f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
             f'(Battle number:{battle_id})')
 
-    @commands.command(**help_doc['addsheet'])
+    @commands.command(**help_doc['failedreg'])
     @main_only
     @role_call(STAFF_LIST)
     async def failedreg(self, ctx: Context, *, everything: str):
@@ -1839,7 +1839,7 @@ class ScoreSheetBot(commands.Cog):
             f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
             f'(Battle number:{battle_id})')
 
-    @commands.command(**help_doc['addsheet'])
+    @commands.command(**help_doc['weirdreg'])
     @main_only
     @role_call(STAFF_LIST)
     async def weirdreg(self, ctx: Context, *, everything: str):
@@ -1856,7 +1856,7 @@ class ScoreSheetBot(commands.Cog):
             players = int(everything[-2])
         except ValueError:
             await response_message(ctx,
-                                   'This command needs to be formatted like this `,addsheet WinningCrew LosingCrew'
+                                   'This command needs to be formatted like this `,addsheet LosingCrew WinningRegCrew'
                                    'Size FinalScore`')
             return
         two_crews = ' '.join(everything[:-2])
