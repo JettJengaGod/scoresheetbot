@@ -1883,9 +1883,8 @@ class ScoreSheetBot(commands.Cog):
         for link in links:
             await link.edit(content=
                             f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winning_crew}⚔{losing_crew.name}**\n'
-                            f'**Winner:** {winning_crew} '
-                            f'[{winner_elo}+{winner_change} (no rating, treated as 1000)\n'
-                            f'**Loser:** {losing_crew.abbr}={loser_elo + loser_change}]\n'
+                            f'**Winner:** {winning_crew} (no rating, treated as 1000)\n'
+                            f'**Loser:** {losing_crew.abbr}={loser_elo} + {loser_change}]\n'
                             f'**Battle:** {battle_id}')
         await ctx.send(
             f'The battle between {winning_crew} and {losing_crew.name} '
