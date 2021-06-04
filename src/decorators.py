@@ -81,7 +81,7 @@ def no_battle(func):
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
         ctx = args[0]
-        battle = self.battle_map.get(str(ctx.guild) + '|' + str(ctx.channel))
+        battle = self.battle_map.get(key_string(ctx))
         if battle is not None:
             await ctx.send('A battle is already going in this channel.')
             return
@@ -99,7 +99,7 @@ def is_lead(func):
 
         ctx = args[0]
 
-        battle = self.battle_map.get(str(ctx.guild) + '|' + str(ctx.channel.id))
+        battle = self.battle_map.get(key_string(ctx))
         mock = False
         if battle and battle.battle_type in (BattleType.MOCK, BattleType.REG):
             mock = True
