@@ -2116,9 +2116,19 @@ def archive_gambit(winner: str, loser: str, winning_total: int, losing_total: in
     return gambit_id
 
 
-def gambit_standings() -> Tuple[Tuple[int, int, int, str]]:
-    leaderboard = """select RANK() OVER (ORDER BY gcoins DESC) gamb_rank, member_id,gcoins, discord_name
-         from gambiters, members where member_id = id;"""
+def gambit_standings() -> Tuple[Tuple[int, int, int, int, str]]:
+    leaderboard = """
+        select RANK() OVER (ORDER BY gcoins + coalesce(spent, 0) DESC) gamb_rank,
+           member_id,
+           coalesce(spent, 0) + gcoins as                          total,
+           gcoins,
+           discord_name
+    from gambiters
+             full outer join (select sum(amount) as spent, member_id as cm_id
+                              from charge_history
+                              group by member_id) as charge on cm_id = gambiters.member_id,
+         members
+    where member_id = id;"""
     conn = None
     standings = ()
     try:

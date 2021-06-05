@@ -15,6 +15,7 @@ creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
 client = gspread.authorize(creds)
 crew_docs_name = 'SCS Crew Docs'
 
+
 def colnum_string(n):
     string = ""
     while n > 0:
@@ -27,8 +28,8 @@ def update_gambit_sheet():
     sheet = client.open(crew_docs_name).worksheet('Gambit')
     player_to_rank = {}
     player_cols = []
-    for rank, member_id, coins, name in gambit_standings():
-        player_cols.append([rank, name, coins])
+    for rank, member_id, total, coins, name in gambit_standings():
+        player_cols.append([rank, name, total, coins])
         player_to_rank[member_id] = len(player_cols)
 
     gambits = {}
@@ -48,10 +49,10 @@ def update_gambit_sheet():
     rows = [list(x) for x in zip(*cols)]  # Transpose
 
     sheet.batch_update([{
-        'range': f'A6:C{6 + len(player_cols)}',
+        'range': f'A6:D{6 + len(player_cols)}',
         'values': player_cols
     }, {
-        'range': f'E1:{colnum_string(len(gambit_list) + 5)}{6 + len(player_cols)}',
+        'range': f'F1:{colnum_string(len(gambit_list) + 5)}{6 + len(player_cols)}',
         'values': rows
     }])
 
@@ -92,10 +93,10 @@ def update_bf_sheet():
         'range': f'H8:H{8 + len(ratings)}',
         'values': ratings
     }, {
-        'range': f'A{8+len(crew_rows)}:E{8 + len(crew_rows) + 50}',
+        'range': f'A{8 + len(crew_rows)}:E{8 + len(crew_rows) + 50}',
         'values': blank_rows
     }, {
-        'range': f'H{8+len(crew_rows)}:H{8 +  len(crew_rows) + 50}',
+        'range': f'H{8 + len(crew_rows)}:H{8 + len(crew_rows) + 50}',
         'values': blank_col
     }])
 
