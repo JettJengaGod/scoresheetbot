@@ -580,8 +580,8 @@ async def cache_process(bot: 'ScoreSheetBot'):
 
 
 async def handle_decay(bot: 'ScoreSheetBot'):
-    cutoffs = [11, 15, 22, 31, 38]
-    elo_loss = [0, 25, 50, 100, 300]
+    cutoffs = [11, 15, 22, 31, 38, 100]
+    elo_loss = [0, 25, 50, 100, 300, 0]
     crews = bot.cache.crews_by_name.values()
     bf = battle_frontier_crews()
     last_played = {cr[0]: cr[2] for cr in bf}
@@ -627,7 +627,8 @@ async def handle_decay(bot: 'ScoreSheetBot'):
         for leader_id in cr.leader_ids:
             leader = bot.bot.get_user(leader_id)
             try:
-                await leader.send(message)
+                if leader:
+                    await leader.send(message)
             except discord.errors.Forbidden:
                 await bot.cache.channels.flairing_questions.send(f'{leader.mention}: {message}')
 
