@@ -30,6 +30,7 @@ CHARACTERS = {
     'isabelle': ['isa'],
     'jigglypuff': ['jiggs', 'jigg', 'jiggly', 'puff'],
     'joker': [],
+    'kazuya': ['kaz'],
     'ken': [],
     'king_dedede': ['dedede', 'ddd'],
     'king_k_rool': ['krool', 'croc'],
@@ -61,6 +62,7 @@ CHARACTERS = {
     'pit': [],
     'pokemon_trainer': ['pt', 'trainer'],
     'pythra': ['pyra', 'mythra', 'aegis', 'baeblades', 'myra'],
+    'random': ['rand'],
     'richter': [],
     'ridley': [],
     'rob': ['r.o.b.'],
@@ -191,7 +193,7 @@ def all_alts(input_str: str, bot):
 def all_emojis(bot) -> List[Tuple[str, str]]:
     ret = []
     for c_name, alts in CHARACTERS.items():
-        if c_name.startswith('mii') or c_name.startswith('seph'):
+        if c_name.startswith('mii') or c_name.startswith('random') or c_name.startswith('kaz'):
             ret.append((c_name, f'{string_to_emote(c_name, bot)} AKA: {alts}'))
             continue
         ret.append((c_name, f'{all_alts(c_name, bot)} AKA: {alts}'))
