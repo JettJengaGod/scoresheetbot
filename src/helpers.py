@@ -594,6 +594,8 @@ async def handle_decay(bot: 'ScoreSheetBot'):
             continue
         if cr.name in last_played:
             timing = last_played[cr.name]
+        else:
+            timing = None
         if not timing:
             first_flair = first_crew_flair(cr)
             first_flair = datetime(first_flair.year, first_flair.month, first_flair.day)
