@@ -395,10 +395,10 @@ def role_change(before: Set[discord.Role], after: Set[discord.Role], changer: di
     return discord.Embed(title=header, description=''.join(body), color=changee.color)
 
 
-async def promote(member: discord.Member, bot: 'ScoreSheetBot') -> str:
+async def promote(member: discord.Member, bot: 'ScoreSheetBot', lead: bool = None) -> str:
     if check_roles(member, [LEADER]):
         return 'Leader'
-    if check_roles(member, [ADVISOR]):
+    if check_roles(member, [ADVISOR]) or lead:
         await member.add_roles(bot.cache.roles.leader)
         await member.remove_roles(bot.cache.roles.advisor)
         return 'Leader'
