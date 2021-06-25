@@ -1231,8 +1231,7 @@ class ScoreSheetBot(commands.Cog):
             await response_message(ctx, f'{member.mention} is leadership restricted and can\'t be made a leader.')
             return
         before = set(member.roles)
-        await promote(member, self)
-        await promote(member, self)
+        await promote(member, self, True)
         after = set(ctx.guild.get_member(member.id).roles)
         await response_message(ctx, f'Successfully made {member.mention} a leader.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
