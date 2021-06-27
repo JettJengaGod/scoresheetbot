@@ -580,8 +580,8 @@ async def cache_process(bot: 'ScoreSheetBot'):
 
 
 async def handle_decay(bot: 'ScoreSheetBot'):
-    cutoffs = [11, 15, 22, 31, 38, 100]
-    elo_loss = [0, 25, 50, 100, 300, 0]
+    cutoffs = [11, 15, 22, 31, 38, 100, 1000]
+    elo_loss = [0, 25, 50, 100, 300, 0, 0]
     crews = bot.cache.crews_by_name.values()
     bf = battle_frontier_crews()
     last_played = {cr[0]: cr[2] for cr in bf}
