@@ -2436,7 +2436,13 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        update_gambit_sheet()
+        # battles = all_battle_ids()
+        # for i, battle in enumerate(battles):
+        #     print(f'{i+1}/{len(battles)}')
+        #     battle_elo_changes(battle)
+        #     battle_weight_changes(battle)
+        update_all_sheets()
+
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
