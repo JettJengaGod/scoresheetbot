@@ -13,7 +13,7 @@ scope = [
 file_name = '../client_key.json'
 creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
 client = gspread.authorize(creds)
-crew_docs_name = 'SCS Crew Docs' if os.getenv('VERSION') == 'PROD' else 'Copy of SCS Crew Docs'
+crew_docs_name = 'SCS Crew Docs'  # if os.getenv('VERSION') == 'PROD' else 'Copy of SCS Crew Docs'
 
 
 def colnum_string(n):
