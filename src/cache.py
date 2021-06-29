@@ -38,6 +38,7 @@ class Cache:
         self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
         self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
         self.channels = self.channel_factory(self.scs)
+        self.categories = self.category_roles()
         self.roles = self.role_factory(self.scs)
         self.crews_by_name = await self.update_crews()
         self.crews = self.crews_by_name.keys()
@@ -49,6 +50,13 @@ class Cache:
     def minor_update(self, bot: 'ScoreSheetBot'):
         self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
         self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
+
+    def category_roles(self) -> List[discord.Role]:
+        ret = []
+        for role in self.scs.roles:
+            if 'ㅤㅤㅤㅤㅤ' in role.name:
+                ret.append(role)
+        return sorted(ret, key=lambda x: x.position)
 
     @staticmethod
     def role_factory(server):

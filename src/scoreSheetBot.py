@@ -34,8 +34,12 @@ class ScoreSheetBot(commands.Cog):
         self.bot = bot
         self.battle_map: Dict[str, Battle] = {}
         self.cache = cache
+        self.cache_time = time.time()
         self.auto_cache.start()
         self._gambit_message = None
+
+    # def cache(self) -> src.cache.Cache:
+    #     return self.cache_value
 
     def _current(self, ctx) -> Battle:
         if key_string(ctx) in self.battle_map:
@@ -144,6 +148,8 @@ class ScoreSheetBot(commands.Cog):
                         after_crew = crew_lookup(after_crew, self)
                     update_member_crew(after.id, after_crew)
                     self.cache.minor_update(self)
+
+                await set_categories(after, self.cache.categories)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -2438,15 +2444,17 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        # battles = all_battle_ids()
-        # for i, battle in enumerate(battles):
-        #     print(f'{i+1}/{len(battles)}')
-        #     battle_elo_changes(battle)
-        #     battle_weight_changes(battle)
-        update_all_sheets()
-
+        for role in ctx.guild.roles:
+            print(f'{role.name}: {role.position}')
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
+    @role_call(STAFF_LIST)
+    async def categoryrole(self, ctx):
+        for i, member in enumerate(ctx.guild.members):
+            print(i + 1, len(ctx.guild.members))
+            await set_categories(member, self.cache.categories)
+
+    @commands.command(hidden=True, **help_doc['cancelcb'])
     @role_call(STAFF_LIST)
     async def cancelcb(self, ctx, battle_id: int, *, reason: str = ''):
         crew1, crew2, finished, link = battle_info(battle_id)

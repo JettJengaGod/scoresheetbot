@@ -637,7 +637,6 @@ async def handle_decay(bot: 'ScoreSheetBot'):
                 await bot.cache.channels.flairing_questions.send(f'{leader.mention}: {message}')
 
 
-
 def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
     try:
         crew_str = crew(member, bot)
@@ -1122,3 +1121,31 @@ async def unflair_gone_member(ctx: Context, user: str, bot: 'ScoreSheetBot'):
     await bot.cache.channels.flair_log.send(embed=embed)
     # Respond in the channel
     await response_message(ctx, f'successfully unflaired {user_id}.')
+
+
+def find_role_category(role: discord.Role, categories: List[discord.Role]) -> Optional[discord.Role]:
+    if role.position == 0:
+        return
+    i = 0
+    while role.position > categories[i].position and i < len(categories) - 1:
+        if role.position == categories[i].position:
+            return
+        i += 1
+    if i == len(categories) - 1:
+        return
+    return categories[i]
+
+
+async def set_categories(member: discord.Member, categories: List[discord.Role]):
+    has = set()
+    has_not = set(categories[:-1])
+    for role in member.roles:
+        if role in categories:
+            continue
+        category = find_role_category(role, categories)
+        if not category:
+            continue
+        has.add(category)
+        has_not.discard(category)
+    await member.add_roles(*has)
+    await member.remove_roles(*has_not)
