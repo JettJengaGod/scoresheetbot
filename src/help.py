@@ -146,6 +146,7 @@ help_doc = dict(
                     'Returns the number of unique players used by crews last month or the players and each cb'
                     'for a specific crew', '', 'Optional[Crew]'),
     crnumbers=HelpDoc(Categories.staff, 'Helpful numbers for crew analysis'),
+    cancelcb=HelpDoc(Categories.staff, 'Cancel a crew battle that happened in the past', '', 'battleId Optional[Reason]'),
     slottotals=HelpDoc(Categories.staff, 'Prints all the max slots for crews'),
     flaircounts=HelpDoc(Categories.staff, 'Helpful numbers for flair analysis'),
     addsheet=HelpDoc(Categories.staff, 'Adds a new non bot sheet to the database and in scoresheet_history', '',
