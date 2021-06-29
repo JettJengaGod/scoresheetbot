@@ -1145,5 +1145,17 @@ async def set_categories(member: discord.Member, categories: List[discord.Role])
             continue
         has.add(category)
         has_not.discard(category)
-    await member.add_roles(*has)
-    await member.remove_roles(*has_not)
+    has_dupe = set()
+    for role in has:
+        if role in member.roles:
+            has_dupe.add(role)
+    has -= has_dupe
+    has_not_dupe = set()
+    for role in has_not:
+        if role not in member.roles:
+            has_not_dupe.add(role)
+    has_not -= has_not_dupe
+    if has:
+        await member.add_roles(*has)
+    if has_not:
+        await member.remove_roles(*has_not)
