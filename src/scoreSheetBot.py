@@ -2447,10 +2447,11 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
-    async def categoryrole(self, ctx):
-        for i, member in (enumerate(reversed(ctx.guild.members))):
-            print(i + 1, len(ctx.guild.members))
-            await set_categories(member, self.cache.categories)
+    async def categoryrole(self, ctx, member: discord.Member):
+        # for i, member in (enumerate(ctx.guild.members)):
+        #     print(i + 1, len(ctx.guild.members))
+
+        await set_categories(member, self.cache.categories)
 
     @commands.command(hidden=True, **help_doc['cancelcb'])
     @role_call(STAFF_LIST)

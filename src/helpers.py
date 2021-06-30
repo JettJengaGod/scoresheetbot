@@ -1125,18 +1125,19 @@ def find_role_category(role: discord.Role, categories: List[discord.Role]) -> Op
     if role.position == 0:
         return
     i = 0
-    while role.position > categories[i].position and i < len(categories) - 1:
+    while role.position > categories[i].position:
         if role.position == categories[i].position:
             return
         i += 1
-    if i == len(categories) - 1:
-        return
+        if i >= len(categories) - 1:
+            return
+
     return categories[i]
 
 
 async def set_categories(member: discord.Member, categories: List[discord.Role]):
     has = set()
-    has_not = set(categories[:-1])
+    has_not = set(categories)
     for role in member.roles:
         if role in categories:
             continue
