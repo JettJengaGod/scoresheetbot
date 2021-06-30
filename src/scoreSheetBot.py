@@ -1398,7 +1398,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['multiunflair'])
     @main_only
     @flairing_required
-    async def multiunflair(self, ctx: Context, everything: str):
+    async def multiunflair(self, ctx: Context, *, everything: str):
         members = everything.split(' ')
         for member in set(members):
             await self.unflair(ctx, member)
@@ -2442,8 +2442,11 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        for role in ctx.guild.roles:
-            print(f'{role.name}: {role.position}')
+        # ids = sorted(all_battle_ids())
+        # for i, battle in enumerate(ids):
+        #     print(i,battle, len(ids))
+        #     master_weight_changes(battle)
+        pass
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
