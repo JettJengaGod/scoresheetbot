@@ -2340,21 +2340,34 @@ def total_slot_set(cr: Crew, total: int) -> None:
     return
 
 
-def member_crew_history(member: discord.Member) -> Tuple[Tuple[str, datetime.datetime, datetime.datetime]]:
-    history = """select crews.name, joined, leave
-                from crews, member_crews_history
-                    where crews.id = member_crews_history.crew_id
-                        and member_crews_history.member_id = %s
+def member_crew_history(member_id: int) -> List[Tuple[str, datetime.datetime, bool]]:
+    joins = """select crews.name, joined
+                from crews, flairs
+                    where crews.id = flairs.crew_id
+                        and flairs.member_id = %s
                             order by joined;"""
+    leaves = """select crews.name, leave_time
+                from crews, unflairs
+                    where crews.id = unflairs.crew_id
+                        and unflairs.member_id = %s
+                            order by leave_time;"""
     conn = None
-    hist = ()
+    hist = []
     try:
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
 
-        cur.execute(history, (member.id,))
-        hist = cur.fetchall()
+        cur.execute(joins, (member_id,))
+        join_list = cur.fetchall()
+        for join in join_list:
+            hist.append((join[0], join[1], True))
+        cur.execute(leaves, (member_id,))
+        leave_list = cur.fetchall()
+        for leave in leave_list:
+            hist.append((leave[0], leave[1], False))
+        if hist:
+            hist.sort(key=lambda x: x[1])
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -2365,7 +2378,7 @@ def member_crew_history(member: discord.Member) -> Tuple[Tuple[str, datetime.dat
     return hist
 
 
-def member_crew_and_date(member: discord.Member) -> Tuple[str, datetime.datetime]:
+def member_crew_and_date(member_id: int) -> Tuple[str, datetime.datetime]:
     current = """select crews.name, joined
                 from crews, current_member_crews
                     where crews.id = current_member_crews.crew_id
@@ -2378,7 +2391,7 @@ def member_crew_and_date(member: discord.Member) -> Tuple[str, datetime.datetime
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
 
-        cur.execute(current, (member.id,))
+        cur.execute(current, (member_id,))
         cr = cur.fetchone()
         conn.commit()
         cur.close()
@@ -3059,3 +3072,26 @@ def reset_decay(crew: Crew):
         if conn is not None:
             conn.close()
     return
+
+
+def nickname_lookup(member_id: int) -> str:
+    lookup = """ select nickname from members where id = %s;"""
+    conn = None
+    name = ''
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(lookup, (member_id,))
+        res = cur.fetchone()
+        if res:
+            name = res[0]
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return name

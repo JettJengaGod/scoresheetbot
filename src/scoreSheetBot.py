@@ -1064,25 +1064,41 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['history'])
     @main_only
     async def history(self, ctx, *, name: str = None):
+        in_server = True
         if name:
-            member = member_lookup(name, self)
+            if name.isdigit():
+                try:
+                    member = user_by_id(name, self)
+                except ValueError:
+                    in_server = False
+            else:
+                member = member_lookup(name, self)
 
         else:
             member = ctx.author
-        if member.id == 775586622241505281:
+        if in_server:
+            member_id = member.id
+            member_name = member.display_name
+            member_color = member.colour
+        else:
+            member_id, member_name = name, nickname_lookup(int(name))
+            if not member_name:
+                raise ValueError('Member %s has never been recorded on this server.')
+            member_color = discord.Color.blurple()
+        if member_id == 775586622241505281:
             await ctx.send('Don\'t use EvilJett for this')
             return
-        embed = discord.Embed(title=f'Crew History for {str(member)}', color=member.color)
+        embed = discord.Embed(title=f'Crew History for {member_name}', color=member_color)
         desc = []
-        current = member_crew_and_date(member)
+        current = member_crew_and_date(member_id)
         if current:
-            desc.append(f'Current crew: {current[0]} Joined: {current[1].strftime("%m/%d/%Y")}')
-        past = member_crew_history(member)
-        desc.append('Past Crew              Joined            Left')
-        for cr_name, joined, left in past:
-            j = joined.strftime('%m/%d/%Y')
-            l = left.strftime('%m/%d/%Y')
-            desc.append(f'{cr_name}: {j}       {l}')
+            desc.append(f'**Current crew:** {current[0]} Joined: {current[1].strftime("%m/%d/%Y")}')
+        past = member_crew_history(member_id)
+        desc.append('**Past Crew              Date            Action**')
+        for cr_name, timing, which in past:
+            j = timing.strftime('%m/%d/%Y')
+            action = 'Flaired' if which else 'Unflaired'
+            desc.append(f'**{cr_name}** {j}       {action}')
         embed.description = '\n'.join(desc)
         await send_long_embed(ctx, embed)
 
@@ -2615,7 +2631,7 @@ class ScoreSheetBot(commands.Cog):
                       f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
                       f'with an overall minimum of 5 slots\n' \
-                      'For more information, refer to message link in #lead_announcements. ' \
+                      'For more information, refer to #flairing_slots_info. ' \
                       'This bot will not be able to respond to any questions you have, so use #questions_feedback'
             crew_msg[cr.name] = message
 
