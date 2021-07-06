@@ -1066,7 +1066,7 @@ class ScoreSheetBot(commands.Cog):
     async def history(self, ctx, *, name: str = None):
         in_server = True
         if name:
-            if name.isdigit():
+            if name.isdigit() and len(name) > 16:
                 try:
                     member = user_by_id(name, self)
                 except ValueError:
@@ -1083,7 +1083,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             member_id, member_name = name, nickname_lookup(int(name))
             if not member_name:
-                raise ValueError('Member %s has never been recorded on this server.')
+                raise ValueError(f'Member {name} has never been recorded on this server.')
             member_color = discord.Color.blurple()
         if member_id == 775586622241505281:
             await ctx.send('Don\'t use EvilJett for this')
