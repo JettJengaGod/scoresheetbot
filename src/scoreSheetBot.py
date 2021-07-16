@@ -33,13 +33,37 @@ class ScoreSheetBot(commands.Cog):
     def __init__(self, bot: commands.bot, cache: Cache):
         self.bot = bot
         self.battle_map: Dict[str, Battle] = {}
-        self.cache = cache
+        self.cache_value = cache
         self.cache_time = time.time()
         self.auto_cache.start()
         self._gambit_message = None
 
-    # def cache(self) -> src.cache.Cache:
-    #     return self.cache_value
+    @property
+    def cache(self) -> src.cache.Cache:
+        if self.cache_time + CACHE_TIME_BACKUP < time.time():
+            self.cache_time = time.time()
+            asyncio.create_task(self._cache_process(True), name='recache')
+        return self.cache_value
+
+    async def _cache_process(self, backup=False):
+        if self.cache_value.channels and os.getenv('VERSION') == 'PROD':
+            if backup:
+                await self.cache_value.channels.recache_logs.send('(Backup)')
+            await self.cache_value.channels.recache_logs.send('Starting recache.')
+
+        await self.cache_value.update(self)
+        crew_update(self)
+        if os.getenv('VERSION') == 'PROD':
+            await handle_decay(self)
+            await handle_unfreeze(self)
+            await handle_decay(self)
+            if self.cache_value.scs:
+                await overflow_anomalies(self)
+            await cooldown_handle(self)
+        if os.getenv('VERSION') == 'PROD':
+            await self.cache_value.channels.recache_logs.send('Successfully recached.')
+            update_all_sheets()
+        self.cache_time = time.time()
 
     def _current(self, ctx) -> Battle:
         if key_string(ctx) in self.battle_map:
@@ -118,9 +142,9 @@ class ScoreSheetBot(commands.Cog):
         if os.getenv('VERSION') == 'PROD':
             increment_command_used(ctx.command.name)
 
-    @tasks.loop(seconds=CACHE_TIME_SECONDS)
+    @tasks.loop(seconds=CACHE_TIME_SECONDS + 100)
     async def auto_cache(self):
-        await cache_process(self)
+        await self._cache_process()
 
     @auto_cache.before_loop
     async def wait_for_bot(self):
@@ -2237,7 +2261,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['recache'], hidden=True)
     @role_call(STAFF_LIST)
     async def recache(self, ctx: Context):
-        await cache_process(self)
+        await self._cache_process()
         self.auto_cache.cancel()
         self.auto_cache.restart()
         await ctx.send('The cache has been reset, everything should be updated now.')

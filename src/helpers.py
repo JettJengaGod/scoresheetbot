@@ -563,24 +563,6 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
             return False
 
 
-async def cache_process(bot: 'ScoreSheetBot'):
-    if bot.cache.channels and os.getenv('VERSION') == 'PROD':
-        await bot.cache.channels.recache_logs.send('Starting recache.')
-
-    await bot.cache.update(bot)
-    crew_update(bot)
-    if os.getenv('VERSION') == 'PROD':
-        await handle_decay(bot)
-        await handle_unfreeze(bot)
-        await handle_decay(bot)
-        if bot.cache.scs:
-            await overflow_anomalies(bot)
-        await cooldown_handle(bot)
-    if os.getenv('VERSION') == 'PROD':
-        await bot.cache.channels.recache_logs.send('Successfully recached.')
-        update_all_sheets()
-
-
 async def handle_decay(bot: 'ScoreSheetBot'):
     cutoffs = [11, 15, 22, 31, 38, 100, 1000]
     elo_loss = [0, 25, 50, 100, 300, 0, 0]
@@ -649,7 +631,7 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
 
 
 def crew_update(bot: 'ScoreSheetBot'):
-    cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache.crews_by_name.values() if cr.role_id != -1}
+    cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache_value.crews_by_name.values() if cr.role_id != -1}
     db_crews = sorted(all_crews(), key=lambda x: x[2])
     rankings = crew_rankings()
     missing = []
@@ -662,30 +644,30 @@ def crew_update(bot: 'ScoreSheetBot'):
         formatted = (cached.role_id, cached.abbr, cached.name, None, cached.overflow)
         if formatted != db_crew[0:5]:
             update_crew(cached)
-        bot.cache.crews_by_name[cached.name].dbattr(*db_crew[5:])
+        bot.cache_value.crews_by_name[cached.name].dbattr(*db_crew[5:])
         if db_crew[2] in rankings:
-            bot.cache.crews_by_name[cached.name].set_rankings(*rankings[db_crew[2]])
+            bot.cache_value.crews_by_name[cached.name].set_rankings(*rankings[db_crew[2]])
     for cr in cached_crews.values():
         update_crew(cr)
 
 
 async def cooldown_handle(bot: 'ScoreSheetBot'):
     for user_id in cooldown_finished():
-        member = bot.cache.scs.get_member(user_id)
+        member = bot.cache_value.scs.get_member(user_id)
         if member:
             if check_roles(member, ['24h Join Cooldown']):
-                await member.remove_roles(bot.cache.roles.join_cd)
-                await bot.cache.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
+                await member.remove_roles(bot.cache_value.roles.join_cd)
+                await bot.cache_value.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
             else:
                 remove_expired_cooldown(user_id)
         else:
             remove_expired_cooldown(user_id)
 
     uids = {item[0] for item in cooldown_current()}
-    for member in bot.cache.scs.members:
+    for member in bot.cache_value.scs.members:
         if check_roles(member, ['24h Join Cooldown']) and member.id not in uids:
-            await member.remove_roles(bot.cache.roles.join_cd)
-            await bot.cache.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
+            await member.remove_roles(bot.cache_value.roles.join_cd)
+            await bot.cache_value.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
 
 
 def strfdelta(tdelta, fmt):
