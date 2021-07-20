@@ -2328,6 +2328,24 @@ class ScoreSheetBot(commands.Cog):
 
         await ctx.send(embed=thank_board(ctx.author))
 
+    @commands.command(**help_doc['coin'])
+    async def coin(self, ctx: Context, member: discord.Member=None):
+
+        flip = bool(random.getrandbits(1))
+        if member:
+            msg = await ctx.send(f'{ctx.author.display_name} has asked you to call a coin {member.mention} '
+                                 f'what do you choose'
+                                 f'({YES} for heads {NO} for tails?)')
+            choice = await wait_for_reaction_on_message(YES, NO, msg, member, self.bot, 60)
+            if choice == flip:
+                await ctx.send(f'{member.display_name} won the flip!')
+            else:
+                await ctx.send(f'{member.display_name} lost the flip!')
+        res = 'heads' if flip else 'tails'
+        await ctx.send(f'Your coin flip landed on {res}', file=discord.File(f'img/{res}.png'))
+
+
+
     @commands.command(**help_doc['disablelist'])
     async def disablelist(self, ctx: Context):
         ids = disabled_channels()

@@ -67,6 +67,8 @@ help_doc = dict(
     stream=HelpDoc(Categories.cb, 'Sets the stream if you are a streamer or leader, or prints it if you are not'),
     timer=HelpDoc(Categories.cb, 'Prints the time since the last match ended'),
     guide=HelpDoc(Categories.misc, 'Links to the guide'),
+    coin=HelpDoc(Categories.misc, 'Flips a coin. If you mention a user it will '
+                                  'prompt them to answer heads or tails before the flip.'),
     use_ext=HelpDoc(Categories.cb, 'Uses your teams time extension in a crew battle'),
     ext=HelpDoc(Categories.cb, 'Prints out extension status'),
     recache=HelpDoc(Categories.staff, 'Updates the cache. Admin only'),
