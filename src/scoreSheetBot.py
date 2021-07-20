@@ -39,7 +39,7 @@ class ScoreSheetBot(commands.Cog):
         self._gambit_message = None
 
     @property
-    def cache(self) -> src.cache.Cache:
+    def cache(self) -> Cache:
         if self.cache_time + CACHE_TIME_BACKUP < time.time():
             self.cache_time = time.time()
             asyncio.create_task(self._cache_process(True), name='recache')
