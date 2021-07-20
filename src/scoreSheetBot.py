@@ -45,21 +45,23 @@ class ScoreSheetBot(commands.Cog):
         return self.cache_value
 
     async def _cache_process(self, backup=False):
+        self.cache_time = time.time()
         if self.cache_value.channels and os.getenv('VERSION') == 'PROD':
             if backup:
                 await self.cache_value.channels.recache_logs.send('(Backup)')
             await self.cache_value.channels.recache_logs.send('Starting recache.')
 
-        await self.cache_value.update(self)
         crew_update(self)
+        await self.cache_value.update(self)
         if os.getenv('VERSION') == 'PROD':
+            await clear_current_cbs(self)
+            await send_long_embed(self.cache.channels.current_cbs, battle_summary(self, False))
             await handle_decay(self)
             await handle_unfreeze(self)
             await handle_decay(self)
             if self.cache_value.scs:
                 await overflow_anomalies(self)
             await cooldown_handle(self)
-        if os.getenv('VERSION') == 'PROD':
             await self.cache_value.channels.recache_logs.send('Successfully recached.')
             update_all_sheets()
         self.cache_time = time.time()
@@ -2487,6 +2489,12 @@ class ScoreSheetBot(commands.Cog):
         #     print(i,battle, len(ids))
         #     master_weight_changes(battle)
         pass
+
+    @commands.command(hidden=True, **help_doc['crnumbers'])
+    @role_call(STAFF_LIST)
+    async def dele(self, ctx):
+        await clear_current_cbs(self)
+        await send_long_embed(self.cache.channels.current_cbs, battle_summary(self, False))
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
