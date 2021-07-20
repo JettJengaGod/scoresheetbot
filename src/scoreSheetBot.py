@@ -2344,7 +2344,7 @@ class ScoreSheetBot(commands.Cog):
             else:
                 await ctx.send(f'{member.display_name} lost the flip!')
         res = 'heads' if flip else 'tails'
-        await ctx.send(f'Your coin flip landed on {res}', file=discord.File(f'img/{res}.png'))
+        await ctx.send(f'Your coin flip landed on {res}', file=discord.File(f'./src/img/{res}.png'))
 
 
 
