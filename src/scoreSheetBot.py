@@ -51,8 +51,8 @@ class ScoreSheetBot(commands.Cog):
                 await self.cache_value.channels.recache_logs.send('(Backup)')
             await self.cache_value.channels.recache_logs.send('Starting recache.')
 
-        crew_update(self)
         await self.cache_value.update(self)
+        crew_update(self)
         if os.getenv('VERSION') == 'PROD':
             await clear_current_cbs(self)
             await send_long_embed(self.cache.channels.current_cbs, battle_summary(self, False))
