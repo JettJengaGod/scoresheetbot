@@ -2912,8 +2912,8 @@ group by crews.id, calced.league_id, crew_ratings.rating;"""
     return ret
 
 
-def master_listings() -> Sequence[Tuple[int, int, str, str]]:
-    listings = """ select crew_id, group_id, crews.name, group_name
+def master_listings() -> Sequence[Tuple[int, int, str, str, str]]:
+    listings = """ select crew_id, group_id, crews.name, group_name, badges
 from master_crews,
      crews
 where master_crews.crew_id = crews.id

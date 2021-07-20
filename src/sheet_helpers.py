@@ -13,7 +13,7 @@ scope = [
 file_name = 'client_key.json'
 creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
 client = gspread.authorize(creds)
-crew_docs_name = 'SCS Crew Docs'  # if os.getenv('VERSION') == 'PROD' else 'Copy of SCS Crew Docs'
+crew_docs_name = 'Copy of SCS Crew Docs'  # if os.getenv('VERSION') == 'PROD' else 'Copy of SCS Crew Docs'
 
 
 def colnum_string(n):
@@ -146,20 +146,22 @@ def update_mc_sheet():
 
     front = []
     rear = []
-    i = 0
+    badge = []
     previous_group = 1
     in_group = 0
-    for cr_id, group_id, crew_name, group_name in master_listings():
+    for cr_id, group_id, crew_name, group_name, badges in master_listings():
         if cr_id not in crew_stats:
-            crew_stats[cr_id] = [crew_name, 0, 0, 2000, 0, 0]
+            crew_stats[cr_id] = [crew_name, 0, 0, 2000, 0, 0, '']
         if previous_group != group_id:
             while in_group < 6:
                 front.append([])
                 rear.append([])
+                badge.append([])
                 in_group += 1
             in_group = 0
         front.append(crew_stats[cr_id][0:4])
         rear.append(crew_stats[cr_id][4:])
+        badge.append([badges])
         in_group += 1
 
         previous_group = group_id
@@ -170,6 +172,9 @@ def update_mc_sheet():
     }, {
         'range': f'G10:H{10 + len(front)}',
         'values': rear
+    }, {
+        'range': f'J10:J{10 + len(front)}',
+        'values': badge
     }])
 
 

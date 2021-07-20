@@ -92,6 +92,7 @@ class Cache:
             gambit_announce = discord.utils.get(server.channels, id=GAMBIT_ANNOUNCE)
             gambit_bot = discord.utils.get(server.channels, id=GAMBIT_BOT_ID)
             sheet_history = discord.utils.get(server.channels, id=SHEET_HISTORY)
+            current_cbs = discord.utils.get(server.channels, id=CURRENT_CBS)
             testing = discord.utils.get(server.channels, id=776644633349849108)
 
         return Channels

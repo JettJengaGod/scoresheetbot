@@ -70,6 +70,15 @@ def split_embed(embed: discord.Embed, length: int) -> List[discord.Embed]:
 
     for split in desc_split:
         ret.append(discord.Embed(color=embed.color, description=split))
+    total_fields = len(embed.fields)
+    if len(ret) <= total_fields // 25:
+        ret.append(discord.Embed(colour=embed.colour))
+    for i, split in enumerate(ret):
+        top = min(total_fields, (i + 1) * 25)
+        if i * 25 < total_fields:
+            for f in embed.fields[i * 25:top]:
+                split.add_field(name=f.name, value=f.value, inline=f.inline)
+
     return ret
 
 
@@ -631,7 +640,8 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
 
 
 def crew_update(bot: 'ScoreSheetBot'):
-    cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache_value.crews_by_name.values() if cr.role_id != -1}
+    cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache_value.crews_by_name.values() if
+                                     cr.role_id != -1}
     db_crews = sorted(all_crews(), key=lambda x: x[2])
     rankings = crew_rankings()
     missing = []
@@ -744,7 +754,8 @@ class PlayerStatsPaged(menus.ListPageSource):
 
 
 def battle_summary(bot: 'ScoreSheetBot', playoff_only: Optional[bool] = True) -> discord.Embed:
-    embed = discord.Embed(title='Current Master Class Battles')
+    title = 'Current Master Class Battles' if playoff_only else 'Current Battles'
+    embed = discord.Embed(title=title, color=discord.Color.random())
     for key, battle in bot.battle_map.items():
         if battle:
             if battle.battle_type == BattleType.MASTER or not playoff_only:
@@ -1144,3 +1155,7 @@ async def set_categories(member: discord.Member, categories: List[discord.Role])
         await member.add_roles(*has)
     if has_not:
         await member.remove_roles(*has_not)
+
+
+async def clear_current_cbs(bot: 'ScoreSheetBot'):
+    await bot.cache.channels.current_cbs.purge()
