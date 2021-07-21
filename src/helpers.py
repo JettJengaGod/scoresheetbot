@@ -762,7 +762,13 @@ def battle_summary(bot: 'ScoreSheetBot', playoff_only: Optional[bool] = True) ->
                 chan = discord.utils.get(bot.cache.scs.channels, id=channel_id_from_key(key))
                 title = f'{battle.team1.name} vs {battle.team2.name}: ' \
                         f'{battle.team1.num_players} vs {battle.team2.num_players}'
-                text = f'{battle.team1.stocks}-{battle.team2.stocks} {chan.mention}'
+                if battle.battle_type == BattleType.MOCK:
+                    ty = 'Mock'
+                elif battle.battle_type == BattleType.MASTER:
+                    ty = 'Master Class'
+                else:
+                    ty = 'Ranked'
+                text = f'{battle.team1.stocks}-{battle.team2.stocks} {chan.mention} ({ty})'
                 if 'Not Set' not in battle.stream:
                     text += f' [stream]({battle.stream})'
                 embed.add_field(name=title, value=text, inline=False)
