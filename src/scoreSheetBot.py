@@ -2031,13 +2031,20 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @role_call(STAFF_LIST)
     @flairing_required
-    async def register(self, ctx: Context, members: Greedy[discord.Member], new_crew: str = None):
+    async def register(self, ctx: Context, members: Greedy[discord.Member], *, new_crew: str = None):
 
         await self.cache.update(self)
         success = []
         fail_not_overflow = []
         fail_on_crew = []
+        if not new_crew and members:
+            await ctx.send(f'{members[-1].mention} is breaking register, try using the full name of the crew.')
+            return
         flairing_crew = crew_lookup(new_crew, self)
+        msg = await ctx.send(f'Are you sure you want to register {len(members)} member for {flairing_crew.name}')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
         for member in members:
             try:
                 user_crew = crew(member, self)
