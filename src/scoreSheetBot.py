@@ -147,7 +147,7 @@ class ScoreSheetBot(commands.Cog):
         if os.getenv('VERSION') == 'PROD':
             increment_command_used(ctx.command.name)
 
-    @tasks.loop(seconds=CACHE_TIME_SECONDS + 100)
+    @tasks.loop(seconds=CACHE_TIME_SECONDS)
     async def auto_cache(self):
         await self._cache_process()
 

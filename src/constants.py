@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from enum import Enum
 
 load_dotenv()
-CACHE_TIME_SECONDS = 30
+CACHE_TIME_SECONDS = 300
 CACHE_TIME_BACKUP = CACHE_TIME_SECONDS+20  # 320 seconds (This is a backup to normal cache)
 OVERFLOW_SERVER = 'Overflow Beta' if os.getenv('VERSION') == 'ALPHA' else 'SCS Overflow Server'
 
