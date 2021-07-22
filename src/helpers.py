@@ -753,25 +753,29 @@ class PlayerStatsPaged(menus.ListPageSource):
         return entries
 
 
-def battle_summary(bot: 'ScoreSheetBot', playoff_only: Optional[bool] = True) -> discord.Embed:
-    title = 'Current Master Class Battles' if playoff_only else 'Current Battles'
+def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[discord.Embed]:
+    if battle_type == BattleType.MOCK:
+        ty = 'Mock'
+    elif battle_type == BattleType.MASTER:
+        ty = 'Master Class'
+    elif battle_type == BattleType.REG:
+        ty = 'Registration'
+    else:
+        ty = 'Ranked'
+    title = f'Current {ty} Battles'
     embed = discord.Embed(title=title, color=discord.Color.random())
     for key, battle in bot.battle_map.items():
         if battle:
-            if battle.battle_type == BattleType.MASTER or not playoff_only:
+            if battle.battle_type == battle_type:
                 chan = discord.utils.get(bot.cache.scs.channels, id=channel_id_from_key(key))
                 title = f'{battle.team1.name} vs {battle.team2.name}: ' \
                         f'{battle.team1.num_players} vs {battle.team2.num_players}'
-                if battle.battle_type == BattleType.MOCK:
-                    ty = 'Mock'
-                elif battle.battle_type == BattleType.MASTER:
-                    ty = 'Master Class'
-                else:
-                    ty = 'Ranked'
-                text = f'{battle.team1.stocks}-{battle.team2.stocks} {chan.mention} ({ty})'
+                text = f'{battle.team1.stocks}-{battle.team2.stocks} {chan.mention}'
                 if 'Not Set' not in battle.stream:
                     text += f' [stream]({battle.stream})'
                 embed.add_field(name=title, value=text, inline=False)
+    if len(embed.fields) == 0:
+        return None
     return embed
 
 
