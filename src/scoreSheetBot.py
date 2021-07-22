@@ -55,7 +55,10 @@ class ScoreSheetBot(commands.Cog):
         crew_update(self)
         if os.getenv('VERSION') == 'PROD':
             await clear_current_cbs(self)
-            await send_long_embed(self.cache.channels.current_cbs, battle_summary(self, False))
+            for battle_type in BattleType:
+                summary = battle_summary(self, battle_type)
+                if summary:
+                    await send_long_embed(self.cache.channels.current_cbs, summary)
             await handle_decay(self)
             await handle_unfreeze(self)
             await handle_decay(self)
