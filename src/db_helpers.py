@@ -2,7 +2,7 @@ import datetime
 import os
 import sys
 import traceback
-from typing import List, Tuple, Optional, Iterable, Dict, Sequence, Any, Mapping
+from typing import List, Tuple, Optional, Iterable, Dict, Sequence, Any, Mapping, Set
 from collections import defaultdict
 
 import discord
@@ -1162,6 +1162,31 @@ def cooldown_finished() -> List[int]:
     finished = """ 
         select member_id from 
             (SELECT EXTRACT(epoch FROM age(current_timestamp, gained))/3600 as hours,member_id, roles.name 
+                from current_member_roles,roles 
+                where roles.id = current_member_roles.role_id and roles.id = 786492456027029515) 
+                as b where hours > 24;"""
+    conn = None
+    current = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(finished)
+        current = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return [c[0] for c in current]
+
+
+def track_finished() -> List[int]:
+    finished = """ 
+        select member_id from 
+            (SELECT EXTRACT(month FROM age(current_timestamp, gained))/3600 as hours,member_id, roles.name 
                 from current_member_roles,roles 
                 where roles.id = current_member_roles.role_id and roles.id = 786492456027029515) 
                 as b where hours > 24;"""
@@ -3095,3 +3120,52 @@ def nickname_lookup(member_id: int) -> str:
         if conn is not None:
             conn.close()
     return name
+
+
+def members_in_server() -> Tuple[Set[int], Set[int]]:
+    lookup = """ select id, in_server from members;"""
+    conn = None
+    in_server, out_server = set(), set()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(lookup)
+        res = cur.fetchall()
+        if res:
+            for mem_id, location in res:
+                if location:
+                    in_server.add(mem_id)
+                else:
+                    out_server.add(mem_id)
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return (in_server, out_server)
+
+
+def update_member_status(in_server: Tuple[int], out_server: Tuple[int]) -> None:
+    update_in_server = """update members set in_server = %s 
+    where id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        for mem_id in in_server:
+            cur.execute(update_in_server, (True, mem_id))
+        for mem_id in out_server:
+            cur.execute(update_in_server, (False, mem_id))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()

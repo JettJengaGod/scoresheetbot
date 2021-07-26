@@ -277,30 +277,41 @@ class ScoreSheetBot(commands.Cog):
             if not check_roles(ctx.author, STAFF_LIST):
                 await self._reject_outsiders(ctx)
             overwrites = ctx.channel.overwrites
+            muted_overwite = discord.PermissionOverwrite(send_messages=False, add_reactions=False,
+                                                         manage_messages=False)
 
             crew_overwrite = discord.PermissionOverwrite(send_messages=True, add_reactions=True)
             if crew_lookup(current.team1.name, self).overflow:
                 _, mems, _ = members_with_str_role(current.team1.name, self)
                 for mem in mems:
-                    overwrites[mem] = crew_overwrite
+                    if not check_roles(mem, [MUTED]):
+                        overwrites[mem] = crew_overwrite
             else:
                 cr_role_1 = discord.utils.get(ctx.guild.roles, name=current.team1.name)
                 overwrites[cr_role_1] = crew_overwrite
-
+                for mem in overlap_members(MUTED, current.team1.name, self):
+                    overwrites[mem] = muted_overwite
             if crew_lookup(current.team2.name, self).overflow:
                 _, mems, _ = members_with_str_role(current.team2.name, self)
                 for mem in mems:
-                    overwrites[mem] = crew_overwrite
+                    if not check_roles(mem, [MUTED]):
+                        overwrites[mem] = crew_overwrite
             else:
                 cr_role_2 = discord.utils.get(ctx.guild.roles, name=current.team2.name)
                 overwrites[cr_role_2] = crew_overwrite
+                for mem in overlap_members(MUTED, current.team2.name, self):
+                    overwrites[mem] = muted_overwite
             everyone_overwrite = discord.PermissionOverwrite(send_messages=False, manage_messages=False,
                                                              add_reactions=False)
             overwrites[self.cache.roles.everyone] = everyone_overwrite
             out = f'Room Locked to only {current.team1.name} and {current.team2.name}.'
             if streamer:
-                overwrites[streamer] = crew_overwrite
-                out += f' As the streamer, {streamer.display_name} also can talk.'
+                if check_roles(streamer, [MUTED]):
+                    out += f'{streamer.mention} is muted and does not get speaking perms.'
+                else:
+                    overwrites[streamer] = crew_overwrite
+                    out += f' As the streamer, {streamer.display_name} also can talk.'
+
             await ctx.channel.edit(overwrites=overwrites)
             await ctx.send(out)
         else:
@@ -2041,7 +2052,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{members[-1].mention} is breaking register, try using the full name of the crew.')
             return
         flairing_crew = crew_lookup(new_crew, self)
-        msg = await ctx.send(f'Are you sure you want to register {len(members)} member for {flairing_crew.name}')
+        msg = await ctx.send(f'Are you sure you want to register {len(members)} members for {flairing_crew.name}')
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
@@ -2511,11 +2522,13 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        # ids = sorted(all_battle_ids())
-        # for i, battle in enumerate(ids):
-        #     print(i,battle, len(ids))
-        #     master_weight_changes(battle)
-        pass
+        in_server, out_server = members_in_server()
+
+        for mem in self.cache.scs.members:
+            if mem.id in in_server:
+                in_server.remove(mem.id)
+
+        update_member_status((), tuple(in_server))
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
