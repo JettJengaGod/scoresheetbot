@@ -10,6 +10,7 @@ OVERFLOW_SERVER = 'Overflow Beta' if os.getenv('VERSION') == 'ALPHA' else 'SCS O
 TRACK = ['Track 1', 'Track 2', 'Move Locked Next Join']
 TRUE_LOCKED = 'Full Move Locked'
 OVERFLOW_ROLE = 'SCS Overflow Crew'
+MUTED = 'Muted'
 LEADER = 'Leader'
 MINION = 'v2 Minion'
 ADMIN = 'SCS Admin'
