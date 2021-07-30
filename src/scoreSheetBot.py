@@ -154,12 +154,11 @@ class ScoreSheetBot(commands.Cog):
     async def wait_for_bot(self):
         await self.bot.wait_until_ready()
 
-    """ Future commands for role listening """
+    @commands.Cog.listener()
+    async def on_member_remove(self, user):
+        # update_member_status((), (user.id,))
+        pass
 
-    # @commands.Cog.listener()
-    # async def on_member_remove(self, user):
-    #     print([role.name for role in user.roles], user.guild.name)
-    #
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         if os.getenv('VERSION') == 'PROD':
@@ -2340,7 +2339,8 @@ class ScoreSheetBot(commands.Cog):
     async def thank(self, ctx: Context):
 
         await ctx.send(f'Thanks for all the hard work you do on the bot alexjett!\n'
-                       f'{add_thanks(ctx.author)}')
+                       f'{add_thanks(ctx.author)} \n(If you want to thank him with money you can do so here. '
+                       f'https://www.buymeacoffee.com/alexjett)')
 
     @commands.command(**help_doc['thankboard'])
     @banned_channels(['crew_flairing', 'scs_docs_updates'])
@@ -2411,6 +2411,41 @@ class ScoreSheetBot(commands.Cog):
         for mem in mems:
             out.append(mem.mention)
         await ctx.send(''.join(out))
+
+    @commands.command(**help_doc['vote'])
+    @role_call([LEADER])
+    async def vote(self, ctx, option: int):
+        options = ('', 'Keep slot system unchanged',
+                   'Keep slot system, but add a modifier where low ranked crews get additional slots (scaled by rank)',
+                   'Keep slot system, but change it so 2 unflairs is a returned slot rather than 3',
+                   'Remove slot system and re-implement merge rules')
+        cr = crew_lookup(crew(ctx.author, self), self)
+        current_vote = get_crew_vote(cr)
+        if current_vote:
+            msg = await ctx.send(f'Your crew {cr.name} has already voted for \n```{options[current_vote[1]]} ```\n '
+                                 f'made by {current_vote[2]}. Would you like to overwrite this?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!', delete_after=5)
+                await ctx.message.delete()
+                await msg.delete()
+                return
+            await msg.delete()
+        if not (0 < option < 5):
+            await response_message(ctx, 'You must input a number between 1 and 4')
+            return
+
+        msg = await ctx.send(f'Your crew {cr.name} selected \n```{options[option]} ```\n '
+                             f'made by {ctx.author.mention}. Please confirm')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!', delete_after=5)
+            await ctx.message.delete()
+            await msg.delete()
+            return
+        await ctx.send(f'{ctx.author.mention}: Confirmed your above choice.', delete_after=5)
+
+        await msg.delete()
+        await ctx.message.delete()
+        set_crew_vote(cr, option, ctx.author.id)
 
     @commands.command(**help_doc['overlap'])
     async def overlap(self, ctx, *, two_roles: str = None):
@@ -2523,10 +2558,13 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
         in_server, out_server = members_in_server()
-
-        for mem in self.cache.scs.members:
+        for i, mem in enumerate(self.cache.scs.members):
+            # if i < 6699:
+            #     continue
+            # update_member_roles(mem)
             if mem.id in in_server:
                 in_server.remove(mem.id)
+            print(i, len(self.cache.scs.members))
 
         update_member_status((), tuple(in_server))
 

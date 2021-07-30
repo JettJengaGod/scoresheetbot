@@ -3169,3 +3169,93 @@ def update_member_status(in_server: Tuple[int], out_server: Tuple[int]) -> None:
     finally:
         if conn is not None:
             conn.close()
+
+
+def members_roles() -> Tuple[Set[int], Set[int]]:
+    lookup = """ select id, in_server from members;"""
+    conn = None
+    in_server, out_server = set(), set()
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(lookup)
+        res = cur.fetchall()
+        if res:
+            for mem_id, location in res:
+                if location:
+                    in_server.add(mem_id)
+                else:
+                    out_server.add(mem_id)
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return in_server, out_server
+
+
+def get_crew_vote(crew : Crew) -> Optional[Tuple[str, int, str]]:
+    lookup = """
+    select crews.name, votes.choice, members.nickname
+from votes,
+     crews,
+     members
+    where votes.member_id = members.id and crews.id = votes.crew_id and crews.id = %s;"""
+    out = None
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(lookup, (crew_id_from_crews(crew, cur),))
+        res = cur.fetchall()
+        if res:
+            out = res[0]
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return out
+
+def set_crew_vote(crew: Crew, option: int, member_id: int) -> None:
+    setup = """
+    insert into votes (crew_id, choice, member_id)
+VALUES (%s, %s, %s)
+on conflict (crew_id) do update set choice    = excluded.choice,
+                          member_id = excluded.member_id;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(setup, (crew_id_from_crews(crew, cur), option, member_id))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+
+"""select '<@!' || member_id || '>', name, gained
+from (SELECT EXTRACT(month FROM age(current_timestamp, gained)) as months, member_id, roles.name, gained
+      from current_member_roles,
+           roles,
+           members
+      where roles.id = current_member_roles.role_id
+        and roles.name in ('Track 1', 'Track 2', 'Full Move Locked', 'Move Locked Next Join')
+        and members.in_server = True
+        and members.id = current_member_roles.member_id)
+
+         as b
+where months > 0
+"""
