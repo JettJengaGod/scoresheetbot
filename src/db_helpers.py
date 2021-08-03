@@ -2954,7 +2954,12 @@ def crew_rankings() -> Mapping[str, Tuple[int, int, bool, int]]:
             crew_count.cc
     from crew_ratings,
          crews,
-         (select count(*) as cc from crew_ratings where league_id = 8) crew_count
+         (select count(*) as cc
+      from crew_ratings,
+           crews
+      where league_id = 8
+        and crew_id = crews.id
+        and crews.disbanded = FALSE) crew_count
     where league_id = 8
       and crew_ratings.crew_id = crews.id
       and crews.disbanded = false;
