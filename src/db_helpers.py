@@ -14,6 +14,7 @@ from src.crew import Crew
 from src.db_config import config
 from src.elo_helpers import EloPlayer, rating_update
 from src.gambit import Gambit
+from src.constants import *
 
 
 def logfile():
@@ -1162,31 +1163,6 @@ def cooldown_finished() -> List[int]:
     finished = """ 
         select member_id from 
             (SELECT EXTRACT(epoch FROM age(current_timestamp, gained))/3600 as hours,member_id, roles.name 
-                from current_member_roles,roles 
-                where roles.id = current_member_roles.role_id and roles.id = 786492456027029515) 
-                as b where hours > 24;"""
-    conn = None
-    current = []
-    try:
-        params = config()
-        conn = psycopg2.connect(**params)
-        cur = conn.cursor()
-        cur.execute(finished)
-        current = cur.fetchall()
-        conn.commit()
-        cur.close()
-    except (Exception, psycopg2.DatabaseError) as error:
-        log_error_and_reraise(error)
-    finally:
-        if conn is not None:
-            conn.close()
-    return [c[0] for c in current]
-
-
-def track_finished() -> List[int]:
-    finished = """ 
-        select member_id from 
-            (SELECT EXTRACT(month FROM age(current_timestamp, gained))/3600 as hours,member_id, roles.name 
                 from current_member_roles,roles 
                 where roles.id = current_member_roles.role_id and roles.id = 786492456027029515) 
                 as b where hours > 24;"""
@@ -2746,38 +2722,43 @@ limit 1;"""
 
 def battle_frontier_crews() -> Sequence[Tuple[str, str, datetime.datetime, str, int, bool]]:
     bf_crews = """
-    select crews.name,
-           crews.tag,
-           last_battle.finished,
-           last_battle.opp,
-           crew_ratings.rating,
-           case
-               when (rank() over (order by rating desc)) < (.4 * crew_count.cc) then True
-               else false end bf
-    from crew_ratings,
-         (select count(*) as cc from crew_ratings where league_id = 8) crew_count,
-         crews
-             left join (select battle.finished                                                              as finished,
-                               opp_crew.name || case when battle.winner = crew_id then '(W)' else '(L)' end as opp,
-                               newest_battle.crew_id                                                        as cid
-                        from (select max(battle.id) as battle_id, crews.id as crew_id
-                              from battle,
-                                   crews
-                              where (crews.id = battle.crew_1
-                                  or crews.id = battle.crew_2)
-                              group by crews.id)
-                                 as newest_battle,
-                             battle,
-                             crews as opp_crew
-                        where newest_battle.battle_id = battle.id
-                          and opp_crew.id = case
-                                                when newest_battle.crew_id = battle.crew_2 then battle.crew_1
-                                                else battle.crew_2 end) as last_battle on last_battle.cid = crews.id
-    
-    where crew_ratings.crew_id = crews.id
-      and crew_ratings.league_id = 8
-      and crews.disbanded = false
-    order by rating desc;
+select crews.name,
+       crews.tag,
+       last_battle.finished,
+       last_battle.opp,
+       crew_ratings.rating,
+       case
+           when (rank() over (order by rating desc)) < (.4 * crew_count.cc) then True
+           else false end bf
+from crew_ratings,
+     (select count(*) as cc
+      from crew_ratings,
+           crews
+      where league_id = 8
+        and crew_id = crews.id
+        and crews.disbanded = FALSE) crew_count,
+     crews
+         left join (select battle.finished                                                              as finished,
+                           opp_crew.name || case when battle.winner = crew_id then '(W)' else '(L)' end as opp,
+                           newest_battle.crew_id                                                        as cid
+                    from (select max(battle.id) as battle_id, crews.id as crew_id
+                          from battle,
+                               crews
+                          where (crews.id = battle.crew_1
+                              or crews.id = battle.crew_2)
+                          group by crews.id)
+                             as newest_battle,
+                         battle,
+                         crews as opp_crew
+                    where newest_battle.battle_id = battle.id
+                      and opp_crew.id = case
+                                            when newest_battle.crew_id = battle.crew_2 then battle.crew_1
+                                            else battle.crew_2 end) as last_battle on last_battle.cid = crews.id
+
+where crew_ratings.crew_id = crews.id
+  and crew_ratings.league_id = 8
+  and crews.disbanded = false
+order by rating desc;
 """
     conn = None
     ret = []
@@ -3198,7 +3179,7 @@ def members_roles() -> Tuple[Set[int], Set[int]]:
     return in_server, out_server
 
 
-def get_crew_vote(crew : Crew) -> Optional[Tuple[str, int, str]]:
+def get_crew_vote(crew: Crew) -> Optional[Tuple[str, int, str]]:
     lookup = """
     select crews.name, votes.choice, members.nickname
 from votes,
@@ -3225,6 +3206,7 @@ from votes,
             conn.close()
     return out
 
+
 def set_crew_vote(crew: Crew, option: int, member_id: int) -> None:
     setup = """
     insert into votes (crew_id, choice, member_id)
@@ -3245,6 +3227,108 @@ on conflict (crew_id) do update set choice    = excluded.choice,
     finally:
         if conn is not None:
             conn.close()
+
+
+def non_votes() -> List[str]:
+    lookup = """select crews.name from crews
+    left join votes on votes.crew_id = crews.id
+        where votes.crew_id is null and crews.disbanded = false;"""
+    conn = None
+    names = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(lookup)
+        res = cur.fetchall()
+        if res:
+            for name in res:
+                names.append(name[0])
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return names
+
+
+def track_finished() -> List[int]:
+    finished = """ 
+        select member_id from 
+            (SELECT EXTRACT(month FROM age(current_timestamp, gained))/3600 as hours,member_id, roles.name 
+                from current_member_roles,roles 
+                where roles.id = current_member_roles.role_id and roles.id = 786492456027029515) 
+                as b where hours > 24;"""
+    conn = None
+    current = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(finished)
+        current = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return [c[0] for c in current]
+
+
+def track_down_out(member_id: int):
+    current_track = """select  roles.name, roles.id
+      from current_member_roles,
+           roles,
+           members
+      where roles.id = current_member_roles.role_id
+        and roles.name in ('Track 1', 'Track 2', 'Full Move Locked', 'Move Locked Next Join')
+        and members.id = current_member_roles.member_id
+        and member_id = %s;"""
+    role_id_from_name = """select id from roles where name = %s;"""
+    add_mem_role = """INSERT into current_member_roles (member_id, role_id, gained)
+     values(%s, %s, current_timestamp);"""
+    delete_current = """DELETE FROM current_member_roles 
+        where member_id = %s
+        and role_id = %s
+        returning gained;"""
+
+    add_member_history = """INSERT into member_roles_history (member_id, role_id, gained, lost)
+     values(%s, %s, %s, current_timestamp);"""
+    conn = None
+    try:
+
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(current_track, (member_id,))
+        ret = cur.fetchone()
+        if not ret:
+            return
+        name, role_id = ret
+        track_index = FULL_TRACK.index(name)
+        if track_index > 0:
+            new_track = FULL_TRACK[track_index-1]
+            cur.execute(role_id_from_name, (new_track,))
+            new_id = cur.fetchone()[0]
+            cur.execute(add_mem_role, (member_id, new_id))
+        cur.execute(delete_current, (member_id, role_id,))
+        gained = cur.fetchone()[0]
+        cur.execute(add_member_history, (member_id, role_id, gained))
+
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
 
 """select '<@!' || member_id || '>', name, gained
 from (SELECT EXTRACT(month FROM age(current_timestamp, gained)) as months, member_id, roles.name, gained
