@@ -680,6 +680,23 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
             await bot.cache_value.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
 
 
+async def track_decrement(member: discord.Member, bot: 'ScoreSheetBot'):
+    member_roles = member.roles
+    for role in member_roles:
+        if role.name in FULL_TRACK:
+            current_track = FULL_TRACK.index(role.name)
+            await member.remove_roles(role)
+            msg = f'{member.display_name} moved from {role.name} to '
+            if current_track > 0:
+                new_role = discord.utils.get(bot.cache.scs.roles, name=FULL_TRACK[current_track-1])
+                await member.add_roles(new_role)
+                msg += f'{new_role.name}.'
+            else:
+                msg += 'no track.'
+            await bot.cache_value.channels.flair_log.send(msg)
+
+
+
 def strfdelta(tdelta, fmt):
     d = {"days": tdelta.days}
     d["hours"], rem = divmod(tdelta.seconds, 3600)

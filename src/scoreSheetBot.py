@@ -2558,17 +2558,47 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
-    async def rate(self, ctx):
-        in_server, out_server = members_in_server()
-        for i, mem in enumerate(self.cache.scs.members):
-            # if i < 6699:
-            #     continue
-            # update_member_roles(mem)
-            if mem.id in in_server:
-                in_server.remove(mem.id)
-            print(i, len(self.cache.scs.members))
+    async def rate(self, ctx, member: discord.Member):
+        await track_decrement(member, self)
+        # crew_msg = {}
+        # for cr in non_votes():
+        #     msg = f'Your crew {cr} has not yet voted in the slots poll, please vote between these 4 options by typing ' \
+        #           f'`,vote [Number]` (where [Number] is the option you want to vote for),' \
+        #           f' in any channel in the SCS server (not this dm). ' \
+        #           f' ```1. Keep slot system unchanged\n' \
+        #           '2. Keep slot system, but add a modifier where low ranked crews get additional slots (scaled by rank)' \
+        #           '3. Keep slot system, but change it so 2 unflairs is a returned slot rather than 3\n' \
+        #           '4. Remove slot system and re-implement merge rules\n```' \
+        #           'for example, `,vote 2` would vote for `Keep slot system, but add a modifier' \
+        #           ' where low ranked crews get additional slots (scaled by rank)`'
+        #     crew_msg[cr] = msg
+        # print('**')
+        # for i, member in enumerate(self.cache.scs.members):
+        #     if i % 100 == 0:
+        #         print(f'{i}/{len(self.cache.scs.members)} pt 2')
+        #     if self.cache.roles.leader in member.roles:
+        #         msg = ''
+        #         try:
+        #             cr = crew(member, self)
+        #             if cr in crew_msg:
+        #                 msg = crew_msg[cr]
+        #         except ValueError:
+        #             await ctx.send(f'{str(member)} is a leader with no crew.')
+        #         if msg:
+        #             try:
+        #                 await member.send(msg)
+        #             except discord.errors.Forbidden:
+        #                 await ctx.send(f'{str(member)} is not accepting dms.')
+        # in_server, out_server = members_in_server()
+        # for i, mem in enumerate(self.cache.scs.members):
+        #     # if i < 6699:
+        #     #     continue
+        #     # update_member_roles(mem)
+        #     if mem.id in in_server:
+        #         in_server.remove(mem.id)
+        #     print(i, len(self.cache.scs.members))
 
-        update_member_status((), tuple(in_server))
+        # update_member_status((), tuple(in_server))
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
