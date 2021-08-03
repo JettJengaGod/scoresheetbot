@@ -61,7 +61,6 @@ class ScoreSheetBot(commands.Cog):
                     await send_long_embed(self.cache.channels.current_cbs, summary)
             await handle_decay(self)
             await handle_unfreeze(self)
-            await handle_decay(self)
             if self.cache_value.scs:
                 await overflow_anomalies(self)
             await cooldown_handle(self)
