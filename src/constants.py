@@ -30,6 +30,7 @@ SCORESHEET_HISTORY = 'scoresheet_history'
 JOIN_CD = '24h Join Cooldown'
 CURRENT_CBS = 839425874364989480
 NOT_VERIFIED = 'Not Verified'
+VERIFIED = 'DC Verified'
 FLAIRING_LOGS = 'jettbot_flairing_logs'
 FLAIR_VERIFY = '! Verify Flair Change !'
 BOT_CORNER_ID = 430367391227052054
