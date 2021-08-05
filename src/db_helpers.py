@@ -3234,10 +3234,10 @@ on conflict (crew_id) do update set choice    = excluded.choice,
             conn.close()
 
 
-def non_votes() -> List[str]:
+def all_votes() -> List[str]:
     lookup = """select crews.name from crews
     left join votes on votes.crew_id = crews.id
-        where votes.crew_id is null and crews.disbanded = false;"""
+        where votes.crew_id = crews.id and crews.disbanded = false;"""
     conn = None
     names = []
     try:
