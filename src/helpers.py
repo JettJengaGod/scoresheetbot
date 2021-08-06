@@ -548,6 +548,35 @@ def overlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[disco
     return out
 
 
+def noverlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[discord.Member]:
+    crew_role = None
+    other_role = None
+    if first in bot.cache.crews:
+        if second in bot.cache.crews:
+            raise ValueError(f'Interpreted as {first} and {second}. '
+                             f'You can\'t have members on two crews! Try to be more specific.')
+        crew_role = first
+        other_role = second
+    if second in bot.cache.crews:
+        crew_role = second
+        other_role = first
+    out = []
+    if crew_role:
+        for member in bot.cache.scs.members:
+            try:
+                if crew(member, bot) == crew_role:
+                    if not check_roles(member, [other_role]):
+                        out.append(member)
+            except ValueError:
+                continue
+    else:
+        for member in bot.cache.scs.members:
+            role_names = {role.name for role in member.roles}
+            if first in role_names and second not in role_names:
+                out.append(member)
+    return out
+
+
 async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
                                        message: discord.Message, author: discord.Member, bot: discord.Client,
                                        timeout: float = 30.0) -> bool:
@@ -686,13 +715,12 @@ async def track_decrement(member: discord.Member, bot: 'ScoreSheetBot'):
             await member.remove_roles(role)
             msg = f'{member.display_name} moved from {role.name} to '
             if current_track > 0:
-                new_role = discord.utils.get(bot.cache.scs.roles, name=FULL_TRACK[current_track-1])
+                new_role = discord.utils.get(bot.cache.scs.roles, name=FULL_TRACK[current_track - 1])
                 await member.add_roles(new_role)
                 msg += f'{new_role.name}.'
             else:
                 msg += 'no track.'
             await bot.cache_value.channels.flair_log.send(msg)
-
 
 
 def strfdelta(tdelta, fmt):

@@ -110,6 +110,9 @@ help_doc = dict(
     overlap=HelpDoc(Categories.misc, 'Find the overlap between two roles',
                     'Send in the two role names separated by spaces, it will try to find the best match',
                     'role1 role2'),
+    noverlap=HelpDoc(Categories.misc, 'Find members that have one role but not another',
+                     'Send in the two role names separated by spaces, it will try to find the best match',
+                     'role1 role2'),
     listroles=HelpDoc(Categories.misc, 'Find the users with this role', '', 'role'),
     disablelist=HelpDoc(Categories.misc, 'List of channels disabled for jettbot'),
 
@@ -148,7 +151,8 @@ help_doc = dict(
                     'Returns the number of unique players used by crews last month or the players and each cb'
                     'for a specific crew', '', 'Optional[Crew]'),
     crnumbers=HelpDoc(Categories.staff, 'Helpful numbers for crew analysis'),
-    cancelcb=HelpDoc(Categories.staff, 'Cancel a crew battle that happened in the past', '', 'battleId Optional[Reason]'),
+    cancelcb=HelpDoc(Categories.staff, 'Cancel a crew battle that happened in the past', '',
+                     'battleId Optional[Reason]'),
     slottotals=HelpDoc(Categories.staff, 'Prints all the max slots for crews'),
     flaircounts=HelpDoc(Categories.staff, 'Helpful numbers for flair analysis'),
     addsheet=HelpDoc(Categories.staff, 'Adds a new non bot sheet to the database and in scoresheet_history', '',
@@ -157,8 +161,10 @@ help_doc = dict(
                       'Winner Loser Size FinalScore'),
     weirdreg=HelpDoc(Categories.staff, 'Adds a new reg cb sheet where the registering crew won but didn\'t reg'
                                        'to the database and in scoresheet_history', '',
-                      'Winner Loser Size FinalScore'),
+                     'Winner Loser Size FinalScore'),
     pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),
+    pingnoverlap=HelpDoc(Categories.staff, 'Pings all members with the first role but not the 2nd', '',
+                         'role 1 role 2'),
     register=HelpDoc(Categories.staff,
                      'Flairs multiple people for a new crew'
                      'Only use spaces between members, and mention mention each one', '',
