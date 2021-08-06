@@ -2462,7 +2462,27 @@ class ScoreSheetBot(commands.Cog):
         if 'everyone' in best[0] or 'everyone' in best[1]:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
             return
+        if len(mems) > 100:
+            await ctx.send(f'This is over 100 members, file outputs will be implemented soon.')
+            return
         out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([escape(str(mem)) for mem in mems])
+
+        await send_long(ctx, out, ',')
+
+    @commands.command(**help_doc['noverlap'])
+    async def noverlap(self, ctx, *, two_roles: str = None):
+        if 'everyone' in two_roles:
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            return
+        best = best_of_possibilities(two_roles, self)
+        mems = noverlap_members(best[0], best[1], self)
+        if 'everyone' in best[0] or 'everyone' in best[1]:
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            return
+        if len(mems) > 100:
+            await ctx.send(f'This is over 100 members, file outputs will be implemented soon.')
+            return
+        out = f'Members that have {best[0]} but not {best[1]}:\n' + ', '.join([escape(str(mem)) for mem in mems])
 
         await send_long(ctx, out, ',')
 
@@ -2487,6 +2507,30 @@ class ScoreSheetBot(commands.Cog):
                 return
 
         out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([mem.mention for mem in mems])
+
+        await send_long(ctx, out, ',')
+
+    @commands.command(hidden=True, **help_doc['pingoverlap'])
+    @role_call(STAFF_LIST)
+    async def pingnoverlap(self, ctx, *, two_roles: str = None):
+        if 'everyone' in two_roles:
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            return
+        best = best_of_possibilities(two_roles, self)
+        mems = noverlap_members(best[0], best[1], self)
+
+        if 'everyone' in best[0] or 'everyone' in best[1]:
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            return
+        if len(mems) > 10:
+            resp = f'You are attempting to ping all {best[0]} bot not {best[1]} this ' \
+                   f'is {len(mems)} members, are you sure?'
+            msg = await ctx.send(resp)
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                return
+
+        out = f'Members that have {best[0]} but not {best[1]}:\n' + ', '.join([mem.mention for mem in mems])
 
         await send_long(ctx, out, ',')
 
