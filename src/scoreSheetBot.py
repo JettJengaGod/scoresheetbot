@@ -156,8 +156,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, user):
-        # update_member_status((), (user.id,))
-        pass
+        update_member_status((), (user.id,))
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
@@ -2606,40 +2605,44 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
+        pass
         # await track_decrement(member, self)
-        crew_msg = {}
-        for cr in all_votes():
-            msg = f'Voting on slots modifier is now active, you can change your vote if you choose ' \
-                  f'or you can do nothing and keep your previous vote. ' \
-                  f'This is available to you since your crew {cr} voted in the first one. ' \
-                  f'See <#852278918274482206> for details.'
-            crew_msg[cr] = msg
-        for i, member in enumerate(self.cache.scs.members):
-            if i % 100 == 0:
-                print(f'{i}/{len(self.cache.scs.members)} pt 2')
-            if self.cache.roles.leader in member.roles:
-                msg = ''
-                try:
-                    cr = crew(member, self)
-                    if cr in crew_msg:
-                        msg = crew_msg[cr]
-                except ValueError:
-                    await ctx.send(f'{str(member)} is a leader with no crew.')
-                if msg:
-                    try:
-                        await member.send(msg)
-                    except discord.errors.Forbidden:
-                        await ctx.send(f'{str(member)} is not accepting dms.')
+        # crew_msg = {}
+        # for cr in all_votes():
+        #     msg = f'Voting on slots modifier is now active, you can change your vote if you choose ' \
+        #           f'or you can do nothing and keep your previous vote. ' \
+        #           f'This is available to you since your crew {cr} voted in the first one. ' \
+        #           f'See <#852278918274482206> for details.'
+        #     crew_msg[cr] = msg
+        # for i, member in enumerate(self.cache.scs.members):
+        #     if i % 100 == 0:
+        #         print(f'{i}/{len(self.cache.scs.members)} pt 2')
+        #     if self.cache.roles.leader in member.roles:
+        #         msg = ''
+        #         try:
+        #             cr = crew(member, self)
+        #             if cr in crew_msg:
+        #                 msg = crew_msg[cr]
+        #         except ValueError:
+        #             await ctx.send(f'{str(member)} is a leader with no crew.')
+        #         if msg:
+        #             try:
+        #                 await member.send(msg)
+        #             except discord.errors.Forbidden:
+        #                 await ctx.send(f'{str(member)} is not accepting dms.')
         # in_server, out_server = members_in_server()
+        # final_in: List[int] = []
         # for i, mem in enumerate(self.cache.scs.members):
-        #     # if i < 6699:
-        #     #     continue
-        #     # update_member_roles(mem)
         #     if mem.id in in_server:
         #         in_server.remove(mem.id)
+        #     else:
+        #         final_in.append(mem.id)
         #     print(i, len(self.cache.scs.members))
-
-        # update_member_status((), tuple(in_server))
+        #     if i < 12500:
+        #         continue
+        #     update_member_roles(mem)
+        #
+        # update_member_status(tuple(final_in), tuple(in_server))
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)

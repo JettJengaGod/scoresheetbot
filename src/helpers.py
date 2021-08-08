@@ -15,7 +15,7 @@ from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
     player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id, \
-    battle_frontier_crews, elo_decay, reset_decay, first_crew_flair
+    battle_frontier_crews, elo_decay, reset_decay, first_crew_flair, track_finished_out, track_down_out, track_finished
 from gambit import Gambit
 from sheet_helpers import update_all_sheets
 
@@ -708,6 +708,14 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
             await member.remove_roles(bot.cache_value.roles.join_cd)
             await bot.cache_value.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
 
+
+async def track_handle(bot: 'ScoreSheetBot'):
+    # out_finished = track_finished_out()
+    # for mem_id, months in out_finished:
+    #     for i in range(min(months, 4)):
+    #         track_down_out(mem_id)
+    #
+    in_finished = track_finished()
 
 async def track_decrement(member: discord.Member, bot: 'ScoreSheetBot'):
     member_roles = member.roles

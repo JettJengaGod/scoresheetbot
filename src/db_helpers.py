@@ -3260,13 +3260,20 @@ def all_votes() -> List[str]:
     return names
 
 
-def track_finished() -> List[int]:
+def track_finished() -> Tuple[Tuple[int, str]]:
     finished = """ 
-        select member_id from 
-            (SELECT EXTRACT(month FROM age(current_timestamp, gained))/3600 as hours,member_id, roles.name 
-                from current_member_roles,roles 
-                where roles.id = current_member_roles.role_id and roles.id = 786492456027029515) 
-                as b where hours > 24;"""
+        select member_id, name
+from (SELECT EXTRACT(month FROM age(current_timestamp, gained)) as months, member_id,role_id, roles.name, gained
+      from current_member_roles,
+           roles,
+           members
+      where roles.id = current_member_roles.role_id
+        and roles.name in ('Track 1', 'Track 2', 'Full Move Locked', 'Move Locked Next Join')
+        and members.in_server = True
+        and members.id = current_member_roles.member_id)
+
+         as b
+where months > 0"""
     conn = None
     current = []
     try:
@@ -3282,7 +3289,39 @@ def track_finished() -> List[int]:
     finally:
         if conn is not None:
             conn.close()
-    return [c[0] for c in current]
+    return ((c[0], c[1]) for c in current)
+
+
+def track_finished_out() -> Tuple[Tuple[int, int]]:
+    finished = """ 
+        select member_id, months
+from (SELECT EXTRACT(month FROM age(current_timestamp, gained)) as months, member_id,role_id, roles.name, gained
+      from current_member_roles,
+           roles,
+           members
+      where roles.id = current_member_roles.role_id
+        and roles.name in ('Track 1', 'Track 2', 'Full Move Locked', 'Move Locked Next Join')
+        and members.in_server = False
+        and members.id = current_member_roles.member_id)
+
+         as b
+where months > 0"""
+    conn = None
+    current = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(finished)
+        current = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return ((c[0], int(c[1])) for c in current)
 
 
 def track_down_out(member_id: int):
@@ -3317,7 +3356,7 @@ def track_down_out(member_id: int):
         name, role_id = ret
         track_index = FULL_TRACK.index(name)
         if track_index > 0:
-            new_track = FULL_TRACK[track_index-1]
+            new_track = FULL_TRACK[track_index - 1]
             cur.execute(role_id_from_name, (new_track,))
             new_id = cur.fetchone()[0]
             cur.execute(add_mem_role, (member_id, new_id))

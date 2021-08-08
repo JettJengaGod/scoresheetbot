@@ -151,7 +151,7 @@ def update_mc_sheet():
     in_group = 0
     for cr_id, group_id, crew_name, group_name, badges in master_listings():
         if cr_id not in crew_stats:
-            crew_stats[cr_id] = [crew_name, 0, 0, 2000, 0, 0, '']
+            crew_stats[cr_id] = [crew_name, 0, 0, 2000, 0, 0]
         if previous_group != group_id:
             while in_group < 6:
                 front.append([])
