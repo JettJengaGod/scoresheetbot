@@ -3289,7 +3289,7 @@ where months > 0"""
     finally:
         if conn is not None:
             conn.close()
-    return ((c[0], c[1]) for c in current)
+    return tuple((int(c[0]), str(c[1])) for c in current)
 
 
 def track_finished_out() -> Tuple[Tuple[int, int]]:
