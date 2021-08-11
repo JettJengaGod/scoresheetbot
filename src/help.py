@@ -161,7 +161,7 @@ help_doc = dict(
                       'Winner Loser Size FinalScore'),
     weirdreg=HelpDoc(Categories.staff, 'Adds a new reg cb sheet where the registering crew won but didn\'t reg'
                                        'to the database and in scoresheet_history', '',
-                     'Winner Loser Size FinalScore'),
+                     'LosingCrew WinningRegCrew Size FinalScore'),
     pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),
     pingnoverlap=HelpDoc(Categories.staff, 'Pings all members with the first role but not the 2nd', '',
                          'role 1 role 2'),
