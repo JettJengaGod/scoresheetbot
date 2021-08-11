@@ -65,6 +65,7 @@ class ScoreSheetBot(commands.Cog):
             if self.cache_value.scs:
                 await overflow_anomalies(self)
             await cooldown_handle(self)
+            await track_handle(self)
             await self.cache_value.channels.recache_logs.send('Successfully recached.')
             update_all_sheets()
         self.cache_time = time.time()
@@ -2605,7 +2606,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        pass
+        await track_handle(self)
         # await track_decrement(member, self)
         # crew_msg = {}
         # for cr in all_votes():
