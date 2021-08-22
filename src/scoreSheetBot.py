@@ -447,6 +447,13 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     async def send(self, ctx: Context, user: discord.Member, team: str = None):
         if self._current(ctx).battle_type == BattleType.REG:
+            if not check_roles(user, [VERIFIED]):
+                await response_message(ctx,
+                                       f'{user.mention} does not have the DC Verified role. Which is required for '
+                                       f'crew battle participation.'
+                                       f'They can verify by typing dc.verify in any channel and then clicking the '
+                                       f'"Click me to verify!" link in the Double Counter dm.')
+                return
             author_crew = crew_or_none(ctx.author, self)
             if author_crew:
                 if author_crew != self._current(ctx).team1.name:
@@ -490,6 +497,13 @@ class ScoreSheetBot(commands.Cog):
                                f' `,send @playername teamname`.')
                 return
         else:
+            if not check_roles(user, [VERIFIED]):
+                await response_message(ctx,
+                                       f'{user.mention} does not have the DC Verified role. Which is required for '
+                                       f'crew battle participation.'
+                                       f'They can verify by typing dc.verify in any channel and then clicking the '
+                                       f'"Click me to verify!" link in the Double Counter dm.')
+                return
             await self._reject_outsiders(ctx)
             author_crew = await self._battle_crew(ctx, ctx.author)
             player_crew = await self._battle_crew(ctx, user)
@@ -601,6 +615,13 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     async def replace(self, ctx: Context, user: discord.Member, team: str = None):
         if self._current(ctx).battle_type == BattleType.REG:
+            if not check_roles(user, [VERIFIED]):
+                await response_message(ctx,
+                                       f'{user.mention} does not have the DC Verified role. Which is required for '
+                                       f'crew battle participation.'
+                                       f'They can verify by typing dc.verify in any channel and then clicking the '
+                                       f'"Click me to verify!" link in the Double Counter dm.')
+                return
             author_crew = crew_or_none(ctx.author, self)
             if author_crew:
                 if author_crew != self._current(ctx).team1.name:
@@ -645,6 +666,13 @@ class ScoreSheetBot(commands.Cog):
                                f' `,replace @playername teamname`.')
                 return
         else:
+            if not check_roles(user, [VERIFIED]):
+                await response_message(ctx,
+                                       f'{user.mention} does not have the DC Verified role. Which is required for '
+                                       f'crew battle participation.'
+                                       f'They can verify by typing dc.verify in any channel and then clicking the '
+                                       f'"Click me to verify!" link in the Double Counter dm.')
+                return
             await self._reject_outsiders(ctx)
             current_crew = await self._battle_crew(ctx, ctx.author)
             if current_crew == await self._battle_crew(ctx, user):
@@ -1215,6 +1243,12 @@ class ScoreSheetBot(commands.Cog):
         except ValueError:
             await response_message(ctx, f'You can\'t promote someone who is not in a crew.')
             return
+        if not check_roles(member, [VERIFIED]):
+            await response_message(ctx, f'{member.mention} does not have the DC Verified role. Which is required for '
+                                        f'leadership.'
+                                        f'They can verify by typing dc.verify in any channel and then clicking the '
+                                        f'"Click me to verify!" link in the Double Counter dm.')
+            return
         if check_roles(member, [LEAD_RESTRICT]):
             await response_message(ctx,
                                    f'{member.mention} is leadership restricted and can\'t be made a leader or advisor.')
@@ -1285,6 +1319,11 @@ class ScoreSheetBot(commands.Cog):
             crew(member, self)
         except ValueError:
             await response_message(ctx, f'You can\'t promote someone who is not in a crew.')
+            return
+        if not check_roles(member, [VERIFIED]):
+            await response_message(ctx, f'{member.mention} does not have the DC Verified role. '
+                                        f'They can verify by typing dc.verify in any channel and then clicking the '
+                                        f'"Click me to verify!" link in the Double Counter dm.')
             return
         if check_roles(member, [LEADER]):
             await response_message(ctx, f'{member.mention} is already a leader.')

@@ -602,6 +602,29 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
             return False
 
 
+async def wait_for_multiple_reactions(reactions: List[str], message: discord.Message,
+                                      member: discord.Member, bot: discord.Client,
+                                      needed: int, timeout: float = 300.0) -> bool:
+    for reaction in reactions:
+        await message.add_reaction(reaction)
+
+    def check(reaction, user):
+        return user == member and str(reaction.emoji) in reactions
+
+    current_reactions = 0
+    while current_reactions < needed:
+        try:
+            react, reactor = await bot.wait_for('reaction_add', timeout=timeout, check=check)
+        except asyncio.TimeoutError:
+            return False
+        if react.message.id != message.id:
+            continue
+        if str(react.emoji) in reactions and reactor == member:
+            # make edit on image
+            current_reactions += 1
+    return await wait_for_reaction_on_message(YES, NO, message, member, bot)
+
+
 async def handle_decay(bot: 'ScoreSheetBot'):
     cutoffs = [11, 15, 22, 31, 38, 100, 1000]
     elo_loss = [0, 25, 50, 100, 0, 0, 0]
