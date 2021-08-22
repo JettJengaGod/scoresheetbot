@@ -16,7 +16,7 @@ from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
     player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id, \
     battle_frontier_crews, elo_decay, reset_decay, first_crew_flair, track_finished_out, track_down_out, track_finished, \
-    update_member_roles
+    update_member_roles, recent_unflair
 from gambit import Gambit
 from sheet_helpers import update_all_sheets
 
@@ -724,6 +724,7 @@ async def track_handle(bot: 'ScoreSheetBot'):
         else:
             update_member_roles(mem)
 
+
 async def track_decrement(member: discord.Member, bot: 'ScoreSheetBot'):
     member_roles = member.roles
     for role in member_roles:
@@ -732,7 +733,10 @@ async def track_decrement(member: discord.Member, bot: 'ScoreSheetBot'):
             await member.remove_roles(role)
             msg = f'{member.display_name} moved from {role.name} to '
             if current_track > 0:
-                new_role = discord.utils.get(bot.cache.scs.roles, name=FULL_TRACK[current_track - 1])
+                if role.name == TRUE_LOCKED and not recent_unflair(member.id):
+                    new_role = discord.utils.get(bot.cache.scs.roles, name=FULL_TRACK[current_track - 2])
+                else:
+                    new_role = discord.utils.get(bot.cache.scs.roles, name=FULL_TRACK[current_track - 1])
                 await member.add_roles(new_role)
                 msg += f'{new_role.name}.'
             else:

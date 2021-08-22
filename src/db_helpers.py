@@ -3356,6 +3356,8 @@ def track_down_out(member_id: int):
         name, role_id = ret
         track_index = FULL_TRACK.index(name)
         if track_index > 0:
+            if track_index == 3 and not recent_unflair(member_id):
+                track_index -= 1
             new_track = FULL_TRACK[track_index - 1]
             cur.execute(role_id_from_name, (new_track,))
             new_id = cur.fetchone()[0]
@@ -3372,6 +3374,35 @@ def track_down_out(member_id: int):
         if conn is not None:
             conn.close()
     return
+
+
+def recent_unflair(mem_id: int) -> bool:
+    finished = """ 
+        select *
+from (SELECT EXTRACT(month FROM age(current_timestamp, leave_time)) as months, member_id, leave_time
+      from unflairs
+      where member_id = %s)
+
+         as b
+where months = 0"""
+    conn = None
+    recent = False
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(finished, (mem_id,))
+        current = cur.fetchall()
+        if current:
+            recent = True
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return recent
 
 
 """select '<@!' || member_id || '>', name, gained

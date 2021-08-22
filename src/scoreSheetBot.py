@@ -2606,9 +2606,10 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        await track_handle(self)
-        # await track_decrement(member, self)
+        # await track_handle(self)
+        # track_down_out(382324766851465216)
         # crew_msg = {}
+        pass
         # for cr in all_votes():
         #     msg = f'Voting on slots modifier is now active, you can change your vote if you choose ' \
         #           f'or you can do nothing and keep your previous vote. ' \
