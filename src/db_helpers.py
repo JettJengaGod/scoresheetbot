@@ -2504,7 +2504,8 @@ def disband_crew(crew: Crew) -> None:
 
 
 def disband_crew_from_id(cr_id) -> None:
-    disband = """update crews set disbanded = TRUE
+    disband = """update crews set disbanded = TRUE,
+     tag = tag || %s, name = name || %s
     where crews.id = %s;"""
     conn = None
     try:
@@ -2512,7 +2513,11 @@ def disband_crew_from_id(cr_id) -> None:
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cr_id = crew_id_from_role_id(cr_id, cur)
-        cur.execute(disband, (cr_id,))
+        today = datetime.date.today()
+        month = today.month
+        year = today.year
+        disband_str = f'(Dis {month}/{year})'
+        cur.execute(disband, (cr_id,disband_str,disband_str))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
