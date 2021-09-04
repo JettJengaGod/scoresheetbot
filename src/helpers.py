@@ -353,7 +353,10 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
         await flairing_info.send(f'{cowy.mention} {member.mention} is locked on next join.')
     if check_roles(member, [LEADER]):
         cr = crew_lookup(user_crew, bot)
-        if len(cr.leaders) == 1:
+        remaining_req = 0
+        if str(member) in cr.leaders:
+            remaining_req = 1
+        if len(cr.leaders) == remaining_req:
             await flairing_info.send(f'{bot.cache.roles.docs.mention}: {user_crew}\'s last leader just unflaired')
     await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader,
                               reason=f'Unflaired by {author.name}')
