@@ -899,6 +899,12 @@ class ScoreSheetBot(commands.Cog):
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
                     update_bf_sheet()
+                    for cr in (winner_crew, loser_crew):
+                        if not extra_slot_used(cr):
+                            if battles_since_sunday(cr) >= 3:
+                                mod_slot(cr, 1)
+                                await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                                set_extra_used(cr)
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
@@ -2643,6 +2649,12 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
+        for cr in self.cache.crews_by_name.values():
+            if not extra_slot_used(cr):
+                if battles_since_sunday(cr) >= 3:
+                    mod_slot(cr, 1)
+                    await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                    set_extra_used(cr)
         # await track_handle(self)
         # track_down_out(382324766851465216)
         # crew_msg = {}

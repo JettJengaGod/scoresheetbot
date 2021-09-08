@@ -3410,6 +3410,81 @@ where months = 0"""
     return recent
 
 
+def battles_since_sunday(crew: Crew) -> int:
+    finished = """ 
+select count(*)
+from bot.public.battle_ratings,
+     bot.public.battle,
+     bot.public.crews
+where battle_ratings.battle_id = battle.id
+  and finished > (select current_date - extract(dow from current_date)::integer)
+  and battle.league_id = 8
+  and crews.id = battle_ratings.crew_id
+  and crews.id = %s
+;"""
+    conn = None
+    recent = 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(finished, (cr_id,))
+        current = cur.fetchone()
+        recent = current[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return recent
+
+
+def extra_slot_used(crew: Crew) -> bool:
+    finished = """ 
+select extra_slot_date > (select current_date - extract(dow from current_date)::integer) from crews where id = %s
+;"""
+    conn = None
+    recent = False
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(finished, (cr_id,))
+        current = cur.fetchone()
+        recent = current[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return recent
+
+
+def set_extra_used(crew: Crew):
+    finished = """ 
+update crews set extra_slot_date = current_date where id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(finished, (cr_id,))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+
+
 """select '<@!' || member_id || '>', name, gained
 from (SELECT EXTRACT(month FROM age(current_timestamp, gained)) as months, member_id, roles.name, gained
       from current_member_roles,
