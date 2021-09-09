@@ -330,6 +330,8 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         await flairing_info.send(f'{cowy.mention} {member.mention} is {TRUE_LOCKED}.')
     if not reg:
         await member.add_roles(bot.cache.roles.join_cd)
+    if flairing_crew.master_class:
+        await member.add_roles(bot.cache.roles.mc_locked)
 
 
 async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreSheetBot'):
@@ -356,7 +358,7 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
             remaining_req = 1
         if len(cr.leaders) == remaining_req:
             await flairing_info.send(f'{bot.cache.roles.docs.mention}: {user_crew}\'s last leader just unflaired')
-    await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader,
+    await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader, bot.cache.roles.mc_locked,
                               reason=f'Unflaired by {author.name}')
 
 
