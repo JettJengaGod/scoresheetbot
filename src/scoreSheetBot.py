@@ -256,7 +256,7 @@ class ScoreSheetBot(commands.Cog):
     async def cb(self, ctx):
         await self.help(ctx, 'cb')
 
-    @commands.command(**help_doc['lock'], aliases=['mohamed', 'nohamed'])
+    @commands.command(**help_doc['lock'], aliases=['mohamed', 'nohamed', 'lk'])
     @main_only
     @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
@@ -439,7 +439,7 @@ class ScoreSheetBot(commands.Cog):
             await sleep(1)
         await ctx.send('Finished!')
 
-    @commands.command(**help_doc['send'])
+    @commands.command(**help_doc['send'], aliases=['s'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -607,7 +607,7 @@ class ScoreSheetBot(commands.Cog):
     async def ext(self, ctx):
         await ctx.send(self._current(ctx).ext_str())
 
-    @commands.command(**help_doc['replace'])
+    @commands.command(**help_doc['replace'], aliases=['r'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -689,7 +689,7 @@ class ScoreSheetBot(commands.Cog):
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['end'])
+    @commands.command(**help_doc['end'], aliases=['e'])
     @has_sheet
     @ss_channel
     async def end(self, ctx: Context, char1: Union[str, discord.Emoji], stocks1: int, char2: Union[str, discord.Emoji],
@@ -714,7 +714,7 @@ class ScoreSheetBot(commands.Cog):
                                       Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['resize'])
+    @commands.command(**help_doc['resize'], aliases=['extend'])
     @is_lead
     @has_sheet
     @ss_channel
@@ -2322,7 +2322,7 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'{ctx.author.mention} don\'t forget to move the crew role in the list!')
         await send_long_embed(ctx, response_embed)
 
-    @commands.command(**help_doc['recache'], hidden=True)
+    @commands.command(**help_doc['recache'], hidden=True, aliases=['rc'])
     @role_call(STAFF_LIST)
     async def recache(self, ctx: Context):
         await self._cache_process()
@@ -2376,6 +2376,18 @@ class ScoreSheetBot(commands.Cog):
     @commands.group(name='misc', brief='Miscellaneous commands', invoke_without_command=True)
     async def misc(self, ctx):
         await self.help(ctx, 'misc')
+
+    @commands.command(**help_doc['stagelist'])
+    async def stagelist(self, ctx: Context):
+        await ctx.send('https://cdn.discordapp.com/attachments/760303456757350400/815364853291286628/stagelist-1.png')
+
+    @commands.command(**help_doc['invite'])
+    async def invite(self, ctx: Context):
+        await ctx.send('https://smashcrewserver.com')
+
+    @commands.command(**help_doc['records'])
+    async def records(self, ctx: Context):
+        await ctx.send('https://elo.smashcrewserver.com')
 
     @commands.command(**help_doc['thank'])
     @banned_channels(['crew_flairing', 'scs_docs_updates'])
@@ -2649,12 +2661,12 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        for cr in self.cache.crews_by_name.values():
-            if not extra_slot_used(cr):
-                if battles_since_sunday(cr) >= 3:
-                    mod_slot(cr, 1)
-                    await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
-                    set_extra_used(cr)
+        # for cr in self.cache.crews_by_name.values():
+        #     if not extra_slot_used(cr):
+        #         if battles_since_sunday(cr) >= 3:
+        #             mod_slot(cr, 1)
+        #             await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+        #             set_extra_used(cr)
         # await track_handle(self)
         # track_down_out(382324766851465216)
         # crew_msg = {}
