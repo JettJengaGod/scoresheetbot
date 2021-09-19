@@ -717,7 +717,7 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
     for user_id in cooldown_finished():
         member = bot.cache_value.scs.get_member(user_id)
         if member:
-            if check_roles(member, ['24h Join Cooldown']):
+            if check_roles(member, ['12h Join Cooldown']):
                 await member.remove_roles(bot.cache_value.roles.join_cd)
                 await bot.cache_value.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
             else:
@@ -727,7 +727,7 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
 
     uids = {item[0] for item in cooldown_current()}
     for member in bot.cache_value.scs.members:
-        if check_roles(member, ['24h Join Cooldown']) and member.id not in uids:
+        if check_roles(member, ['12h Join Cooldown']) and member.id not in uids:
             await member.remove_roles(bot.cache_value.roles.join_cd)
             await bot.cache_value.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
 
@@ -890,7 +890,7 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
                 unflairs, remaining, total = record_unflair(mem_id, cr, True)
 
                 out_str += (
-                    f'\n{str(mem_id)} was on 24h cooldown so {cr.name} gets back a slot ({remaining}/{total})')
+                    f'\n{str(mem_id)} was on 12h cooldown so {cr.name} gets back a slot ({remaining}/{total})')
             # Else refund 1/3 slot
             else:
                 unflairs, remaining, total = record_unflair(mem_id, cr, False)
@@ -915,7 +915,7 @@ async def overflow_anomalies(bot: 'ScoreSheetBot') -> Tuple[Set, Set]:
                     unflairs, remaining, total = record_unflair(mem_id, cr, True)
 
                     out_str += (
-                        f'\n{str(mem_id)} was on 24h cooldown so {cr.name} gets back a slot ({remaining}/{total})')
+                        f'\n{str(mem_id)} was on 12h cooldown so {cr.name} gets back a slot ({remaining}/{total})')
                 # Else refund 1/3 slot
                 else:
                     unflairs, remaining, total = record_unflair(mem_id, cr, False)
@@ -1176,12 +1176,12 @@ async def unflair_gone_member(ctx: Context, user: str, bot: 'ScoreSheetBot'):
     update_member_crew(user_id, None)
 
     # Unflair log in db
-    # Refund slot if 24h cd (do not remove)
+    # Refund slot if 12h cd (do not remove)
     if roles.join_cd.id in member_roles:
         mod_slot(cr, 1)
         unflairs, remaining, total = record_unflair(user_id, cr, True)
 
-        await ctx.send(f'{str(user_id)} was on 24h cooldown so {cr.name} gets back a slot ({remaining}/{total})')
+        await ctx.send(f'{str(user_id)} was on 12h cooldown so {cr.name} gets back a slot ({remaining}/{total})')
     # Else refund 1/3 slot
     else:
         unflairs, remaining, total = record_unflair(user_id, cr, False)

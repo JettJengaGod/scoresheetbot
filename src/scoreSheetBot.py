@@ -1392,7 +1392,7 @@ class ScoreSheetBot(commands.Cog):
             mod_slot(user_crew, 1)
             unflairs, left, total = record_unflair(member.id, user_crew, True)
             await ctx.send(
-                f'{str(member)} was on 24h cooldown so {user_crew.name} gets back a slot ({left}/{total})')
+                f'{str(member)} was on 12h cooldown so {user_crew.name} gets back a slot ({left}/{total})')
         else:
             unflairs, remaining, total = record_unflair(member.id, user_crew, False)
             if unflairs == 3:
