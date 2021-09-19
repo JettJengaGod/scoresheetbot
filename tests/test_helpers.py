@@ -259,15 +259,6 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
         with self.subTest('Member close'):
             self.assertEqual(mocks.bob, ambiguous_lookup(f'{mocks.bob.name} suffix', bot))
 
-    @freeze_time(datetime(year=1, month=7, day=12,
-                          hour=15, minute=6, second=3))
-    def test_add_join_cd(self):
-        outfile = StringIO()
-        add_join_cd(mocks.bob, outfile)
-        outfile.seek(0)
-        content = outfile.read()
-        self.assertEqual(content, f'{mocks.bob.id} {time.time() + COOLDOWN_TIME_SECONDS}\n')
-
     async def test_flair(self):
         bot = mocks.MockSSB(cache=mocks.cache())
         bob = mocks.MockMember(name='bob', id=1)

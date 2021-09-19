@@ -289,10 +289,6 @@ def strip_non_ascii(text: str) -> str:
     return decode_string
 
 
-def add_join_cd(member: discord.Member, file: TextIO):
-    file.write(f'{member.id} {time.time() + COOLDOWN_TIME_SECONDS}\n')
-
-
 async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot', staff: bool = False,
                 reg: Optional[bool] = False):
     if check_roles(member, [TRUE_LOCKED]):
