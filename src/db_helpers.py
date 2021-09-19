@@ -1165,7 +1165,7 @@ def cooldown_finished() -> List[int]:
             (SELECT EXTRACT(epoch FROM age(current_timestamp, gained))/3600 as hours,member_id, roles.name 
                 from current_member_roles,roles 
                 where roles.id = current_member_roles.role_id and roles.id = 786492456027029515) 
-                as b where hours > 24;"""
+                as b where hours > 12;"""
     conn = None
     current = []
     try:
