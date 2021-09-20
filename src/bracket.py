@@ -5,6 +5,7 @@ from enum import Enum
 from dataclasses import dataclass
 
 from src.crew import Crew
+from src.db_helpers import add_bracket_predictions
 
 ROUND_NAMES = ['Winners Round 1', 'Winners Quarterfinals', 'Winners Semi Finals', 'Winners Finals',
                'Losers Round 1', 'Losers Round 2', 'Losers Round 3', 'Losers Quarterfinals',
@@ -43,6 +44,14 @@ class Match:
         else:
             raise ValueError('Should be unreachable.')
 
+    @property
+    def loser(self) -> Optional[Crew]:
+        if self.winner:
+            if self.winner == self.crew_1:
+                return self.crew_2
+            return self.crew_1
+        return None
+
 
 class CrewSelectButton(discord.ui.Button['Bracket']):
     def __init__(self, label: str):
@@ -58,8 +67,9 @@ class CrewSelectButton(discord.ui.Button['Bracket']):
 class Bracket(discord.ui.View):
     children: List[CrewSelectButton]
 
-    def __init__(self, crews: List[Crew]):
+    def __init__(self, crews: List[Crew], author_id: int):
         super().__init__()
+        self.author_id = author_id
         self.message = f'**{ROUND_NAMES[0]}**\n'
         self.matches = []
         # Winners round 1
@@ -122,8 +132,8 @@ class Bracket(discord.ui.View):
         self.matches[28].winner_match = self.matches[29]
 
         for i in range(8):
-            self.matches[i].crew_1 = crews[i*2]
-            self.matches[i].crew_2 = crews[i*2 + 1]
+            self.matches[i].crew_1 = crews[i * 2]
+            self.matches[i].crew_2 = crews[i * 2 + 1]
         self.current_match = 0
         self.new_match()
 
@@ -132,7 +142,7 @@ class Bracket(discord.ui.View):
         if self.current_match < len(self.matches):
             return self.matches[self.current_match]
         else:
-            return self.matches[len(self.matches)-1]
+            return self.matches[len(self.matches) - 1]
 
     def new_match(self):
         if self.current_match < len(self.matches):
@@ -141,6 +151,7 @@ class Bracket(discord.ui.View):
         else:
             for match in self.matches:
                 print(f'{match.number} {match.crew_1.name} vs {match.crew_2.name} Winner: {match.winner.name}')
+            add_bracket_predictions(self.author_id, self.matches)
             self.stop()
 
     def report_winner(self, name: str):
@@ -160,7 +171,6 @@ class Bracket(discord.ui.View):
         rou = self.current.round
         self.current_match += 1
         if rou != self.current.round:
-            self.message += f'\n **{ROUND_NAMES[self.current.round.value-1]}** \n'
+            self.message += f'\n **{ROUND_NAMES[self.current.round.value - 1]}** \n'
         self.clear_items()
         self.new_match()
-

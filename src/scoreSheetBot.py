@@ -2666,7 +2666,7 @@ class ScoreSheetBot(commands.Cog):
                       'Down B Queens', 'Holy Knights', 'EVA^', 'The Jellyfish Pirates', 'Midnight Sun', 'Black Gang',
                       'Black Halo', 'Flow State Gaming', 'Dream Casters', 'Lazarus']
         bracket_crews = [crew_lookup(cr, self) for cr in crew_names]
-        await ctx.author.send('Bracket choosing', view=Bracket(bracket_crews))
+        await ctx.author.send('Bracket choosing', view=Bracket(bracket_crews, ctx.author.id))
         # for cr in self.cache.crews_by_name.values():
         #     if not extra_slot_used(cr):
         #         if battles_since_sunday(cr) >= 3:
