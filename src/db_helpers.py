@@ -2484,7 +2484,8 @@ def set_return_slots(crew: Crew, number: int) -> Tuple[int, int, int]:
 
 
 def disband_crew(crew: Crew) -> None:
-    disband = """update crews set disbanded = TRUE
+    disband = """update crews set disbanded = TRUE,
+     tag = tag || %s, name = name || %s
     where crews.id = %s;"""
     conn = None
     try:
@@ -2492,7 +2493,11 @@ def disband_crew(crew: Crew) -> None:
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cr_id = crew_id_from_crews(crew, cur)
-        cur.execute(disband, (cr_id,))
+        today = datetime.date.today()
+        month = today.month
+        year = today.year
+        disband_str = f'(Dis {month}/{year})'
+        cur.execute(disband, (cr_id, disband_str, disband_str))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
