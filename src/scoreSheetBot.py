@@ -23,6 +23,7 @@ from character import all_emojis, string_to_emote, all_alts, CHARACTERS
 from decorators import *
 from help import help_doc
 from constants import *
+from bracket import Bracket
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -2097,6 +2098,11 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{members[-1].mention} is breaking register, try using the full name of the crew.')
             return
         flairing_crew = crew_lookup(new_crew, self)
+        if not flairing_crew.db_id:
+            await ctx.send(f'{flairing_crew.name} does not have a database id set for some reason. Please make sure'
+                           f'everything has been properly set up, including role and docs then recache.')
+            return
+
         msg = await ctx.send(f'Are you sure you want to register {len(members)} members for {flairing_crew.name}')
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
@@ -2661,8 +2667,13 @@ class ScoreSheetBot(commands.Cog):
             await ctx.message.add_reaction(emoji='✉')
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
-    @role_call(STAFF_LIST)
+    # @role_call(STAFF_LIST)
     async def rate(self, ctx):
+        crew_names = ['Arpeggio', 'Valerian', 'Phantom Troupe', 'TEAM PLASMA', 'Sound of Perfervid', 'No Style',
+                      'Down B Queens', 'Holy Knights', 'EVA^', 'The Jellyfish Pirates', 'Midnight Sun', 'Black Gang',
+                      'Black Halo', 'Flow State Gaming', 'Dream Casters', 'Lazarus']
+        bracket_crews = [crew_lookup(cr, self) for cr in crew_names]
+        await ctx.author.send('Bracket choosing', view=Bracket(bracket_crews, ctx.author.id))
         # for cr in self.cache.crews_by_name.values():
         #     if not extra_slot_used(cr):
         #         if battles_since_sunday(cr) >= 3:

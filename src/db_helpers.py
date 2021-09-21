@@ -2,7 +2,7 @@ import datetime
 import os
 import sys
 import traceback
-from typing import List, Tuple, Optional, Iterable, Dict, Sequence, Any, Mapping, Set
+from typing import List, Tuple, Optional, Iterable, Dict, Sequence, Any, Mapping, Set, TYPE_CHECKING
 from collections import defaultdict
 
 import discord
@@ -16,6 +16,11 @@ from gambit import Gambit
 from character import Character
 from elo_helpers import EloPlayer, rating_update
 from constants import *
+
+
+if TYPE_CHECKING:
+    from bracket import Match
+
 
 def logfile():
     logfilename = 'logs.log'
@@ -915,7 +920,8 @@ def all_crews() -> List[List]:
        case when (select count(*) from master_crews where crew_id = crews.id) > 0 then true else false end as master,
        decay_level,
        last_battle.finished,
-       last_battle.opp
+       last_battle.opp,
+       id
 FROM crews
          left join (select battle.finished                                                         as finished,
                            opp_crew.name || case when battle.winner = crew_id then '(W)' else '(L)' end as opp,
@@ -2484,7 +2490,8 @@ def set_return_slots(crew: Crew, number: int) -> Tuple[int, int, int]:
 
 
 def disband_crew(crew: Crew) -> None:
-    disband = """update crews set disbanded = TRUE
+    disband = """update crews set disbanded = TRUE,
+     tag = tag || %s, name = name || %s
     where crews.id = %s;"""
     conn = None
     try:
@@ -2492,7 +2499,11 @@ def disband_crew(crew: Crew) -> None:
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cr_id = crew_id_from_crews(crew, cur)
-        cur.execute(disband, (cr_id,))
+        today = datetime.date.today()
+        month = today.month
+        year = today.year
+        disband_str = f'(Dis {month}/{year})'
+        cur.execute(disband, (cr_id, disband_str, disband_str))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -3476,6 +3487,27 @@ update crews set extra_slot_date = current_date where id = %s;"""
         cur = conn.cursor()
         cr_id = crew_id_from_crews(crew, cur)
         cur.execute(finished, (cr_id,))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def add_bracket_predictions(member_id: int, match_list: Iterable['Match']):
+    prediction = """ 
+    insert into bracket_predictions (member_id, match_number, winner, loser) 
+    VALUES(%s, %s, %s, %s) on conflict (member_id,match_number) 
+    DO UPDATE set winner = excluded.winner, loser = excluded.loser;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        for match in match_list:
+            cur.execute(prediction, (member_id, match.number, match.winner.db_id, match.loser.db_id))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:

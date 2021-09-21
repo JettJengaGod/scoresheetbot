@@ -30,6 +30,7 @@ class Crew:
     last_opp: str = ''
     last_match: datetime = None
     leader_ids: List[int] = dataclasses.field(default_factory=list)
+    db_id: int = 0
 
     @property
     def embed(self) -> discord.Embed:
@@ -73,7 +74,7 @@ class Crew:
         return embed
 
     def dbattr(self, wl: bool, freeze: datetime, verify: bool, strikes: int, total: int, remaining: int, master: bool,
-               decay: int, finished: datetime, last_opp: str):
+               decay: int, finished: datetime, last_opp: str, db_id:int):
         self.wl = wl
         self.verify = verify
         if freeze:
@@ -85,6 +86,7 @@ class Crew:
         self.decay_level = decay
         self.last_match = finished
         self.last_opp = last_opp
+        self.db_id = db_id
 
     def set_rankings(self, rank: int, rating: int, bf: bool, total: int):
         self.ladder = '**Battle Frontier:** ' if bf else '**Rookie Class:** '
