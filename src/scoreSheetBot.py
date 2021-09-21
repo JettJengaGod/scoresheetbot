@@ -2667,10 +2667,10 @@ class ScoreSheetBot(commands.Cog):
             await ctx.message.add_reaction(emoji='✉')
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
-    # @role_call(STAFF_LIST)
+    @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        crew_names = ['Arpeggio', 'Valerian', 'Phantom Troupe', 'TEAM PLASMA', 'Sound of Perfervid', 'No Style',
-                      'Down B Queens', 'Holy Knights', 'EVA^', 'The Jellyfish Pirates', 'Midnight Sun', 'Black Gang',
+        crew_names = ['Arpeggio', 'Valerian', 'Phantom Troupe', 'Sound of Perfervid', 'No Style',
+                      'Down B Queens', 'Holy Knights', 'EVA^', 'Wombo Combo', 'Midnight Sun', 'Black Gang',
                       'Black Halo', 'Flow State Gaming', 'Dream Casters', 'Lazarus']
         bracket_crews = [crew_lookup(cr, self) for cr in crew_names]
         await ctx.author.send('Bracket choosing', view=Bracket(bracket_crews, ctx.author.id))

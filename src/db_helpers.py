@@ -2503,7 +2503,7 @@ def disband_crew(crew: Crew) -> None:
         month = today.month
         year = today.year
         disband_str = f'(Dis {month}/{year})'
-        cur.execute(disband, (cr_id, disband_str, disband_str))
+        cur.execute(disband, (disband_str, disband_str, cr_id))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -2528,7 +2528,7 @@ def disband_crew_from_id(cr_id) -> None:
         month = today.month
         year = today.year
         disband_str = f'(Dis {month}/{year})'
-        cur.execute(disband, (cr_id, disband_str, disband_str))
+        cur.execute(disband, (disband_str, disband_str, cr_id))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
