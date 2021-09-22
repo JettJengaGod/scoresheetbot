@@ -736,7 +736,10 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
 
 async def track_handle(bot: 'ScoreSheetBot'):
     out_finished = track_finished_out()
+
     for mem_id, months in out_finished:
+        if bot.cache.scs.get_member(mem_id):
+            continue
         for i in range(min(months, 4)):
             track_down_out(mem_id)
 
