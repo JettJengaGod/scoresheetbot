@@ -275,7 +275,7 @@ class ScoreSheetBot(commands.Cog):
         if current and not current.battle_type == BattleType.MOCK:
             if not check_roles(ctx.author, STAFF_LIST):
                 await self._reject_outsiders(ctx)
-            overwrites = ctx.channel.overwrites
+            overwrites: Dict = ctx.channel.overwrites
             muted_overwite = discord.PermissionOverwrite(send_messages=False, add_reactions=False,
                                                          manage_messages=False)
 
@@ -301,7 +301,8 @@ class ScoreSheetBot(commands.Cog):
                 for mem in overlap_members(MUTED, current.team2.name, self):
                     overwrites[mem] = muted_overwite
             everyone_overwrite = discord.PermissionOverwrite(send_messages=False, manage_messages=False,
-                                                             add_reactions=False)
+                                                             add_reactions=False, create_public_threads=False,
+                                                             create_private_threads=False)
             overwrites[self.cache.roles.everyone] = everyone_overwrite
             out = f'Room Locked to only {current.team1.name} and {current.team2.name}.'
             if streamer:
