@@ -2098,9 +2098,11 @@ class ScoreSheetBot(commands.Cog):
             return
         flairing_crew = crew_lookup(new_crew, self)
         if not flairing_crew.db_id:
-            await ctx.send(f'{flairing_crew.name} does not have a database id set for some reason. Please make sure'
-                           f'everything has been properly set up, including role and docs then recache.')
-            return
+            flairing_crew.db_id = id_from_crew(flairing_crew)
+            if not flairing_crew.db_id:
+                await ctx.send(f'{flairing_crew.name} does not have a database id set for some reason. Please make sure'
+                               f'everything has been properly set up, including role and docs then recache.')
+                return
 
         msg = await ctx.send(f'Are you sure you want to register {len(members)} members for {flairing_crew.name}')
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
