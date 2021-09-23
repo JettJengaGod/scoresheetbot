@@ -74,7 +74,7 @@ class Crew:
         return embed
 
     def dbattr(self, wl: bool, freeze: datetime, verify: bool, strikes: int, total: int, remaining: int, master: bool,
-               decay: int, finished: datetime, last_opp: str, db_id:int):
+               decay: int, finished: datetime, last_opp: str, db_id: int):
         self.wl = wl
         self.verify = verify
         if freeze:

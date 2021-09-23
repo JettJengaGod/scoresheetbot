@@ -373,6 +373,26 @@ def crew_id_from_role_id(role_id: int, cursor) -> int:
     return crew_id
 
 
+def id_from_crew(cr: Crew) -> int:
+    cr_id = 0
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_role_id(cr.role_id, cur)
+        if not cr_id:
+            cr_id = crew_id_from_name(cr.name, cur)
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return cr_id
+
+
 def add_character(name: str):
     add_char = """INSERT into fighters (name)
         select %s WHERE
