@@ -2672,9 +2672,9 @@ class ScoreSheetBot(commands.Cog):
     async def rate(self, ctx):
         crew_names = ['Arpeggio', 'Valerian', 'Phantom Troupe', 'Sound of Perfervid', 'No Style',
                       'Down B Queens', 'Holy Knights', 'EVA^', 'Wombo Combo', 'Midnight Sun', 'Black Gang',
-                      'Black Halo', 'Flow State Gaming', 'Dream Casters', 'Lazarus']
+                      'Black Halo', 'Flow State Gaming', 'Dream Casters', 'Lazarus', 'Phantasm']
         bracket_crews = [crew_lookup(cr, self) for cr in crew_names]
-        await ctx.author.send('Bracket choosing', view=Bracket(bracket_crews, ctx.author.id))
+        await ctx.author.send('Bracket choosing', view=Bracket(bracket_crews, ctx.author))
         # for cr in self.cache.crews_by_name.values():
         #     if not extra_slot_used(cr):
         #         if battles_since_sunday(cr) >= 3:
@@ -2894,8 +2894,8 @@ class ScoreSheetBot(commands.Cog):
                       f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
                       f'with an overall minimum of 5 slots\n' \
-                      'For more information, refer to #flairing_slots_info. ' \
-                      'This bot will not be able to respond to any questions you have, so use #questions_feedback'
+                      'For more information, refer to <#430364791245111312>. ' \
+                      'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'
             crew_msg[cr.name] = message
 
         for i, member in enumerate(self.cache.scs.members):

@@ -15,7 +15,7 @@ cachetools = ">=4.1.1"
 certifi = ">=2020.11.8"
 chardet = ">=3.0.4"
 colorama = ">=0.4.4"
-"discord.py" = ">=1.5.1"
+"discord.py" = { git = 'https://github.com/Rapptz/discord.py', ref = 'master' }
 google-api-core = ">=1.23.0"
 google-api-python-client = ">=1.12.8"
 google-auth = ">=1.23.0"
@@ -47,6 +47,7 @@ psycopg2 = "*"
 oauth2client = "*"
 matplotlib = "*"
 gspread = "*"
+pillow = "*"
 
 [dev-packages]
 coverage = ">=5.3"
