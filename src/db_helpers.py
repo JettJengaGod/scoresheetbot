@@ -3519,7 +3519,7 @@ update crews set extra_slot_date = current_date where id = %s;"""
 def add_bracket_predictions(member_id: int, match_list: Iterable['Match']):
     prediction = """ 
     insert into bracket_predictions (member_id, match_number, winner, loser) 
-    VALUES(%s, %s, %s, %s) on conflict (member_id,match_number) 
+    VALUES(%s, %s, %s, %s) on conflict (member_id, match_number) 
     DO UPDATE set winner = excluded.winner, loser = excluded.loser;"""
     conn = None
     try:
@@ -3535,6 +3535,73 @@ def add_bracket_predictions(member_id: int, match_list: Iterable['Match']):
     finally:
         if conn is not None:
             conn.close()
+
+
+def add_bracket_questions(member_id: int, answers: Iterable[int]):
+    prediction = """ 
+    insert into bracket_questions (member_id, question_number, answer) 
+    VALUES(%s, %s, %s) on conflict (member_id,question_number) 
+    DO UPDATE set answer = excluded.answer;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        for i, answer in enumerate(answers):
+            cur.execute(prediction, (member_id, i, answer))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def get_bracket_questions(member_id: int):
+    prediction = """ 
+    select answer
+    from bracket_questions where member_id = %s
+    order by question_number;"""
+    question_results = []
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(prediction, (member_id,))
+        question_results = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return question_results
+
+
+def get_bracket_predictions(member_id: int):
+    prediction = """ 
+    select name
+    from bracket_predictions,crews where member_id = %s and crews.id = bracket_predictions.winner
+    order by match_number;"""
+    match_results = []
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(prediction, (member_id,))
+        match_results = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return match_results
 
 
 """select '<@!' || member_id || '>', name, gained

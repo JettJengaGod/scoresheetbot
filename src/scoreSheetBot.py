@@ -23,7 +23,7 @@ from character import all_emojis, string_to_emote, all_alts, CHARACTERS
 from decorators import *
 from help import help_doc
 from constants import *
-from bracket import Bracket
+from bracket import Bracket, Questions, NUMBER_QUESTIONS
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -1508,6 +1508,37 @@ class ScoreSheetBot(commands.Cog):
 
     ''' ***********************************GAMBIT COMMANDS ************************************************'''
 
+    @commands.command(**help_doc['predictions'])
+    async def predictions(self, ctx):
+
+        await ctx.message.add_reaction(emoji='✉')
+        crew_names = ['Black Halo', 'Valerian', 'Arpeggio', 'Dream Casters', 'Holy Knights', 'No Style',
+                      'EVA^', 'Midnight Sun', 'Phantom Troupe', 'Sound of Perfervid', 'Flow State Gaming',
+                      'Wombo Combo', 'Black Gang', 'Phantasm', 'Down B Queens', 'Lazarus']
+        bracket_crews = [crew_lookup(cr, self) for cr in crew_names]
+        br = Bracket(bracket_crews, ctx.author)
+        predictions = get_bracket_predictions(ctx.author.id)
+        for prediction in predictions:
+            br.report_winner(prediction[0])
+        answers = get_bracket_questions(ctx.author.id)
+        out_str = ['Your extra predictions!']
+        for i, question in enumerate(NUMBER_QUESTIONS):
+            out_str.append(question + ': ' + str(answers[i][0]))
+        await ctx.author.send(content='\n'.join(out_str))
+
+    @commands.command(**help_doc['predict'])
+    async def predict(self, ctx):
+        crew_names = ['Black Halo', 'Valerian', 'Arpeggio', 'Dream Casters', 'Holy Knights', 'No Style',
+                      'EVA^', 'Midnight Sun', 'Phantom Troupe', 'Sound of Perfervid', 'Flow State Gaming',
+                      'Wombo Combo', 'Black Gang', 'Phantasm', 'Down B Queens', 'Lazarus']
+        bracket_crews = [crew_lookup(cr, self) for cr in crew_names]
+        await ctx.message.add_reaction(emoji='✉')
+        await ctx.message.delete(delay=5)
+        await ctx.author.send('Please answer both of the following to completion! You can check your predictions after'
+                              ' with `,predictions` or modify your predictions by using `,predict` again.')
+        await ctx.author.send('Bracket choosing', view=Bracket(bracket_crews, ctx.author))
+        await ctx.author.send('Extra questions! (10 points each)', view=Questions(ctx.author))
+
     @commands.command(**help_doc['coins'])
     @main_only
     async def coins(self, ctx: Context, member: Optional[discord.Member] = None):
@@ -2672,11 +2703,16 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
-        crew_names = ['Arpeggio', 'Valerian', 'Phantom Troupe', 'Sound of Perfervid', 'No Style',
-                      'Down B Queens', 'Holy Knights', 'EVA^', 'Wombo Combo', 'Midnight Sun', 'Black Gang',
-                      'Black Halo', 'Flow State Gaming', 'Dream Casters', 'Lazarus']
-        bracket_crews = [crew_lookup(cr, self) for cr in crew_names]
-        await ctx.author.send('Bracket choosing', view=Bracket(bracket_crews, ctx.author.id))
+        # crew_names = ['Black Halo', 'Valerian', 'Arpeggio', 'Dream Casters', 'Holy Knights', 'No Style',
+        #               'EVA^', 'Midnight Sun', 'Phantom Troupe', 'Sound of Perfervid', 'Flow State Gaming',
+        #               'Wombo Combo', 'Black Gang', 'Phantasm', 'Down B Queens', 'Lazarus']
+        # bracket_crews = [crew_lookup(cr, self) for cr in crew_names]
+        # await ctx.message.add_reaction(emoji='✉')
+        # await ctx.message.delete(delay=5)
+        # await ctx.author.send('Please answer both of the following to completion! You can check your predictions after'
+        #                       ' with `,predictions` or modify your predictions by using `,predict` again.')
+        # await ctx.author.send('Bracket choosing', view=Bracket(bracket_crews, ctx.author))
+        # await ctx.author.send('Extra questions! (10 points each)', view=Questions(ctx.author))
         # for cr in self.cache.crews_by_name.values():
         #     if not extra_slot_used(cr):
         #         if battles_since_sunday(cr) >= 3:
@@ -2896,8 +2932,8 @@ class ScoreSheetBot(commands.Cog):
                       f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
                       f'with an overall minimum of 5 slots\n' \
-                      'For more information, refer to #flairing_slots_info. ' \
-                      'This bot will not be able to respond to any questions you have, so use #questions_feedback'
+                      'For more information, refer to <#430364791245111312>. ' \
+                      'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'
             crew_msg[cr.name] = message
 
         for i, member in enumerate(self.cache.scs.members):

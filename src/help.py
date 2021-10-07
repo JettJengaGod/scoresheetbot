@@ -175,6 +175,8 @@ help_doc = dict(
     coins=HelpDoc(Categories.gambit, 'Shows your gcoins'),
     bet=HelpDoc(Categories.gambit, 'Bets an amount on a crew, only valid while a gambit is active.', '', 'amount crew'),
     odds=HelpDoc(Categories.gambit, 'Tells you the current odds for the gambit'),
+    predictions=HelpDoc(Categories.gambit, 'Tells you your predictions for the MC playoffs'),
+    predict=HelpDoc(Categories.gambit, 'Lets you predict the MC playoffs'),
     result=HelpDoc(Categories.ba, 'Submits a battle arena result'),
     vote=HelpDoc(Categories.misc, 'Vote for an option between 1 and 4')
 )
