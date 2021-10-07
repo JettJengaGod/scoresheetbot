@@ -287,7 +287,7 @@ def draw_bracket(matches: List['Match']):
     img = Image.open(BytesIO(response.content))
 
     d1 = ImageDraw.Draw(img)
-    my_font = ImageFont.truetype('root/scoresheetbot/fonts/SquadaOne-Regular.ttf', 32)
+    my_font = ImageFont.truetype('/usr/local/share/fonts/SquadaOne-Regular.ttf', 32)
     logo_size = 50
     for i, match in enumerate(matches):
         if match.round == Round.WINNERS_ROUND_1:
