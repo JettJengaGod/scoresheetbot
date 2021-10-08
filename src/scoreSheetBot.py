@@ -1511,14 +1511,14 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['predictions'])
     async def predictions(self, ctx):
 
-        await ctx.message.add_reaction(emoji='✉')
-        crew_names = ['Black Halo', 'Valerian', 'Arpeggio', 'Dream Casters', 'Holy Knights', 'No Style',
-                      'EVA^', 'Midnight Sun', 'Phantom Troupe', 'Sound of Perfervid', 'Flow State Gaming',
-                      'Wombo Combo', 'Black Gang', 'Phantasm', 'Down B Queens', 'Lazarus']
+        crew_names = ['Black Halo', 'Wombo Combo', 'Dream Casters', 'Down B Queens', 'Phantasm', 'Sound of Perfervid',
+                      'Holy Knights', 'Black Gang', 'Valerian', 'Midnight Sun', 'Flow State Gaming', 'Arpeggio',
+                      'Phantom Troupe', 'Lazarus']
         bye = Crew(name='Bye (Do not click)', abbr='Bye', db_id=528, color=discord.Color.from_rgb(255, 255, 255),
                    icon='https://cdn.discordapp.com/attachments/792632199241400341/895178019990278254/bracket.png')
         bracket_crews = [crew_lookup(cr, self) for cr in crew_names]
-        bracket_crews[6] = bye
+        bracket_crews.insert(1, bye)
+        bracket_crews.insert(14, bye)
         br = Bracket(bracket_crews, ctx.author)
         predictions = get_bracket_predictions(ctx.author.id)
         for prediction in predictions:
@@ -1531,13 +1531,14 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['predict'])
     async def predict(self, ctx):
-        crew_names = ['Black Halo', 'Valerian', 'Arpeggio', 'Dream Casters', 'Holy Knights', 'No Style',
-                      'EVA^', 'Midnight Sun', 'Phantom Troupe', 'Sound of Perfervid', 'Flow State Gaming',
-                      'Wombo Combo', 'Black Gang', 'Phantasm', 'Down B Queens', 'Lazarus']
+        crew_names = ['Black Halo', 'Wombo Combo', 'Dream Casters', 'Down B Queens', 'Phantasm', 'Sound of Perfervid',
+                      'Holy Knights', 'Black Gang', 'Valerian', 'Midnight Sun', 'Flow State Gaming', 'Arpeggio',
+                      'Lazarus', 'Phantom Troupe']
         bye = Crew(name='Bye (Do not click)', abbr='Bye', db_id=528, color=discord.Color.from_rgb(255, 255, 255),
                    icon='https://cdn.discordapp.com/attachments/792632199241400341/895178019990278254/bracket.png')
         bracket_crews = [crew_lookup(cr, self) for cr in crew_names]
-        bracket_crews[6] = bye
+        bracket_crews.insert(1, bye)
+        bracket_crews.insert(14, bye)
         await ctx.message.add_reaction(emoji='✉')
         await ctx.message.delete(delay=5)
         await ctx.author.send('Please answer both of the following to completion! You can check your predictions after'
