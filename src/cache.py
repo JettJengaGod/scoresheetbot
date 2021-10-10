@@ -95,6 +95,7 @@ class Cache:
             sheet_history = discord.utils.get(server.channels, id=SHEET_HISTORY)
             current_cbs = discord.utils.get(server.channels, id=CURRENT_CBS)
             testing = discord.utils.get(server.channels, id=776644633349849108)
+            master_bracket = discord.utils.get(server.channels, id=896401892920397865)
 
         return Channels
 
