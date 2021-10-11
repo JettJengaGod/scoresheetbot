@@ -238,6 +238,7 @@ class Bracket(discord.ui.View):
 
     def new_match(self):
         if self.current_match < len(self.matches):
+            self.find_first_empty()
             self.add_item(CrewSelectButton(self.matches[self.current_match].crew_1.name))
             self.add_item(CrewSelectButton(self.matches[self.current_match].crew_2.name))
             self.add_item(ImageOutputButton())
@@ -299,10 +300,17 @@ class Bracket(discord.ui.View):
 
     def find_next_match(self, crew_1: str) -> Match:
         for match in self.matches:
-            if not match.winner:
-                if crew_1 in (match.crew_1.name, match.crew_2.name):
-                    return match
+            if match.crew_1 and match.crew_2:
+                if match.winner is None:
+                    if crew_1 in (match.crew_1.name, match.crew_2.name):
+                        return match
         return None
+
+    def find_first_empty(self):
+        for i, match in enumerate(self.matches):
+            if match.winner is None:
+                self.current_match = i
+                return
 
 
 def draw_bracket(matches: List['Match']):

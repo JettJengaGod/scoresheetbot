@@ -329,6 +329,8 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         await member.add_roles(bot.cache.roles.join_cd)
     if flairing_crew.master_class:
         await member.add_roles(bot.cache.roles.mc_locked)
+    else:
+        await member.add_roles(bot.cache.roles.bf_locked)
 
 
 async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreSheetBot'):
