@@ -500,6 +500,34 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(f'During a mock you need to send with a teamname, like this'
                                f' `,send @playername teamname`.')
                 return
+        elif self._current(ctx).battle_type == BattleType.MASTER_PLAYOFF:
+            if not check_roles(user, [VERIFIED]):
+                await response_message(ctx,
+                                       f'{user.mention} does not have the DC Verified role. Which is required for '
+                                       f'crew battle participation.'
+                                       f'They can verify by typing dc.verify in any channel and then clicking the '
+                                       f'"Click me to verify!" link in the Double Counter dm.')
+                return
+            await self._reject_outsiders(ctx)
+            author_crew = await self._battle_crew(ctx, ctx.author)
+            player_crew = await self._battle_crew(ctx, user)
+            if author_crew == player_crew:
+                if check_roles(user, [WATCHLIST]):
+                    await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
+                    return
+                if check_roles(user, [JOIN_CD]):
+                    await ctx.send(
+                        f'{user.mention} joined this crew less than '
+                        f'24 hours ago and must wait to play ranked battles.')
+                    return
+                if check_roles(user, [MC_LOCKED]):
+                    await ctx.send(
+                        f'{user.mention} is MC Playoff locked and cannot play in mc playoff battles.')
+                    return
+                self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
+            else:
+                await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
+                return
         else:
             if not check_roles(user, [VERIFIED]):
                 await response_message(ctx,
