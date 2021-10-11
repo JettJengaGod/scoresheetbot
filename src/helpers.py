@@ -9,6 +9,7 @@ import numpy as np
 from dateutil.relativedelta import relativedelta
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from bracket import Bracket, draw_bracket
 from character import string_to_emote
 from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew, cooldown_finished, \
     remove_expired_cooldown, cooldown_current, find_member_crew, new_crew, auto_unfreeze, new_member_gcoins, \
@@ -16,7 +17,7 @@ from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
     player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id, \
     battle_frontier_crews, elo_decay, reset_decay, first_crew_flair, track_finished_out, track_down_out, track_finished, \
-    update_member_roles, recent_unflair
+    update_member_roles, recent_unflair, get_bracket_predictions
 from gambit import Gambit
 from sheet_helpers import update_all_sheets
 
@@ -851,6 +852,8 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
         ty = 'Master Class'
     elif battle_type == BattleType.REG:
         ty = 'Registration'
+    elif battle_type == BattleType.MASTER_PLAYOFF:
+        ty = 'Master Class Playoff'
     else:
         ty = 'Ranked'
     title = f'Current {ty} Battles'
@@ -1260,3 +1263,29 @@ async def set_categories(member: discord.Member, categories: List[discord.Role])
 
 async def clear_current_cbs(bot: 'ScoreSheetBot'):
     await bot.cache.channels.current_cbs.purge()
+
+
+async def clear_bracket(bot: 'ScoreSheetBot'):
+    await bot.cache.channels.master_bracket.purge()
+
+
+async def send_bracket(bot: 'ScoreSheetBot'):
+    if bot.cache.crews:
+        bracket_crews = playoff_crews(bot)
+        br = Bracket(bracket_crews, None)
+        predictions = get_bracket_predictions(420)
+        for prediction in predictions:
+            br.report_winner(prediction[0])
+        await bot.cache.channels.master_bracket.send(file=draw_bracket(br.matches))
+
+
+def playoff_crews(bot: 'ScoreSheetBot') -> List[Crew]:
+    crew_names = ['Black Halo', 'Arpeggio', 'Dream Casters', 'Holy Knights', 'Valerian',
+                  'Sound of Perfervid', 'Midnight Sun', 'Phantom Troupe', 'Flow State Gaming',
+                  'Wombo Combo', 'Black Gang', 'Phantasm', 'Down B Queens', 'Lazarus']
+    bye = Crew(name='Bye (Do not click)', abbr='Bye', db_id=528, color=discord.Color.from_rgb(255, 255, 255),
+               icon='https://cdn.discordapp.com/attachments/792632199241400341/895178019990278254/bracket.png')
+    bracket_crews = [crew_lookup(cr, bot) for cr in crew_names]
+    bracket_crews.insert(1, bye)
+    bracket_crews.insert(9, bye)
+    return bracket_crews

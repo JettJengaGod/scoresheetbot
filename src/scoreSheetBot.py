@@ -23,7 +23,7 @@ from character import all_emojis, string_to_emote, all_alts, CHARACTERS
 from decorators import *
 from help import help_doc
 from constants import *
-from bracket import Bracket, Questions, NUMBER_QUESTIONS
+from bracket import Bracket, Questions, NUMBER_QUESTIONS, current_bracket, draw_bracket
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -61,6 +61,7 @@ class ScoreSheetBot(commands.Cog):
                 summary = battle_summary(self, battle_type)
                 if summary:
                     await send_long_embed(self.cache.channels.current_cbs, summary)
+
             await handle_decay(self)
             await handle_unfreeze(self)
             if self.cache_value.scs:
@@ -353,7 +354,7 @@ class ScoreSheetBot(commands.Cog):
             opp_actual = crew_lookup(opp_crew, self)
             if user_actual.master_class and opp_actual.master_class:
                 await ctx.send(
-                    f'If you are in a master class battle, please use '
+                    f'If you are in a master class battle playoff, please use '
                     f'`{self.bot.command_prefix}masterbattle` or `,mcb`.')
             await self._set_current(ctx, Battle(user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
@@ -366,8 +367,9 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     @ss_channel
     async def masterbattle(self, ctx: Context, user: discord.Member, size: int):
-        if size < 1:
-            await ctx.send('Please enter a size greater than 0.')
+        if size < 6:
+            await ctx.send('Master class playoff battles must be 7v7 or higher. '
+                           'Please enter a size greater than 6.')
             return
         user_crew = crew(ctx.author, self)
         opp_crew = crew(user, self)
@@ -384,11 +386,11 @@ class ScoreSheetBot(commands.Cog):
         user_actual = crew_lookup(user_crew, self)
         opp_actual = crew_lookup(opp_crew, self)
         if not (user_actual.master_class and opp_actual.master_class):
-            await ctx.send(f'Both crews need to be master league crews to do a master league battle.')
+            await ctx.send(f'Both crews need to be master league crews to do a master league playoff battle.')
             return
 
         if user_crew != opp_crew:
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.MASTER))
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.MASTER_PLAYOFF))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -845,6 +847,56 @@ class ScoreSheetBot(commands.Cog):
             elif current.battle_type == BattleType.MOCK:
                 await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
+            elif current.battle_type == BattleType.MASTER_PLAYOFF:
+                current.confirm(await self._battle_crew(ctx, ctx.author))
+                await send_sheet(ctx, battle=current)
+                if current.confirmed():
+                    today = date.today()
+
+                    output_channels = [
+                        discord.utils.get(ctx.guild.channels, id=MC_PLAYOFF_CHANNEL),
+                        discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
+                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+                    winner = current.winner().name
+                    loser = current.loser().name
+                    league_id = 9
+                    current = self._current(ctx)
+                    if not current:
+                        return
+                    await self._clear_current(ctx)
+                    links = []
+                    for output_channel in output_channels:
+                        link = await send_sheet(output_channel, current)
+                        links.append(link)
+                    battle_id = add_finished_battle(current, links[0].jump_url, league_id)
+                    battle_weight_changes(battle_id)
+                    master_weight_changes(battle_id)
+                    winner_crew = crew_lookup(winner, self)
+                    loser_crew = crew_lookup(loser, self)
+                    br = current_bracket(playoff_crews(self))
+                    match = br.find_match(winner, loser)
+                    new_message = (f'**{today.strftime("%B %d, %Y")} Master Class Playoffs - {winner}⚔{loser}**\n'
+                                   f'{match.round_name}\n'
+                                   f'**Winner:** <@&{winner_crew.role_id}> '
+                                   f'**Loser:** <@&{loser_crew.role_id}> '
+                                   f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                    for link in links:
+                        await link.edit(content=new_message)
+                    await ctx.send(
+                        f'The battle between {current.team1.name} and {current.team2.name} '
+                        f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
+                        f'(Battle number:{battle_id})')
+                    update_bf_sheet()
+                    for cr in (winner_crew, loser_crew):
+                        if not extra_slot_used(cr):
+                            if battles_since_sunday(cr) >= 3:
+                                mod_slot(cr, 1)
+                                await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                                set_extra_used(cr)
+                    br.report_winner(winner)
+                    add_bracket_predictions(420, br.matches)
+                    await clear_bracket(self)
+                    await send_bracket(self)
             else:
                 current.confirm(await self._battle_crew(ctx, ctx.author))
                 await send_sheet(ctx, battle=current)
@@ -2711,6 +2763,14 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
+        bracket_crews = playoff_crews(self)
+        br = Bracket(bracket_crews, ctx.author)
+        predictions = get_bracket_predictions(420)
+        for prediction in predictions:
+            br.report_winner(prediction[0])
+        await ctx.send(file=draw_bracket(br.matches))
+        # await channel.send(everything)
+        # await ctx.message.delete(delay=5)
         # crew_names = ['Black Halo', 'Valerian', 'Arpeggio', 'Dream Casters', 'Holy Knights', 'No Style',
         #               'EVA^', 'Midnight Sun', 'Phantom Troupe', 'Sound of Perfervid', 'Flow State Gaming',
         #               'Wombo Combo', 'Black Gang', 'Phantasm', 'Down B Queens', 'Lazarus']

@@ -10,7 +10,7 @@ import requests
 from io import BytesIO
 
 from src.crew import Crew
-from src.db_helpers import add_bracket_predictions, add_bracket_questions
+from src.db_helpers import add_bracket_predictions, add_bracket_questions, get_bracket_predictions
 
 ROUND_NAMES = ['Winners Round 1', 'Winners Quarterfinals', 'Winners Semi Finals', 'Winners Finals',
                'Losers Round 1', 'Losers Round 2', 'Losers Round 3', 'Losers Quarterfinals',
@@ -53,6 +53,10 @@ class Match:
     loser_match: Optional['Match'] = None
     winner: Optional[Crew] = None
     loser_placing: Optional[str] = None
+
+    @property
+    def round_name(self) -> str:
+        return ROUND_NAMES[self.round.value - 1]
 
     def add_crew(self, cr: Crew):
         if not self.crew_1:
@@ -118,7 +122,7 @@ class Questions(discord.ui.View):
 
     def new_question(self, answer: int):
         self.answers.append(answer)
-        if self.current_question < len(NUMBER_QUESTIONS)-1:
+        if self.current_question < len(NUMBER_QUESTIONS) - 1:
             self.current_question += 1
             self.clear_items()
             self.add_item(DropdownQuestion(NUMBER_QUESTIONS[self.current_question]))
@@ -140,7 +144,10 @@ class Bracket(discord.ui.View):
         super().__init__()
         self.view_only = view_only
         self.author = author
-        self.author_id = author.id
+        if self.author:
+            self.author_id = author.id
+        else:
+            self.author_id = 420
         self.message = f'**{ROUND_NAMES[0]}**\n'
         self.matches = []
         self.placings = defaultdict(list)
@@ -243,10 +250,12 @@ class Bracket(discord.ui.View):
             placement_str = ['Your predictions']
             for placement in PLACEMENTS:
                 placement_str.append(placement + ' ' + ' \\| '.join(f'{cr.name}' for cr in self.placings[placement]))
-
-            asyncio.create_task(self.author.send(content='\n'.join(placement_str), file=draw_bracket(self.matches)))
+            if self.author:
+                asyncio.create_task(self.author.send(content='\n'.join(placement_str), file=draw_bracket(self.matches)))
 
     def report_winner(self, name: str):
+        if name not in (self.current.crew_1, self.current.crew_2):
+            self.current_match = self.find_next_match(name).number
         if self.current.crew_1.name == name:
             self.current.winner = self.current.crew_1
             if self.current.round == Round.GRAND_FINALS:
@@ -278,6 +287,22 @@ class Bracket(discord.ui.View):
             self.message += f'\n **{ROUND_NAMES[self.current.round.value - 1]}** \n'
         self.clear_items()
         self.new_match()
+
+    def find_match(self, crew_1: str, crew_2: str) -> Match:
+        for match in self.matches:
+            if match.crew_1 and match.crew_2:
+                if match.winner is None:
+                    if crew_1 in (match.crew_1.name, match.crew_2.name) and crew_2 in (
+                            match.crew_1.name, match.crew_2.name):
+                        return match
+        return None
+
+    def find_next_match(self, crew_1: str) -> Match:
+        for match in self.matches:
+            if not match.winner:
+                if crew_1 in (match.crew_1.name, match.crew_2.name):
+                    return match
+        return None
 
 
 def draw_bracket(matches: List['Match']):
@@ -407,7 +432,7 @@ def draw_bracket(matches: List['Match']):
                     response = requests.get(match.crew_1.icon)
                     logo = Image.open(BytesIO(response.content))
                     logo = logo.resize((300, 300))
-                    img.paste(logo, (1545-150, 493-150), logo.convert('RGBA'))
+                    img.paste(logo, (1545 - 150, 493 - 150), logo.convert('RGBA'))
                 if match.winner == match.crew_2:
                     d1.line([(1162, 723), (1346, 723), (1346, 493)],
                             fill=match.crew_2.color.to_rgb(),
@@ -429,7 +454,7 @@ def draw_bracket(matches: List['Match']):
                     response = requests.get(match.crew_1.icon)
                     logo = Image.open(BytesIO(response.content))
                     logo = logo.resize((300, 300))
-                    img.paste(logo, (1738-150, 720-150), logo.convert('RGBA'))
+                    img.paste(logo, (1738 - 150, 720 - 150), logo.convert('RGBA'))
 
                 if match.winner == match.crew_2:
                     d1.line([(1344, 956), (1545, 956), (1545, 720), (1738, 720)],
@@ -440,7 +465,7 @@ def draw_bracket(matches: List['Match']):
                     response = requests.get(match.crew_2.icon)
                     logo = Image.open(BytesIO(response.content))
                     logo = logo.resize((300, 300))
-                    img.paste(logo, (1738-150, 720-150), logo.convert('RGBA'))
+                    img.paste(logo, (1738 - 150, 720 - 150), logo.convert('RGBA'))
         if match.round == Round.LOSERS_ROUND_3:
             round_i = i - 20
             difference = round_i * 195
@@ -508,3 +533,11 @@ def draw_bracket(matches: List['Match']):
     img.save(buffer, 'png')
     buffer.seek(0)
     return discord.File(fp=buffer, filename='bracket.png')
+
+
+def current_bracket(crews: List[Crew]) -> Bracket:
+    predictions = get_bracket_predictions(420)
+    br = Bracket(crews, None)
+    for prediction in predictions:
+        br.report_winner(prediction[0])
+    return br

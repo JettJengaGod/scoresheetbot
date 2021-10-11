@@ -20,6 +20,7 @@ WATCHLIST = '! Watchlisted !'
 CERTIFIED = 'SCS Certified Streamer'
 STREAMER = 'Streamers'
 DOCS = 'Doc Keeper'
+MC_PLAYOFF_CHANNEL = 896635892582715402
 FREE_AGENT = 'Free Agent'
 LEAD_RESTRICT = 'Leadership Restriction'
 SCS = 'ScoresheetBot' if os.getenv('VERSION') == 'ALPHA' else 'Smash Crew Server'

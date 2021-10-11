@@ -3444,12 +3444,12 @@ where months = 0"""
 def battles_since_sunday(crew: Crew) -> int:
     finished = """ 
 select count(*)
-from bot.public.battle_ratings,
-     bot.public.battle,
-     bot.public.crews
+from battle_ratings,
+     battle,
+     crews
 where battle_ratings.battle_id = battle.id
   and finished > (select current_date - extract(dow from current_date)::integer)
-  and battle.league_id = 8
+  and battle.league_id in (7,8,9)
   and crews.id = battle_ratings.crew_id
   and crews.id = %s
 ;"""
@@ -3527,7 +3527,8 @@ def add_bracket_predictions(member_id: int, match_list: Iterable['Match']):
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         for match in match_list:
-            cur.execute(prediction, (member_id, match.number, match.winner.db_id, match.loser.db_id))
+            if match.winner:
+                cur.execute(prediction, (member_id, match.number, match.winner.db_id, match.loser.db_id))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -3582,6 +3583,29 @@ def get_bracket_questions(member_id: int):
 
 
 def get_bracket_predictions(member_id: int):
+    prediction = """ 
+    select name
+    from bracket_predictions,crews where member_id = %s and crews.id = bracket_predictions.winner
+    order by match_number;"""
+    match_results = []
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(prediction, (member_id,))
+        match_results = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return match_results
+
+
+def get_match_predictions(member_id: int):
     prediction = """ 
     select name
     from bracket_predictions,crews where member_id = %s and crews.id = bracket_predictions.winner
