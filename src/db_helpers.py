@@ -3628,6 +3628,32 @@ def get_match_predictions(member_id: int):
     return match_results
 
 
+def get_all_predictions():
+    prediction = """ 
+    select nickname, match_number, winner
+    from bracket_predictions,
+         members
+    where members.id = bracket_predictions.member_id;"""
+    output = defaultdict(lambda: defaultdict(int))
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(prediction)
+        match_results = cur.fetchall()
+        for nickname, match_number, winner in match_results:
+            output[nickname][match_number] = winner
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return output
+
+
 """select '<@!' || member_id || '>', name, gained
 from (SELECT EXTRACT(month FROM age(current_timestamp, gained)) as months, member_id, roles.name, gained
       from current_member_roles,

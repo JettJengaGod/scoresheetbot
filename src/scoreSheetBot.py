@@ -2791,6 +2791,21 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def rate(self, ctx):
+        # everyone = get_all_predictions()
+        # actual = everyone['Predictor']
+        # count = -1
+        # for member in everyone:
+        #     correct = True
+        #     for match in actual:
+        #
+        #         if actual[match] != everyone[member][match]:
+        #             correct = False
+        #             break
+        #     if correct:
+        #         print(member)
+        #         count += 1
+        # print(count)
+
         bracket_crews = playoff_crews(self)
         br = Bracket(bracket_crews, ctx.author)
         predictions = get_bracket_predictions(420)
