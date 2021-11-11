@@ -30,6 +30,8 @@ class BattleType(Enum):
     PLAYOFF = 4
     MASTER = 5
     MASTER_PLAYOFF = 6
+    BF_PLAYOFF = 7
+    RC_PLAYOFF = 8
 
 
 @dataclass
@@ -199,6 +201,10 @@ class Battle:
             self.header = 'Master Class '
         elif self.battle_type == BattleType.MASTER_PLAYOFF:
             self.header = 'Master Class Playoff '
+        elif self.battle_type == BattleType.BF_PLAYOFF:
+            self.header = 'Battle Frontier Playoff '
+        elif self.battle_type == BattleType.RC_PLAYOFF:
+            self.header = 'Rookie Class Playoff '
         elif self.battle_type == BattleType.MOCK:
             self.header = 'Mock '
         elif self.battle_type == BattleType.REG:

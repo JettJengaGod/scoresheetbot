@@ -3605,6 +3605,29 @@ def get_bracket_predictions(member_id: int):
     return match_results
 
 
+# def get_crew_ratios(crew: Crew):
+#     prediction = """
+#     select name
+#     from bracket_predictions,crews where member_id = %s and crews.id = bracket_predictions.winner
+#     order by match_number;"""
+#     match_results = []
+#     conn = None
+#     try:
+#         params = config()
+#         conn = psycopg2.connect(**params)
+#         cur = conn.cursor()
+#         cur.execute(prediction, (member_id,))
+#         match_results = cur.fetchall()
+#         conn.commit()
+#         cur.close()
+#     except (Exception, psycopg2.DatabaseError) as error:
+#         log_error_and_reraise(error)
+#     finally:
+#         if conn is not None:
+#             conn.close()
+#     return match_results
+
+
 def get_match_predictions(member_id: int):
     prediction = """ 
     select name

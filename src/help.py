@@ -31,6 +31,14 @@ help_doc = dict(
                          'Start a master league Scoresheet in this channel against'
                          ' the tagged players\' crew with a specific size',
                          '', "@OpponentName size"),
+    bfplayoff=HelpDoc(Categories.cb,
+                      'Start a battle frontier playoff Scoresheet in this channel against'
+                      ' the tagged players\' crew with a specific size',
+                      '', "@OpponentName size"),
+    rcplayoff=HelpDoc(Categories.cb,
+                      'Start a rookie class playoff Scoresheet in this channel against'
+                      ' the tagged players\' crew with a specific size',
+                      '', "@OpponentName size"),
     playoffbattle=HelpDoc(Categories.cb,
                           'Start a master league playoff Scoresheet in this channel against'
                           ' the tagged players\' crew with a specific size',

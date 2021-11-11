@@ -62,7 +62,7 @@ class ScoreSheetBot(commands.Cog):
                 if summary:
                     await send_long_embed(self.cache.channels.current_cbs, summary)
 
-            await handle_decay(self)
+            # await handle_decay(self)
             await handle_unfreeze(self)
             if self.cache_value.scs:
                 await overflow_anomalies(self)
@@ -354,8 +354,9 @@ class ScoreSheetBot(commands.Cog):
             opp_actual = crew_lookup(opp_crew, self)
             if user_actual.master_class and opp_actual.master_class:
                 await ctx.send(
-                    f'If you are in a master class battle playoff, please use '
-                    f'`{self.bot.command_prefix}masterbattle` or `,mcb`.')
+                    f'If you are in a '
+                    f'Battle Frontier Playoff, please use: `,bfplayoff` or `,bfb`\n'
+                    f'Rookie Class Playoff: `,rcplayoff` or `,rcb`')
             await self._set_current(ctx, Battle(user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
@@ -367,7 +368,7 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     @ss_channel
     async def masterbattle(self, ctx: Context, user: discord.Member, size: int):
-        if size < 6:
+        if size < 7:
             await ctx.send('Master class playoff battles must be 7v7 or higher. '
                            'Please enter a size greater than 6.')
             return
@@ -394,6 +395,76 @@ class ScoreSheetBot(commands.Cog):
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
+
+    @commands.command(**help_doc['bfplayoff'], aliases=['bfb', 'bfoff'], group='CB')
+    @main_only
+    @no_battle
+    @is_lead
+    @ss_channel
+    async def bfplayoff(self, ctx: Context, user: discord.Member, size: int):
+        if size < 6:
+            await ctx.send('Battle Frontier playoff battles must be 6v6 or higher. '
+                           'Please enter a size greater than 5.')
+            return
+        user_crew = crew(ctx.author, self)
+        opp_crew = crew(user, self)
+        if not user_crew:
+            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+                           f'They might not be in a crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if not opp_crew:
+            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+                           f'They might not be in a crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        user_actual = crew_lookup(user_crew, self)
+        opp_actual = crew_lookup(opp_crew, self)
+        if not (user_actual.master_class and opp_actual.master_class):
+            await ctx.send(f'Both crews need to be master league crews to do a master league playoff battle.')
+            return
+
+        if user_crew != opp_crew:
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.BF_PLAYOFF))
+            await send_sheet(ctx, battle=self._current(ctx))
+        else:
+            await ctx.send('You can\'t battle your own crew.')
+
+    @commands.command(**help_doc['rcplayoff'], aliases=['rcb', 'rcoff'], group='CB')
+    @main_only
+    @no_battle
+    @is_lead
+    @ss_channel
+    async def rcplayoff(self, ctx: Context, user: discord.Member, size: int):
+        if size < 5:
+            await ctx.send('Rookie playoff battles must be 5v5 or higher. '
+                           'Please enter a size greater than 4.')
+            return
+        user_crew = crew(ctx.author, self)
+        opp_crew = crew(user, self)
+        if not user_crew:
+            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+                           f'They might not be in a crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if not opp_crew:
+            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+                           f'They might not be in a crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        user_actual = crew_lookup(user_crew, self)
+        opp_actual = crew_lookup(opp_crew, self)
+        if not (user_actual.master_class and opp_actual.master_class):
+            await ctx.send(f'Both crews need to be master league crews to do a master league playoff battle.')
+            return
+
+        if user_crew != opp_crew:
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.RC_PLAYOFF))
+            await send_sheet(ctx, battle=self._current(ctx))
+        else:
+            await ctx.send('You can\'t battle your own crew.')
+
+
 
     @commands.command(**help_doc['mock'])
     @no_battle
@@ -523,6 +594,34 @@ class ScoreSheetBot(commands.Cog):
                 if check_roles(user, [MC_LOCKED]):
                     await ctx.send(
                         f'{user.mention} is MC Playoff locked and cannot play in mc playoff battles.')
+                    return
+                self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
+            else:
+                await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
+                return
+        elif self._current(ctx).battle_type in (BattleType.BF_PLAYOFF, BattleType.RC_PLAYOFF):
+            if not check_roles(user, [VERIFIED]):
+                await response_message(ctx,
+                                       f'{user.mention} does not have the DC Verified role. Which is required for '
+                                       f'crew battle participation.'
+                                       f'They can verify by typing dc.verify in any channel and then clicking the '
+                                       f'"Click me to verify!" link in the Double Counter dm.')
+                return
+            await self._reject_outsiders(ctx)
+            author_crew = await self._battle_crew(ctx, ctx.author)
+            player_crew = await self._battle_crew(ctx, user)
+            if author_crew == player_crew:
+                if check_roles(user, [WATCHLIST]):
+                    await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
+                    return
+                if check_roles(user, [JOIN_CD]):
+                    await ctx.send(
+                        f'{user.mention} joined this crew less than '
+                        f'24 hours ago and must wait to play ranked battles.')
+                    return
+                if check_roles(user, [BF_LOCKED]):
+                    await ctx.send(
+                        f'{user.mention} is Playoff locked and cannot play in playoff battles.')
                     return
                 self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
             else:
@@ -825,7 +924,7 @@ class ScoreSheetBot(commands.Cog):
                         links.append(link)
                     successful = (current.winner() == current.team2 or final_score < 5)
 
-                    new_message = (f'**{today.strftime("%B %d, %Y")} (SCL 2021 Registration) - {winner}⚔{loser}**\n'
+                    new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked Registration) - {winner}⚔{loser}**\n'
                                    f'**Winner:** {winner} '
                                    f'**Loser:** {loser}\n')
                     if successful:
@@ -910,6 +1009,7 @@ class ScoreSheetBot(commands.Cog):
                                    f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
+                        await link.add_reaction('✅')
                     await ctx.send(
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
@@ -925,6 +1025,92 @@ class ScoreSheetBot(commands.Cog):
                     add_bracket_predictions(420, br.matches)
                     await clear_bracket(self)
                     await send_bracket(self)
+            elif current.battle_type == BattleType.BF_PLAYOFF:
+                current.confirm(await self._battle_crew(ctx, ctx.author))
+                await send_sheet(ctx, battle=current)
+                if current.confirmed():
+                    today = date.today()
+
+                    output_channels = [
+                        discord.utils.get(ctx.guild.channels, id=BF_PLAYOFF_CHANNEL),
+                        discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
+                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+                    winner = current.winner().name
+                    loser = current.loser().name
+                    league_id = 10
+                    current = self._current(ctx)
+                    if not current:
+                        return
+                    await self._clear_current(ctx)
+                    links = []
+                    for output_channel in output_channels:
+                        link = await send_sheet(output_channel, current)
+                        links.append(link)
+                    battle_id = add_finished_battle(current, links[0].jump_url, league_id)
+                    battle_weight_changes(battle_id)
+                    master_weight_changes(battle_id)
+                    winner_crew = crew_lookup(winner, self)
+                    loser_crew = crew_lookup(loser, self)
+                    new_message = (f'**{today.strftime("%B %d, %Y")} Battle Frontier Playoffs - {winner}⚔{loser}**\n'
+                                   f'**Winner:** <@&{winner_crew.role_id}> '
+                                   f'**Loser:** <@&{loser_crew.role_id}> '
+                                   f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                    for link in links:
+                        await link.edit(content=new_message)
+                    await ctx.send(
+                        f'The battle between {current.team1.name} and {current.team2.name} '
+                        f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
+                        f'(Battle number:{battle_id})')
+                    update_bf_sheet()
+                    for cr in (winner_crew, loser_crew):
+                        if not extra_slot_used(cr):
+                            if battles_since_sunday(cr) >= 3:
+                                mod_slot(cr, 1)
+                                await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                                set_extra_used(cr)
+            elif current.battle_type == BattleType.RC_PLAYOFF:
+                current.confirm(await self._battle_crew(ctx, ctx.author))
+                await send_sheet(ctx, battle=current)
+                if current.confirmed():
+                    today = date.today()
+
+                    output_channels = [
+                        discord.utils.get(ctx.guild.channels, id=RC_PLAYOFF_CHANNEL),
+                        discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
+                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+                    winner = current.winner().name
+                    loser = current.loser().name
+                    league_id = 11
+                    current = self._current(ctx)
+                    if not current:
+                        return
+                    await self._clear_current(ctx)
+                    links = []
+                    for output_channel in output_channels:
+                        link = await send_sheet(output_channel, current)
+                        links.append(link)
+                    battle_id = add_finished_battle(current, links[0].jump_url, league_id)
+                    battle_weight_changes(battle_id)
+                    master_weight_changes(battle_id)
+                    winner_crew = crew_lookup(winner, self)
+                    loser_crew = crew_lookup(loser, self)
+                    new_message = (f'**{today.strftime("%B %d, %Y")} Battle Frontier Playoffs - {winner}⚔{loser}**\n'
+                                   f'**Winner:** <@&{winner_crew.role_id}> '
+                                   f'**Loser:** <@&{loser_crew.role_id}> '
+                                   f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                    for link in links:
+                        await link.edit(content=new_message)
+                    await ctx.send(
+                        f'The battle between {current.team1.name} and {current.team2.name} '
+                        f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
+                        f'(Battle number:{battle_id})')
+                    update_bf_sheet()
+                    for cr in (winner_crew, loser_crew):
+                        if not extra_slot_used(cr):
+                            if battles_since_sunday(cr) >= 3:
+                                mod_slot(cr, 1)
+                                await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                                set_extra_used(cr)
             else:
                 current.confirm(await self._battle_crew(ctx, ctx.author))
                 await send_sheet(ctx, battle=current)
@@ -938,7 +1124,7 @@ class ScoreSheetBot(commands.Cog):
                     if current.battle_type == BattleType.MASTER:
                         league_id = 7
                     else:
-                        league_id = 8
+                        league_id = 11
                     current = self._current(ctx)
                     if not current:
                         return
@@ -948,41 +1134,20 @@ class ScoreSheetBot(commands.Cog):
                         link = await send_sheet(output_channel, current)
                         links.append(link)
                     battle_id = add_finished_battle(current, links[0].jump_url, league_id)
-
-                    winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
                     battle_weight_changes(battle_id)
                     winner_crew = crew_lookup(winner, self)
                     loser_crew = crew_lookup(loser, self)
-                    new_message = (f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winner}⚔{loser}**\n'
-                                   f'**Winner:** {winner_crew.abbr} '
-                                   f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
-                                   f'**Loser:** {loser_crew.abbr} '
-                                   f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
+                    new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winner}⚔{loser}**\n'
+                                   f'**Winner:** <@&{winner_crew.role_id}> '
+                                   f'**Loser:** <@&{loser_crew.role_id}> '
                                    f'**Battle:** {battle_id} from {ctx.channel.mention}')
-                    if current.battle_type == BattleType.MASTER:
-                        bf_winner_elo, bf_winner_change, bf_loser_elo, bf_loser_change = battle_elo_changes(battle_id,
-                                                                                                            True)
-                        master_weight_changes(battle_id)
-                        new_message = (f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winner}⚔{loser}**\n'
-                                       '**Master Class**\n'
-                                       f'**Winner:** {winner_crew.abbr} '
-                                       f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
-                                       f'**Loser:** {loser_crew.abbr} '
-                                       f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
-                                       f'** Battle Frontier**\n'
-                                       f'**Winner:** {winner_crew.abbr} '
-                                       f'[{bf_winner_elo}+{bf_winner_change}={bf_winner_elo + bf_winner_change}]\n'
-                                       f'**Loser:** {loser_crew.abbr} '
-                                       f'[{bf_loser_elo}{bf_loser_change}={bf_loser_elo + bf_loser_change}]\n'
-                                       f'**Battle:** {battle_id} from {ctx.channel.mention}')
-                        update_mc_sheet()
                     for link in links:
                         await link.edit(content=new_message)
+                    await links[0].add_reaction(YES)
                     await ctx.send(
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
-                    update_bf_sheet()
                     for cr in (winner_crew, loser_crew):
                         if not extra_slot_used(cr):
                             if battles_since_sunday(cr) >= 3:
