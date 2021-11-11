@@ -21,6 +21,8 @@ CERTIFIED = 'SCS Certified Streamer'
 STREAMER = 'Streamers'
 DOCS = 'Doc Keeper'
 MC_PLAYOFF_CHANNEL = 896635892582715402
+BF_PLAYOFF_CHANNEL = 908128782550974465
+RC_PLAYOFF_CHANNEL = 908128885588263012
 FREE_AGENT = 'Free Agent'
 LEAD_RESTRICT = 'Leadership Restriction'
 SCS = 'ScoresheetBot' if os.getenv('VERSION') == 'ALPHA' else 'Smash Crew Server'

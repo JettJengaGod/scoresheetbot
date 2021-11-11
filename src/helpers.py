@@ -854,6 +854,10 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
         ty = 'Registration'
     elif battle_type == BattleType.MASTER_PLAYOFF:
         ty = 'Master Class Playoff'
+    elif battle_type == BattleType.BF_PLAYOFF:
+        ty = 'Battle Frontier Playoff'
+    elif battle_type == BattleType.RC_PLAYOFF:
+        ty = 'Rookie Class Playoff'
     else:
         ty = 'Ranked'
     title = f'Current {ty} Battles'
