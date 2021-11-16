@@ -419,9 +419,6 @@ class ScoreSheetBot(commands.Cog):
             return
         user_actual = crew_lookup(user_crew, self)
         opp_actual = crew_lookup(opp_crew, self)
-        if not (user_actual.master_class and opp_actual.master_class):
-            await ctx.send(f'Both crews need to be master league crews to do a master league playoff battle.')
-            return
 
         if user_crew != opp_crew:
             await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.BF_PLAYOFF))
@@ -453,9 +450,6 @@ class ScoreSheetBot(commands.Cog):
             return
         user_actual = crew_lookup(user_crew, self)
         opp_actual = crew_lookup(opp_crew, self)
-        if not (user_actual.master_class and opp_actual.master_class):
-            await ctx.send(f'Both crews need to be master league crews to do a master league playoff battle.')
-            return
 
         if user_crew != opp_crew:
             await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.RC_PLAYOFF))
