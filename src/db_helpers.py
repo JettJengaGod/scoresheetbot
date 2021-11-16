@@ -3447,7 +3447,6 @@ from battle_ratings,
      crews
 where battle_ratings.battle_id = battle.id
   and finished > (select current_date - extract(dow from current_date)::integer)
-  and battle.league_id in (7,8,9)
   and crews.id = battle_ratings.crew_id
   and crews.id = %s
 ;"""

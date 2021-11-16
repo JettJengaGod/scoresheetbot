@@ -457,8 +457,6 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-
-
     @commands.command(**help_doc['mock'])
     @no_battle
     @ss_channel
@@ -1053,7 +1051,6 @@ class ScoreSheetBot(commands.Cog):
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
-                    update_bf_sheet()
                     for cr in (winner_crew, loser_crew):
                         if not extra_slot_used(cr):
                             if battles_since_sunday(cr) >= 3:
@@ -1096,7 +1093,6 @@ class ScoreSheetBot(commands.Cog):
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
-                    update_bf_sheet()
                     for cr in (winner_crew, loser_crew):
                         if not extra_slot_used(cr):
                             if battles_since_sunday(cr) >= 3:
@@ -1116,7 +1112,7 @@ class ScoreSheetBot(commands.Cog):
                     if current.battle_type == BattleType.MASTER:
                         league_id = 7
                     else:
-                        league_id = 11
+                        league_id = 12
                     current = self._current(ctx)
                     if not current:
                         return
@@ -1311,16 +1307,13 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['rankings'])
     async def rankings(self, ctx):
-        # TODO split this by ladder
-        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.scl_rating],
-                                         key=lambda x: x.scl_rating, reverse=True)
-        cutoff = round(len(crews_sorted_by_ranking) * .4)
-        while (crews_sorted_by_ranking[cutoff - 1].scl_rating == crews_sorted_by_ranking[cutoff].scl_rating
-               and cutoff < len(crews_sorted_by_ranking) - 1):
-            cutoff += 1
-        crew_ranking_str = [f'{cr.name} {cr.scl_rating}' for cr in crews_sorted_by_ranking]
+        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.overclocked_ranking],
+                                         key=lambda x: x.overclocked_ranking, reverse=False)
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='SCL 2021 Rankings'),
+        crew_ranking_str = [f'**{cr.name}** {cr.current_umbra}/{cr.max_umbra} Rank: {cr.rank}' for cr in
+                            crews_sorted_by_ranking]
+
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Overclocked Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
@@ -2140,19 +2133,21 @@ class ScoreSheetBot(commands.Cog):
             files = [await attachment.to_file() for attachment in ctx.message.attachments]
             link = await output_channel.send(files=files)
             links.append(link)
-        league_id = 8
+        league_id = 12
         battle_id = add_non_ss_battle(winning_crew, losing_crew, players, score, links[0].jump_url, league_id)
-
-        winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
-
+        new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew.name}⚔{losing_crew.name}**\n'
+                       f'**Winner:** <@&{winning_crew.role_id}> '
+                       f'**Loser:** <@&{losing_crew.role_id}> '
+                       f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
-            await link.edit(content=
-                            f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winning_crew.name}⚔{losing_crew.name}**\n'
-                            f'**Winner:** {winning_crew.abbr} '
-                            f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
-                            f'**Loser:** {losing_crew.abbr} '
-                            f'[{loser_elo}{loser_change}={loser_elo + loser_change}]\n'
-                            f'**Battle:** {battle_id}')
+            await link.edit(content=new_message)
+        await links[0].add_reaction(YES)
+        for cr in (winning_crew, losing_crew):
+            if not extra_slot_used(cr):
+                if battles_since_sunday(cr) >= 3:
+                    mod_slot(cr, 1)
+                    await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                    set_extra_used(cr)
         await ctx.send(
             f'The battle between {winning_crew.name} and {losing_crew.name} '
             f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
@@ -2200,18 +2195,17 @@ class ScoreSheetBot(commands.Cog):
             files = [await attachment.to_file() for attachment in ctx.message.attachments]
             link = await output_channel.send(files=files)
             links.append(link)
-        league_id = 8
-        battle_id = add_failed_reg_battle(winning_crew, players, score, links[0].jump_url, league_id)
 
-        winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
+        league_id = 12
+        battle_id = add_failed_reg_battle(winning_crew, players, score, links[0].jump_url, league_id)
         reset_fake_crew_rating(league_id)
+        new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew.name}⚔{losing_crew.name}**\n'
+                       f'**Winner:** <@&{winning_crew.role_id}> '
+                       f'**Loser:** <@&{losing_crew.role_id}> '
+                       f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
-            await link.edit(content=
-                            f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winning_crew.name}⚔{losing_crew}**\n'
-                            f'**Winner:** {winning_crew.abbr} '
-                            f'[{winner_elo}+{winner_change}={winner_elo + winner_change}]\n'
-                            f'**Loser:** {losing_crew} (no rating, treated as 1000)\n'
-                            f'**Battle:** {battle_id}')
+            await link.edit(content=new_message)
+        await links[0].add_reaction(YES)
         await ctx.send(
             f'The battle between {winning_crew.name} and {losing_crew} '
             f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
@@ -2259,17 +2253,17 @@ class ScoreSheetBot(commands.Cog):
             files = [await attachment.to_file() for attachment in ctx.message.attachments]
             link = await output_channel.send(files=files)
             links.append(link)
-        league_id = 8
+        league_id = 12
         battle_id = add_weird_reg_battle(losing_crew, players, score, links[0].jump_url, league_id)
-
-        winner_elo, winner_change, loser_elo, loser_change = battle_elo_changes(battle_id)
         reset_fake_crew_rating(league_id)
+
+        new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew.name}⚔{losing_crew.name}**\n'
+                       f'**Winner:** <@&{winning_crew.role_id}> '
+                       f'**Loser:** <@&{losing_crew.role_id}> '
+                       f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
-            await link.edit(content=
-                            f'**{today.strftime("%B %d, %Y")} (SCL 2021) - {winning_crew}⚔{losing_crew.name}**\n'
-                            f'**Winner:** {winning_crew} (no rating, treated as 1000)\n'
-                            f'**Loser:** {losing_crew.abbr}={loser_elo} + {loser_change}]\n'
-                            f'**Battle:** {battle_id}')
+            await link.edit(content=new_message)
+        await links[0].add_reaction(YES)
         await ctx.send(
             f'The battle between {winning_crew} and {losing_crew.name} '
             f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
@@ -2448,6 +2442,23 @@ class ScoreSheetBot(commands.Cog):
 
         await send_long_embed(ctx, embed)
         await send_long_embed(self.cache.channels.flair_log, embed)
+
+    @commands.command(**help_doc['fixslot'], hidden=True)
+    @role_call(STAFF_LIST)
+    async def fixslot(self, ctx, *, name: str = None):
+        if name:
+            cr = crew_lookup(name, self)
+        else:
+            await ctx.send('You must send in a crew name.')
+            return
+        message = f'{ctx.author.mention}: You are attempting to give {cr.name}, a slot for playing 3 cbs' \
+                  f' are you sure?'
+        msg = await ctx.send(message)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return
+        mod_slot(cr, 1)
+        await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
 
     @commands.command(**help_doc['freeze'])
     @role_call(STAFF_LIST)
@@ -3077,20 +3088,21 @@ class ScoreSheetBot(commands.Cog):
         crew_bar_chart(crews)
         await ctx.send(embed=embed, file=discord.File('cr.png'))
 
-    @commands.command(hidden=True, **help_doc['ofrank'])
-    @role_call(STAFF_LIST)
-    async def ofrank(self, ctx):
-        crews = list(self.cache.crews_by_name.values())
-
-        crews.sort(key=lambda x: x.scl_rating)
-        desc = []
-        for cr in crews:
-            if cr.overflow:
-                desc.append(
-                    f'{cr.name}: Rank {cr.scl_rating}, members, {cr.member_count} {str(first_crew_flair(cr))}')
-        embed = discord.Embed(title=f'Overflow crew numbers', description='\n'.join(desc))
-
-        await send_long_embed(ctx, embed)
+    # Deprecated
+    # @commands.command(hidden=True, **help_doc['ofrank'])
+    # @role_call(STAFF_LIST)
+    # async def ofrank(self, ctx):
+    #     crews = list(self.cache.crews_by_name.values())
+    #
+    #     crews.sort(key=lambda x: x.scl_rating)
+    #     desc = []
+    #     for cr in crews:
+    #         if cr.overflow:
+    #             desc.append(
+    #                 f'{cr.name}: Rank {cr.scl_rating}, members, {cr.member_count} {str(first_crew_flair(cr))}')
+    #     embed = discord.Embed(title=f'Overflow crew numbers', description='\n'.join(desc))
+    #
+    #     await send_long_embed(ctx, embed)
 
     @commands.command(hidden=True, **help_doc['ofrank'])
     @role_call(STAFF_LIST)

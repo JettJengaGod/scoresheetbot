@@ -133,13 +133,17 @@ class Cache:
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
         crew_info_range = 'Crew Information!A4:E2160'
+        overclocked_range = 'Overclocked Ladder!A5:L800'
 
         # Call the Sheets API
         sheet = service.spreadsheets()
         result = sheet.values().get(spreadsheetId=docs_id,
                                     range=crew_info_range).execute()
+        overclocked = sheet.values().get(spreadsheetId=docs_id,
+                                         range=overclocked_range).execute()
 
         values = result.get('values', [])
+        overclocked_values = overclocked.get('values', [])
 
         crews_by_name = {}
         issues = []
@@ -165,6 +169,19 @@ class Cache:
                             social.append(f'[Other]({link})')
 
                 crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=' '.join(social), icon=row[3])
+
+        if not overclocked_values:
+            raise ValueError('Overclocked Sheet Not Found')
+        else:
+            for number, row in enumerate(overclocked_values):
+                if not row:
+                    continue
+                if row[0] in crews_by_name.keys():
+                    crews_by_name[row[0]].current_umbra = int(row[8])
+                    crews_by_name[row[0]].max_umbra = int(row[10])
+                    crews_by_name[row[0]].rank = parse_from_end(row[11])
+                    crews_by_name[row[0]].rank_up = row[6]
+                    crews_by_name[row[0]].overclocked_ranking = number
 
         if issues:
             issue_string = '\n'.join(issues)
@@ -215,3 +232,8 @@ class Cache:
             if role.name in self.crews:
                 return role.name
         return None
+
+
+def parse_from_end(text: str) -> int:
+    split = text.split()
+    return int(split[-1])
