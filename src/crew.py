@@ -10,7 +10,12 @@ class Crew:
     abbr: str
     social: str = ''
     scl_rating: int = 0
+    overclocked_ranking: int = 0
+    rank: int = 0
+    current_umbra: int = 0
+    max_umbra: int = 0
     member_count: int = 0
+    rank_up: str = ''
     ladder: str = ''
     icon: str = ''
     leaders: List[str] = dataclasses.field(default_factory=list)
@@ -34,18 +39,22 @@ class Crew:
 
     @property
     def embed(self) -> discord.Embed:
-        title = f'{self.name}'
-        if self.master_class:
-            title += f' (Master Class) '
+        title = f'{self.name} (Rank: {self.rank})'
+        # if self.master_class:
+        #     title += f' (Master Class) '
         if self.overflow:
             title += f' (Overflow) '
         if self.wl:
             title += ' WATCHLISTED'
         description = [f'**Tag:** {self.abbr}\n', f'**Total Members:** {self.member_count}\n']
-        if self.ladder:
-            description.append(f'{self.ladder}\n')
-        if self.scl_rating:
-            description.append(f'**SCL Rating:** {self.scl_rating}\n')
+        # if self.ladder:
+        #     description.append(f'{self.ladder}\n')
+        # if self.scl_rating:
+        #     description.append(f'**SCL Rating:** {self.scl_rating}\n')
+        if self.max_umbra:
+            description.append(f'**Umbra Meter:** {self.current_umbra}/{self.max_umbra}\n')
+        if self.current_umbra >= self.max_umbra:
+            description.append(f'**Rank up Opponent:** {self.rank_up}\n')
         if self.last_opp:
             description.append(f'**Last Match:** {self.last_match.date().strftime("%m/%d/%y")} {self.last_opp}\n')
         if self.social:

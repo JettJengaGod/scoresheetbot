@@ -184,6 +184,8 @@ help_doc = dict(
                      'Flairs multiple people for a new crew'
                      'Only use spaces between members, and mention mention each one', '',
                      'Member1 Member2 Member3 Crew'),
+    fixslot=HelpDoc(Categories.staff,
+                    'Adds a slot to a crew that for some reason didnt have it'),
     coins=HelpDoc(Categories.gambit, 'Shows your gcoins'),
     bet=HelpDoc(Categories.gambit, 'Bets an amount on a crew, only valid while a gambit is active.', '', 'amount crew'),
     odds=HelpDoc(Categories.gambit, 'Tells you the current odds for the gambit'),
