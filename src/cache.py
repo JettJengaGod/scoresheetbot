@@ -133,7 +133,7 @@ class Cache:
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
         crew_info_range = 'Crew Information!A4:E2160'
-        overclocked_range = 'Overclocked Ladder!A5:L800'
+        overclocked_range = 'Overclocked Ladder!A5:M800'
 
         # Call the Sheets API
         sheet = service.spreadsheets()
@@ -178,8 +178,8 @@ class Cache:
                     continue
                 if row[0] in crews_by_name.keys():
                     crews_by_name[row[0]].current_umbra = int(row[8])
-                    crews_by_name[row[0]].max_umbra = int(row[10])
-                    crews_by_name[row[0]].rank = parse_from_end(row[11])
+                    crews_by_name[row[0]].max_umbra = int(row[11])
+                    crews_by_name[row[0]].rank = parse_from_end(row[12])
                     crews_by_name[row[0]].rank_up = row[6]
                     crews_by_name[row[0]].overclocked_ranking = number
 

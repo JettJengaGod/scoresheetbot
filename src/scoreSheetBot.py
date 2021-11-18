@@ -3044,7 +3044,10 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def dele(self, ctx):
         await clear_current_cbs(self)
-        await send_long_embed(self.cache.channels.current_cbs, battle_summary(self, False))
+        for battle_type in BattleType:
+            summary = battle_summary(self, battle_type)
+            if summary:
+                await send_long_embed(self.cache.channels.current_cbs, summary)
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
