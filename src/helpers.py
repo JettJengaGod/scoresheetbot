@@ -859,7 +859,7 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
     elif battle_type == BattleType.RC_PLAYOFF:
         ty = 'Rookie Class Playoff'
     else:
-        ty = 'Ranked'
+        ty = 'Overclocked'
     title = f'Current {ty} Battles'
     embed = discord.Embed(title=title, color=discord.Color.random())
     for key, battle in bot.battle_map.items():
