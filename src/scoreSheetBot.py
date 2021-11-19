@@ -2201,9 +2201,9 @@ class ScoreSheetBot(commands.Cog):
         league_id = 12
         battle_id = add_failed_reg_battle(winning_crew, players, score, links[0].jump_url, league_id)
         reset_fake_crew_rating(league_id)
-        new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew.name}⚔{losing_crew.name}**\n'
+        new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew.name}⚔{losing_crew}**\n'
                        f'**Winner:** <@&{winning_crew.role_id}> '
-                       f'**Loser:** <@&{losing_crew.role_id}> '
+                       f'**Loser:** {losing_crew}> '
                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
             await link.edit(content=new_message)
