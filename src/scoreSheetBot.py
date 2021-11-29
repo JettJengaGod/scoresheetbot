@@ -844,6 +844,9 @@ class ScoreSheetBot(commands.Cog):
     @has_sheet
     @ss_channel
     async def resize(self, ctx: Context, new_size: int):
+        if new_size > 9999:
+            await ctx.send('Too big. Pls stop')
+            return
         await self._reject_outsiders(ctx)
         self._current(ctx).resize(new_size)
         await send_sheet(ctx, battle=self._current(ctx))
