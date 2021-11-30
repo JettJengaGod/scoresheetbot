@@ -179,8 +179,8 @@ def update_mc_sheet():
 
 
 def update_all_sheets():
-    update_mc_sheet()
-    update_bf_sheet()
-    update_ba_sheet()
-    update_mc_player_sheet()
+    # update_mc_sheet()
+    # update_bf_sheet()
+    # update_ba_sheet()
+    # update_mc_player_sheet()
     update_gambit_sheet()
