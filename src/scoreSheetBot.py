@@ -69,7 +69,7 @@ class ScoreSheetBot(commands.Cog):
             await cooldown_handle(self)
             await track_handle(self)
             await self.cache_value.channels.recache_logs.send('Successfully recached.')
-            update_all_sheets()
+            # update_all_sheets()
         self.cache_time = time.time()
 
     def _current(self, ctx) -> Battle:
