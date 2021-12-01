@@ -1118,7 +1118,7 @@ def flair_bar_chart(flairs: List[Tuple[str, int]]):
 
 
 def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
-    if cr.ladder.startswith('**R'):
+    if cr.rank < 3:
         base = 8
         rollover_max = 3
     else:
