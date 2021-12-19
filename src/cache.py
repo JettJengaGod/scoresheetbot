@@ -76,8 +76,6 @@ class Cache:
             track3 = discord.utils.get(server.roles, name=TRACK[2])
             true_locked = discord.utils.get(server.roles, name=TRUE_LOCKED)
             free_agent = discord.utils.get(server.roles, name=FREE_AGENT)
-            mc_locked = discord.utils.get(server.roles, name=MC_LOCKED)
-            bf_locked = discord.utils.get(server.roles, name=BF_LOCKED)
             join_cd = discord.utils.get(server.roles, name=JOIN_CD)
             everyone = discord.utils.get(server.roles, name='@everyone')
 
