@@ -199,12 +199,6 @@ class Battle:
         self.battle_type = battle_type
         if self.battle_type == BattleType.MASTER:
             self.header = 'Master Class '
-        elif self.battle_type == BattleType.MASTER_PLAYOFF:
-            self.header = 'Master Class Playoff '
-        elif self.battle_type == BattleType.BF_PLAYOFF:
-            self.header = 'Battle Frontier Playoff '
-        elif self.battle_type == BattleType.RC_PLAYOFF:
-            self.header = 'Rookie Class Playoff '
         elif self.battle_type == BattleType.MOCK:
             self.header = 'Mock '
         elif self.battle_type == BattleType.REG:
