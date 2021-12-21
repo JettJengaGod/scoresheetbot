@@ -68,6 +68,16 @@ class Team:
         self.current_player = Player(name=player_name, team_name=self.name, id=player_id)
         self.players.append(self.current_player)
 
+    def check_resend(self, player_id: id):
+        if len(self.players) >= 4:
+            return
+        for player in self.players:
+            if player_id == player.id:
+                raise StateError(None,
+                                 f'{self.name} has only played {len(self.players)} unique players and must send '
+                                 f' at least 4 unique players before resending someone.')
+
+
     def replace_current(self, player_name: str, player_id: Optional[int] = 0) -> str:
         current_stocks = PLAYER_STOCKS
         current = ''
@@ -220,6 +230,8 @@ class Battle:
 
     def add_player(self, team_name: str, player_name: str, leader: str, player_id: Optional[int] = 0) -> None:
         team = self.lookup(team_name)
+        if self.battle_type != BattleType.MOCK:
+            team.check_resend(player_id)
         team.add_player(player_name, player_id)
         team.leader.add(leader)
 
@@ -253,6 +265,8 @@ class Battle:
 
     def replace_player(self, team_name: str, player_name: str, leader: str, player_id: Optional[int] = 0) -> None:
         team = self.lookup(team_name)
+        if self.battle_type != BattleType.MOCK:
+            team.check_resend(player_id)
         info = team.replace_current(player_name, player_id)
         team.leader.add(leader)
         self.matches.append(InfoMatch(info=info))

@@ -352,11 +352,6 @@ class ScoreSheetBot(commands.Cog):
         if user_crew != opp_crew:
             user_actual = crew_lookup(user_crew, self)
             opp_actual = crew_lookup(opp_crew, self)
-            if user_actual.master_class and opp_actual.master_class:
-                await ctx.send(
-                    f'If you are in a '
-                    f'Battle Frontier Playoff, please use: `,bfplayoff` or `,bfb`\n'
-                    f'Rookie Class Playoff: `,rcplayoff` or `,rcb`')
             await self._set_current(ctx, Battle(user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
@@ -467,54 +462,6 @@ class ScoreSheetBot(commands.Cog):
             else:
                 await ctx.send(f'During a mock you need to send with a teamname, like this'
                                f' `,send @playername teamname`.')
-                return
-        elif self._current(ctx).battle_type == BattleType.MASTER_PLAYOFF:
-            if not check_roles(user, [VERIFIED]):
-                await response_message(ctx,
-                                       f'{user.mention} does not have the DC Verified role. Which is required for '
-                                       f'crew battle participation.'
-                                       f'They can verify by typing dc.verify in any channel and then clicking the '
-                                       f'"Click me to verify!" link in the Double Counter dm.')
-                return
-            await self._reject_outsiders(ctx)
-            author_crew = await self._battle_crew(ctx, ctx.author)
-            player_crew = await self._battle_crew(ctx, user)
-            if author_crew == player_crew:
-                if check_roles(user, [WATCHLIST]):
-                    await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
-                    return
-                if check_roles(user, [JOIN_CD]):
-                    await ctx.send(
-                        f'{user.mention} joined this crew less than '
-                        f'24 hours ago and must wait to play ranked battles.')
-                    return
-                self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
-            else:
-                await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
-                return
-        elif self._current(ctx).battle_type in (BattleType.BF_PLAYOFF, BattleType.RC_PLAYOFF):
-            if not check_roles(user, [VERIFIED]):
-                await response_message(ctx,
-                                       f'{user.mention} does not have the DC Verified role. Which is required for '
-                                       f'crew battle participation.'
-                                       f'They can verify by typing dc.verify in any channel and then clicking the '
-                                       f'"Click me to verify!" link in the Double Counter dm.')
-                return
-            await self._reject_outsiders(ctx)
-            author_crew = await self._battle_crew(ctx, ctx.author)
-            player_crew = await self._battle_crew(ctx, user)
-            if author_crew == player_crew:
-                if check_roles(user, [WATCHLIST]):
-                    await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
-                    return
-                if check_roles(user, [JOIN_CD]):
-                    await ctx.send(
-                        f'{user.mention} joined this crew less than '
-                        f'24 hours ago and must wait to play ranked battles.')
-                    return
-                self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
-            else:
-                await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
                 return
         else:
             if not check_roles(user, [VERIFIED]):
