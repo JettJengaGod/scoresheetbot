@@ -1371,6 +1371,7 @@ def crew_matches(cr: Crew) -> List[str]:
                 out.append(f'**({battle[5]}-0)** {battle[loser]}  [link]({battle[3]})')
             else:
                 out.append(f'(0-{battle[5]}) {battle[winner]}  [link]({battle[3]})')
+            out[-1] += f' {battle[4].strftime("%m/%d/%y")}'
             if battle[6]:
                 out[-1] += f' [vod]({battle[6]})'
         conn.commit()

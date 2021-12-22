@@ -77,7 +77,6 @@ class Team:
                                  f'{self.name} has only played {len(self.players)} unique players and must send '
                                  f' at least 4 unique players before resending someone.')
 
-
     def replace_current(self, player_name: str, player_id: Optional[int] = 0) -> str:
         current_stocks = PLAYER_STOCKS
         current = ''
@@ -360,8 +359,8 @@ class Battle:
         raise StateError(self, "This should not be reachable")
 
     def resize(self, new_size: int) -> None:
-        if new_size < max((self.team1.num_players*PLAYER_STOCKS - self.team1.stocks)//3,
-                          (self.team2.num_players*PLAYER_STOCKS - self.team2.stocks)//3, 1):
+        if new_size < max((self.team1.num_players * PLAYER_STOCKS - self.team1.stocks) // 3,
+                          (self.team2.num_players * PLAYER_STOCKS - self.team2.stocks) // 3, 1):
             raise StateError(self, "You can't resize under the current amount of players.")
         current_size = self.team1.num_players
         difference = new_size - current_size

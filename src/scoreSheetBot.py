@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import traceback
 import time
@@ -355,7 +356,6 @@ class ScoreSheetBot(commands.Cog):
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
-
 
     @commands.command(**help_doc['mock'])
     @no_battle
@@ -762,7 +762,7 @@ class ScoreSheetBot(commands.Cog):
                     successful = (current.winner() == current.team2 or final_score < 5)
 
                     new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked Registration) - {winner}⚔{loser}**\n'
-                                   f'**Winner:** {winner} '
+                                   f'**Winner:** {winner} \n'
                                    f'**Loser:** {loser}\n')
                     if successful:
                         new_message += (f'Successful registration battle! Please allow doc keepers to finish the'
@@ -837,9 +837,17 @@ class ScoreSheetBot(commands.Cog):
                     battle_weight_changes(battle_id)
                     winner_crew = crew_lookup(winner, self)
                     loser_crew = crew_lookup(loser, self)
-                    new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winner}⚔{loser}**\n'
-                                   f'**Winner:** <@&{winner_crew.role_id}> '
-                                   f'**Loser:** <@&{loser_crew.role_id}> '
+                    rank_up_message = ''
+                    if loser_crew.name == winner_crew.rank_up:
+                        rank_up_message = f'**Sucessful Rank-Up for {winner_crew.name}!**\n'
+                    if winner_crew.name == loser_crew.rank_up:
+                        rank_up_message = f'**Failed Rank-Up for {loser_crew.name}!**\n'
+
+                    new_message = (f'{rank_up_message}'
+                                   f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winner}⚔{loser}**\n'
+                                   f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr}) '
+                                   f'Rank: {winner_crew.rank} \n'
+                                   f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) Rank: {loser_crew.rank} \n'
                                    f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
@@ -1028,6 +1036,22 @@ class ScoreSheetBot(commands.Cog):
         pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Overclocked Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
+
+    @commands.command(**help_doc['umbralotto'])
+    async def umbralotto(self, ctx, rank: int):
+        if 0 > rank or rank > 6:
+            await response_message(ctx, 'There are no crews at that rank')
+            return
+        possibles = []
+        for cr in self.cache.crews_by_name.values():
+            if cr.rank == rank:
+                possibles.append(cr.name)
+        if not possibles:
+            await response_message(ctx, 'There are no crews at that rank')
+            return
+        await ctx.send(f'You got {random.choice(possibles)} as a rank {rank} crew.')
+
+
 
     @commands.command(**help_doc['battles'])
     async def battles(self, ctx):
