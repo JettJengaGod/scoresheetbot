@@ -1869,11 +1869,19 @@ class ScoreSheetBot(commands.Cog):
             files = [await attachment.to_file() for attachment in ctx.message.attachments]
             link = await output_channel.send(files=files)
             links.append(link)
+
+        rank_up_message = ''
+        if losing_crew.name == winning_crew.rank_up:
+            rank_up_message = f'**Sucessful Rank-Up for {winning_crew.name}!**\n'
+        if winning_crew.name == losing_crew.rank_up:
+            rank_up_message = f'**Failed Rank-Up for {losing_crew.name}!**\n'
         league_id = 12
         battle_id = add_non_ss_battle(winning_crew, losing_crew, players, score, links[0].jump_url, league_id)
-        new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew.name}⚔{losing_crew.name}**\n'
-                       f'**Winner:** <@&{winning_crew.role_id}> '
-                       f'**Loser:** <@&{losing_crew.role_id}> '
+        new_message = (f'{rank_up_message}'
+                       f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew.name}⚔{losing_crew.name}**\n'
+                       f'**Winner:** <@&{winning_crew.role_id}> ({winning_crew.abbr}) Rank: {winning_crew.rank} \n'
+                       f'**Loser:** <@&{losing_crew.role_id}> ({losing_crew.abbr}) Rank: {losing_crew.rank} \n'
+                       
                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
             await link.edit(content=new_message)
@@ -1936,8 +1944,8 @@ class ScoreSheetBot(commands.Cog):
         battle_id = add_failed_reg_battle(winning_crew, players, score, links[0].jump_url, league_id)
         reset_fake_crew_rating(league_id)
         new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew.name}⚔{losing_crew}**\n'
-                       f'**Winner:** <@&{winning_crew.role_id}> '
-                       f'**Loser:** {losing_crew}> '
+                       f'**Winner:** <@&{winning_crew.role_id}>  ({winning_crew.abbr}) Rank: {winning_crew.rank} \n'
+                       f'**Loser:** {losing_crew} \n '
                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
             await link.edit(content=new_message)
@@ -1993,9 +2001,9 @@ class ScoreSheetBot(commands.Cog):
         battle_id = add_weird_reg_battle(losing_crew, players, score, links[0].jump_url, league_id)
         reset_fake_crew_rating(league_id)
 
-        new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew.name}⚔{losing_crew.name}**\n'
-                       f'**Winner:** <@&{winning_crew.role_id}> '
-                       f'**Loser:** <@&{losing_crew.role_id}> '
+        new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew}⚔{losing_crew.name}**\n'
+                       f'**Winner:** {winning_crew} \n'
+                       f'**Loser:** <@&{losing_crew.role_id}>  ({losing_crew.abbr}) Rank: {losing_crew.rank} \n'
                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
             await link.edit(content=new_message)
