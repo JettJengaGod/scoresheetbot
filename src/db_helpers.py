@@ -985,12 +985,55 @@ from (
               battle
          where match.battle_id = battle.id
            and extract(month from battle.finished) = extract(month from current_timestamp) - %s
+           and extract(year from battle.finished) = extract(year from current_timestamp)
          union
          select p2 as player, crew_2 as cr
          from match,
               battle
          where match.battle_id = battle.id
-           and extract(month from battle.finished) = extract(month from current_timestamp) - %s)
+           and extract(month from battle.finished) = extract(month from current_timestamp) - %s
+           and extract(year from battle.finished) = extract(year from current_timestamp))
+         as players,
+     crews
+where crews.id = players.cr
+group by crews.id
+order by total desc;"""
+    conn = None
+    crews = [[]]
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(everything, (offset, offset))
+        crews = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return crews
+
+
+def all_crew_usage_jan(offset: int = 0) -> List[List]:
+    if offset == 0:
+        return all_crew_usage(0)
+    everything = """select count(distinct (players.player)) as total, crews.name, crews.id
+from (
+         select p1 as player, crew_1 as cr
+         from match,
+              battle
+         where match.battle_id = battle.id
+           and extract(month from battle.finished) = 12
+           and extract(year from battle.finished) = extract(year from current_timestamp) - 1
+         union
+         select p2 as player, crew_2 as cr
+         from match,
+              battle
+         where match.battle_id = battle.id
+           and extract(month from battle.finished) = 12
+           and extract(year from battle.finished) = extract(year from current_timestamp) - 1)
          as players,
      crews
 where crews.id = players.cr
