@@ -2686,7 +2686,10 @@ class ScoreSheetBot(commands.Cog):
             await send_long_embed(ctx.author, embed)
             await ctx.message.add_reaction(emoji='✉')
         else:
-            usage = all_crew_usage(1)
+            if datetime.now().month == 1:
+                usage = all_crew_usage_jan(1)
+            else:
+                usage = all_crew_usage(1)
             desc = []
             for number, name, _ in usage:
                 desc.append(f'{name}: {number}')
