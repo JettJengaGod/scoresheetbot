@@ -2654,7 +2654,10 @@ class ScoreSheetBot(commands.Cog):
                 cr = crew(ctx.author, self)
         if cr:
             actual = crew_lookup(cr, self)
-            usage = crew_usage(actual, 1)
+            if datetime.now().month == 1:
+                usage = crew_usage_jan(actual, 1)
+            else:
+                usage = crew_usage(actual, 1)
             desc = []
             for mem_id, links in usage.items():
                 link_str = ''

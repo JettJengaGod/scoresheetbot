@@ -1063,12 +1063,14 @@ def crew_usage(cr: Crew, month_mod: int = 0) -> Dict[int, List[str]]:
     team_1 = """select distinct(p1) as players, battle.link
         from match, battle, crews
             where match.battle_id = battle.id and crews.id = battle.crew_1 and crews.id = %s
-            and extract(month from battle.finished) = extract(month from current_timestamp) - %s;
+            and extract(month from battle.finished) = extract(month from current_timestamp) - %s
+            and extract(year from battle.finished) = extract(year from current_timestamp);
             """
     team_2 = """select distinct(p2) as players, battle.link
         from match, battle, crews
             where match.battle_id = battle.id and crews.id = battle.crew_2 and crews.id = %s
-            and extract(month from battle.finished) = extract(month from current_timestamp) - %s;
+            and extract(month from battle.finished) = extract(month from current_timestamp) - %s
+            and extract(year from battle.finished) = extract(year from current_timestamp);
             """
     conn = None
     players = {}
@@ -1104,6 +1106,52 @@ def crew_usage(cr: Crew, month_mod: int = 0) -> Dict[int, List[str]]:
             conn.close()
     return players
 
+def crew_usage_jan(cr: Crew, month_mod: int = 0) -> Dict[int, List[str]]:
+    team_1 = """select distinct(p1) as players, battle.link
+        from match, battle, crews
+            where match.battle_id = battle.id and crews.id = battle.crew_1 and crews.id = %s
+            and extract(month from battle.finished) = 12
+            and extract(year from battle.finished) = extract(year from current_timestamp) - 1;
+            """
+    team_2 = """select distinct(p2) as players, battle.link
+        from match, battle, crews
+            where match.battle_id = battle.id and crews.id = battle.crew_2 and crews.id = %s
+            and extract(month from battle.finished) = 12
+            and extract(year from battle.finished) = extract(year from current_timestamp) - 1;
+            """
+    conn = None
+    players = {}
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(cr, cur)
+        cur.execute(team_1, (cr_id,))
+        t1 = cur.fetchall()
+        if t1:
+            for member, link in t1:
+                if member in players:
+                    players[member].append(link)
+                else:
+                    players[member] = [link]
+
+        cur.execute(team_2, (cr_id,))
+        t2 = cur.fetchall()
+        if t2:
+            for member, link in t2:
+                if member in players:
+                    players[member].append(link)
+                else:
+                    players[member] = [link]
+
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return players
 
 def update_crew(crew: Crew) -> None:
     current = """SELECT id, discord_id, tag, name, rank, overflow FROM crews
