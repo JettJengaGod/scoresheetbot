@@ -1498,6 +1498,7 @@ class ScoreSheetBot(commands.Cog):
         for member in set(members):
             await self.unflair(ctx, member)
 
+
     ''' ***********************************GAMBIT COMMANDS ************************************************'''
 
     @commands.command(**help_doc['predictions'])
@@ -1805,6 +1806,35 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'{actual_crew.name} current slots: {left}/{total}  ({uf}/3) for unflair.')
         uf, left, total = set_return_slots(actual_crew, num)
         await ctx.send(f'Set {actual_crew.name} new slots: {left}/{total}  ({uf}/3) for unflair.')
+
+    @commands.command(hidden=True)
+    @main_only
+    @flairing_required
+    @role_call(STAFF_LIST)
+    async def fixunflair(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        left, total, uf = extra_slots(actual_crew)
+        if uf > 0:
+            uf += 2
+            uf %= 3
+            left += 1
+            await self.setreturnslots(ctx, uf, name=name)
+            await self.setslots(ctx, left, name=name)
+        else:
+
+            uf += 2
+            await self.setreturnslots(uf, name=name)
+
+
 
     @commands.command(**help_doc['cooldown'], hidden=True)
     @role_call(STAFF_LIST)
