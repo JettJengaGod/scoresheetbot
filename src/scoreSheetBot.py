@@ -1043,15 +1043,41 @@ class ScoreSheetBot(commands.Cog):
             await response_message(ctx, 'There are no crews at that rank')
             return
         possibles = []
+        rank_ups = set()
+        for cr in self.cache.crews_by_name.values():
+            if cr.rank == rank:
+                possibles.append(cr.name)
+            if cr.rank_up:
+                rank_ups.add(cr.name)
+                rank_ups.add(cr.rank_up)
+        if not possibles:
+            await response_message(ctx, 'There are no crews at that rank')
+            return
+        for i, cr in reversed(list(enumerate(possibles))):
+            if cr in rank_ups:
+                possibles.pop(i)
+        await ctx.send(f'You got {random.choice(possibles)} as a rank {rank} crew.')
+
+    @commands.command(**help_doc['umbralotto'])
+    async def umbralottotest(self, ctx, rank: int):
+        if 0 > rank or rank > 6:
+            await response_message(ctx, 'There are no crews at that rank')
+            return
+        possibles = []
         for cr in self.cache.crews_by_name.values():
             if cr.rank == rank:
                 possibles.append(cr.name)
         if not possibles:
             await response_message(ctx, 'There are no crews at that rank')
             return
-        await ctx.send(f'You got {random.choice(possibles)} as a rank {rank} crew.')
-
-
+        possibles_dict = {name: 0 for name in possibles}
+        for _ in range(100000):
+            choice = random.choice(possibles)
+            possibles_dict[choice] += 1
+        outstring = ''
+        for possible in possibles_dict:
+            outstring += f'{possible}: {possibles_dict[possible]}\n'
+        await ctx.send(outstring)
 
     @commands.command(**help_doc['battles'])
     async def battles(self, ctx):
@@ -1881,7 +1907,7 @@ class ScoreSheetBot(commands.Cog):
                        f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew.name}⚔{losing_crew.name}**\n'
                        f'**Winner:** <@&{winning_crew.role_id}> ({winning_crew.abbr}) Rank: {winning_crew.rank} \n'
                        f'**Loser:** <@&{losing_crew.role_id}> ({losing_crew.abbr}) Rank: {losing_crew.rank} \n'
-                       
+
                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
             await link.edit(content=new_message)
