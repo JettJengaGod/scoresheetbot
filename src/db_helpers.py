@@ -3562,12 +3562,10 @@ where months = 0"""
 def battles_since_sunday(crew: Crew) -> int:
     finished = """ 
 select count(*)
-from battle_ratings,
-     battle,
+from battle,
      crews
-where battle_ratings.battle_id = battle.id
-  and finished > (select current_date - extract(dow from current_date)::integer)
-  and crews.id = battle_ratings.crew_id
+where finished > (select (current_date) - extract(dow from (current_date))::integer)
+  and crews.id in (battle.crew_1, battle.crew_2)
   and crews.id = %s
 ;"""
     conn = None
