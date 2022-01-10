@@ -2573,6 +2573,34 @@ def record_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int,
     return unflairs, remaining, total
 
 
+def fix_unflair(member_id: int, crew: Crew, join_cd: bool) -> Tuple[int, int, int]:
+    cr_record = """update crews set unflair = unflair + 1 where id = %s returning unflair;"""
+    reset = """update crews set unflair = 0, slotsleft = slotsleft+1  where id = %s;"""
+    slot = """SELECT slotsleft, slotstotal FROM crews where id = %s;"""
+    conn = None
+    unflairs, remaining, total = 0, 0, 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(crew, cur)
+        cur.execute(record, (member_id, cr_id))
+        if not join_cd:
+            cur.execute(cr_record, (cr_id,))
+            unflairs = cur.fetchone()[0]
+            if unflairs == 3:
+                cur.execute(reset, (cr_id,))
+        cur.execute(slot, (cr_id,))
+        remaining, total = cur.fetchone()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return unflairs, remaining, total
+
 def set_return_slots(crew: Crew, number: int) -> Tuple[int, int, int]:
     cr_record = """update crews set unflair = %s where id = %s returning unflair;"""
     reset = """update crews set unflair = 0, slotsleft = slotsleft+1  where id = %s;"""
@@ -3536,12 +3564,10 @@ where months = 0"""
 def battles_since_sunday(crew: Crew) -> int:
     finished = """ 
 select count(*)
-from battle_ratings,
-     battle,
+from battle,
      crews
-where battle_ratings.battle_id = battle.id
-  and finished > (select current_date - extract(dow from current_date)::integer)
-  and crews.id = battle_ratings.crew_id
+where finished > (select (current_date) - extract(dow from (current_date))::integer)
+  and crews.id in (battle.crew_1, battle.crew_2)
   and crews.id = %s
 ;"""
     conn = None

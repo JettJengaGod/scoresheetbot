@@ -59,6 +59,7 @@ class Team:
     leader: Set[str] = field(default_factory=set)
     current_player: Optional[Player] = None
     ext_used: bool = False
+    replaced: Set[str] = field(default_factory=set)
 
     def add_player(self, player_name: str, player_id: Optional[int]) -> None:
         if self.current_player:
@@ -72,7 +73,7 @@ class Team:
         if len(self.players) >= 4:
             return
         for player in self.players:
-            if player_id == player.id:
+            if player_id == player.id and player.name not in self.replaced:
                 raise StateError(None,
                                  f'{self.name} has only played {len(self.players)} unique players and must send '
                                  f' at least 4 unique players before resending someone.')
@@ -83,10 +84,13 @@ class Team:
         if self.current_player:
             current_stocks = self.current_player.left
             current = self.current_player.name
-            if self.current_player.left == 0 and self.current_player.taken == 0:
+            if self.current_player.left == PLAYER_STOCKS and self.current_player.taken == 0:
                 self.players.pop()
+            else:
+                self.replaced.add(player_name)
         self.current_player = Player(name=player_name, team_name=self.name, left=current_stocks, id=player_id)
         self.players.append(self.current_player)
+
         return f'{self.name} subbed {current}  with {player_name} with {current_stocks} stocks left.'
 
     def timer_stock(self):
