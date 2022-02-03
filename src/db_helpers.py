@@ -3416,16 +3416,15 @@ def all_votes() -> List[str]:
     return names
 
 
-def track_finished() -> Tuple[Tuple[int, str]]:
+def track_finished() -> Tuple[Tuple[int, str, int]]:
     finished = """ 
-        select member_id, name
+        select member_id, name, months
 from (SELECT EXTRACT(month FROM age(current_timestamp, gained)) as months, member_id,role_id, roles.name, gained
       from current_member_roles,
            roles,
            members
       where roles.id = current_member_roles.role_id
         and roles.name in ('Track 1', 'Track 2', 'Full Move Locked', 'Move Locked Next Join')
-        and members.in_server = True
         and members.id = current_member_roles.member_id)
 
          as b
@@ -3445,7 +3444,7 @@ where months > 0"""
     finally:
         if conn is not None:
             conn.close()
-    return tuple((int(c[0]), str(c[1])) for c in current)
+    return tuple((int(c[0]), str(c[1]), int(c[2])) for c in current)
 
 
 def track_finished_out() -> Tuple[Tuple[int, int]]:
