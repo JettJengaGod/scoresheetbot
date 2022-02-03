@@ -78,6 +78,7 @@ class Cache:
             free_agent = discord.utils.get(server.roles, name=FREE_AGENT)
             join_cd = discord.utils.get(server.roles, name=JOIN_CD)
             everyone = discord.utils.get(server.roles, name='@everyone')
+            poach_me = discord.utils.get(server.roles, id=POACH_ME_ID)
 
         return Roles
 
