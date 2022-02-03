@@ -55,6 +55,7 @@ class ScoreSheetBot(commands.Cog):
 
         await self.cache_value.update(self)
         crew_update(self)
+
         if os.getenv('VERSION') == 'PROD':
             await clear_current_cbs(self)
             for battle_type in BattleType:
@@ -1498,7 +1499,6 @@ class ScoreSheetBot(commands.Cog):
         for member in set(members):
             await self.unflair(ctx, member)
 
-
     ''' ***********************************GAMBIT COMMANDS ************************************************'''
 
     @commands.command(**help_doc['predictions'])
@@ -1833,8 +1833,6 @@ class ScoreSheetBot(commands.Cog):
 
             uf += 2
             await self.setreturnslots(uf, name=name)
-
-
 
     @commands.command(**help_doc['cooldown'], hidden=True)
     @role_call(STAFF_LIST)

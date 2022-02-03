@@ -732,21 +732,19 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
 
 
 async def track_handle(bot: 'ScoreSheetBot'):
-    out_finished = track_finished_out()
 
-    for mem_id, months in out_finished:
-        if bot.cache.scs.get_member(mem_id):
-            continue
-        for i in range(min(months, 4)):
-            track_down_out(mem_id)
-
-    in_finished = track_finished()
-    for mem_id, name in in_finished:
+    for mem_id, name, months in track_finished():
         mem = bot.cache.scs.get_member(mem_id)
-        if check_roles(mem, [name]):
-            await track_decrement(mem, bot)
+        if mem:
+            if check_roles(mem, [name]):
+                for _ in range(months):
+                    await track_decrement(mem, bot)
+            else:
+                if months == 1:
+                    update_member_roles(mem)
         else:
-            update_member_roles(mem)
+            for _ in range(months):
+                await track_down_out(mem_id)
 
 
 async def track_decrement(member: discord.Member, bot: 'ScoreSheetBot'):
