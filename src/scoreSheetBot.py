@@ -439,7 +439,7 @@ class ScoreSheetBot(commands.Cog):
                     if check_roles(user, [JOIN_CD]):
                         await ctx.send(
                             f'{user.mention} joined this crew less than '
-                            f'24 hours ago and must wait to play ranked battles.')
+                            f'12 hours ago and must wait to play ranked battles.')
                         return
                     self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
                 else:
@@ -482,7 +482,7 @@ class ScoreSheetBot(commands.Cog):
                 if check_roles(user, [JOIN_CD]):
                     await ctx.send(
                         f'{user.mention} joined this crew less than '
-                        f'24 hours ago and must wait to play ranked battles.')
+                        f'12 hours ago and must wait to play ranked battles.')
                     return
                 self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
             else:
@@ -607,7 +607,7 @@ class ScoreSheetBot(commands.Cog):
                     if check_roles(user, [JOIN_CD]):
                         await ctx.send(
                             f'{user.mention} joined this crew less than '
-                            f'24 hours ago and must wait to play ranked battles.')
+                            f'12 hours ago and must wait to play ranked battles.')
                         return
                     self._current(ctx).replace_player(author_crew, escape(user.display_name), ctx.author.mention,
                                                       user.id)
@@ -650,7 +650,7 @@ class ScoreSheetBot(commands.Cog):
                 if check_roles(user, [JOIN_CD]):
                     await ctx.send(
                         f'{user.mention} joined this crew less than '
-                        f'24 hours ago and must wait to play ranked battles.')
+                        f'12 hours ago and must wait to play ranked battles.')
                     return
                 self._current(ctx).replace_player(current_crew, escape(user.display_name), ctx.author.mention, user.id)
 
@@ -1829,12 +1829,12 @@ class ScoreSheetBot(commands.Cog):
             uf += 2
             uf %= 3
             left += 1
-            await self.setreturnslots(ctx, uf, name=name)
-            await self.setslots(ctx, left, name=name)
+            await self.setreturnslots(ctx, uf, name=actual_crew.name)
+            await self.setslots(ctx, left, name=actual_crew.name)
         else:
 
             uf += 2
-            await self.setreturnslots(uf, name=name)
+            await self.setreturnslots(ctx, uf, name=actual_crew.name)
 
     @commands.command(**help_doc['cooldown'], hidden=True)
     @role_call(STAFF_LIST)
@@ -2328,7 +2328,6 @@ class ScoreSheetBot(commands.Cog):
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
-        disband_crew(dis_crew)
         desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
         out = discord.Embed(title=f'{dis_crew.name} is disbanding, here is their players:',
                             description='\n'.join(desc), color=dis_crew.color)
@@ -2359,8 +2358,11 @@ class ScoreSheetBot(commands.Cog):
                                        description='\n'.join(
                                            [f'{mem.mention}, {mem.id}, {str(mem)}' for mem in members]),
                                        color=dis_crew.color)
+
+        disband_crew(dis_crew)
         await send_long_embed(ctx, response_embed)
         await send_long_embed(self.cache.channels.flair_log, response_embed)
+
 
     @commands.command(**help_doc['tomain'], hidden=True)
     @role_call(STAFF_LIST)

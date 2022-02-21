@@ -180,7 +180,7 @@ class Cache:
                     crews_by_name[row[0]].max_umbra = int(row[11])
                     crews_by_name[row[0]].rank = parse_from_end(row[12])
                     crews_by_name[row[0]].rank_up = row[6]
-                    crews_by_name[row[0]].overclocked_ranking = number
+                    crews_by_name[row[0]].overclocked_ranking = number+1
 
         if issues:
             issue_string = '\n'.join(issues)
