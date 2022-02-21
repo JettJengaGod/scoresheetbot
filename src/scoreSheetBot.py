@@ -437,7 +437,7 @@ class ScoreSheetBot(commands.Cog):
                     if check_roles(user, [JOIN_CD]):
                         await ctx.send(
                             f'{user.mention} joined this crew less than '
-                            f'24 hours ago and must wait to play ranked battles.')
+                            f'12 hours ago and must wait to play ranked battles.')
                         return
                     self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
                 else:
@@ -480,7 +480,7 @@ class ScoreSheetBot(commands.Cog):
                 if check_roles(user, [JOIN_CD]):
                     await ctx.send(
                         f'{user.mention} joined this crew less than '
-                        f'24 hours ago and must wait to play ranked battles.')
+                        f'12 hours ago and must wait to play ranked battles.')
                     return
                 self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
             else:
@@ -605,7 +605,7 @@ class ScoreSheetBot(commands.Cog):
                     if check_roles(user, [JOIN_CD]):
                         await ctx.send(
                             f'{user.mention} joined this crew less than '
-                            f'24 hours ago and must wait to play ranked battles.')
+                            f'12 hours ago and must wait to play ranked battles.')
                         return
                     self._current(ctx).replace_player(author_crew, escape(user.display_name), ctx.author.mention,
                                                       user.id)
@@ -648,7 +648,7 @@ class ScoreSheetBot(commands.Cog):
                 if check_roles(user, [JOIN_CD]):
                     await ctx.send(
                         f'{user.mention} joined this crew less than '
-                        f'24 hours ago and must wait to play ranked battles.')
+                        f'12 hours ago and must wait to play ranked battles.')
                     return
                 self._current(ctx).replace_player(current_crew, escape(user.display_name), ctx.author.mention, user.id)
 
