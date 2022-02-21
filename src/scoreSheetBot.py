@@ -2326,7 +2326,6 @@ class ScoreSheetBot(commands.Cog):
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
-        disband_crew(dis_crew)
         desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
         out = discord.Embed(title=f'{dis_crew.name} is disbanding, here is their players:',
                             description='\n'.join(desc), color=dis_crew.color)
@@ -2357,8 +2356,11 @@ class ScoreSheetBot(commands.Cog):
                                        description='\n'.join(
                                            [f'{mem.mention}, {mem.id}, {str(mem)}' for mem in members]),
                                        color=dis_crew.color)
+
+        disband_crew(dis_crew)
         await send_long_embed(ctx, response_embed)
         await send_long_embed(self.cache.channels.flair_log, response_embed)
+
 
     @commands.command(**help_doc['tomain'], hidden=True)
     @role_call(STAFF_LIST)
