@@ -1827,12 +1827,12 @@ class ScoreSheetBot(commands.Cog):
             uf += 2
             uf %= 3
             left += 1
-            await self.setreturnslots(ctx, uf, name=name)
-            await self.setslots(ctx, left, name=name)
+            await self.setreturnslots(ctx, uf, name=actual_crew.name)
+            await self.setslots(ctx, left, name=actual_crew.name)
         else:
 
             uf += 2
-            await self.setreturnslots(uf, name=name)
+            await self.setreturnslots(ctx, uf, name=actual_crew.name)
 
     @commands.command(**help_doc['cooldown'], hidden=True)
     @role_call(STAFF_LIST)
