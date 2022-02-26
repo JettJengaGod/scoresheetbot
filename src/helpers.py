@@ -860,6 +860,12 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
         ty = 'Battle Frontier Playoff'
     elif battle_type == BattleType.RC_PLAYOFF:
         ty = 'Rookie Class Playoff'
+    elif battle_type == BattleType.COWY:
+        ty = 'Cowy Random Playoff'
+    elif battle_type == BattleType.SH_PLAYOFF:
+        ty = 'Straw Hat Playoff'
+    elif battle_type == BattleType.OC_PLAYOFF:
+        ty = 'Overclocked Playoff'
     else:
         ty = 'Overclocked'
     title = f'Current {ty} Battles'

@@ -32,6 +32,9 @@ class BattleType(Enum):
     MASTER_PLAYOFF = 6
     BF_PLAYOFF = 7
     RC_PLAYOFF = 8
+    SH_PLAYOFF = 9
+    COWY = 10
+    OC_PLAYOFF = 11
 
 
 @dataclass
@@ -216,6 +219,12 @@ class Battle:
             self.header = 'Mock '
         elif self.battle_type == BattleType.REG:
             self.header = 'Registration '
+        elif self.battle_type == BattleType.OC_PLAYOFF:
+            self.header = 'Overclocked Playoff '
+        elif self.battle_type == BattleType.COWY:
+            self.header = 'Cowy Random Playoff '
+        elif self.battle_type == BattleType.SH_PLAYOFF:
+            self.header = 'Straw Hat Invitational '
         else:
             self.header = ''
 
