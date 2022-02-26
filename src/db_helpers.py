@@ -939,7 +939,8 @@ def all_crews() -> List[List]:
        decay_level,
        last_battle.finished,
        last_battle.opp,
-       id
+       id,
+       softcap_max
 FROM crews
          left join (select battle.finished                                                         as finished,
                            opp_crew.name || case when battle.winner = crew_id then '(W)' else '(L)' end as opp,
@@ -973,7 +974,7 @@ where disbanded = false;"""
     finally:
         if conn is not None:
             conn.close()
-    return crews
+    return [list(cr) for cr in crews]
 
 
 def all_crew_usage(offset: int = 0) -> List[List]:
@@ -1104,6 +1105,7 @@ def crew_usage(cr: Crew, month_mod: int = 0) -> Dict[int, List[str]]:
             conn.close()
     return players
 
+
 def crew_usage_jan(cr: Crew, month_mod: int = 0) -> Dict[int, List[str]]:
     team_1 = """select distinct(p1) as players, battle.link
         from match, battle, crews
@@ -1150,6 +1152,7 @@ def crew_usage_jan(cr: Crew, month_mod: int = 0) -> Dict[int, List[str]]:
         if conn is not None:
             conn.close()
     return players
+
 
 def update_crew(crew: Crew) -> None:
     current = """SELECT id, discord_id, tag, name, rank, overflow FROM crews

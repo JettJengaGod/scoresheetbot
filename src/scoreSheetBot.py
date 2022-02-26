@@ -55,7 +55,7 @@ class ScoreSheetBot(commands.Cog):
 
         await self.cache_value.update(self)
         crew_update(self)
-
+        print(time.time() - self.cache_time)
         if os.getenv('VERSION') == 'PROD':
             await clear_current_cbs(self)
             for battle_type in BattleType:
@@ -71,6 +71,7 @@ class ScoreSheetBot(commands.Cog):
             await track_handle(self)
             await self.cache_value.channels.recache_logs.send('Successfully recached.')
             # update_all_sheets()
+        print(time.time() - self.cache_time)
         self.cache_time = time.time()
 
     def _current(self, ctx) -> Battle:
@@ -2695,9 +2696,11 @@ class ScoreSheetBot(commands.Cog):
             if cr.member_count >= over:
                 big.append(cr)
         desc = []
+        thing = ''
         for cr in big:
+            thing += f'{cr.db_id}, '
             desc.append(f'{cr.name}: {cr.member_count}')
-
+        print(thing)
         embed = discord.Embed(title=f'These Crews have {over} members or more', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 

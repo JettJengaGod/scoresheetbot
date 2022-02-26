@@ -30,6 +30,8 @@ class Crew:
     verify: bool = False
     strikes: int = 0
     total_slots: int = 0
+    softcap_max: int = 0
+    softcap_used: int = 0
     remaining_slots: int = 0
     decay_level: int = -1
     last_opp: str = ''
@@ -51,6 +53,10 @@ class Crew:
         #     description.append(f'{self.ladder}\n')
         # if self.scl_rating:
         #     description.append(f'**SCL Rating:** {self.scl_rating}\n')
+
+        if self.softcap_max:
+            description.append(f'**Softcap:** {self.softcap_used}/{self.softcap_max}')
+            description.append('\n')
         if self.max_umbra:
             description.append(f'**Umbra Meter:** {self.current_umbra}/{self.max_umbra}\n')
         if self.current_umbra >= self.max_umbra:
@@ -83,7 +89,7 @@ class Crew:
         return embed
 
     def dbattr(self, wl: bool, freeze: datetime, verify: bool, strikes: int, total: int, remaining: int, master: bool,
-               decay: int, finished: datetime, last_opp: str, db_id: int):
+               decay: int, finished: datetime, last_opp: str, db_id: int, softcap_max: int, softcap_used: int):
         self.wl = wl
         self.verify = verify
         if freeze:
@@ -96,6 +102,8 @@ class Crew:
         self.last_match = finished
         self.last_opp = last_opp
         self.db_id = db_id
+        self.softcap_max = softcap_max
+        self.softcap_used = softcap_used
 
     def set_rankings(self, rank: int, rating: int, bf: bool, total: int):
         self.ladder = '**Battle Frontier:** ' if bf else '**Rookie Class:** '

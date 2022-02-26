@@ -15,7 +15,7 @@ from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_cre
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
     player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id, \
     battle_frontier_crews, elo_decay, reset_decay, first_crew_flair, track_finished_out, track_down_out, track_finished, \
-    update_member_roles, recent_unflair, get_bracket_predictions
+    update_member_roles, recent_unflair, get_bracket_predictions, crew_usage, all_crew_usage
 from .gambit import Gambit
 from .sheet_helpers import update_all_sheets
 
@@ -691,12 +691,16 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
 
 
 def crew_update(bot: 'ScoreSheetBot'):
+    start = time.time()
     cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache_value.crews_by_name.values() if
                                      cr.role_id != -1}
     db_crews = sorted(all_crews(), key=lambda x: x[2])
+
+    usage = {cr[2]: cr[0] for cr in all_crew_usage()}
     rankings = crew_rankings()
     missing = []
     for db_crew in db_crews:
+        start = time.time()
         if db_crew[0] in cached_crews:
             cached = cached_crews.pop(db_crew[0])
         else:
@@ -705,6 +709,11 @@ def crew_update(bot: 'ScoreSheetBot'):
         formatted = (cached.role_id, cached.abbr, cached.name, None, cached.overflow)
         if formatted != db_crew[0:5]:
             update_crew(cached)
+        if db_crew[-1] > 0:
+            used_by_crew = usage[db_crew[-2]]
+        else:
+            used_by_crew = 0
+        db_crew.append(used_by_crew)
         bot.cache_value.crews_by_name[cached.name].dbattr(*db_crew[5:])
         if db_crew[2] in rankings:
             bot.cache_value.crews_by_name[cached.name].set_rankings(*rankings[db_crew[2]])
@@ -732,7 +741,6 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
 
 
 async def track_handle(bot: 'ScoreSheetBot'):
-
     for mem_id, name, months in track_finished():
         mem = bot.cache.scs.get_member(mem_id)
         if mem:
