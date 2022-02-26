@@ -754,7 +754,7 @@ async def track_handle(bot: 'ScoreSheetBot'):
                     update_member_roles(mem)
         else:
             for _ in range(months):
-                await track_down_out(mem_id)
+                track_down_out(mem_id)
 
 
 async def track_decrement(member: discord.Member, bot: 'ScoreSheetBot'):
@@ -862,6 +862,12 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
         ty = 'Battle Frontier Playoff'
     elif battle_type == BattleType.RC_PLAYOFF:
         ty = 'Rookie Class Playoff'
+    elif battle_type == BattleType.COWY:
+        ty = 'Cowy Random Playoff'
+    elif battle_type == BattleType.SH_PLAYOFF:
+        ty = 'Straw Hat Playoff'
+    elif battle_type == BattleType.OC_PLAYOFF:
+        ty = 'Overclocked Playoff'
     else:
         ty = 'Overclocked'
     title = f'Current {ty} Battles'

@@ -4,13 +4,16 @@ from enum import Enum
 
 load_dotenv()
 CACHE_TIME_SECONDS = 300
-CACHE_TIME_BACKUP = CACHE_TIME_SECONDS+20  # 320 seconds (This is a backup to normal cache)
+CACHE_TIME_BACKUP = CACHE_TIME_SECONDS + 20  # 320 seconds (This is a backup to normal cache)
 OVERFLOW_SERVER = 'Overflow Beta' if os.getenv('VERSION') == 'ALPHA' else 'SCS Overflow Server'
 
 TRACK = ['Track 1', 'Track 2', 'Move Locked Next Join']
 TRUE_LOCKED = 'Full Move Locked'
 FULL_TRACK = [TRACK[0], TRACK[1], TRACK[2], TRUE_LOCKED]
 OVERFLOW_ROLE = 'SCS Overflow Crew'
+SH_CHANNEL_ID = 947032971561545778
+COWY_CHANNEL_ID = 947032911553650698
+OC_PO_CHANNEL_ID = 947033045121236992
 MUTED = 'Muted'
 LEADER = 'Leader'
 MINION = 'v2 Minion'

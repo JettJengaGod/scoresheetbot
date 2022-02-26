@@ -397,6 +397,93 @@ class ScoreSheetBot(commands.Cog):
         await self._set_current(ctx, Battle(real_crew, registering_crew, size, BattleType.REG))
         await ctx.send(embed=self._current(ctx).embed())
 
+    @commands.command(**help_doc['battle'], aliases=['straw'], group='CB')
+    @main_only
+    @no_battle
+    @is_lead
+    @ss_channel
+    async def strawhat(self, ctx: Context, user: discord.Member, size: int):
+        if size < 6:
+            await ctx.send('Please enter a size greater than 5.')
+            return
+        user_crew = crew(ctx.author, self)
+        opp_crew = crew(user, self)
+        if not user_crew:
+            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if not opp_crew:
+            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if user_crew != opp_crew:
+            user_actual = crew_lookup(user_crew, self)
+            opp_actual = crew_lookup(opp_crew, self)
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.SH_PLAYOFF))
+            await send_sheet(ctx, battle=self._current(ctx))
+        else:
+            await ctx.send('You can\'t battle your own crew.')
+
+    @commands.command(**help_doc['battle'], aliases=['cowybattle'], group='CB')
+    @main_only
+    @no_battle
+    @is_lead
+    @ss_channel
+    async def cowy(self, ctx: Context, user: discord.Member, size: int):
+        if size < 7:
+            await ctx.send('Please enter a size greater than 6.')
+            return
+        user_crew = crew(ctx.author, self)
+        opp_crew = crew(user, self)
+        if not user_crew:
+            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if not opp_crew:
+            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if user_crew != opp_crew:
+            user_actual = crew_lookup(user_crew, self)
+            opp_actual = crew_lookup(opp_crew, self)
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.COWY))
+            await send_sheet(ctx, battle=self._current(ctx))
+        else:
+            await ctx.send('You can\'t battle your own crew.')
+
+    @commands.command(**help_doc['battle'], aliases=['playoff', 'pob'], group='CB')
+    @main_only
+    @no_battle
+    @is_lead
+    @ss_channel
+    async def ocb(self, ctx: Context, user: discord.Member, size: int):
+        if size < 7:
+            await ctx.send('Please enter a size greater than 6.')
+            return
+        user_crew = crew(ctx.author, self)
+        opp_crew = crew(user, self)
+        if not user_crew:
+            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if not opp_crew:
+            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if user_crew != opp_crew:
+            user_actual = crew_lookup(user_crew, self)
+            opp_actual = crew_lookup(opp_crew, self)
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.OC_PLAYOFF))
+            await send_sheet(ctx, battle=self._current(ctx))
+        else:
+            await ctx.send('You can\'t battle your own crew.')
+
     @commands.command(**help_doc['countdown'])
     @ss_channel
     async def countdown(self, ctx: Context, seconds: Optional[int] = 10):
@@ -815,6 +902,61 @@ class ScoreSheetBot(commands.Cog):
             elif current.battle_type == BattleType.MOCK:
                 await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
+            elif current.battle_type in (BattleType.COWY, BattleType.SH_PLAYOFF, BattleType.OC_PLAYOFF):
+                current.confirm(await self._battle_crew(ctx, ctx.author))
+                await send_sheet(ctx, battle=current)
+                if current.confirmed():
+                    today = date.today()
+                    if current.battle_type == BattleType.COWY:
+                        channel_id = COWY_CHANNEL_ID
+                        name = 'Cowy\'s Random Bracket'
+                        league_id = 13
+                    elif current.battle_type == BattleType.SH_PLAYOFF:
+                        channel_id = SH_CHANNEL_ID
+                        name = 'Straw Hat Invitational'
+                        league_id = 14
+                    elif current.battle_type == BattleType.OC_PLAYOFF:
+                        channel_id = OC_PO_CHANNEL_ID
+                        name = 'Overclocked Playoffs'
+                        league_id = 15
+                    else:
+                        return
+                    output_channels = [
+                        discord.utils.get(ctx.guild.channels, id=channel_id),
+                        discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
+                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+                    winner = current.winner().name
+                    loser = current.loser().name
+                    current = self._current(ctx)
+                    if not current:
+                        return
+                    await self._clear_current(ctx)
+                    links = []
+                    for output_channel in output_channels:
+                        link = await send_sheet(output_channel, current)
+                        links.append(link)
+                    battle_id = add_finished_battle(current, links[0].jump_url, league_id)
+                    battle_weight_changes(battle_id)
+                    winner_crew = crew_lookup(winner, self)
+                    loser_crew = crew_lookup(loser, self)
+                    new_message = (
+                        f'**{today.strftime("%B %d, %Y")} ({name}) - {winner}⚔{loser}**\n'
+                        f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr}) '
+                        f'Rank: {winner_crew.rank} \n'
+                        f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) Rank: {loser_crew.rank} \n'
+                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                    for link in links:
+                        await link.edit(content=new_message)
+                    await ctx.send(
+                        f'The battle between {current.team1.name} and {current.team2.name} '
+                        f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
+                        f'(Battle number:{battle_id})')
+                    for cr in (winner_crew, loser_crew):
+                        if not extra_slot_used(cr):
+                            if battles_since_sunday(cr) >= 3:
+                                mod_slot(cr, 1)
+                                await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                                set_extra_used(cr)
             else:
                 current.confirm(await self._battle_crew(ctx, ctx.author))
                 await send_sheet(ctx, battle=current)
@@ -3030,9 +3172,9 @@ class ScoreSheetBot(commands.Cog):
 
             if cr.member_count > 40:
                 softcap_set(cr, round(cr.member_count / 3))
-                message += f'In additon, because you have over 40 members, you will need have at least ' \
+                message += f'\nIn additon, because you have over 40 members, you will need have at least ' \
                            f'{round(cr.member_count / 3)} unique members play in crew battles this month to avoid ' \
-                           f'being frozen.'
+                           f'being registration frozen.'
             crew_msg[cr.name] = message
 
         for i, member in enumerate(self.cache.scs.members):
