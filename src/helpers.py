@@ -752,7 +752,7 @@ async def track_handle(bot: 'ScoreSheetBot'):
                     update_member_roles(mem)
         else:
             for _ in range(months):
-                await track_down_out(mem_id)
+                track_down_out(mem_id)
 
 
 async def track_decrement(member: discord.Member, bot: 'ScoreSheetBot'):
