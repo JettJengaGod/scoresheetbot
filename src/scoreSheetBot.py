@@ -56,7 +56,7 @@ class ScoreSheetBot(commands.Cog):
 
         await self.cache_value.update(self)
         crew_update(self)
-
+        print(time.time() - self.cache_time)
         if os.getenv('VERSION') == 'PROD':
             await clear_current_cbs(self)
             for battle_type in BattleType:
@@ -72,6 +72,7 @@ class ScoreSheetBot(commands.Cog):
             await track_handle(self)
             await self.cache_value.channels.recache_logs.send('Successfully recached.')
             # update_all_sheets()
+        print(time.time() - self.cache_time)
         self.cache_time = time.time()
 
     def _current(self, ctx) -> Battle:
@@ -2363,7 +2364,6 @@ class ScoreSheetBot(commands.Cog):
         await send_long_embed(ctx, response_embed)
         await send_long_embed(self.cache.channels.flair_log, response_embed)
 
-
     @commands.command(**help_doc['tomain'], hidden=True)
     @role_call(STAFF_LIST)
     async def tomain(self, ctx, *, name: str = None):
@@ -2697,9 +2697,11 @@ class ScoreSheetBot(commands.Cog):
             if cr.member_count >= over:
                 big.append(cr)
         desc = []
+        thing = ''
         for cr in big:
+            thing += f'{cr.db_id}, '
             desc.append(f'{cr.name}: {cr.member_count}')
-
+        print(thing)
         embed = discord.Embed(title=f'These Crews have {over} members or more', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 
@@ -3025,6 +3027,12 @@ class ScoreSheetBot(commands.Cog):
                       f'with an overall minimum of 5 slots\n' \
                       'For more information, refer to <#430364791245111312>. ' \
                       'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'
+
+            if cr.member_count > 40:
+                softcap_set(cr, round(cr.member_count / 3))
+                message += f'In additon, because you have over 40 members, you will need have at least ' \
+                           f'{round(cr.member_count / 3)} unique members play in crew battles this month to avoid ' \
+                           f'being frozen.'
             crew_msg[cr.name] = message
 
         for i, member in enumerate(self.cache.scs.members):

@@ -941,7 +941,8 @@ def all_crews() -> List[List]:
        decay_level,
        last_battle.finished,
        last_battle.opp,
-       id
+       id,
+       softcap_max
 FROM crews
          left join (select battle.finished                                                         as finished,
                            opp_crew.name || case when battle.winner = crew_id then '(W)' else '(L)' end as opp,
@@ -975,7 +976,7 @@ where disbanded = false;"""
     finally:
         if conn is not None:
             conn.close()
-    return crews
+    return [list(cr) for cr in crews]
 
 
 def all_crew_usage(offset: int = 0) -> List[List]:
@@ -1106,6 +1107,7 @@ def crew_usage(cr: Crew, month_mod: int = 0) -> Dict[int, List[str]]:
             conn.close()
     return players
 
+
 def crew_usage_jan(cr: Crew, month_mod: int = 0) -> Dict[int, List[str]]:
     team_1 = """select distinct(p1) as players, battle.link
         from match, battle, crews
@@ -1152,6 +1154,7 @@ def crew_usage_jan(cr: Crew, month_mod: int = 0) -> Dict[int, List[str]]:
         if conn is not None:
             conn.close()
     return players
+
 
 def update_crew(crew: Crew) -> None:
     current = """SELECT id, discord_id, tag, name, rank, overflow FROM crews
@@ -2449,6 +2452,28 @@ def total_slot_set(cr: Crew, total: int) -> None:
             print(cr.name)
             return
         cur.execute(set, (total, total, cr_id))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+def softcap_set(cr: Crew, softcap_max: int) -> None:
+    set = """update crews set softcap_max = %s
+                where id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(cr, cur)
+        if not softcap_max or not cr_id:
+            print(cr.name)
+            return
+        cur.execute(set, (softcap_max, cr_id))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
