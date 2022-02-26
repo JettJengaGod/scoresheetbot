@@ -2459,6 +2459,28 @@ def total_slot_set(cr: Crew, total: int) -> None:
             conn.close()
     return
 
+def softcap_set(cr: Crew, softcap_max: int) -> None:
+    set = """update crews set softcap_max = %s
+                where id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_crews(cr, cur)
+        if not softcap_max or not cr_id:
+            print(cr.name)
+            return
+        cur.execute(set, (softcap_max, cr_id))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
 
 def member_crew_history(member_id: int) -> List[Tuple[str, datetime.datetime, bool]]:
     joins = """select crews.name, joined
