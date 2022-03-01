@@ -712,7 +712,10 @@ def crew_update(bot: 'ScoreSheetBot'):
         if formatted != db_crew[0:5]:
             update_crew(cached)
         if db_crew[-1] > 0:
-            used_by_crew = usage[db_crew[-2]]
+            if db_crew[-2] in usage:
+                used_by_crew = usage[db_crew[-2]]
+            else:
+                used_by_crew = 0
         else:
             used_by_crew = 0
         db_crew.append(used_by_crew)
