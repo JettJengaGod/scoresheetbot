@@ -716,7 +716,7 @@ def crew_update(bot: 'ScoreSheetBot'):
             update_crew(cached)
         if db_crew.softcap_max > 0:
             if db_crew.db_id in usage:
-                db_crew.slots_left = usage[db_crew.db_id]
+                db_crew.softcap_used = usage[db_crew.db_id]
 
         if db_crew.db_id in destiny:
             db_crew.current_destiny = destiny[db_crew.db_id][0]
