@@ -150,3 +150,5 @@ class PlayoffType(Enum):
 
 SLOT_CUTOFFS = [9, 17, 25, 33, 41]
 RANK_CUTOFF = 4
+
+CURRENT_LEAGUE_ID = 16

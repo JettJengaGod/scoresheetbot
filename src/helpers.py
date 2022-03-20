@@ -1,3 +1,4 @@
+import dataclasses
 import os
 from datetime import date, timedelta
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict, Sequence, ValuesView
@@ -16,8 +17,8 @@ from db_helpers import add_member_and_crew, crew_correct, all_crews, update_crew
     current_gambit, member_bet, member_gcoins, make_bet, slots, all_member_roles, update_member_crew, \
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
     player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id, \
-    battle_frontier_crews, elo_decay, reset_decay, first_crew_flair, track_finished_out, track_down_out, track_finished, \
-    update_member_roles, recent_unflair, get_bracket_predictions, crew_usage, all_crew_usage
+    trinity_crews, elo_decay, reset_decay, first_crew_flair, track_finished_out, track_down_out, track_finished, \
+    update_member_roles, recent_unflair, get_bracket_predictions, crew_usage, all_crew_usage, all_crew_destiny
 from gambit import Gambit
 from sheet_helpers import update_all_sheets
 
@@ -31,7 +32,7 @@ from discord.ext import commands, menus
 from battle import *
 import time
 from constants import *
-from crew import Crew
+from crew import Crew, DbCrew
 
 Context = discord.ext.commands.Context
 
@@ -311,6 +312,9 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
 
     if check_roles(member, [FREE_AGENT]):
         await member.remove_roles(bot.cache.roles.free_agent, reason=f'Flaired for {flairing_crew.name}')
+    if check_roles(member, [LEADER, ADVISOR]):
+        await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader,
+                                  reason=f'Flaired for {flairing_crew.name}')
     if flairing_crew.overflow:
         await member.add_roles(bot.cache.roles.overflow)
         overflow_crew = discord.utils.get(bot.cache.overflow_server.roles, name=flairing_crew.name)
@@ -629,7 +633,7 @@ async def handle_decay(bot: 'ScoreSheetBot'):
     cutoffs = [11, 15, 22, 31, 38, 100, 1000]
     elo_loss = [0, 25, 50, 100, 0, 0, 0]
     crews = bot.cache.crews_by_name.values()
-    bf = battle_frontier_crews()
+    bf = trinity_crews()
     last_played = {cr[0]: cr[2] for cr in bf}
     crews_to_message = []
     exempt = ['EFB', 'EVIL', 'S~R', 'JettFakes']
@@ -693,35 +697,33 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
 
 
 def crew_update(bot: 'ScoreSheetBot'):
-    start = time.time()
     cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache_value.crews_by_name.values() if
                                      cr.role_id != -1}
-    db_crews = sorted(all_crews(), key=lambda x: x[2])
+    db_crews = sorted(all_crews(), key=lambda x: x.name)
 
     usage = {cr[2]: cr[0] for cr in all_crew_usage()}
+    destiny = {cr[0]: [cr[1], cr[2]] for cr in all_crew_destiny()}
     rankings = crew_rankings()
     missing = []
     for db_crew in db_crews:
-        start = time.time()
-        if db_crew[0] in cached_crews:
-            cached = cached_crews.pop(db_crew[0])
+        if db_crew.discord_id in cached_crews:
+            cached = cached_crews.pop(db_crew.discord_id)
         else:
             missing.append(db_crew)
             continue
-        formatted = (cached.role_id, cached.abbr, cached.name, None, cached.overflow)
-        if formatted != db_crew[0:5]:
+        formatted = (cached.role_id, cached.abbr, cached.name, cached.overflow)
+        if formatted != (db_crew.discord_id, db_crew.tag, db_crew.name, db_crew.overflow):
             update_crew(cached)
-        if db_crew[-1] > 0:
-            if db_crew[-2] in usage:
-                used_by_crew = usage[db_crew[-2]]
-            else:
-                used_by_crew = 0
-        else:
-            used_by_crew = 0
-        db_crew.append(used_by_crew)
-        bot.cache_value.crews_by_name[cached.name].dbattr(*db_crew[5:])
-        if db_crew[2] in rankings:
-            bot.cache_value.crews_by_name[cached.name].set_rankings(*rankings[db_crew[2]])
+        if db_crew.softcap_max > 0:
+            if db_crew.db_id in usage:
+                db_crew.slots_left = usage[db_crew.db_id]
+
+        if db_crew.db_id in destiny:
+            db_crew.current_destiny = destiny[db_crew.db_id][0]
+            db_crew.destiny_opponent = destiny[db_crew.db_id][1]
+        bot.cache_value.crews_by_name[cached.name].fromDbCrew(db_crew)
+        if db_crew.name in rankings:
+            bot.cache_value.crews_by_name[cached.name].set_rankings(*rankings[db_crew.name])
     for cr in cached_crews.values():
         update_crew(cr)
 

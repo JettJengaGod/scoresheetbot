@@ -5,17 +5,37 @@ from datetime import datetime
 
 
 @dataclasses.dataclass
+class DbCrew:
+    discord_id: int
+    tag: str
+    name: str
+    rank: int
+    overflow: bool
+    watch_listed: bool
+    freeze_date: datetime
+    verify: bool
+    strikes: int
+    slots_total: int
+    slots_left: int
+    decay_level: int
+    last_battle: datetime
+    last_opp: str
+    db_id: int
+    softcap_max: int = 0
+    softcap_used: int = 0
+    current_destiny: int = 0
+    destiny_opponent: str = ''
+
+@dataclasses.dataclass
 class Crew:
     name: str
     abbr: str
     social: str = ''
-    scl_rating: int = 0
-    overclocked_ranking: int = 0
+    trinity_rating: int = 0
     rank: int = 0
-    current_umbra: int = 0
-    max_umbra: int = 0
+    current_destiny: int = 0
+    destiny_opponent: str = ''
     member_count: int = 0
-    rank_up: str = ''
     ladder: str = ''
     icon: str = ''
     leaders: List[str] = dataclasses.field(default_factory=list)
@@ -41,7 +61,7 @@ class Crew:
 
     @property
     def embed(self) -> discord.Embed:
-        title = f'{self.name} (Rank: {self.rank})'
+        title = f'{self.name}'
         # if self.master_class:
         #     title += f' (Master Class) '
         if self.overflow:
@@ -49,18 +69,17 @@ class Crew:
         if self.wl:
             title += ' WATCHLISTED'
         description = [f'**Tag:** {self.abbr}\n', f'**Total Members:** {self.member_count}\n']
-        # if self.ladder:
-        #     description.append(f'{self.ladder}\n')
-        # if self.scl_rating:
-        #     description.append(f'**SCL Rating:** {self.scl_rating}\n')
 
+        if self.trinity_rating:
+            description.append(f'**Trinity Rating:** {self.trinity_rating}\n')
+        if self.ladder:
+            description.append(f'{self.ladder}\n')
         if self.softcap_max:
             description.append(f'**Softcap:** {self.softcap_used}/{self.softcap_max}')
             description.append('\n')
-        if self.max_umbra:
-            description.append(f'**Umbra Meter:** {self.current_umbra}/{self.max_umbra}\n')
-        if self.current_umbra >= self.max_umbra:
-            description.append(f'**Rank up Opponent:** {self.rank_up}\n')
+        description.append(f'**Destiny Meter:** {self.current_destiny}/100\n')
+        if self.destiny_opponent:
+            description.append(f'**Destiny Opponent:** {self.destiny_opponent}\n')
         if self.last_opp:
             description.append(f'**Last Match:** {self.last_match.date().strftime("%m/%d/%y")} {self.last_opp}\n')
         if self.social:
@@ -88,24 +107,25 @@ class Crew:
             embed.set_thumbnail(url=self.icon)
         return embed
 
-    def dbattr(self, wl: bool, freeze: datetime, verify: bool, strikes: int, total: int, remaining: int, master: bool,
-               decay: int, finished: datetime, last_opp: str, db_id: int, softcap_max: int, softcap_used: int):
-        self.wl = wl
-        self.verify = verify
-        if freeze:
-            self.freeze = freeze.strftime('%m/%d/%Y')
-        self.strikes = strikes
-        self.total_slots = total
-        self.remaining_slots = remaining
-        self.master_class = master
-        self.decay_level = decay
-        self.last_match = finished
-        self.last_opp = last_opp
-        self.db_id = db_id
-        self.softcap_max = softcap_max
-        self.softcap_used = softcap_used
+    def fromDbCrew(self, db_crew: DbCrew):
+        self.wl = db_crew.watch_listed
+        self.verify = db_crew.verify
+        if db_crew.freeze_date:
+            self.freeze = db_crew.freeze_date.strftime('%m/%d/%Y')
+        self.strikes = db_crew.strikes
+        self.total_slots = db_crew.slots_total
+        self.remaining_slots = db_crew.slots_left
+        self.decay_level = db_crew.decay_level
+        self.last_match = db_crew.last_battle
+        self.last_opp = db_crew.last_opp
+        self.db_id = db_crew.db_id
+        self.softcap_max = db_crew.softcap_max
+        self.softcap_used = db_crew.softcap_used
+        self.current_destiny = db_crew.current_destiny
+        self.destiny_opponent = db_crew.destiny_opponent
 
-    def set_rankings(self, rank: int, rating: int, bf: bool, total: int):
-        self.ladder = '**Battle Frontier:** ' if bf else '**Rookie Class:** '
+    def set_rankings(self, rank: int, rating: int, total: int):
+        self.ladder = '**Trinity League:** '
         self.ladder += f'{rank}/{total}'
-        self.scl_rating = rating
+        self.trinity_rating = rating
+
