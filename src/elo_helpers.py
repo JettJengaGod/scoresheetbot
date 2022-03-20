@@ -6,9 +6,9 @@ from typing import Tuple
 
 @dataclass
 class EloPlayer:
-    member_id: int
-    rating: int
-    k: int
+    member_id: int = 0
+    rating: int = 1500
+    k: int = 50
 
 
 def _probability(rating1, rating2):

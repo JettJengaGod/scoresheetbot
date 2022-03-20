@@ -3,8 +3,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pprint
 import datetime
 import os
-from src.db_helpers import gambit_standings, past_gambits, past_bets, ba_standings, battle_frontier_crews, mc_stats, \
-    master_league_crews, master_listings
+from src.db_helpers import gambit_standings, past_gambits, past_bets, ba_standings, trinity_crews, mc_stats, \
+    destiny_crews
 
 scope = [
     'https://www.googleapis.com/auth/drive',
@@ -69,13 +69,51 @@ def update_ba_sheet():
     }])
 
 
+def update_trinity_sheet():
+    sheet = client.open(crew_docs_name).worksheet('Trinity Ladder')
+    crew_rows = []
+
+    for name, tag, finished, opp, rating in trinity_crews():
+        finished = finished.date().strftime("%m/%d/%y") if finished else ''
+        crew_rows.append([name, tag, '', opp or '', finished, '', rating])
+    blank_rows = [['', '', '', '', '', '', ''] for _ in range(50)]
+    sheet.batch_update([{
+        'range': f'A5:G{5 + len(crew_rows)}',
+        'values': crew_rows
+    }, {
+        'range': f'A{5 + len(crew_rows)}:G{5 + len(crew_rows) + 50}',
+        'values': blank_rows
+    }])
+
+
+def update_destiny_sheet():
+    sheet = client.open(crew_docs_name).worksheet('Destiny Ladder')
+    crew_rows = []
+    right = []
+    for name, tag, meter, opp, last_gain, destiny_opp, rank in destiny_crews():
+        destiny_opp = destiny_opp if destiny_opp else ''
+        crew_rows.append([name, tag, meter])
+        right.append(([f'{opp} (+{last_gain})', destiny_opp, rank]))
+    blank_rows = [['', '', '', '', '', '', ''] for _ in range(50)]
+    sheet.batch_update([{
+        'range': f'A5:C{5 + len(crew_rows)}',
+        'values': crew_rows
+    }, {
+        'range': f'E5:G{5 + len(crew_rows)}',
+        'values': right
+    }, {
+        'range': f'A{5 + len(crew_rows)}:G{5 + len(crew_rows) + 50}',
+        'values': blank_rows
+    }])
+
+
 def update_bf_sheet():
     sheet = client.open(crew_docs_name).worksheet('Battle Frontier Ladder')
     crew_rows = []
     ratings = []
     rc_crew_rows = []
     rc_ratings = []
-    for name, tag, finished, opp, rating, bf in battle_frontier_crews():
+    for name, tag, finished, opp, rating, bf in trinity_crews():
 
         finished = finished.date().strftime("%m/%d/%y") if finished else ''
         if bf:
