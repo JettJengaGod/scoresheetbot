@@ -9,7 +9,6 @@ import functools
 from asyncio import sleep
 from datetime import date
 
-import pandas
 from discord.ext import commands, tasks, menus
 from discord.ext.commands import Greedy
 from dotenv import load_dotenv
