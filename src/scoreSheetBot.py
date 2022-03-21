@@ -933,15 +933,15 @@ class ScoreSheetBot(commands.Cog):
                     l_placement = (200 - loser_k) / 30 + 1
                     if w_placement < 6:
                         w_placement_message = f'Placement round {int(w_placement)}'
-                        differential = winner_k/50
-                        winner_k_message = f'({winner_change//differential}* {differential})'
+                        differential = winner_k / 50
+                        winner_k_message = f'({winner_change // differential}* {differential})'
                     else:
                         w_placement_message = ''
                         winner_k_message = winner_change
                     if l_placement < 6:
                         l_placement_message = f'Placement round {int(l_placement)}'
-                        differential = loser_k/50
-                        loser_k_message = f'({loser_change//differential}* {differential})'
+                        differential = loser_k / 50
+                        loser_k_message = f'({loser_change // differential}* {differential})'
                     else:
                         l_placement_message = ''
                         loser_k_message = loser_change
@@ -950,10 +950,10 @@ class ScoreSheetBot(commands.Cog):
                         f'**{today.strftime("%B %d, %Y")} (Trinity League) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
-                        f'+ {winner_change} = {winner_elo+winner_change}]'
+                        f'+ {winner_change} = {winner_elo + winner_change}]'
                         f'** Destiny**: [+{d_winner_change}->{d_final}]\n'
                         f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
-                        f'- {abs(loser_change)} = {loser_elo+loser_change}] \n'
+                        f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
@@ -1986,6 +1986,29 @@ class ScoreSheetBot(commands.Cog):
         out.append('```')
         await ctx.send(''.join(out))
 
+    @commands.command(**help_doc['pair'])
+    @main_only
+    @role_call(STAFF_LIST)
+    async def pair(self, ctx: Context, *, everything: str):
+
+        best = best_of_possibilities(everything, self, True)
+
+        crew_1 = crew_lookup(best[0], self)
+        crew_2 = crew_lookup(best[1], self)
+
+        for cr in (crew_1, crew_2):
+            if cr.current_destiny != 100:
+                await response_message(ctx, f'{cr.name} only has {cr.current_destiny} destiny and needs 100.')
+                return
+            if cr.destiny_opponent:
+                await response_message(ctx, f'{cr.name} already has {cr.destiny_opponent} as an opponent.')
+                return
+
+        destiny_pair(crew_1.db_id, crew_2.db_id)
+        crew_1.destiny_opponent = crew_2.name
+        crew_2.destiny_opponent = crew_1.name
+        await ctx.send(f'{crew_1.name} has been paired with {crew_2.name} for desinty!')
+
     @commands.command(**help_doc['addsheet'])
     @main_only
     @role_call(STAFF_LIST)
@@ -2233,8 +2256,6 @@ class ScoreSheetBot(commands.Cog):
                     mod_slot(cr, 1)
                     await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
                     set_extra_used(cr)
-
-
 
     @commands.command(**help_doc['overflow'], hidden=True)
     @role_call([ADMIN, MINION])
