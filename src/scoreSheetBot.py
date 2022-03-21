@@ -1133,7 +1133,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['rankings'])
     async def rankings(self, ctx):
         crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.trinity_rating],
-                                         key=lambda x: x.trinity_rating, reverse=False)
+                                         key=lambda x: x.trinity_rating, reverse=True)
 
         crew_ranking_str = [f'**{cr.name}** {cr.trinity_rating} {cr.current_destiny}/100 Rank: {cr.rank}' for cr in
                             crews_sorted_by_ranking]
