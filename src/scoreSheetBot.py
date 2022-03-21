@@ -1136,7 +1136,7 @@ class ScoreSheetBot(commands.Cog):
         crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.trinity_rating],
                                          key=lambda x: x.trinity_rating, reverse=True)
 
-        crew_ranking_str = [f'**{cr.name}** {cr.trinity_rating} {cr.current_destiny}/100 Rank: {cr.rank}' for cr in
+        crew_ranking_str = [f'**{cr.name}** {cr.trinity_rating} {cr.current_destiny}/100' for cr in
                             crews_sorted_by_ranking]
 
         pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Trinity Rankings'),
