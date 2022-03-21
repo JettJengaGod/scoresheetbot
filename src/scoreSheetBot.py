@@ -854,7 +854,7 @@ class ScoreSheetBot(commands.Cog):
                         links.append(link)
                     successful = (current.winner() == current.team2 or final_score < 5)
 
-                    new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked Registration) - {winner}⚔{loser}**\n'
+                    new_message = (f'**{today.strftime("%B %d, %Y")} (Trinity Registration) - {winner}⚔{loser}**\n'
                                    f'**Winner:** {winner} \n'
                                    f'**Loser:** {loser}\n')
                     if successful:
@@ -1132,13 +1132,13 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['rankings'])
     async def rankings(self, ctx):
-        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.overclocked_ranking],
-                                         key=lambda x: x.overclocked_ranking, reverse=False)
+        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.trinity_rating],
+                                         key=lambda x: x.trinity_rating, reverse=False)
 
-        crew_ranking_str = [f'**{cr.name}** {cr.current_umbra}/{cr.max_umbra} Rank: {cr.rank}' for cr in
+        crew_ranking_str = [f'**{cr.name}** {cr.trinity_rating} {cr.current_destiny}/100 Rank: {cr.rank}' for cr in
                             crews_sorted_by_ranking]
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Overclocked Rankings'),
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Trinity Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
@@ -2195,7 +2195,7 @@ class ScoreSheetBot(commands.Cog):
         battle_id = add_weird_reg_battle(losing_crew, players, score, links[0].jump_url, league_id)
         reset_fake_crew_rating(league_id)
 
-        new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew}⚔{losing_crew.name}**\n'
+        new_message = (f'**{today.strftime("%B %d, %Y")} (Trinity) - {winning_crew}⚔{losing_crew.name}**\n'
                        f'**Winner:** {winning_crew} \n'
                        f'**Loser:** <@&{losing_crew.role_id}>  ({losing_crew.abbr}) Rank: {losing_crew.rank} \n'
                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
