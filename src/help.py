@@ -141,6 +141,7 @@ help_doc = dict(
     ofrank=HelpDoc(Categories.staff, 'Returns all overflow crews and info about them'),
     flairing_off=HelpDoc(Categories.staff, 'Turns flairing off until restart or staff turns it back on'),
     flairing_on=HelpDoc(Categories.staff, 'Turns flairing back on'),
+    pair=HelpDoc(Categories.staff, 'Pairs 2 crews for destiny', 'Crew1 Crew2'),
     freeze=HelpDoc(Categories.staff, 'Freezes a crews registration for a time.',
                    'If you pass in a time it will stop a crew from registering for that amount of time,'
                    ' accepts xD or xW or xM for x days, weeks or months respectively', 'CREW Optional[length]'),

@@ -855,7 +855,7 @@ class ScoreSheetBot(commands.Cog):
                         links.append(link)
                     successful = (current.winner() == current.team2 or final_score < 5)
 
-                    new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked Registration) - {winner}⚔{loser}**\n'
+                    new_message = (f'**{today.strftime("%B %d, %Y")} (Trinity Registration) - {winner}⚔{loser}**\n'
                                    f'**Winner:** {winner} \n'
                                    f'**Loser:** {loser}\n')
                     if successful:
@@ -931,18 +931,18 @@ class ScoreSheetBot(commands.Cog):
                     winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
                         battle_id)
                     w_placement = (200 - winner_k) / 30 + 1
-                    l_placement = (200 - winner_k) / 30 + 1
+                    l_placement = (200 - loser_k) / 30 + 1
                     if w_placement < 6:
                         w_placement_message = f'Placement round {int(w_placement)}'
-                        differential = winner_k/50
-                        winner_k_message = f'({winner_change//differential}* {differential})'
+                        differential = winner_k / 50
+                        winner_k_message = f'({winner_change // differential}* {differential})'
                     else:
                         w_placement_message = ''
                         winner_k_message = winner_change
                     if l_placement < 6:
                         l_placement_message = f'Placement round {int(l_placement)}'
-                        differential = loser_k/50
-                        loser_k_message = f'({loser_change//differential}* {differential})'
+                        differential = loser_k / 50
+                        loser_k_message = f'({loser_change // differential}* {differential})'
                     else:
                         l_placement_message = ''
                         loser_k_message = loser_change
@@ -951,10 +951,10 @@ class ScoreSheetBot(commands.Cog):
                         f'**{today.strftime("%B %d, %Y")} (Trinity League) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
-                        f'+ {winner_change} = {winner_elo+winner_change}]'
+                        f'+ {winner_change} = {winner_elo + winner_change}]'
                         f'** Destiny**: [+{d_winner_change}->{d_final}]\n'
                         f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
-                        f'- {abs(loser_change)} = {loser_elo+loser_change}] \n'
+                        f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
@@ -1133,13 +1133,13 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['rankings'])
     async def rankings(self, ctx):
-        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.overclocked_ranking],
-                                         key=lambda x: x.overclocked_ranking, reverse=False)
+        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.trinity_rating],
+                                         key=lambda x: x.trinity_rating, reverse=False)
 
-        crew_ranking_str = [f'**{cr.name}** {cr.current_umbra}/{cr.max_umbra} Rank: {cr.rank}' for cr in
+        crew_ranking_str = [f'**{cr.name}** {cr.trinity_rating} {cr.current_destiny}/100 Rank: {cr.rank}' for cr in
                             crews_sorted_by_ranking]
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Overclocked Rankings'),
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Trinity Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
@@ -1987,6 +1987,29 @@ class ScoreSheetBot(commands.Cog):
         out.append('```')
         await ctx.send(''.join(out))
 
+    @commands.command(**help_doc['pair'])
+    @main_only
+    @role_call(STAFF_LIST)
+    async def pair(self, ctx: Context, *, everything: str):
+
+        best = best_of_possibilities(everything, self, True)
+
+        crew_1 = crew_lookup(best[0], self)
+        crew_2 = crew_lookup(best[1], self)
+
+        for cr in (crew_1, crew_2):
+            if cr.current_destiny != 100:
+                await response_message(ctx, f'{cr.name} only has {cr.current_destiny} destiny and needs 100.')
+                return
+            if cr.destiny_opponent:
+                await response_message(ctx, f'{cr.name} already has {cr.destiny_opponent} as an opponent.')
+                return
+
+        destiny_pair(crew_1.db_id, crew_2.db_id)
+        crew_1.destiny_opponent = crew_2.name
+        crew_2.destiny_opponent = crew_1.name
+        await ctx.send(f'{crew_1.name} has been paired with {crew_2.name} for desinty!')
+
     @commands.command(**help_doc['addsheet'])
     @main_only
     @role_call(STAFF_LIST)
@@ -2173,12 +2196,12 @@ class ScoreSheetBot(commands.Cog):
         two_crews = ' '.join(everything[:-2])
         best = single_crew_plus_string(two_crews, self)
 
-        losing_crew = crew_lookup(best[0], self)
-        winning_crew = best[1]
+        loser_crew = crew_lookup(best[0], self)
+        winner_crew = best[1]
 
         embed = discord.Embed(
-            title=f'{winning_crew} defeats {losing_crew.name}({losing_crew.abbr}) in a failed registration battle',
-            description=f'{winning_crew} wins {score} - 0 in a {players} vs {players} battle'
+            title=f'{winner_crew} defeats {loser_crew.name}({loser_crew.abbr}) in a failed registration battle',
+            description=f'{winner_crew} wins {score} - 0 in a {players} vs {players} battle'
         )
         msg = await ctx.send(f'{ctx.author.mention}: Are you sure you want to confirm this crew battle?', embed=embed)
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
@@ -2193,20 +2216,47 @@ class ScoreSheetBot(commands.Cog):
             link = await output_channel.send(files=files)
             links.append(link)
         league_id = CURRENT_LEAGUE_ID
-        battle_id = add_weird_reg_battle(losing_crew, players, score, links[0].jump_url, league_id)
+        battle_id = add_weird_reg_battle(loser_crew, players, score, links[0].jump_url, league_id)
         reset_fake_crew_rating(league_id)
 
-        new_message = (f'**{today.strftime("%B %d, %Y")} (Overclocked) - {winning_crew}⚔{losing_crew.name}**\n'
-                       f'**Winner:** {winning_crew} \n'
-                       f'**Loser:** <@&{losing_crew.role_id}>  ({losing_crew.abbr}) Rank: {losing_crew.rank} \n'
-                       f'**Battle:** {battle_id} from {ctx.channel.mention}')
+        winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
+            battle_id)
+        w_placement = (200 - winner_k) / 30 + 1
+        l_placement = (200 - winner_k) / 30 + 1
+        if w_placement < 6:
+            w_placement_message = f'Placement round {int(w_placement)}'
+            differential = winner_k / 50
+            winner_k_message = f'({winner_change // differential}* {differential})'
+        else:
+            w_placement_message = ''
+            winner_k_message = winner_change
+        if l_placement < 6:
+            l_placement_message = f'Placement round {int(l_placement)}'
+            differential = loser_k / 50
+            loser_k_message = f'({loser_change // differential}* {differential})'
+        else:
+            l_placement_message = ''
+            loser_k_message = loser_change
+
+        new_message = (
+            f'**{today.strftime("%B %d, %Y")} (Trinity League) - {winner_crew}⚔'
+            f'{loser_crew.name} ({loser_crew.abbr})**\n'
+            f'**Winner:** {winner_crew} \n'
+            f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
+            f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
+            f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
             await link.edit(content=new_message)
-        await links[0].add_reaction(YES)
         await ctx.send(
-            f'The battle between {winning_crew} and {losing_crew.name} '
-            f'has been confirmed by {ctx.author.mention} and posted in {output_channels[0].mention}. '
+            f'The battle between {winner_crew} and {loser_crew.name}({l_placement_message}) '
+            f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
             f'(Battle number:{battle_id})')
+        for cr in (loser_crew,):
+            if not extra_slot_used(cr):
+                if battles_since_sunday(cr) >= 3:
+                    mod_slot(cr, 1)
+                    await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                    set_extra_used(cr)
 
     @commands.command(**help_doc['overflow'], hidden=True)
     @role_call([ADMIN, MINION])

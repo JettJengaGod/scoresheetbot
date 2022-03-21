@@ -820,6 +820,25 @@ def all_battle_ids() -> Sequence[int]:
     return ids
 
 
+def destiny_pair(cr1_id: int, cr2_id: int):
+    pair = """update destiny_gain set opponent = %s where crew_id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(pair, (cr1_id, cr2_id))
+        cur.execute(pair, (cr2_id, cr1_id))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
 def battle_info(battle_id: int) -> Tuple[str, str, datetime.date, str]:
     everything = """select c1.name, c2.name, finished, link
 from battle,
