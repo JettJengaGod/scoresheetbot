@@ -930,7 +930,7 @@ class ScoreSheetBot(commands.Cog):
                     winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
                         battle_id)
                     w_placement = (200 - winner_k) / 30 + 1
-                    l_placement = (200 - winner_k) / 30 + 1
+                    l_placement = (200 - loser_k) / 30 + 1
                     if w_placement < 6:
                         w_placement_message = f'Placement round {int(w_placement)}'
                         differential = winner_k/50
