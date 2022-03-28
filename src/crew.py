@@ -25,6 +25,7 @@ class DbCrew:
     softcap_used: int = 0
     current_destiny: int = 0
     destiny_opponent: str = ''
+    destiny_rank: int = 0
 
 @dataclasses.dataclass
 class Crew:
@@ -36,6 +37,7 @@ class Crew:
     current_destiny: int = 0
     destiny_opponent: str = ''
     member_count: int = 0
+    destiny_rank = 0
     ladder: str = ''
     icon: str = ''
     leaders: List[str] = dataclasses.field(default_factory=list)
@@ -77,7 +79,7 @@ class Crew:
         if self.softcap_max:
             description.append(f'**Softcap:** {self.softcap_used}/{self.softcap_max}')
             description.append('\n')
-        description.append(f'**Destiny Meter:** {self.current_destiny}/100\n')
+        description.append(f'**Destiny:** Rank {self.destiny_rank} Meter {self.current_destiny}/100\n')
         if self.destiny_opponent:
             description.append(f'**Destiny Opponent:** {self.destiny_opponent}\n')
         if self.last_opp:
@@ -123,6 +125,7 @@ class Crew:
         self.softcap_used = db_crew.softcap_used
         self.current_destiny = db_crew.current_destiny
         self.destiny_opponent = db_crew.destiny_opponent
+        self.destiny_rank = db_crew.destiny_rank
 
     def set_rankings(self, rank: int, rating: int, total: int):
         self.ladder = '**Trinity League:** '
