@@ -702,7 +702,7 @@ def crew_update(bot: 'ScoreSheetBot'):
     db_crews = sorted(all_crews(), key=lambda x: x.name)
 
     usage = {cr[2]: cr[0] for cr in all_crew_usage()}
-    destiny = {cr[0]: [cr[1], cr[2]] for cr in all_crew_destiny()}
+    destiny = {cr[0]: [cr[1], cr[2], cr[3]] for cr in all_crew_destiny()}
     rankings = crew_rankings()
     missing = []
     for db_crew in db_crews:
@@ -721,6 +721,7 @@ def crew_update(bot: 'ScoreSheetBot'):
         if db_crew.db_id in destiny:
             db_crew.current_destiny = destiny[db_crew.db_id][0]
             db_crew.destiny_opponent = destiny[db_crew.db_id][1]
+            db_crew.destiny_rank = destiny[db_crew.db_id][2]
         bot.cache_value.crews_by_name[cached.name].fromDbCrew(db_crew)
         if db_crew.name in rankings:
             bot.cache_value.crews_by_name[cached.name].set_rankings(*rankings[db_crew.name])
@@ -873,6 +874,8 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
         ty = 'Straw Hat Playoff'
     elif battle_type == BattleType.OC_PLAYOFF:
         ty = 'Overclocked Playoff'
+    elif battle_type == BattleType.DESTINY:
+        ty = 'Destiny Match'
     else:
         ty = 'Trinity League'
     title = f'Current {ty} Battles'

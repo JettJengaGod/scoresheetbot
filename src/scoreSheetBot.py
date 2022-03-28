@@ -358,6 +358,18 @@ class ScoreSheetBot(commands.Cog):
         if user_crew != opp_crew:
             user_actual = crew_lookup(user_crew, self)
             opp_actual = crew_lookup(opp_crew, self)
+            if user_actual.destiny_opponent == opp_actual.name:
+                msg = await ctx.send(f'{ctx.author.mention}:{user_actual.name} has '
+                                     f'{opp_actual.name} as a destiny opponent, '
+                                     f'do you want to continue as a destiny battle?')
+                if await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                    await ctx.send('Destiny battle confirmed.')
+                    await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.DESTINY))
+                    await send_sheet(ctx, battle=self._current(ctx))
+                    return
+                else:
+                    await ctx.send('Battle will start as a normal ranked.')
+
             await self._set_current(ctx, Battle(user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
@@ -946,13 +958,18 @@ class ScoreSheetBot(commands.Cog):
                     else:
                         l_placement_message = ''
                         loser_k_message = loser_change
-
+                    destiny_message = f'+{d_winner_change}->{d_final}'
+                    battle_name = 'Trinity League'
+                    if current.battle_type == BattleType.DESTINY:
+                        destiny_result(winner_crew.db_id, loser_crew.db_id)
+                        destiny_message = f'Rank up: {winner_crew.destiny_rank}-> {winner_crew.destiny_rank + 1}'
+                        battle_name = 'Destiny Battle'
                     new_message = (
-                        f'**{today.strftime("%B %d, %Y")} (Trinity League) - {winner} ({winner_crew.abbr})⚔'
+                        f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
                         f'+ {winner_change} = {winner_elo + winner_change}]'
-                        f'** Destiny**: [+{d_winner_change}->{d_final}]\n'
+                        f'** Destiny**: [{destiny_message}]\n'
                         f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
                         f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
@@ -1136,8 +1153,8 @@ class ScoreSheetBot(commands.Cog):
         crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.trinity_rating],
                                          key=lambda x: x.trinity_rating, reverse=True)
 
-        crew_ranking_str = [f'**{cr.name}** {cr.trinity_rating} {cr.current_destiny}/100' for cr in
-                            crews_sorted_by_ranking]
+        crew_ranking_str = [f'**{cr.name}** {cr.trinity_rating} Rank {cr.destiny_rank} {cr.current_destiny}/100' for cr
+                            in crews_sorted_by_ranking]
 
         pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Trinity Rankings'),
                                 clear_reactions_after=True)

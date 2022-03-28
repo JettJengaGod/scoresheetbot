@@ -838,6 +838,26 @@ def destiny_pair(cr1_id: int, cr2_id: int):
             conn.close()
     return
 
+def destiny_result(winner_id: int, loser_id: int):
+    both = """update destiny_gain set current_amount = 0, opponent = null where crew_id in (%s, %s);"""
+    winner = """update destiny_gain set rank = rank + 1 where crew_id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(both, (winner_id, loser_id))
+        cur.execute(winner, (winner_id,))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
 
 def battle_info(battle_id: int) -> Tuple[str, str, datetime.date, str]:
     everything = """select c1.name, c2.name, finished, link
@@ -1061,7 +1081,7 @@ order by total desc;"""
 
 def all_crew_destiny() -> List[List]:
     everything = """
-        select crew_id, current_amount, c.name
+        select crew_id, current_amount, c.name, destiny_gain.rank
         from destiny_gain
          left outer join crews c on destiny_gain.opponent = c.id;
     ;"""
