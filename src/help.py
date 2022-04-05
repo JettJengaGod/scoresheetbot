@@ -174,6 +174,8 @@ help_doc = dict(
     flaircounts=HelpDoc(Categories.staff, 'Helpful numbers for flair analysis'),
     addsheet=HelpDoc(Categories.staff, 'Adds a new non bot sheet to the database and in scoresheet_history', '',
                      'Winner Loser Size FinalScore'),
+    addforfeit=HelpDoc(Categories.staff, 'Adds a forfeit sheet to the database and in scoresheet_history', '',
+                     'Winner Loser'),
     failedreg=HelpDoc(Categories.staff, 'Adds a new reg cb sheet to the database and in scoresheet_history', '',
                       'Winner Loser Size FinalScore'),
     weirdreg=HelpDoc(Categories.staff, 'Adds a new reg cb sheet where the registering crew won but didn\'t reg'
