@@ -2026,6 +2026,60 @@ class ScoreSheetBot(commands.Cog):
         crew_2.destiny_opponent = crew_1.name
         await ctx.send(f'{crew_1.name} has been paired with {crew_2.name} for desinty!')
 
+    @commands.command(**help_doc['addforfeit'], hidden=True, aliases=['addff'])
+    @main_only
+    @role_call(STAFF_LIST)
+    async def addforfeit(self, ctx: Context, *, everything: str):
+        today = date.today()
+
+        if not ctx.message.attachments:
+            await response_message(ctx, 'You need to submit a screenshot of the forfeit with this.')
+            return
+
+        two_crews = everything
+        best = best_of_possibilities(two_crews, self, True)
+
+        winner_crew = crew_lookup(best[0], self)
+        loser_crew = crew_lookup(best[1], self)
+
+        embed = discord.Embed(
+            title=f'{loser_crew.name}({loser_crew.abbr}) forfeits against {winner_crew.name}({winner_crew.abbr})',
+            description=f''
+        )
+        msg = await ctx.send(f'{ctx.author.mention}: Are you sure you want to confirm this forfeit?', embed=embed)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+            await response_message(ctx, 'Canceled or timed out.')
+            return
+
+        output_channels = [discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
+                           discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+        links = []
+        for output_channel in output_channels:
+            files = [await attachment.to_file() for attachment in ctx.message.attachments]
+            link = await output_channel.send(files=files)
+            links.append(link)
+
+        league_id = CURRENT_LEAGUE_ID
+        battle_id = add_non_ss_battle(winner_crew, loser_crew, 0, 1, links[0].jump_url, league_id)
+        winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
+            battle_id, forfeit=True)
+
+        new_message = (
+            f'**{today.strftime("%B %d, %Y")} (Trinity League) - {winner_crew.name} ({winner_crew.abbr})⚔'
+            f'{loser_crew.name} ({loser_crew.abbr})**\n'
+            f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
+            f'+ {winner_change} = {winner_elo + winner_change}]'
+            f'** Destiny**: [+{d_winner_change}->{d_final}]\n'
+            f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
+            f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
+            f'**Battle:** {battle_id} from {ctx.channel.mention}')
+        for link in links:
+            await link.edit(content=new_message)
+        await ctx.send(
+            f'{loser_crew.name}\'s forfeit to {winner_crew.name}'
+            f'has been confirmed and posted in {output_channels[0].mention}. '
+            f'(Battle number:{battle_id})')
+
     @commands.command(**help_doc['addsheet'])
     @main_only
     @role_call(STAFF_LIST)
@@ -3168,6 +3222,7 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'{actual_crew.name} has ({left}/{total} slots) and {unflairs}/3 unflairs till a new slot.')
 
     @commands.command(**help_doc['slots'])
+    @role_call(STAFF_LIST)
     @main_only
     async def update_elos(self, ctx, *, name: str = None):
         if name:
@@ -3193,10 +3248,10 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
-            total, base, modifer, rollover = calc_total_slots(cr)
+            total, base, modifer, rollover, ranking = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
-                        f'Next month {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
+                        f'Next month {total} slots: {base} base + {modifer} size mod + {ranking} ranking mod + {rollover} rollover.')
 
             # total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
@@ -3235,16 +3290,17 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
-            total, base, modifer, rollover = calc_total_slots(cr)
+            total, base, modifer, rollover, ranking = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
-                        f'Next month {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
+                        f'Next month {total} slots: {base} base + {modifer} size mod + {ranking} ranking mod + {rollover} rollover.')
 
             total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \
                       f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
+                      f'{ranking} ranking slots\n' \
                       f'with an overall minimum of 5 slots\n' \
                       'For more information, refer to <#430364791245111312>. ' \
                       'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'

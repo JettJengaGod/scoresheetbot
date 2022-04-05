@@ -60,6 +60,8 @@ class Crew:
     last_match: datetime = None
     leader_ids: List[int] = dataclasses.field(default_factory=list)
     db_id: int = 0
+    ranking: int = 0
+    total_crews: int = 0
 
     @property
     def embed(self) -> discord.Embed:
@@ -130,5 +132,7 @@ class Crew:
     def set_rankings(self, rank: int, rating: int, total: int):
         self.ladder = '**Trinity League:** '
         self.ladder += f'{rank}/{total}'
+        self.ranking = rank
+        self.total_crews = total
         self.trinity_rating = rating
 

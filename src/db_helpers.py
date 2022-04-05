@@ -572,7 +572,7 @@ def add_weird_reg_battle(loser: Crew, size: int, score: int, link: str, league: 
     return battle_id
 
 
-def battle_elo_changes(battle_id: int) -> Tuple[int, int, int, int, int, int, int, int]:
+def battle_elo_changes(battle_id: int, forfeit = False) -> Tuple[int, int, int, int, int, int, int, int]:
     find_battle = """
      select winner,
        Case
@@ -593,6 +593,10 @@ values (%s, %s, %s, %s, %s);"""
 
     set_crew_rating = """update crew_ratings
     set rating = %s, k = greatest(k-30, 50)
+        where crew_id = %s and league_id = %s;"""
+
+    set_crew_rating_forfeit = """update crew_ratings
+    set rating = %s
         where crew_id = %s and league_id = %s;"""
     current_desitny = """ with current as (
     insert into destiny_gain(crew_id, current_amount) values (%s, 0) on conflict do nothing returning current_amount)
@@ -629,7 +633,11 @@ returning current_amount, last_gain
         loser_player = EloPlayer(loser, loser_elo, loser_k)
         destiny_loser = EloPlayer(loser, loser_elo, 50)
         # Calculate changes
-        winner_change, loser_change = rating_update(winner_player, loser_player, 1)
+        if forfeit:
+            winner_change, loser_change = rating_update(destiny_winner, destiny_loser, 1)
+        else:
+            winner_change, loser_change = rating_update(winner_player, loser_player, 1)
+
         d_winner_change, _ = rating_update(destiny_winner, destiny_loser, 1)
 
         # Add battle results
@@ -638,9 +646,12 @@ returning current_amount, last_gain
         loser_new_elo = loser_elo + loser_change
         cur.execute(battle_rating, (battle_id, loser, loser_elo, loser_new_elo, league_id))
         # Update team ratings
-
-        cur.execute(set_crew_rating, (winner_new_elo, winner, league_id))
-        cur.execute(set_crew_rating, (loser_new_elo, loser, league_id))
+        if forfeit:
+            cur.execute(set_crew_rating_forfeit, (winner_new_elo, winner, league_id))
+            cur.execute(set_crew_rating_forfeit, (loser_new_elo, loser, league_id))
+        else:
+            cur.execute(set_crew_rating, (winner_new_elo, winner, league_id))
+            cur.execute(set_crew_rating, (loser_new_elo, loser, league_id))
         cur.execute(update_destiny, (d_winner_change, d_winner_change, d_winner_change, winner))
         d_final = cur.fetchone()[0]
 
