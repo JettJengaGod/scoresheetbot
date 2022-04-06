@@ -3062,7 +3062,7 @@ def destiny_crews() -> Sequence[Tuple[str, str, int, str, int, str, int]]:
     
     where destiny_gain.crew_id = crews.id
       and crews.disbanded = false
-    order by rank, current_amount desc;
+    order by rank desc, current_amount desc;
 """
     conn = None
     ret = []
