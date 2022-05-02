@@ -65,7 +65,7 @@ class ScoreSheetBot(commands.Cog):
                 if summary:
                     await send_long_embed(self.cache.channels.current_cbs, summary)
 
-            # await handle_decay(self)
+            await handle_decay(self)
             await handle_unfreeze(self)
             if self.cache_value.scs:
                 await overflow_anomalies(self)
@@ -941,7 +941,7 @@ class ScoreSheetBot(commands.Cog):
                     winner_crew = crew_lookup(winner, self)
                     loser_crew = crew_lookup(loser, self)
                     winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
-                        battle_id)
+                        battle_id, winner_opt_out=winner_crew.destiny_opt_out)
                     w_placement = (200 - winner_k) / 30 + 1
                     l_placement = (200 - loser_k) / 30 + 1
                     if w_placement < 6:
@@ -958,7 +958,7 @@ class ScoreSheetBot(commands.Cog):
                     else:
                         l_placement_message = ''
                         loser_k_message = loser_change
-                    destiny_message = f'+{d_winner_change}->{d_final}'
+                    destiny_message = 'Opted out' if winner_crew.destiny_opt_out else f'+{d_winner_change}->{d_final}'
                     battle_name = 'Trinity League'
                     if current.battle_type == BattleType.DESTINY:
                         destiny_result(winner_crew.db_id, loser_crew.db_id)
@@ -1015,7 +1015,7 @@ class ScoreSheetBot(commands.Cog):
     async def status(self, ctx):
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['timer'])
+    @commands.command(**help_doc['timer'], aliases=['🤓'])
     @has_sheet
     @ss_channel
     async def timer(self, ctx):
@@ -1153,7 +1153,9 @@ class ScoreSheetBot(commands.Cog):
         crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.trinity_rating],
                                          key=lambda x: x.trinity_rating, reverse=True)
 
-        crew_ranking_str = [f'**{cr.name}** {cr.trinity_rating} Rank {cr.destiny_rank} {cr.current_destiny}/100' for cr
+        crew_ranking_str = [f'**{cr.name}** {cr.trinity_rating} '
+                            f'{"Destiny opted out" if cr.destiny_opt_out else f"Rank {cr.destiny_rank} {cr.current_destiny}/100"}'
+                            for cr
                             in crews_sorted_by_ranking]
 
         pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Trinity Rankings'),
@@ -2019,7 +2021,8 @@ class ScoreSheetBot(commands.Cog):
                 await response_message(ctx, f'{cr.name} only has {cr.current_destiny} destiny and needs 100.')
                 return
             if cr.destiny_opponent:
-                await response_message(ctx, f'{cr.name} already has {cr.destiny_opponent} as an opponent.')
+                await response_message(ctx, f'{cr.name} already has'
+                                            f' {cr.destiny_opponent} as an opponent would you like to clear it?.')
                 return
 
         destiny_pair(crew_1.db_id, crew_2.db_id)
@@ -3163,6 +3166,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def stupid(self, ctx):
+        await handle_decay(self)
         # message = []
         # for cr in self.cache.crews_by_name.values():
         #     filled = 25 if cr.current_umbra >= cr.max_umbra else 0
@@ -3175,7 +3179,7 @@ class ScoreSheetBot(commands.Cog):
         # await send_long(ctx, '\n'.join(message), '\n')
         #
         # update_trinity_sheet()
-        update_destiny_sheet()
+        # update_destiny_sheet()
 
     # Deprecated
     # @commands.command(hidden=True, **help_doc['ofrank'])

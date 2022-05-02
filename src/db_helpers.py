@@ -574,7 +574,8 @@ def add_weird_reg_battle(loser: Crew, size: int, score: int, link: str, league: 
     return battle_id
 
 
-def battle_elo_changes(battle_id: int, forfeit = False) -> Tuple[int, int, int, int, int, int, int, int]:
+def battle_elo_changes(battle_id: int, forfeit=False, winner_opt_out=False) -> Tuple[
+    int, int, int, int, int, int, int, int]:
     find_battle = """
      select winner,
        Case
@@ -640,7 +641,8 @@ returning current_amount, last_gain
         else:
             winner_change, loser_change = rating_update(winner_player, loser_player, 1)
 
-        d_winner_change, _ = rating_update(destiny_winner, destiny_loser, 1)
+        if not winner_opt_out:
+            d_winner_change, _ = rating_update(destiny_winner, destiny_loser, 1)
 
         # Add battle results
         winner_new_elo = winner_elo + winner_change
@@ -654,8 +656,9 @@ returning current_amount, last_gain
         else:
             cur.execute(set_crew_rating, (winner_new_elo, winner, league_id))
             cur.execute(set_crew_rating, (loser_new_elo, loser, league_id))
-        cur.execute(update_destiny, (d_winner_change, d_winner_change, d_winner_change, winner))
-        d_final = cur.fetchone()[0]
+        if not winner_opt_out:
+            cur.execute(update_destiny, (d_winner_change, d_winner_change, d_winner_change, winner))
+            d_final = cur.fetchone()[0]
 
         conn.commit()
         cur.close()
@@ -849,6 +852,7 @@ def destiny_pair(cr1_id: int, cr2_id: int):
             conn.close()
     return
 
+
 def destiny_result(winner_id: int, loser_id: int):
     both = """update destiny_gain set current_amount = 0, opponent = null where crew_id in (%s, %s);"""
     winner = """update destiny_gain set rank = rank + 1 where crew_id = %s;"""
@@ -867,7 +871,6 @@ def destiny_result(winner_id: int, loser_id: int):
         if conn is not None:
             conn.close()
     return
-
 
 
 def battle_info(battle_id: int) -> Tuple[str, str, datetime.date, str]:
@@ -3062,6 +3065,7 @@ def destiny_crews() -> Sequence[Tuple[str, str, int, str, int, str, int]]:
     
     where destiny_gain.crew_id = crews.id
       and crews.disbanded = false
+      and destiny_gain.opt_out = false
     order by rank desc, current_amount desc;
 """
     conn = None
