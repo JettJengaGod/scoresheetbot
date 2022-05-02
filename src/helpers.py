@@ -644,7 +644,8 @@ async def handle_decay(bot: 'ScoreSheetBot'):
             timing = last_played[cr.name]
         else:
             timing = None
-
+        if cr.total_crews == 0:
+            continue
         if cr.ranking/cr.total_crews > .4:
             continue
         if not timing:
