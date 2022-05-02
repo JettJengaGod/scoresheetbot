@@ -628,8 +628,8 @@ async def wait_for_multiple_reactions(reactions: List[str], message: discord.Mes
 
 
 async def handle_decay(bot: 'ScoreSheetBot'):
-    cutoffs = [11, 15, 22, 31, 38, 100, 1000]
-    elo_loss = [0, 25, 50, 100, 0, 0, 0]
+    cutoffs = [7, 14, 17, 21, 25, 30, 100, 1000]
+    elo_loss = [0, 25, 0, 50, 0, 100, 0, 0]
     crews = bot.cache.crews_by_name.values()
     bf = trinity_crews()
     last_played = {cr[0]: cr[2] for cr in bf}
@@ -642,14 +642,17 @@ async def handle_decay(bot: 'ScoreSheetBot'):
             timing = last_played[cr.name]
         else:
             timing = None
+
+        if cr.ranking/cr.total_crews > .4:
+            continue
         if not timing:
             first_flair = first_crew_flair(cr)
             first_flair = datetime(first_flair.year, first_flair.month, first_flair.day)
-            timing = datetime(2021, 5, 9)
+            timing = datetime(2022, month=5, day=1)
             if first_flair > timing:
                 timing = first_flair
-        if datetime(2021, 5, 9) > timing:
-            timing = datetime(2021, 5, 9)
+        if datetime(2022, month=5, day=1) > timing:
+            timing = datetime(2022, month=5, day=1)
         timing = datetime(timing.year, timing.month, timing.day)
         time_since = datetime.now() - timing
 
@@ -665,22 +668,23 @@ async def handle_decay(bot: 'ScoreSheetBot'):
         current_loss = elo_loss[cr.decay_level]
         message = f'This is an automated courtesy reminder that the last crew battle for {cr.name}' \
                   f' was on or before {timing.date().strftime("%m/%d/%y")}.\n'
-        if cr.decay_level >= 1:
-            message = f'Your crew {cr.name} has lost {current_loss} SCL Rating from inactivity. Your last cb was on ' \
+        if current_loss != 0:
+            message = f'Your crew {cr.name} has lost {current_loss} Trinity Rating from inactivity. Your last cb was on ' \
                       f'{timing.date().strftime("%m/%d/%y")}.'
-        message += f'If you do not play a cb by {next_cutoff.strftime("%m/%d/%y %H:%M")} EDT,' \
-                   f' you will automatically lose {next_loss} SCL Rating from decay.'
-        if cr.decay_level >= 2:
+        else:
+            message += f'If you do not play a cb by {next_cutoff.strftime("%m/%d/%y %H:%M")} EDT,' \
+                       f' you will automatically lose {next_loss} SCL Rating from decay.'
+        if cr.decay_level >= 4:
             message += '\nYour crew may also be subject to being disbanded ' \
                        'if it has been more than a month since your last ranked crew battle.'
         message += '\nIf you have any questions you can ask in <#492166249174925312>.'
-        for leader_id in cr.leader_ids:
-            leader = bot.bot.get_user(leader_id)
-            try:
-                if leader:
-                    await leader.send(message)
-            except discord.errors.Forbidden:
-                await bot.cache.channels.flairing_questions.send(f'{leader.mention}: {message}')
+        # for leader_id in cr.leader_ids:
+        #     leader = bot.bot.get_user(leader_id)
+        #     try:
+        #         if leader:
+        #             await leader.send(message)
+        #     except discord.errors.Forbidden:
+        #         await bot.cache.channels.flairing_questions.send(f'{leader.mention}: {message}')
 
 
 def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
