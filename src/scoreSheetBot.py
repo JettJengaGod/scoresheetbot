@@ -1741,10 +1741,11 @@ class ScoreSheetBot(commands.Cog):
             return
         for member_id, amount, cr in all_bets():
             member = self.bot.get_user(member_id)
-            total = refund_member_gcoins(member, amount)
-            await member.send(f'The gambit between {cg.team1} and {cg.team2} was canceled, '
-                              f'you have been refunded {amount} G-Coins for your bet on {cr}.\n'
-                              f'You now have {total} G-Coins.')
+            if member:
+                total = refund_member_gcoins(member, amount)
+                await member.send(f'The gambit between {cg.team1} and {cg.team2} was canceled, '
+                                  f'you have been refunded {amount} G-Coins for your bet on {cr}.\n'
+                                  f'You now have {total} G-Coins.')
         cancel_gambit()
         await ctx.send(f'Gambit between {cg.team1} and {cg.team2} cancelled. All participants have been refunded.')
 
@@ -1793,12 +1794,13 @@ class ScoreSheetBot(commands.Cog):
                     if final == 0:
                         # Reset win
                         final = 220
-                    total = refund_member_gcoins(member, final)
-                    if final > top_win[0]:
-                        top_win = [final, str(member)]
+                    if member:
+                        total = refund_member_gcoins(member, final)
+                        if final > top_win[0]:
+                            top_win = [final, str(member)]
 
-                    await member.send(f'You won {final} G-Coins on your bet of {amount} on {cr} over {loser}! '
-                                      f'Congrats you now have {total} G-Coins!')
+                        await member.send(f'You won {final} G-Coins on your bet of {amount} on {cr} over {loser}! '
+                                          f'Congrats you now have {total} G-Coins!')
                 else:
                     total = member_gcoins(member)
                     final = -amount
