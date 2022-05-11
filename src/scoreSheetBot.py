@@ -1742,9 +1742,14 @@ class ScoreSheetBot(commands.Cog):
             member = self.bot.get_user(member_id)
             if member:
                 total = refund_member_gcoins(member, amount)
-                await member.send(f'The gambit between {cg.team1} and {cg.team2} was canceled, '
-                                  f'you have been refunded {amount} G-Coins for your bet on {cr}.\n'
-                                  f'You now have {total} G-Coins.')
+                msg = (f'The gambit between {cg.team1} and {cg.team2} was canceled, '
+                       f'you have been refunded {amount} G-Coins for your bet on {cr}.\n'
+                       f'You now have {total} G-Coins.')
+
+                try:
+                    await member.send(msg)
+                except discord.errors.Forbidden:
+                    await ctx.send(f'{str(member)} is not accepting dms.')
         cancel_gambit()
         await ctx.send(f'Gambit between {cg.team1} and {cg.team2} cancelled. All participants have been refunded.')
 
@@ -1798,8 +1803,12 @@ class ScoreSheetBot(commands.Cog):
                         if final > top_win[0]:
                             top_win = [final, str(member)]
 
-                        await member.send(f'You won {final} G-Coins on your bet of {amount} on {cr} over {loser}! '
+                        msg = (f'You won {final} G-Coins on your bet of {amount} on {cr} over {loser}! '
                                           f'Congrats you now have {total} G-Coins!')
+                        try:
+                            await member.send(msg)
+                        except discord.errors.Forbidden:
+                            await ctx.send(f'{str(member)} is not accepting dms.')
                 else:
                     total = member_gcoins(member)
                     final = -amount
