@@ -679,13 +679,15 @@ async def handle_decay(bot: 'ScoreSheetBot'):
             message += '\nYour crew may also be subject to being disbanded ' \
                        'if it has been more than a month since your last ranked crew battle.'
         message += '\nIf you have any questions you can ask in <#492166249174925312>.'
-        # for leader_id in cr.leader_ids:
-        #     leader = bot.bot.get_user(leader_id)
-        #     try:
-        #         if leader:
-        #             await leader.send(message)
-        #     except discord.errors.Forbidden:
-        #         await bot.cache.channels.flairing_questions.send(f'{leader.mention}: {message}')
+
+        await bot.cache_value.channels.doc_keeper.send(message)
+        for leader_id in cr.leader_ids:
+            leader = bot.bot.get_user(leader_id)
+            try:
+                if leader:
+                    await leader.send(message)
+            except discord.errors.Forbidden:
+                await bot.cache.channels.flairing_questions.send(f'{leader.mention}: {message}')
 
 
 def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
