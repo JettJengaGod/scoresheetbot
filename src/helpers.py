@@ -681,13 +681,15 @@ async def handle_decay(bot: 'ScoreSheetBot'):
             message += '\nYour crew may also be subject to being disbanded ' \
                        'if it has been more than a month since your last ranked crew battle.'
         message += '\nIf you have any questions you can ask in <#492166249174925312>.'
-        # for leader_id in cr.leader_ids:
-        #     leader = bot.bot.get_user(leader_id)
-        #     try:
-        #         if leader:
-        #             await leader.send(message)
-        #     except discord.errors.Forbidden:
-        #         await bot.cache.channels.flairing_questions.send(f'{leader.mention}: {message}')
+
+        await bot.cache_value.channels.doc_keeper.send(message)
+        for leader_id in cr.leader_ids:
+            leader = bot.bot.get_user(leader_id)
+            try:
+                if leader:
+                    await leader.send(message)
+            except discord.errors.Forbidden:
+                await bot.cache.channels.flairing_questions.send(f'{leader.mention}: {message}')
 
 
 def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
@@ -1140,8 +1142,8 @@ def flair_bar_chart(flairs: List[Tuple[str, int]]):
     plt.savefig('fl.png')
 
 
-def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int, int]:
-    if cr.rank < 3:
+def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
+    if cr.ranking/cr.total_crews > .4:
         base = 8
         rollover_max = 3
     else:
@@ -1156,14 +1158,12 @@ def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int, int]:
     modifer_loc = 0
     while modifer_loc < 4 and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
         modifer_loc += 1
-    ranking = 0
-    if cr.ranking/cr.total_crews > .4:
-        ranking += 1
 
-    total = base + modifiers[modifer_loc] + ranking
+
+    total = base + modifiers[modifer_loc]
     total = max(total, 5) + min(rollover, rollover_max)
 
-    return total, base, modifiers[modifer_loc], min(rollover_max, rollover), ranking
+    return total, base, modifiers[modifer_loc], min(rollover_max, rollover)
 
 
 def calc_reg_slots(members: int) -> int:

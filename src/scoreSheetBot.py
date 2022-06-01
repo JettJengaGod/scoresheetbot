@@ -3264,10 +3264,10 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
-            total, base, modifer, rollover, ranking = calc_total_slots(cr)
+            total, base, modifer, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
-                        f'Next month {total} slots: {base} base + {modifer} size mod + {ranking} ranking mod + {rollover} rollover.')
+                        f'Next month {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
 
             # total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
@@ -3306,17 +3306,16 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
-            total, base, modifer, rollover, ranking = calc_total_slots(cr)
+            total, base, modifer, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
-                        f'Next month {total} slots: {base} base + {modifer} size mod + {ranking} ranking mod + {rollover} rollover.')
+                        f'Next month {total} slots: {base} base + {modifer} size mod  + {rollover} rollover.')
 
             total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \
                       f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
-                      f'{ranking} ranking slots\n' \
                       f'with an overall minimum of 5 slots\n' \
                       'For more information, refer to <#430364791245111312>. ' \
                       'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'
