@@ -1140,8 +1140,8 @@ def flair_bar_chart(flairs: List[Tuple[str, int]]):
     plt.savefig('fl.png')
 
 
-def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int, int]:
-    if cr.rank < 3:
+def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
+    if cr.ranking/cr.total_crews > .4:
         base = 8
         rollover_max = 3
     else:
@@ -1156,14 +1156,12 @@ def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int, int]:
     modifer_loc = 0
     while modifer_loc < 4 and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
         modifer_loc += 1
-    ranking = 0
-    if cr.ranking/cr.total_crews > .4:
-        ranking += 1
 
-    total = base + modifiers[modifer_loc] + ranking
+
+    total = base + modifiers[modifer_loc]
     total = max(total, 5) + min(rollover, rollover_max)
 
-    return total, base, modifiers[modifer_loc], min(rollover_max, rollover), ranking
+    return total, base, modifiers[modifer_loc], min(rollover_max, rollover)
 
 
 def calc_reg_slots(members: int) -> int:
