@@ -680,7 +680,7 @@ async def handle_decay(bot: 'ScoreSheetBot'):
                        'if it has been more than a month since your last ranked crew battle.'
         message += '\nIf you have any questions you can ask in <#492166249174925312>.'
 
-        await bot.cache_value.channels.doc_keeper.send(message)
+        await bot.cache_value.channels.testing.send(message)
         for leader_id in cr.leader_ids:
             leader = bot.bot.get_user(leader_id)
             try:
