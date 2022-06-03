@@ -1672,7 +1672,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.group(name='gamb', invoke_without_command=True)
     @main_only
-    @role_call([MINION, ADMIN])
+    @role_call([MINION, ADMIN, LU])
     async def gamb(self, ctx: Context):
         if current_gambit():
             await ctx.send(f'{current_gambit()}')
@@ -1681,7 +1681,7 @@ class ScoreSheetBot(commands.Cog):
 
     @gamb.command()
     @main_only
-    @role_call([MINION, ADMIN])
+    @role_call([MINION, ADMIN, LU, GAMB_OL])
     async def start(self, ctx: Context, c1: str, c2: str):
         cg = current_gambit()
         if cg:
@@ -1702,7 +1702,7 @@ class ScoreSheetBot(commands.Cog):
 
     @gamb.command()
     @main_only
-    @role_call([MINION, ADMIN])
+    @role_call([MINION, ADMIN, LU, GAMB_OL])
     async def close(self, ctx: Context, stream: Optional[str] = '', channel: Optional[discord.TextChannel] = ''):
         cg = current_gambit()
         if not cg:
@@ -1729,7 +1729,7 @@ class ScoreSheetBot(commands.Cog):
 
     @gamb.command()
     @main_only
-    @role_call([MINION, ADMIN])
+    @role_call([MINION, ADMIN, LU, GAMB_OL])
     async def cancel(self, ctx: Context):
         cg = current_gambit()
         if not cg:
@@ -1756,7 +1756,7 @@ class ScoreSheetBot(commands.Cog):
 
     @gamb.command()
     @main_only
-    @role_call([MINION, ADMIN])
+    @role_call([MINION, ADMIN, LU, GAMB_OL])
     async def finish(self, ctx: Context, *, winner: str):
         cg = current_gambit()
         if not cg:
@@ -1834,7 +1834,7 @@ class ScoreSheetBot(commands.Cog):
 
     @gamb.command()
     @main_only
-    @role_call([MINION, ADMIN])
+    @role_call([MINION, ADMIN, LU, GAMB_OL])
     async def update(self, ctx):
         cg = current_gambit()
         if cg:
