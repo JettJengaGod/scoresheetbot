@@ -172,6 +172,7 @@ help_doc = dict(
                      'battleId Optional[Reason]'),
     slottotals=HelpDoc(Categories.staff, 'Prints all the max slots for crews'),
     flaircounts=HelpDoc(Categories.staff, 'Helpful numbers for flair analysis'),
+    opt=HelpDoc(Categories.staff, 'Opts a crew out of destiny or back in'),
     addsheet=HelpDoc(Categories.staff, 'Adds a new non bot sheet to the database and in scoresheet_history', '',
                      'Winner Loser Size FinalScore'),
     addforfeit=HelpDoc(Categories.staff, 'Adds a forfeit sheet to the database and in scoresheet_history', '',
