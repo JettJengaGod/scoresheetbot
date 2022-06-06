@@ -1805,7 +1805,7 @@ class ScoreSheetBot(commands.Cog):
                             top_win = [final, str(member)]
 
                         msg = (f'You won {final} G-Coins on your bet of {amount} on {cr} over {loser}! '
-                                          f'Congrats you now have {total} G-Coins!')
+                               f'Congrats you now have {total} G-Coins!')
                         try:
                             await member.send(msg)
                         except discord.errors.Forbidden:
@@ -2017,6 +2017,27 @@ class ScoreSheetBot(commands.Cog):
         out.append('```')
         await ctx.send(''.join(out))
 
+    @commands.command(**help_doc['opt'])
+    @main_only
+    @role_call(STAFF_LIST)
+    async def opt(self, ctx, *, name: str = None):
+        cr = crew_lookup(name, self)
+        if cr.destiny_opt_out:
+            msg = await ctx.send(f'{cr.name} is opted out for destiny, would you like to opt them back in?')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+                await response_message(ctx, 'Canceled or timed out.')
+                return
+            destiny_opt(cr.db_id, False)
+            await ctx.send(f'{cr.name} opted back in to destiny! (Rc to see)')
+        else:
+            msg = await ctx.send(f'Would you like to opt {cr.name} out for destiny?\n'
+                                 f'This will reset their rank if they ever opt back in.')
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+                await response_message(ctx, 'Canceled or timed out.')
+                return
+            destiny_opt(cr.db_id, True)
+            await ctx.send(f'{cr.name} opted out of destiny! (Rc to see)')
+
     @commands.command(**help_doc['pair'])
     @main_only
     @role_call(STAFF_LIST)
@@ -2032,14 +2053,27 @@ class ScoreSheetBot(commands.Cog):
                 await response_message(ctx, f'{cr.name} only has {cr.current_destiny} destiny and needs 100.')
                 return
             if cr.destiny_opponent:
-                await response_message(ctx, f'{cr.name} already has'
-                                            f' {cr.destiny_opponent} as an opponent would you like to clear it?.')
-                return
+                msg = await ctx.send(f'{cr.name} already has'
+                                     f' {cr.destiny_opponent} as an opponent would you like to clear it?.')
+                if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+                    await response_message(ctx, 'Canceled or timed out.')
+                    return
+                opp = crew_lookup(cr.destiny_opponent, self)
 
+                destiny_unpair(cr.db_id, opp.db_id)
+                await response_message(ctx, f'{cr.name} and {opp.name} destiny opp reset.')
+                return
+            if cr.destiny_opt_out:
+                await response_message(ctx, f'{cr.name} is opted out for destiny.')
+                return
+        msg = await ctx.send(f'Would you like to pair {crew_1.name} with {crew_2.name}?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+            await response_message(ctx, 'Canceled or timed out.')
+            return
         destiny_pair(crew_1.db_id, crew_2.db_id)
         crew_1.destiny_opponent = crew_2.name
         crew_2.destiny_opponent = crew_1.name
-        await ctx.send(f'{crew_1.name} has been paired with {crew_2.name} for desinty!')
+        await ctx.send(f'{crew_1.name} has been paired with {crew_2.name} for destiny!')
 
     @commands.command(**help_doc['addforfeit'], hidden=True, aliases=['addff'])
     @main_only

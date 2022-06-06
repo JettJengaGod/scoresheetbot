@@ -88,7 +88,8 @@ class Crew:
         if self.destiny_opt_out:
             description.append(f'Opted out\n')
         else:
-            description.append(f'Rank {self.destiny_rank} Meter {self.current_destiny}/100\n')
+            meter = '' if self.destiny_opt_out else f'Meter {self.current_destiny}/100\n'
+            description.append(f'Rank {self.destiny_rank} {meter}')
         if self.destiny_opponent:
             description.append(f'**Destiny Opponent:** {self.destiny_opponent}\n')
         if self.last_opp:
