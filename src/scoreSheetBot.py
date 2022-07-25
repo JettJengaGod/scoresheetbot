@@ -475,7 +475,7 @@ class ScoreSheetBot(commands.Cog):
     @no_battle
     @is_lead
     @ss_channel
-    async def ocb(self, ctx: Context, user: discord.Member, size: int):
+    async def msb(self, ctx: Context, user: discord.Member, size: int):
         if size < 7:
             await ctx.send('Please enter a size greater than 6.')
             return
@@ -494,7 +494,7 @@ class ScoreSheetBot(commands.Cog):
         if user_crew != opp_crew:
             user_actual = crew_lookup(user_crew, self)
             opp_actual = crew_lookup(opp_crew, self)
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.OC_PLAYOFF))
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.MIDSEASON))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -917,6 +917,53 @@ class ScoreSheetBot(commands.Cog):
             elif current.battle_type == BattleType.MOCK:
                 await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
+            elif current.battle_type == BattleType.MIDSEASON:
+                current.confirm(await self._battle_crew(ctx, ctx.author))
+                await send_sheet(ctx, battle=current)
+                if current.confirmed():
+                    today = date.today()
+                    if current.battle_type == BattleType.COWY:
+                        channel_id = MIDSEASON_CHANNEL_ID
+                        name = 'Midseason Playoff Bracket'
+                        league_id = 17
+                    else:
+                        return
+                    output_channels = [
+                        discord.utils.get(ctx.guild.channels, id=channel_id),
+                        discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
+                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+                    winner = current.winner().name
+                    loser = current.loser().name
+                    current = self._current(ctx)
+                    if not current:
+                        return
+                    await self._clear_current(ctx)
+                    links = []
+                    for output_channel in output_channels:
+                        link = await send_sheet(output_channel, current)
+                        links.append(link)
+                    battle_id = add_finished_battle(current, links[0].jump_url, league_id)
+                    battle_weight_changes(battle_id)
+                    winner_crew = crew_lookup(winner, self)
+                    loser_crew = crew_lookup(loser, self)
+                    new_message = (
+                        f'**{today.strftime("%B %d, %Y")} ({name}) - {winner}⚔{loser}**\n'
+                        f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr}) '
+                        f'Rank: {winner_crew.rank} \n'
+                        f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) Rank: {loser_crew.rank} \n'
+                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                    for link in links:
+                        await link.edit(content=new_message)
+                    await ctx.send(
+                        f'The battle between {current.team1.name} and {current.team2.name} '
+                        f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
+                        f'(Battle number:{battle_id})')
+                    for cr in (winner_crew, loser_crew):
+                        if not extra_slot_used(cr):
+                            if battles_since_sunday(cr) >= 3:
+                                mod_slot(cr, 1)
+                                await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                                set_extra_used(cr)
             else:
                 current.confirm(await self._battle_crew(ctx, ctx.author))
                 await send_sheet(ctx, battle=current)
@@ -3354,7 +3401,7 @@ class ScoreSheetBot(commands.Cog):
                       'For more information, refer to <#430364791245111312>. ' \
                       'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'
 
-            if cr.member_count > 40:
+            if cr.member_count >= 40:
                 softcap_set(cr, round(cr.member_count / 3))
                 message += f'\nIn additon, because you have over 40 members, you will need have at least ' \
                            f'{round(cr.member_count / 3)} unique members play in crew battles this month to avoid ' \

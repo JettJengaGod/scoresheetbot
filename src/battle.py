@@ -36,6 +36,7 @@ class BattleType(Enum):
     COWY = 10
     OC_PLAYOFF = 11
     DESTINY = 12
+    MIDSEASON = 13
 
 
 @dataclass
@@ -228,6 +229,8 @@ class Battle:
             self.header = 'Straw Hat Invitational '
         elif self.battle_type == BattleType.DESTINY:
             self.header = 'Destiny '
+        elif self.battle_type == BattleType.MIDSEASON:
+            self.header = 'Midseason Playoff'
         else:
             self.header = ''
 
