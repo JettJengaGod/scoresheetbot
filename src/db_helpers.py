@@ -3030,7 +3030,6 @@ from crew_ratings,
                                crews
                           where (crews.id = battle.crew_1
                               or crews.id = battle.crew_2)
-                              and battle.league_id = 16
                           group by crews.id)
                              as newest_battle,
                          battle,
