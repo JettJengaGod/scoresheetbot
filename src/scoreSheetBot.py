@@ -521,7 +521,7 @@ class ScoreSheetBot(commands.Cog):
                 await response_message(ctx,
                                        f'{user.mention} does not have the DC Verified role. Which is required for '
                                        f'crew battle participation.'
-                                       f'They can verify by typing dc.verify in any channel and then clicking the '
+                                       f'They can verify by typing `/verify` in any channel and then clicking the '
                                        f'"Click me to verify!" link in the Double Counter dm.')
                 return
             author_crew = crew_or_none(ctx.author, self)
@@ -571,7 +571,7 @@ class ScoreSheetBot(commands.Cog):
                 await response_message(ctx,
                                        f'{user.mention} does not have the DC Verified role. Which is required for '
                                        f'crew battle participation.'
-                                       f'They can verify by typing dc.verify in any channel and then clicking the '
+                                       f'They can verify by typing `/verify` in any channel and then clicking the '
                                        f'"Click me to verify!" link in the Double Counter dm.')
                 return
             await self._reject_outsiders(ctx)
@@ -689,7 +689,7 @@ class ScoreSheetBot(commands.Cog):
                 await response_message(ctx,
                                        f'{user.mention} does not have the DC Verified role. Which is required for '
                                        f'crew battle participation.'
-                                       f'They can verify by typing dc.verify in any channel and then clicking the '
+                                       f'They can verify by typing `/verify` in any channel and then clicking the '
                                        f'"Click me to verify!" link in the Double Counter dm.')
                 return
             author_crew = crew_or_none(ctx.author, self)
@@ -740,7 +740,7 @@ class ScoreSheetBot(commands.Cog):
                 await response_message(ctx,
                                        f'{user.mention} does not have the DC Verified role. Which is required for '
                                        f'crew battle participation.'
-                                       f'They can verify by typing dc.verify in any channel and then clicking the '
+                                       f'They can verify by typing `/verify` in any channel and then clicking the '
                                        f'"Click me to verify!" link in the Double Counter dm.')
                 return
             await self._reject_outsiders(ctx)
@@ -1417,7 +1417,7 @@ class ScoreSheetBot(commands.Cog):
         if not check_roles(member, [VERIFIED]):
             await response_message(ctx, f'{member.mention} does not have the DC Verified role. Which is required for '
                                         f'leadership.'
-                                        f'They can verify by typing dc.verify in any channel and then clicking the '
+                                        f'They can verify by typing `/verify` in any channel and then clicking the '
                                         f'"Click me to verify!" link in the Double Counter dm.')
             return
         if check_roles(member, [LEAD_RESTRICT]):
@@ -1493,7 +1493,7 @@ class ScoreSheetBot(commands.Cog):
             return
         if not check_roles(member, [VERIFIED]):
             await response_message(ctx, f'{member.mention} does not have the DC Verified role. '
-                                        f'They can verify by typing dc.verify in any channel and then clicking the '
+                                        f'They can verify by typing `/verify` in any channel and then clicking the '
                                         f'"Click me to verify!" link in the Double Counter dm.')
             return
         if check_roles(member, [LEADER]):

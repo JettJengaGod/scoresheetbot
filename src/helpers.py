@@ -300,7 +300,7 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         raise ValueError(f'{member.mention} cannot be flaired because they have {JOIN_CD}.')
     if not check_roles(member, [VERIFIED]):
         raise ValueError(f'{member.mention} does not have the DC Verified role. '
-                         f'They can verify by typing dc.verify in any channel and then clicking the '
+                         f'They can verify by typing `/verify` in any channel and then clicking the '
                          f'"Click me to verify!" link in the Double Counter dm.')
     if not staff:
         if check_roles(member, [FLAIR_VERIFY]):
