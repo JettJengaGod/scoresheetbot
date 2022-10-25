@@ -882,6 +882,8 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
         ty = 'Overclocked Playoff'
     elif battle_type == BattleType.MIDSEASON:
         ty = 'Midseason Playoff'
+    elif battle_type == BattleType.TRINITY_PLAYOFF:
+        ty = 'Trinity Playoff'
     elif battle_type == BattleType.DESTINY:
         ty = 'Destiny Match'
     else:

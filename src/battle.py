@@ -37,6 +37,7 @@ class BattleType(Enum):
     OC_PLAYOFF = 11
     DESTINY = 12
     MIDSEASON = 13
+    TRINITY_PLAYOFF = 14
 
 
 @dataclass
