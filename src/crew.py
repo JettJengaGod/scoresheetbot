@@ -81,9 +81,9 @@ class Crew:
             description.append(f'**Trinity Rating:** {self.trinity_rating}\n')
         if self.ladder:
             description.append(f'{self.ladder}\n')
-        if self.softcap_max:
-            description.append(f'**Softcap:** {self.softcap_used}/{self.softcap_max}')
-            description.append('\n')
+        # if self.softcap_max:
+        #     description.append(f'**Softcap:** {self.softcap_used}/{self.softcap_max}')
+        #     description.append('\n')
         description.append(f'**Destiny:** ')
         if self.destiny_opt_out:
             description.append(f'Opted out\n')

@@ -475,7 +475,7 @@ class ScoreSheetBot(commands.Cog):
     @no_battle
     @is_lead
     @ss_channel
-    async def msb(self, ctx: Context, user: discord.Member, size: int):
+    async def trinity(self, ctx: Context, user: discord.Member, size: int):
         if size < 7:
             await ctx.send('Please enter a size greater than 6.')
             return
@@ -494,7 +494,7 @@ class ScoreSheetBot(commands.Cog):
         if user_crew != opp_crew:
             user_actual = crew_lookup(user_crew, self)
             opp_actual = crew_lookup(opp_crew, self)
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.MIDSEASON))
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.TRINITY_PLAYOFF))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -917,15 +917,15 @@ class ScoreSheetBot(commands.Cog):
             elif current.battle_type == BattleType.MOCK:
                 await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
-            elif current.battle_type == BattleType.MIDSEASON:
+            elif current.battle_type == BattleType.TRINITY_PLAYOFF:
                 current.confirm(await self._battle_crew(ctx, ctx.author))
                 await send_sheet(ctx, battle=current)
                 if current.confirmed():
                     today = date.today()
                     if current.battle_type == BattleType.COWY:
-                        channel_id = MIDSEASON_CHANNEL_ID
-                        name = 'Midseason Playoff Bracket'
-                        league_id = 17
+                        channel_id = TRINITY_CHANNEL_ID
+                        name = 'Trinity Playoff'
+                        league_id = 18
                     else:
                         return
                     output_channels = [
