@@ -332,7 +332,7 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         flairing_info = bot.cache.channels.flairing_info
         await flairing_info.send(f'{cowy.mention} {member.mention} is {TRUE_LOCKED}.')
     if not reg:
-        await member.add_roles(bot.cache.roles.join_cd)
+        await member.add_roles(bot.cache.roles.join_cd, bot.cache.roles.playoff_locked)
 
 
 async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreSheetBot'):
