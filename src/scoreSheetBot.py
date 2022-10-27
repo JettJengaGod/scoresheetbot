@@ -574,6 +574,11 @@ class ScoreSheetBot(commands.Cog):
                                        f'They can verify by typing `/verify` in any channel and then clicking the '
                                        f'"Click me to verify!" link in the Double Counter dm.')
                 return
+            if check_roles(user, [PLAYOFF_LOCKED]) and self._current(ctx).battle_type == BattleType.TRINITY_PLAYOFF:
+                await response_message(ctx,
+                                       f'{user.mention} is Playoff Locked. This can be removed  '
+                                       f'by playing 3 crew battles for the crew.')
+                return
             await self._reject_outsiders(ctx)
             author_crew = await self._battle_crew(ctx, ctx.author)
             player_crew = await self._battle_crew(ctx, user)

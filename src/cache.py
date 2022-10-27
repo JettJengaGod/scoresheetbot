@@ -79,6 +79,7 @@ class Cache:
             join_cd = discord.utils.get(server.roles, name=JOIN_CD)
             everyone = discord.utils.get(server.roles, name='@everyone')
             poach_me = discord.utils.get(server.roles, id=POACH_ME_ID)
+            playoff_locked = discord.utils.get(server.roles, id=PLAYOFF_LOCKED_ID)
 
         return Roles
 
