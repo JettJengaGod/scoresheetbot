@@ -38,6 +38,7 @@ class BattleType(Enum):
     DESTINY = 12
     MIDSEASON = 13
     TRINITY_PLAYOFF = 14
+    ARCADE = 15
 
 
 @dataclass
@@ -205,7 +206,7 @@ class ForfeitMatch(Match):
 
 
 class Battle:
-    def __init__(self, name1: str, name2: str, players: int, battle_type: BattleType = BattleType.RANKED):
+    def __init__(self, name1: str, name2: str, players: int, battle_type: BattleType = BattleType.ARCADE):
         self.team1 = Team(name1, players, players * PLAYER_STOCKS)
         self.team2 = Team(name2, players, players * PLAYER_STOCKS)
         self.teams = (self.team1, self.team2)
@@ -232,6 +233,10 @@ class Battle:
             self.header = 'Destiny '
         elif self.battle_type == BattleType.MIDSEASON:
             self.header = 'Midseason Playoff'
+        elif self.battle_type == BattleType.TRINITY_PLAYOFF:
+            self.header = 'Trinity Playoff '
+        elif self.battle_type == BattleType.ARCADE:
+            self.header = 'Arcade '
         else:
             self.header = ''
 
