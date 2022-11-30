@@ -65,7 +65,7 @@ class ScoreSheetBot(commands.Cog):
                 if summary:
                     await send_long_embed(self.cache.channels.current_cbs, summary)
 
-            await handle_decay(self)
+            # await handle_decay(self)
             await handle_unfreeze(self)
             if self.cache_value.scs:
                 await overflow_anomalies(self)
@@ -639,7 +639,7 @@ class ScoreSheetBot(commands.Cog):
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['forfeit'])
+    @commands.command(**help_doc['forfeit'], aliases=['ff'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -926,12 +926,9 @@ class ScoreSheetBot(commands.Cog):
                 await send_sheet(ctx, battle=current)
                 if current.confirmed():
                     today = date.today()
-                    if current.battle_type == BattleType.COWY:
-                        channel_id = TRINITY_CHANNEL_ID
-                        name = 'Trinity Playoff'
-                        league_id = 18
-                    else:
-                        return
+                    channel_id = TRINITY_CHANNEL_ID
+                    name = 'Trinity Playoff'
+                    league_id = 18
                     output_channels = [
                         discord.utils.get(ctx.guild.channels, id=channel_id),
                         discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
@@ -991,43 +988,18 @@ class ScoreSheetBot(commands.Cog):
                     battle_weight_changes(battle_id)
                     winner_crew = crew_lookup(winner, self)
                     loser_crew = crew_lookup(loser, self)
-                    winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
-                        battle_id, winner_opt_out=winner_crew.destiny_opt_out)
-                    w_placement = (200 - winner_k) / 30 + 1
-                    l_placement = (200 - loser_k) / 30 + 1
-                    if w_placement < 6:
-                        w_placement_message = f'Placement round {int(w_placement)}'
-                        differential = winner_k / 50
-                        winner_k_message = f'({winner_change // differential}* {differential})'
-                    else:
-                        w_placement_message = ''
-                        winner_k_message = winner_change
-                    if l_placement < 6:
-                        l_placement_message = f'Placement round {int(l_placement)}'
-                        differential = loser_k / 50
-                        loser_k_message = f'({loser_change // differential}* {differential})'
-                    else:
-                        l_placement_message = ''
-                        loser_k_message = loser_change
-                    destiny_message = 'Opted out' if winner_crew.destiny_opt_out else f'+{d_winner_change}->{d_final}'
-                    battle_name = 'Trinity League'
-                    if current.battle_type == BattleType.DESTINY:
-                        destiny_result(winner_crew.db_id, loser_crew.db_id)
-                        destiny_message = f'Rank up: {winner_crew.destiny_rank}-> {winner_crew.destiny_rank + 1}'
-                        battle_name = 'Destiny Battle'
+
+                    battle_name = 'The Arcade'
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
-                        f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
-                        f'+ {winner_change} = {winner_elo + winner_change}]'
-                        f'** Destiny**: [{destiny_message}]\n'
-                        f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
-                        f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
+                        f'**Winner:** <@&{winner_crew.role_id}> '
+                        f'**Loser:** <@&{loser_crew.role_id}>  '
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
                     await ctx.send(
-                        f'The battle between {winner}({w_placement_message}) and {loser}({l_placement_message}) '
+                        f'The battle between {winner} and {loser}) '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
                     for cr in (winner_crew, loser_crew):
@@ -1036,6 +1008,75 @@ class ScoreSheetBot(commands.Cog):
                                 mod_slot(cr, 1)
                                 await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
                                 set_extra_used(cr)
+                    await links[0].add_reaction(YES)
+            # else:
+            #     current.confirm(await self._battle_crew(ctx, ctx.author))
+            #     await send_sheet(ctx, battle=current)
+            #     if current.confirmed():
+            #         today = date.today()
+            #
+            #         output_channels = [discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
+            #                            discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+            #         winner = current.winner().name
+            #         loser = current.loser().name
+            #         league_id = CURRENT_LEAGUE_ID
+            #         current = self._current(ctx)
+            #         if not current:
+            #             return
+            #         await self._clear_current(ctx)
+            #         links = []
+            #         for output_channel in output_channels:
+            #             link = await send_sheet(output_channel, current)
+            #             links.append(link)
+            #         battle_id = add_finished_battle(current, links[0].jump_url, league_id)
+            #         battle_weight_changes(battle_id)
+            #         winner_crew = crew_lookup(winner, self)
+            #         loser_crew = crew_lookup(loser, self)
+            #         winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
+            #             battle_id, winner_opt_out=winner_crew.destiny_opt_out)
+            #         w_placement = (200 - winner_k) / 30 + 1
+            #         l_placement = (200 - loser_k) / 30 + 1
+            #         if w_placement < 6:
+            #             w_placement_message = f'Placement round {int(w_placement)}'
+            #             differential = winner_k / 50
+            #             winner_k_message = f'({winner_change // differential}* {differential})'
+            #         else:
+            #             w_placement_message = ''
+            #             winner_k_message = winner_change
+            #         if l_placement < 6:
+            #             l_placement_message = f'Placement round {int(l_placement)}'
+            #             differential = loser_k / 50
+            #             loser_k_message = f'({loser_change // differential}* {differential})'
+            #         else:
+            #             l_placement_message = ''
+            #             loser_k_message = loser_change
+            #         destiny_message = 'Opted out' if winner_crew.destiny_opt_out else f'+{d_winner_change}->{d_final}'
+            #         battle_name = 'Trinity League'
+            #         if current.battle_type == BattleType.DESTINY:
+            #             destiny_result(winner_crew.db_id, loser_crew.db_id)
+            #             destiny_message = f'Rank up: {winner_crew.destiny_rank}-> {winner_crew.destiny_rank + 1}'
+            #             battle_name = 'Destiny Battle'
+            #         new_message = (
+            #             f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
+            #             f'{loser} ({loser_crew.abbr})**\n'
+            #             f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
+            #             f'+ {winner_change} = {winner_elo + winner_change}]'
+            #             f'** Destiny**: [{destiny_message}]\n'
+            #             f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
+            #             f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
+            #             f'**Battle:** {battle_id} from {ctx.channel.mention}')
+            #         for link in links:
+            #             await link.edit(content=new_message)
+            #         await ctx.send(
+            #             f'The battle between {winner}({w_placement_message}) and {loser}({l_placement_message}) '
+            #             f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
+            #             f'(Battle number:{battle_id})')
+            #         for cr in (winner_crew, loser_crew):
+            #             if not extra_slot_used(cr):
+            #                 if battles_since_sunday(cr) >= 3:
+            #                     mod_slot(cr, 1)
+            #                     await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+            #                     set_extra_used(cr)
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
@@ -1648,14 +1689,14 @@ class ScoreSheetBot(commands.Cog):
         if flairing_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
             of_after = set(overflow_server.get_member(member.id).roles)
-        if len(crew_members(flairing_crew, self)) == 40:
-            message = 'You have just flaired the 40th person for your crew. When the first of the month hits, ' \
-                      'this will make you eligible for soft cap restrictions. Check out the SCS rules or use the ' \
-                      '<#492166249174925312> channel if you are unsure what this means.'
-            try:
-                await ctx.author.send(message)
-            except discord.errors.Forbidden:
-                await ctx.send(f'{ctx.author.mention}  {message}')
+        # if len(crew_members(flairing_crew, self)) == 40:
+        #     message = 'You have just flaired the 40th person for your crew. When the first of the month hits, ' \
+        #               'this will make you eligible for soft cap restrictions. Check out the SCS rules or use the ' \
+        #               '<#492166249174925312> channel if you are unsure what this means.'
+        #     try:
+        #         await ctx.author.send(message)
+        #     except discord.errors.Forbidden:
+        #         await ctx.send(f'{ctx.author.mention}  {message}')
         await self.cache.channels.flair_log.send(
             embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
