@@ -872,7 +872,7 @@ class ScoreSheetBot(commands.Cog):
                         links.append(link)
                     successful = (current.winner() == current.team2 or final_score < 5)
 
-                    new_message = (f'**{today.strftime("%B %d, %Y")} (Trinity Registration) - {winner}⚔{loser}**\n'
+                    new_message = (f'**{today.strftime("%B %d, %Y")} (Registration) - {winner}⚔{loser}**\n'
                                    f'**Winner:** {winner} \n'
                                    f'**Loser:** {loser}\n')
                     if successful:
@@ -2266,38 +2266,18 @@ class ScoreSheetBot(commands.Cog):
 
         league_id = CURRENT_LEAGUE_ID
         battle_id = add_non_ss_battle(winner_crew, loser_crew, players, score, links[0].jump_url, league_id)
-        winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
-            battle_id)
-        w_placement = (200 - winner_k) / 30 + 1
-        l_placement = (200 - winner_k) / 30 + 1
-        if w_placement < 6:
-            w_placement_message = f'Placement round {int(w_placement)}'
-            differential = winner_k / 50
-            winner_k_message = f'({winner_change // differential}* {differential})'
-        else:
-            w_placement_message = ''
-            winner_k_message = winner_change
-        if l_placement < 6:
-            l_placement_message = f'Placement round {int(l_placement)}'
-            differential = loser_k / 50
-            loser_k_message = f'({loser_change // differential}* {differential})'
-        else:
-            l_placement_message = ''
-            loser_k_message = loser_change
+
 
         new_message = (
-            f'**{today.strftime("%B %d, %Y")} (Trinity League) - {winner_crew.name} ({winner_crew.abbr})⚔'
+            f'**{today.strftime("%B %d, %Y")} (The Arcade) - {winner_crew.name} ({winner_crew.abbr})⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
-            f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
-            f'+ {winner_change} = {winner_elo + winner_change}]'
-            f'** Destiny**: [+{d_winner_change}->{d_final}]\n'
-            f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
-            f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
+            f'**Winner:** <@&{winner_crew.role_id}>  '
+            f'**Loser:** <@&{loser_crew.role_id}>  '
             f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
             await link.edit(content=new_message)
         await ctx.send(
-            f'The battle between {winner_crew.name}({w_placement_message}) and {loser_crew.name}({l_placement_message}) '
+            f'The battle between {winner_crew.name}and {loser_crew.name} '
             f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
             f'(Battle number:{battle_id})')
         for cr in (winner_crew, loser_crew):
@@ -2306,6 +2286,7 @@ class ScoreSheetBot(commands.Cog):
                     mod_slot(cr, 1)
                     await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
                     set_extra_used(cr)
+        await links[0].add_reaction(YES)
 
     @commands.command(**help_doc['failedreg'])
     @main_only
