@@ -729,8 +729,8 @@ def crew_update(bot: 'ScoreSheetBot'):
             db_crew.destiny_rank = destiny[db_crew.db_id][2]
             db_crew.destiny_opt_out = destiny[db_crew.db_id][3]
         bot.cache_value.crews_by_name[cached.name].fromDbCrew(db_crew)
-        if db_crew.name in rankings:
-            bot.cache_value.crews_by_name[cached.name].set_rankings(*rankings[db_crew.name])
+        # if db_crew.name in rankings:
+        #     bot.cache_value.crews_by_name[cached.name].set_rankings(*rankings[db_crew.name])
     for cr in cached_crews.values():
         update_crew(cr)
 
