@@ -65,6 +65,11 @@ class Crew:
     ranking: int = 0
     total_crews: int = 0
     destiny_opt_out: bool = False
+    # Arcade Section
+    level: int = 0
+    points: int = 0
+    lives: str = ''
+    fruit: str = ''
 
     @property
     def embed(self) -> discord.Embed:
@@ -77,21 +82,27 @@ class Crew:
             title += ' WATCHLISTED'
         description = [f'**Tag:** {self.abbr}\n', f'**Total Members:** {self.member_count}\n']
 
-        if self.trinity_rating:
-            description.append(f'**Trinity Rating:** {self.trinity_rating}\n')
+        # if self.trinity_rating:
+        #     description.append(f'**Trinity Rating:** {self.trinity_rating}\n')
         if self.ladder:
             description.append(f'{self.ladder}\n')
+        if self.level:
+            description.append(f'**Level:** {self.level}\n')
+        description.append(f'**Points:** {self.points}\n')
+        description.append(f'**Lives:** {self.lives}\n')
+        if self.fruit:
+            description.append(f'**Fruit:** {self.fruit}\n')
         # if self.softcap_max:
         #     description.append(f'**Softcap:** {self.softcap_used}/{self.softcap_max}')
         #     description.append('\n')
-        description.append(f'**Destiny:** ')
-        if self.destiny_opt_out:
-            description.append(f'Opted out\n')
-        else:
-            meter = '' if self.destiny_opt_out else f'Meter {self.current_destiny}/100\n'
-            description.append(f'Rank {self.destiny_rank} {meter}')
-        if self.destiny_opponent:
-            description.append(f'**Destiny Opponent:** {self.destiny_opponent}\n')
+        # description.append(f'**Destiny:** ')
+        # if self.destiny_opt_out:
+        #     description.append(f'Opted out\n')
+        # else:
+        #     meter = '' if self.destiny_opt_out else f'Meter {self.current_destiny}/100\n'
+        #     description.append(f'Rank {self.destiny_rank} {meter}')
+        # if self.destiny_opponent:
+        #     description.append(f'**Destiny Opponent:** {self.destiny_opponent}\n')
         if self.last_opp:
             description.append(f'**Last Match:** {self.last_match.date().strftime("%m/%d/%y")} {self.last_opp}\n')
         if self.social:

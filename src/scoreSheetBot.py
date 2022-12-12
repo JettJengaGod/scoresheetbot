@@ -994,8 +994,8 @@ class ScoreSheetBot(commands.Cog):
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
-                        f'**Winner:** <@&{winner_crew.role_id}> '
-                        f'**Loser:** <@&{loser_crew.role_id}>  '
+                        f'**Winner:** <@&{winner_crew.role_id}> {winner_crew.ladder} Level {winner_crew.level}'
+                        f'**Loser:** <@&{loser_crew.role_id}>  {loser_crew.ladder} Level {loser_crew.level}'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
@@ -1243,15 +1243,24 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['rankings'])
     async def rankings(self, ctx):
-        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.trinity_rating],
-                                         key=lambda x: x.trinity_rating, reverse=True)
+        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.ladder.startswith('**16')],
+                                         key=lambda x: x.ranking, reverse=True)
 
-        crew_ranking_str = [f'**{cr.name}** {cr.trinity_rating} '
-                            f'{"Destiny opted out" if cr.destiny_opt_out else f"Rank {cr.destiny_rank} {cr.current_destiny}/100"}'
+        crew_ranking_str = [f'**{cr.name}** Level: {cr.level} Points: {cr.points}'
                             for cr
                             in crews_sorted_by_ranking]
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Trinity Rankings'),
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Arcade 16bit Rankings'),
+                                clear_reactions_after=True)
+        await pages.start(ctx)
+        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.ladder.startswith('**8')],
+                                         key=lambda x: x.ranking, reverse=True)
+
+        crew_ranking_str = [f'**{cr.name}** Level: {cr.level} Points: {cr.points}'
+                            for cr
+                            in crews_sorted_by_ranking]
+
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Arcade 8bit Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
