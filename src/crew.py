@@ -70,6 +70,7 @@ class Crew:
     points: int = 0
     lives: str = ''
     fruit: str = ''
+    ranking_string = ''
 
     @property
     def embed(self) -> discord.Embed:
@@ -85,7 +86,7 @@ class Crew:
         # if self.trinity_rating:
         #     description.append(f'**Trinity Rating:** {self.trinity_rating}\n')
         if self.ladder:
-            description.append(f'{self.ladder}\n')
+            description.append(f'{self.ladder}: {self.ranking_string}\n')
         if self.level:
             description.append(f'**Level:** {self.level}\n')
         description.append(f'**Points:** {self.points}\n')

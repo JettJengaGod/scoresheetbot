@@ -181,11 +181,12 @@ class Cache:
                 if not row:
                     continue
                 if row[5] in crews_by_name.keys():
-                    crews_by_name[row[5]].ladder = f'**16-Bit:** {row[0]}/{len(sixteen_values)}'
+                    crews_by_name[row[5]].ladder = f'**16-Bit**'
                     crews_by_name[row[5]].level = int(row[3])
-                    crews_by_name[row[5]].points = int(row[2])
+                    crews_by_name[row[5]].points = row[2]
                     crews_by_name[row[5]].lives = row[4]
-                    crews_by_name[row[5]].ranking = row[0]
+                    crews_by_name[row[5]].ranking = int(row[0])
+                    crews_by_name[row[5]].ranking_string = f'{row[0]}/{len(sixteen_values)}'
                     if len(row) == 13:
                         crews_by_name[row[5]].fruit = row[12]
         if not eight_values:
@@ -195,11 +196,12 @@ class Cache:
                 if not row:
                     continue
                 if row[5] in crews_by_name.keys():
-                    crews_by_name[row[5]].ladder = f'**8-Bit:** {row[0]}/{len(eight_values)}'
+                    crews_by_name[row[5]].ladder = f'**8-Bit**'
                     crews_by_name[row[5]].level = int(row[3])
-                    crews_by_name[row[5]].points = int(row[2])
+                    crews_by_name[row[5]].points = row[2]
                     crews_by_name[row[5]].lives = row[4]
-                    crews_by_name[row[5]].ranking = row[0]
+                    crews_by_name[row[5]].ranking = int(row[0])
+                    crews_by_name[row[5]].ranking_string = f'{row[0]}/{len(eight_values)}'
 
         if issues:
             issue_string = '\n'.join(issues)

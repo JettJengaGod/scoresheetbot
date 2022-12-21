@@ -41,6 +41,14 @@ class BattleType(Enum):
     ARCADE = 15
 
 
+class Difficulty(Enum):
+    EASY = 1
+    NORMAL = 2
+    HARD = 3
+    UNSET = 4
+    BOSS = 5
+
+
 @dataclass
 class Player:
     name: str
@@ -67,6 +75,7 @@ class Team:
     current_player: Optional[Player] = None
     ext_used: bool = False
     replaced: Set[str] = field(default_factory=set)
+    difficulty: Difficulty = Difficulty.UNSET
 
     def add_player(self, player_name: str, player_id: Optional[int]) -> None:
         if self.current_player:
@@ -240,6 +249,17 @@ class Battle:
         else:
             self.header = ''
 
+    def set_difficulty(self, team_name: str, difficulty: Difficulty):
+        team = self.lookup(team_name)
+        if self.battle_type == BattleType.ARCADE:
+            if team.difficulty == Difficulty.UNSET:
+                team.difficulty = difficulty
+
+    def check_difficulty(self, team_name: str) -> Difficulty:
+        team = self.lookup(team_name)
+        if self.battle_type == BattleType.ARCADE:
+            return team.difficulty
+
     def confirmed(self) -> bool:
         return all(self.confirms)
 
@@ -256,6 +276,9 @@ class Battle:
         team = self.lookup(team_name)
         if self.battle_type != BattleType.MOCK:
             team.check_resend(player_id)
+        if self.battle_type == BattleType.ARCADE:
+            if team.difficulty == Difficulty.UNSET:
+                raise StateError(self, f'Team "{team.name}" needs to set difficulty with `,difficulty`')
         team.add_player(player_name, player_id)
         team.leader.add(leader)
 
