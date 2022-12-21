@@ -5,7 +5,7 @@ CHARACTERS = {
     'banjo_and_kazooie': ['banjo', 'banjokazooie'],
     'bayonetta': ['bayo'],
     'bowser': [],
-    'bowser_jr': ['bjr', 'jr', 'larry', 'royjr', 'wendy', 'iggy', 'morton', 'lemmy', 'ludwig'],
+    'bowser_jr': ['bjr', 'jr', 'larry', 'royk', 'wendy', 'iggy', 'morton', 'lemmy', 'ludwig'],
     'byleth': [],
     'captain_falcon': ['falcon'],
     'chrom': [],
@@ -122,7 +122,7 @@ def clean_emoji(input_str: str) -> str:
     return input_str
 
 
-JR_LIST = ['bowser_jr', 'larry', 'royjr', 'wendy', 'iggy', 'morton', 'lemmy', 'ludwig']
+JR_LIST = ['bowser_jr', 'larry', 'royk', 'wendy', 'iggy', 'morton', 'lemmy', 'ludwig']
 
 
 def post_process(character: str, canonical_name: str, alt_num: int) -> Optional[str]:

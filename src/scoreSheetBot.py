@@ -356,21 +356,11 @@ class ScoreSheetBot(commands.Cog):
                            f'Please contact an admin if this is incorrect.')
             return
         if user_crew != opp_crew:
-            user_actual = crew_lookup(user_crew, self)
-            opp_actual = crew_lookup(opp_crew, self)
-            if user_actual.destiny_opponent == opp_actual.name:
-                msg = await ctx.send(f'{ctx.author.mention}:{user_actual.name} has '
-                                     f'{opp_actual.name} as a destiny opponent, '
-                                     f'do you want to continue as a destiny battle?')
-                if await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                    await ctx.send('Destiny battle confirmed.')
-                    await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.DESTINY))
-                    await send_sheet(ctx, battle=self._current(ctx))
-                    return
-                else:
-                    await ctx.send('Battle will start as a normal ranked.')
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.ARCADE))
+            if crew_lookup(user_crew, self).ladder != crew_lookup(opp_crew, self).ladder:
+                self._current(ctx).set_difficulty(user_crew, Difficulty.NORMAL)
+                self._current(ctx).set_difficulty(opp_crew, Difficulty.NORMAL)
 
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -841,6 +831,57 @@ class ScoreSheetBot(commands.Cog):
 
         await send_sheet(ctx, battle=self._current(ctx))
 
+    @commands.command(**help_doc['difficulty'], aliases=['d'])
+    @main_only
+    @has_sheet
+    @ss_channel
+    @is_lead
+    async def difficulty(self, ctx):
+        await self._reject_outsiders(ctx)
+        if not self._current(ctx).battle_type == BattleType.ARCADE:
+            await response_message(ctx, 'You can only set the difficulty in an Arcade match.')
+            return
+        if not self._current(ctx).check_difficulty(crew(ctx.author, self)) == Difficulty.UNSET:
+            await response_message(ctx, 'Difficulty is already set and cannot be changed.')
+            return
+        await response_message(ctx, f' check your dms!')
+        author_crew = await self._battle_crew(ctx, ctx.author)
+        msg = await ctx.author.send(f'For your battle {self._current(ctx).team1.name} vs '
+                                    f'{self._current(ctx).team2.name} what difficulty do you choose?\n'
+                                    f'Easy {YES}\n'
+                                    f'Normal {NORMAL}\n'
+                                    f'Hard {NO}')
+        await msg.add_reaction(YES)
+        await msg.add_reaction(NORMAL)
+        await msg.add_reaction(NO)
+        diff = Difficulty.UNSET
+
+        def check_reaction(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in (
+                YES, NO, NORMAL)
+
+        while True:
+            try:
+                react, reactor = await self.bot.wait_for('reaction_add', timeout=30, check=check_reaction)
+            except asyncio.TimeoutError:
+                await ctx.author.send(f'Timed out')
+                return False
+            if react.message.id != msg.id:
+                continue
+            if str(react.emoji) == YES and reactor == ctx.author:
+                diff = Difficulty.EASY
+                break
+            elif str(react.emoji) == NO and reactor == ctx.author:
+                diff = Difficulty.HARD
+                break
+            elif str(react.emoji) == NORMAL and reactor == ctx.author:
+                diff = Difficulty.NORMAL
+                break
+
+        self._current(ctx).set_difficulty(author_crew, diff)
+        await ctx.author.send(f'Your difficulty of {diff.name} is confirmed!')
+        await send_sheet(ctx, battle=self._current(ctx))
+
     @commands.command(**help_doc['confirm'])
     @has_sheet
     @ss_channel
@@ -994,8 +1035,10 @@ class ScoreSheetBot(commands.Cog):
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
-                        f'**Winner:** <@&{winner_crew.role_id}> {winner_crew.ladder} Level {winner_crew.level}'
-                        f'**Loser:** <@&{loser_crew.role_id}>  {loser_crew.ladder} Level {loser_crew.level}'
+                        f'**Winner:** <@&{winner_crew.role_id}> {winner_crew.ladder} '
+                        f'Level {winner_crew.level} {current.winner().difficulty.name}\n'
+                        f'**Loser:** <@&{loser_crew.role_id}>  {loser_crew.ladder} '
+                        f'Level {loser_crew.level} {current.loser().difficulty.name}\n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
@@ -1243,8 +1286,9 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['rankings'])
     async def rankings(self, ctx):
-        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.ladder.startswith('**16')],
-                                         key=lambda x: x.ranking, reverse=True)
+        crews_sorted_by_ranking = sorted(
+            [cr for cr in self.cache.crews_by_name.values() if cr.ladder.startswith('**16')],
+            key=lambda x: x.ranking, reverse=False)
 
         crew_ranking_str = [f'**{cr.name}** Level: {cr.level} Points: {cr.points}'
                             for cr
@@ -1253,8 +1297,9 @@ class ScoreSheetBot(commands.Cog):
         pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Arcade 16bit Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
-        crews_sorted_by_ranking = sorted([cr for cr in self.cache.crews_by_name.values() if cr.ladder.startswith('**8')],
-                                         key=lambda x: x.ranking, reverse=True)
+        crews_sorted_by_ranking = sorted(
+            [cr for cr in self.cache.crews_by_name.values() if cr.ladder.startswith('**8')],
+            key=lambda x: x.ranking, reverse=False)
 
         crew_ranking_str = [f'**{cr.name}** Level: {cr.level} Points: {cr.points}'
                             for cr
@@ -2275,7 +2320,6 @@ class ScoreSheetBot(commands.Cog):
 
         league_id = CURRENT_LEAGUE_ID
         battle_id = add_non_ss_battle(winner_crew, loser_crew, players, score, links[0].jump_url, league_id)
-
 
         new_message = (
             f'**{today.strftime("%B %d, %Y")} (The Arcade) - {winner_crew.name} ({winner_crew.abbr})⚔'

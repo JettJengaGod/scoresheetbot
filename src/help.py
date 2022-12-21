@@ -82,6 +82,7 @@ help_doc = dict(
     coin=HelpDoc(Categories.misc, 'Flips a coin. If you mention a user it will '
                                   'prompt them to answer heads or tails before the flip.'),
     use_ext=HelpDoc(Categories.cb, 'Uses your teams time extension in a crew battle'),
+    difficulty=HelpDoc(Categories.cb, 'Sets the difficulty for an arcade match'),
     ext=HelpDoc(Categories.cb, 'Prints out extension status'),
     recache=HelpDoc(Categories.staff, 'Updates the cache. Admin only'),
     pending=HelpDoc(Categories.staff, 'Prints pending battles. Admin only'),
