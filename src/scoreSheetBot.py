@@ -492,6 +492,11 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['countdown'])
     @ss_channel
     async def countdown(self, ctx: Context, seconds: Optional[int] = 10):
+        if self._current(ctx) is not None:
+            if not self._current(ctx).ready_for_countdown():
+                await response_message(ctx, "At least 1 team has not selected difficulty yet! Please use "
+                                            "`,d` or `,difficulty` to be dmed to set it!")
+                return
         if seconds > 10 or seconds < 1:
             await ctx.send('You can only countdown from 10 or less!')
         await ctx.send(f'Counting down from {seconds}')
