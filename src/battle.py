@@ -260,6 +260,13 @@ class Battle:
         if self.battle_type == BattleType.ARCADE:
             return team.difficulty
 
+    def ready_for_countdown(self) -> bool:
+        if self.battle_type != BattleType.ARCADE:
+            return True
+        if self.team1.difficulty == Difficulty.UNSET or self.team2.difficulty == Difficulty.UNSET:
+            return False
+        return True
+
     def confirmed(self) -> bool:
         return all(self.confirms)
 
