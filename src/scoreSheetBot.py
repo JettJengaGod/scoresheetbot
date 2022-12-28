@@ -1041,7 +1041,7 @@ class ScoreSheetBot(commands.Cog):
                         f'{loser} ({loser_crew.abbr})**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> {winner_crew.ladder} '
                         f'Level {winner_crew.level} {current.winner().difficulty.name}\n'
-                        f'**Loser:** <@&{loser_crew.role_id}>  {loser_crew.ladder} '
+                        f'**Loser:** <@&{loser_crew.role_id}> {loser_crew.ladder} '
                         f'Level {loser_crew.level} {current.loser().difficulty.name}\n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
@@ -2328,8 +2328,10 @@ class ScoreSheetBot(commands.Cog):
         new_message = (
             f'**{today.strftime("%B %d, %Y")} (The Arcade) - {winner_crew.name} ({winner_crew.abbr})⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
-            f'**Winner:** <@&{winner_crew.role_id}>  '
-            f'**Loser:** <@&{loser_crew.role_id}>  '
+            f'**Winner:** <@&{winner_crew.role_id}> {winner_crew.ladder} '
+            f'Level {winner_crew.level} NORMAL\n'
+            f'**Winner:** <@&{loser_crew.role_id}> {loser_crew.ladder} '
+            f'Level {loser_crew.level} NORMAL\n'
             f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
             await link.edit(content=new_message)
