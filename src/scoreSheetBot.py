@@ -360,6 +360,8 @@ class ScoreSheetBot(commands.Cog):
             if crew_lookup(user_crew, self).ladder != crew_lookup(opp_crew, self).ladder:
                 self._current(ctx).set_difficulty(user_crew, Difficulty.NORMAL)
                 self._current(ctx).set_difficulty(opp_crew, Difficulty.NORMAL)
+                await ctx.send('Defaulted difficulty to NORMAL as this is a cross ladder match.')
+            await ctx.send('Please select the difficulty for both crews!')
 
             await send_sheet(ctx, battle=self._current(ctx))
         else:
@@ -885,7 +887,7 @@ class ScoreSheetBot(commands.Cog):
 
         self._current(ctx).set_difficulty(author_crew, diff)
         await ctx.author.send(f'Your difficulty of {diff.name} is confirmed!')
-        await send_sheet(ctx, battle=self._current(ctx))
+        await ctx.send(f'{author_crew} selected difficulty!')
 
     @commands.command(**help_doc['confirm'])
     @has_sheet
