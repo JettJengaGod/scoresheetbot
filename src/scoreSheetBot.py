@@ -2333,7 +2333,7 @@ class ScoreSheetBot(commands.Cog):
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
             f'**Winner:** <@&{winner_crew.role_id}> {winner_crew.ladder} '
             f'Level {winner_crew.level} NORMAL\n'
-            f'**Winner:** <@&{loser_crew.role_id}> {loser_crew.ladder} '
+            f'**Loser:** <@&{loser_crew.role_id}> {loser_crew.ladder} '
             f'Level {loser_crew.level} NORMAL\n'
             f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
