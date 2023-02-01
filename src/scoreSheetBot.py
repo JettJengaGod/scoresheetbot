@@ -3489,11 +3489,11 @@ class ScoreSheetBot(commands.Cog):
                       'For more information, refer to <#430364791245111312>. ' \
                       'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'
 
-            if cr.member_count >= 40:
-                softcap_set(cr, round(cr.member_count / 3))
-                message += f'\nIn additon, because you have over 40 members, you will need have at least ' \
-                           f'{round(cr.member_count / 3)} unique members play in crew battles this month to avoid ' \
-                           f'being registration frozen.'
+            # if cr.member_count >= 40:
+            #     softcap_set(cr, round(cr.member_count / 3))
+            #     message += f'\nIn additon, because you have over 40 members, you will need have at least ' \
+            #                f'{round(cr.member_count / 3)} unique members play in crew battles this month to avoid ' \
+            #                f'being registration frozen.'
             crew_msg[cr.name] = message
 
         for i, member in enumerate(self.cache.scs.members):
