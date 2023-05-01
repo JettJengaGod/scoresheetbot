@@ -22,6 +22,7 @@ class DbCrew:
     last_opp: str
     db_id: int
     softcap_max: int = 0
+    member_count: int = 0
     softcap_used: int = 0
     current_destiny: int = 0
     destiny_opponent: str = ''
@@ -149,6 +150,7 @@ class Crew:
         self.destiny_opponent = db_crew.destiny_opponent
         self.destiny_rank = db_crew.destiny_rank
         self.destiny_opt_out = db_crew.destiny_opt_out
+        self.member_count = db_crew.member_count
 
     def set_rankings(self, rank: int, rating: int, total: int):
         self.ladder = '**Trinity League:** '

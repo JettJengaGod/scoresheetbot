@@ -3435,7 +3435,7 @@ class ScoreSheetBot(commands.Cog):
                 continue
             total, base, modifer, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
-            desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
+            desc.append(f'{cr.name}: This month({left}/{cur_total}) ({cr.member_count} members) \n'
                         f'Next month {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
 
             # total_slot_set(cr, total)
