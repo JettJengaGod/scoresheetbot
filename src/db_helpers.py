@@ -1050,11 +1050,13 @@ def all_crews() -> List[DbCrew]:
        last_battle.finished,
        last_battle.opp,
        id,
-       softcap_max
+       softcap_max,
+       coalesce(members.member_count, 0) as member_count
+
 FROM crews
-         left join (select battle.finished                                                         as finished,
+         left join (select battle.finished                                                              as finished,
                            opp_crew.name || case when battle.winner = crew_id then '(W)' else '(L)' end as opp,
-                           newest_battle.crew_id                                                         as cid
+                           newest_battle.crew_id                                                        as cid
                     from (select max(battle.id) as battle_id, crews.id as crew_id
                           from battle,
                                crews
@@ -1068,6 +1070,9 @@ FROM crews
                       and opp_crew.id = case
                                             when newest_battle.crew_id = battle.crew_2 then battle.crew_1
                                             else battle.crew_2 end) as last_battle on last_battle.cid = crews.id
+         left join (select count(distinct member_id) as member_count, crew_id
+                    from current_member_crews
+                    group by crew_id) as members on members.crew_id = crews.id
 where disbanded = false;"""
     conn = None
     crews = []

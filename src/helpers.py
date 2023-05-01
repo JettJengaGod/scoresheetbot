@@ -646,7 +646,7 @@ async def handle_decay(bot: 'ScoreSheetBot'):
             timing = None
         if cr.total_crews == 0:
             continue
-        if cr.ranking/cr.total_crews > .4:
+        if cr.ranking / cr.total_crews > .4:
             continue
         if not timing:
             first_flair = first_crew_flair(cr)
@@ -718,6 +718,7 @@ def crew_update(bot: 'ScoreSheetBot'):
         else:
             missing.append(db_crew)
             continue
+
         formatted = (cached.role_id, cached.abbr, cached.name, cached.overflow)
         if formatted != (db_crew.discord_id, db_crew.tag, db_crew.name, db_crew.overflow):
             update_crew(cached)
@@ -1161,14 +1162,13 @@ def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
         rollover = sl[0]
     else:
         rollover = 0
-    modifiers = [6, 4, 2, 0, -1, -2]
+    modifiers = [6, 4, 2, 0, -1, -2, -3, -4, -99]
     modifer_loc = 0
-    while modifer_loc < 4 and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
+    while modifer_loc < len(SLOT_CUTOFFS) and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
         modifer_loc += 1
 
-
     total = base + modifiers[modifer_loc]
-    total = max(total, 5) + min(rollover, rollover_max)
+    total = max(total, 0) + min(rollover, rollover_max)
 
     return total, base, modifiers[modifer_loc], min(rollover_max, rollover)
 

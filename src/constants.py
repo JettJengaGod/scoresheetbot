@@ -155,7 +155,7 @@ class PlayoffType(Enum):
     TEMPERED = 4
 
 
-SLOT_CUTOFFS = [9, 17, 25, 33, 41]
+SLOT_CUTOFFS = [9, 17, 25, 33, 41, 60, 70, 80]
 RANK_CUTOFF = 4
 
 CURRENT_LEAGUE_ID = 19
