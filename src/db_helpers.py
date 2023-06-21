@@ -1051,7 +1051,8 @@ def all_crews() -> List[DbCrew]:
        last_battle.opp,
        id,
        softcap_max,
-       coalesce(members.member_count, 0) as member_count
+       coalesce(members.member_count, 0) as member_count,
+       triforce
 
 FROM crews
          left join (select battle.finished                                                              as finished,

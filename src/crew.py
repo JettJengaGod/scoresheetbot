@@ -23,6 +23,7 @@ class DbCrew:
     db_id: int
     softcap_max: int = 0
     member_count: int = 0
+    triforce: int = 0
     softcap_used: int = 0
     current_destiny: int = 0
     destiny_opponent: str = ''
@@ -72,12 +73,15 @@ class Crew:
     lives: str = ''
     fruit: str = ''
     ranking_string = ''
+    triforce = 0
 
     @property
     def embed(self) -> discord.Embed:
         title = f'{self.name}'
-        # if self.master_class:
-        #     title += f' (Master Class) '
+        if self.triforce == 1:
+            title += f' (Triforce of Courage)'
+        if self.triforce == 2:
+            title += f' (Triforce of Courage)'
         if self.overflow:
             title += f' (Overflow) '
         if self.wl:
@@ -151,6 +155,7 @@ class Crew:
         self.destiny_rank = db_crew.destiny_rank
         self.destiny_opt_out = db_crew.destiny_opt_out
         self.member_count = db_crew.member_count
+        self.triforce = db_crew.triforce
 
     def set_rankings(self, rank: int, rating: int, total: int):
         self.ladder = '**Trinity League:** '

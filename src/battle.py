@@ -39,6 +39,9 @@ class BattleType(Enum):
     MIDSEASON = 13
     TRINITY_PLAYOFF = 14
     ARCADE = 15
+    WISDOM = 16
+    COURAGE = 17
+    POWER = 18
 
 
 class Difficulty(Enum):

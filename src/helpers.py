@@ -359,7 +359,8 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
             remaining_req = 1
         if len(cr.leaders) == remaining_req:
             await flairing_info.send(f'{bot.cache.roles.docs.mention}: {user_crew}\'s last leader just unflaired')
-    await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.leader, bot.cache.roles.poach_me,
+    await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.fortyman, bot.cache.roles.leader,
+                              bot.cache.roles.poach_me,
                               reason=f'Unflaired by {author.name}')
 
 
@@ -891,8 +892,14 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
         ty = 'Destiny Match'
     elif battle_type == BattleType.ARCADE:
         ty = 'Arcade'
+    elif battle_type == BattleType.WISDOM:
+        ty = 'Wisdom'
+    elif battle_type == BattleType.COURAGE:
+        ty = 'Courage'
+    elif battle_type == BattleType.POWER:
+        ty = 'Power'
     else:
-        ty = 'Trinity League'
+        ty = 'Undefined'
     title = f'Current {ty} Battles'
     embed = discord.Embed(title=title, color=discord.Color.random())
     for key, battle in bot.battle_map.items():
@@ -1151,6 +1158,15 @@ def flair_bar_chart(flairs: List[Tuple[str, int]]):
 
 
 def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
+    rollover_max = 2
+    if cr.triforce == 1:
+        base = 7
+    elif cr.triforce == 2:
+        base = 6
+    else:
+        base = 8
+        rollover_max = 3
+
     if cr.ladder == '**8-Bit**':
         base = 8
         rollover_max = 3

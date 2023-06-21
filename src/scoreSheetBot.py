@@ -72,8 +72,8 @@ class ScoreSheetBot(commands.Cog):
             await cooldown_handle(self)
             await track_handle(self)
             await self.cache_value.channels.recache_logs.send('Successfully recached.')
-            update_trinity_sheet()
-            update_destiny_sheet()
+            # update_trinity_sheet()
+            # update_destiny_sheet()
             # update_all_sheets()
         print(time.time() - self.cache_time)
         self.cache_time = time.time()
@@ -334,7 +334,7 @@ class ScoreSheetBot(commands.Cog):
         await unlock(ctx.channel)
         await ctx.send('Unlocked the channel for all crews to use.')
 
-    @commands.command(**help_doc['battle'], aliases=['challenge'], group='CB')
+    @commands.command(**help_doc['battle'], aliases=['wisdom'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -486,6 +486,43 @@ class ScoreSheetBot(commands.Cog):
         if user_crew != opp_crew:
             user_actual = crew_lookup(user_crew, self)
             opp_actual = crew_lookup(opp_crew, self)
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.TRINITY_PLAYOFF))
+            await send_sheet(ctx, battle=self._current(ctx))
+        else:
+            await ctx.send('You can\'t battle your own crew.')
+
+    @commands.command(**help_doc['battle'], aliases=['top'], group='CB')
+    @main_only
+    @no_battle
+    @is_lead
+    @ss_channel
+    async def power(self, ctx: Context, user: discord.Member, size: int):
+        #TODO Check both crews are in triforce of power
+        if size < 7:
+            await ctx.send('Please enter a size greater than 6.')
+            return
+        user_crew = crew(ctx.author, self)
+        opp_crew = crew(user, self)
+        if not user_crew:
+            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if not opp_crew:
+            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+
+        if user_crew != opp_crew:
+            user_actual = crew_lookup(user_crew, self)
+            if user_actual.triforce != 2:
+                await ctx.send(f'{user_crew} is not in triforce of power.')
+                return
+            opp_actual = crew_lookup(opp_crew, self)
+            if opp_actual.triforce != 2:
+                await ctx.send(f'{opp_crew} is not in triforce of power.')
+                return
             await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.TRINITY_PLAYOFF))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
@@ -1647,6 +1684,7 @@ class ScoreSheetBot(commands.Cog):
                 before = set(member.roles)
                 await member.edit(nick=nick_without_prefix(member.display_name))
                 await member.remove_roles(self.cache.roles.overflow)
+                await member.remove_roles(self.cache.roles.fortyman)
                 await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader)
                 await track_cycle(member, self.cache.scs)
                 after = set(ctx.guild.get_member(member.id).roles)
@@ -2922,7 +2960,7 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['stagelist'])
     async def stagelist(self, ctx: Context):
-        await ctx.send('https://cdn.discordapp.com/attachments/760303456757350400/815364853291286628/stagelist-1.png')
+        await ctx.send('https://media.discordapp.net/attachments/906245865386160229/1102303503558385714/SCSStagelist2023.png')
 
     @commands.command(**help_doc['invite'])
     async def invite(self, ctx: Context):
