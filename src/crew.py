@@ -67,11 +67,6 @@ class Crew:
     ranking: int = 0
     total_crews: int = 0
     destiny_opt_out: bool = False
-    # Arcade Section
-    level: int = 0
-    points: int = 0
-    lives: str = ''
-    fruit: str = ''
     ranking_string = ''
     triforce = 0
 
@@ -92,12 +87,6 @@ class Crew:
         #     description.append(f'**Trinity Rating:** {self.trinity_rating}\n')
         if self.ladder:
             description.append(f'{self.ladder}: {self.ranking_string}\n')
-        if self.level:
-            description.append(f'**Level:** {self.level}\n')
-        description.append(f'**Points:** {self.points}\n')
-        description.append(f'**Lives:** {self.lives}\n')
-        if self.fruit:
-            description.append(f'**Fruit:** {self.fruit}\n')
         # if self.softcap_max:
         #     description.append(f'**Softcap:** {self.softcap_used}/{self.softcap_max}')
         #     description.append('\n')

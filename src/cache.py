@@ -134,21 +134,13 @@ class Cache:
 
         docs_id = '1kZVLo1emzCU7dc4bJrxPxXfgL8Z19YVg1Oy3U6jEwSA'
         crew_info_range = 'Crew Information!A4:E2160'
-        sixteen_range = '16-Bit Ladder!A4:M800'
-        eight_range = '8-Bit Ladder!A4:M800'
 
         # Call the Sheets API
         sheet = service.spreadsheets()
         result = sheet.values().get(spreadsheetId=docs_id,
                                     range=crew_info_range).execute()
-        sixteen = sheet.values().get(spreadsheetId=docs_id,
-                                     range=sixteen_range).execute()
-        eight = sheet.values().get(spreadsheetId=docs_id,
-                                   range=eight_range).execute()
 
         values = result.get('values', [])
-        sixteen_values = sixteen.get('values', [])
-        eight_values = eight.get('values', [])
 
         crews_by_name = {}
         issues = []
@@ -174,35 +166,6 @@ class Cache:
                             social.append(f'[Other]({link})')
 
                 crews_by_name[row[0]] = Crew(name=row[0], abbr=row[1], social=' '.join(social), icon=row[3])
-
-        if not sixteen_values:
-            raise ValueError('16bit Sheet Not Found')
-        else:
-            for number, row in enumerate(sixteen_values):
-                if not row:
-                    continue
-                if row[5] in crews_by_name.keys():
-                    crews_by_name[row[5]].ladder = f'**16-Bit**'
-                    crews_by_name[row[5]].level = int(row[3])
-                    crews_by_name[row[5]].points = row[2]
-                    crews_by_name[row[5]].lives = row[4]
-                    crews_by_name[row[5]].ranking = int(row[0])
-                    crews_by_name[row[5]].ranking_string = f'{row[0]}/{len(sixteen_values)}'
-                    if len(row) == 13:
-                        crews_by_name[row[5]].fruit = row[12]
-        if not eight_values:
-            raise ValueError('8bit Sheet Not Found')
-        else:
-            for number, row in enumerate(eight_values):
-                if not row:
-                    continue
-                if row[5] in crews_by_name.keys():
-                    crews_by_name[row[5]].ladder = f'**8-Bit**'
-                    crews_by_name[row[5]].level = int(row[3])
-                    crews_by_name[row[5]].points = row[2]
-                    crews_by_name[row[5]].lives = row[4]
-                    crews_by_name[row[5]].ranking = int(row[0])
-                    crews_by_name[row[5]].ranking_string = f'{row[0]}/{len(eight_values)}'
 
         if issues:
             issue_string = '\n'.join(issues)
