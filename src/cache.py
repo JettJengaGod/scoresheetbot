@@ -62,6 +62,7 @@ class Cache:
     def role_factory(server):
         class Roles:
             leader = discord.utils.get(server.roles, name=LEADER)
+            fortyman = discord.utils.get(server.roles, name=FOURTYMAN)
             minion = discord.utils.get(server.roles, name=MINION)
             admin = discord.utils.get(server.roles, name=ADMIN)
             advisor = discord.utils.get(server.roles, name=ADVISOR)
