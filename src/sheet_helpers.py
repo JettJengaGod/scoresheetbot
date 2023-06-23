@@ -4,7 +4,7 @@ import pprint
 import datetime
 import os
 from src.db_helpers import gambit_standings, past_gambits, past_bets, ba_standings, trinity_crews, mc_stats, \
-    destiny_crews
+    destiny_crews, wisdom_crews
 
 scope = [
     'https://www.googleapis.com/auth/drive',
@@ -83,6 +83,33 @@ def update_trinity_sheet():
     }, {
         'range': f'A{5 + len(crew_rows)}:G{5 + len(crew_rows) + 50}',
         'values': blank_rows
+    }])
+
+
+def update_wisdom_sheet():
+    sheet = client.open(crew_docs_name).worksheet('Triforce of Wisdom')
+    left = []
+    right = []
+
+    for name, tag, wins, losses, finished, opp, rating in wisdom_crews():
+        finished = finished.date().strftime("%m/%d/%y") if finished else ''
+        left.append([name, tag, wins, losses])
+        right.append([opp or '', finished, rating])
+
+    blank_left = [['', '', '', ''] for _ in range(50)]
+    blank_right = [['', '', ''] for _ in range(50)]
+    sheet.batch_update([{
+        'range': f'A3:D{3 + len(left)}',
+        'values': left
+    }, {
+        'range': f'F3:H{3 + len(right)}',
+        'values': right
+    }, {
+        'range': f'A{3 + len(left)}:D{3 + len(left) + 50}',
+        'values': blank_left
+    }, {
+        'range': f'F{3 + len(left)}:H{3 + len(left) + 50}',
+        'values': blank_right
     }])
 
 

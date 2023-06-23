@@ -70,7 +70,6 @@ class Cache:
             streamer = discord.utils.get(server.roles, name=STREAMER)
             gambit = discord.utils.get(server.roles, name=GAMBIT_ROLE)
             docs = discord.utils.get(server.roles, name=DOCS)
-            certified = discord.utils.get(server.roles, name=CERTIFIED)
             overflow = discord.utils.get(server.roles, name=OVERFLOW_ROLE)
             track1 = discord.utils.get(server.roles, name=TRACK[0])
             track2 = discord.utils.get(server.roles, name=TRACK[1])
@@ -80,7 +79,6 @@ class Cache:
             join_cd = discord.utils.get(server.roles, name=JOIN_CD)
             everyone = discord.utils.get(server.roles, name='@everyone')
             poach_me = discord.utils.get(server.roles, id=POACH_ME_ID)
-            playoff_locked = discord.utils.get(server.roles, id=PLAYOFF_LOCKED_ID)
 
         return Roles
 

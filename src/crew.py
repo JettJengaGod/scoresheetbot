@@ -76,7 +76,7 @@ class Crew:
         if self.triforce == 1:
             title += f' (Triforce of Courage)'
         if self.triforce == 2:
-            title += f' (Triforce of Courage)'
+            title += f' (Triforce of Power)'
         if self.overflow:
             title += f' (Overflow) '
         if self.wl:

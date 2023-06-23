@@ -574,7 +574,7 @@ def add_weird_reg_battle(loser: Crew, size: int, score: int, link: str, league: 
     return battle_id
 
 
-def battle_elo_changes(battle_id: int, forfeit=False, winner_opt_out=False) -> Tuple[
+def battle_elo_changes(battle_id: int, forfeit=False) -> Tuple[
     int, int, int, int, int, int, int, int]:
     find_battle = """
      select winner,
@@ -601,19 +601,6 @@ values (%s, %s, %s, %s, %s);"""
     set_crew_rating_forfeit = """update crew_ratings
     set rating = %s
         where crew_id = %s and league_id = %s;"""
-    current_desitny = """ with current as (
-    insert into destiny_gain(crew_id, current_amount) values (%s, 0) on conflict do nothing returning current_amount)
-select current_amount from current
-union all
-select current_amount from destiny_gain where crew_id = %s;"""
-    update_destiny = """
-    update destiny_gain
-set current_amount = LEAST(100, current_amount + %s),
-    total_gained   = total_gained + %s,
-    last_gain      = least(100 - current_amount, %s)
-where crew_id = %s
-returning current_amount, last_gain
-    """
     winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = 0, 0, 0, 0, 0, 0, 0, 0
     conn = None
     try:
@@ -626,23 +613,14 @@ returning current_amount, last_gain
         # Get the winner rating
         cur.execute(crew_rating, (winner, league_id, winner, league_id))
         winner_elo, winner_k = cur.fetchone()
-        cur.execute(current_desitny, (winner, winner))
-        current_destiny_amount = cur.fetchone()[0]
         winner_player = EloPlayer(winner, winner_elo, winner_k)
-        destiny_winner = EloPlayer(winner, winner_elo, 50)
         # Get the loser rating
         cur.execute(crew_rating, (loser, league_id, loser, league_id))
         loser_elo, loser_k = cur.fetchone()
         loser_player = EloPlayer(loser, loser_elo, loser_k)
         destiny_loser = EloPlayer(loser, loser_elo, 50)
         # Calculate changes
-        if forfeit:
-            winner_change, loser_change = rating_update(destiny_winner, destiny_loser, 1)
-        else:
-            winner_change, loser_change = rating_update(winner_player, loser_player, 1)
-
-        if not winner_opt_out:
-            d_winner_change, _ = rating_update(destiny_winner, destiny_loser, 1)
+        winner_change, loser_change = rating_update(winner_player, loser_player, 1)
 
         # Add battle results
         winner_new_elo = winner_elo + winner_change
@@ -656,9 +634,6 @@ returning current_amount, last_gain
         else:
             cur.execute(set_crew_rating, (winner_new_elo, winner, league_id))
             cur.execute(set_crew_rating, (loser_new_elo, loser, league_id))
-        if not winner_opt_out:
-            cur.execute(update_destiny, (d_winner_change, d_winner_change, d_winner_change, winner))
-            d_final = cur.fetchone()[0]
 
         conn.commit()
         cur.close()
@@ -815,7 +790,7 @@ def master_weight_changes(battle_id: int, reverse: bool = False):
 
 
 def all_battle_ids() -> Sequence[int]:
-    everything = """SELECT battle.id FROM battle where league_id=16;"""
+    everything = """SELECT battle.id FROM battle where league_id=19 order by battle.id asc ;"""
     conn = None
     ids = []
     try:
@@ -832,6 +807,26 @@ def all_battle_ids() -> Sequence[int]:
         if conn is not None:
             conn.close()
     return ids
+
+def crews_by_rating() -> Sequence[int]:
+    everything = """select crew_id from crew_ratings where league_id = 19 order by rating;"""
+    conn = None
+    ids = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(everything)
+        ids = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return ids
+
 
 
 def destiny_pair(cr1_id: int, cr2_id: int):
@@ -1485,6 +1480,45 @@ def remove_expired_cooldown(user_id: int) -> None:
     finally:
         if conn is not None:
             conn.close()
+
+
+def all_battles_in_league(league: int) -> List[str]:
+    battles = """
+    select c1.name as crew_1, c2.name as crew_2, c3.name as winner, battle.link, battle.finished, battle.final_score, 
+        battle.vod
+        from battle
+            join crews c1 on c1.id = battle.crew_1
+            join crews c2 on c2.id = battle.crew_2
+            join crews c3 on c3.id = battle.winner
+            where battle.league_id = %s
+            order by battle.id asc;"""
+    conn = None
+    out = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(battles, (league,))
+        everything = cur.fetchall()
+        for battle in everything:
+            if battle[2] == battle[0]:
+                winner = 0
+                loser = 1
+            else:
+                winner = 1
+                loser = 0
+
+            out.append(f'**{battle[winner]}** - {battle[loser]} ({battle[5]}-0) [link]({battle[3]})')
+            if battle[6]:
+                out[-1] += f' [vod]({battle[6]})'
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return out
 
 
 def all_battles() -> List[str]:
@@ -3015,6 +3049,71 @@ limit 1;"""
     return first.date()
 
 
+def wisdom_crews() -> Sequence[Tuple[str, str, int, int, datetime.datetime, str, int]]:
+    bf_crews = """select crews.name,
+       crews.tag,
+       coalesce(battles.wins, 0),
+       coalesce(battles.losses, 0),
+       last_battle.finished,
+       last_battle.opp,
+       crew_ratings.rating
+from crew_ratings,
+     (select count(*) as cc
+      from crew_ratings,
+           crews
+      where league_id = 20
+        and crew_id = crews.id
+        and crews.disbanded = FALSE) crew_count,
+     crews
+         left join (select battle.finished                                                              as finished,
+                           opp_crew.name || case when battle.winner = crew_id then '(W)' else '(L)' end as opp,
+                           newest_battle.crew_id                                                        as cid
+                    from (select max(battle.id) as battle_id, crews.id as crew_id
+                          from battle,
+                               crews
+                          where (crews.id = battle.crew_1
+                              or crews.id = battle.crew_2)
+                          group by crews.id)
+                             as newest_battle,
+                         battle,
+                         crews as opp_crew
+                    where newest_battle.battle_id = battle.id
+                      and opp_crew.id = case
+                                            when newest_battle.crew_id = battle.crew_2 then battle.crew_1
+                                            else battle.crew_2 end) as last_battle on last_battle.cid = crews.id
+         left join (select count(case when battle.winner = crews.id then 1 end)  as wins,
+                           count(case when battle.winner != crews.id then 1 end) as losses,
+                           crews.id                                              as crew
+                    from battle,
+                         crews
+                    where (crews.id = battle.crew_1
+                        or crews.id = battle.crew_2)
+                      and battle.league_id = 20
+                    group by crews.id) as battles on battles.crew = crews.id
+
+where crew_ratings.crew_id = crews.id
+  and crew_ratings.league_id = 20
+  and crews.disbanded = false
+order by rating desc;
+"""
+    conn = None
+    ret = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(bf_crews)
+        ret = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return ret
+
+
 def trinity_crews() -> Sequence[Tuple[str, str, datetime.datetime, str, int]]:
     bf_crews = """
 select crews.name,
@@ -3130,7 +3229,7 @@ def destiny_crews() -> Sequence[Tuple[str, str, int, str, int, str, int]]:
 
 def init_rating(crew: Crew, rating: int, k: int = 50):
     set_rating = """insert into crew_ratings (crew_id, league_id, rating, k) 
-    values (%s, 16, %s, %s);
+    values (%s, 20, %s, %s);
     """
     conn = None
     try:
@@ -3151,6 +3250,23 @@ def init_rating(crew: Crew, rating: int, k: int = 50):
             conn.close()
     return
 
+def init_crew_rating(crew_id:int, rating: int, league_id: int):
+    set_rating = """insert into crew_ratings (crew_id, league_id, rating, k) VALUES (
+    %s, %s, %s, 50);"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(set_rating, (crew_id, league_id, rating))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
 
 def reset_fake_crew_rating(league_id: int):
     set_rating = """update crew_ratings
