@@ -1,31 +1,18 @@
-import os
-import random
-import sys
-import traceback
-import time
-import discord
+import logging
 import math
-import functools
 from asyncio import sleep
-from datetime import date
 
-import pandas
-from discord.ext import commands, tasks, menus
+from discord.ext import commands, tasks
 from discord.ext.commands import Greedy
-from dotenv import load_dotenv
-from typing import Dict, Optional, Union, Iterable
 
-from src.elo_helpers import rating_update
-from src.sheet_helpers import update_gambit_sheet, update_ba_sheet, update_bf_sheet, update_mc_player_sheet, \
-    update_mc_sheet, update_trinity_sheet, update_destiny_sheet
-from .db_helpers import *
 import src.cache
-from .character import all_emojis, string_to_emote, all_alts, CHARACTERS
+from src.sheet_helpers import update_gambit_sheet, update_ba_sheet, update_bf_sheet, update_wisdom_sheet
+from .bracket import Bracket, Questions, NUMBER_QUESTIONS, draw_bracket
+from .character import all_emojis, all_alts
+from .constants import *
+from .db_helpers import *
 from .decorators import *
 from .help import help_doc
-from .constants import *
-from .bracket import Bracket, Questions, NUMBER_QUESTIONS, current_bracket, draw_bracket
-import logging
 
 logging.basicConfig(level=logging.INFO)
 
@@ -356,7 +343,7 @@ class ScoreSheetBot(commands.Cog):
                            f'Please contact an admin if this is incorrect.')
             return
         if user_crew != opp_crew:
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.ARCADE))
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.WISDOM))
             if crew_lookup(user_crew, self).ladder != crew_lookup(opp_crew, self).ladder:
                 self._current(ctx).set_difficulty(user_crew, Difficulty.NORMAL)
                 self._current(ctx).set_difficulty(opp_crew, Difficulty.NORMAL)
@@ -497,7 +484,6 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     @ss_channel
     async def power(self, ctx: Context, user: discord.Member, size: int):
-        #TODO Check both crews are in triforce of power
         if size < 7:
             await ctx.send('Please enter a size greater than 6.')
             return
@@ -517,13 +503,49 @@ class ScoreSheetBot(commands.Cog):
         if user_crew != opp_crew:
             user_actual = crew_lookup(user_crew, self)
             if user_actual.triforce != 2:
-                await ctx.send(f'{user_crew} is not in triforce of power.')
+                await ctx.send(f'{user_crew} is not in Triforce of Power.')
                 return
             opp_actual = crew_lookup(opp_crew, self)
             if opp_actual.triforce != 2:
-                await ctx.send(f'{opp_crew} is not in triforce of power.')
+                await ctx.send(f'{opp_crew} is not in Triforce of Power.')
                 return
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.TRINITY_PLAYOFF))
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.POWER))
+            await send_sheet(ctx, battle=self._current(ctx))
+        else:
+            await ctx.send('You can\'t battle your own crew.')
+
+    @commands.command(**help_doc['battle'], aliases=['courage'], group='CB')
+    @main_only
+    @no_battle
+    @is_lead
+    @ss_channel
+    async def mid(self, ctx: Context, user: discord.Member, size: int):
+        if size < 6:
+            await ctx.send('Please enter a size greater than 5.')
+            return
+        user_crew = crew(ctx.author, self)
+        opp_crew = crew(user, self)
+        if not user_crew:
+            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if not opp_crew:
+            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+
+        if user_crew != opp_crew:
+            user_actual = crew_lookup(user_crew, self)
+            if user_actual.triforce != 1:
+                await ctx.send(f'{user_crew} is not in Triforce of Courage.')
+                return
+            opp_actual = crew_lookup(opp_crew, self)
+            if opp_actual.triforce != 1:
+                await ctx.send(f'{opp_crew} is not in Triforce of Courage.')
+                return
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.COURAGE))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -608,10 +630,10 @@ class ScoreSheetBot(commands.Cog):
                                        f'They can verify by typing `/verify` in any channel and then clicking the '
                                        f'"Click me to verify!" link in the Double Counter dm.')
                 return
-            if check_roles(user, [PLAYOFF_LOCKED]) and self._current(ctx).battle_type == BattleType.TRINITY_PLAYOFF:
+            if not check_roles(user, [FOURTYMAN]) and self._current(ctx).battle_type in (
+                    BattleType.POWER, BattleType.COURAGE):
                 await response_message(ctx,
-                                       f'{user.mention} is Playoff Locked. This can be removed  '
-                                       f'by playing 3 crew battles for the crew.')
+                                       f'{user.mention} does not have the `40-Man` role and is not on the roster.')
                 return
             await self._reject_outsiders(ctx)
             author_crew = await self._battle_crew(ctx, ctx.author)
@@ -1006,14 +1028,19 @@ class ScoreSheetBot(commands.Cog):
             elif current.battle_type == BattleType.MOCK:
                 await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
-            elif current.battle_type == BattleType.TRINITY_PLAYOFF:
+            elif current.battle_type in (BattleType.POWER, BattleType.COURAGE):
                 current.confirm(await self._battle_crew(ctx, ctx.author))
                 await send_sheet(ctx, battle=current)
                 if current.confirmed():
                     today = date.today()
-                    channel_id = TRINITY_CHANNEL_ID
-                    name = 'Trinity Playoff'
-                    league_id = 18
+                    if current.battle_type == BattleType.POWER:
+                        name = 'Triforce of Power'
+                        league_id = 22
+                        channel_id = POWER_CHANNEL_ID
+                    else:
+                        name = 'Triforce of Courage'
+                        league_id = 21
+                        channel_id = COURAGE_CHANNEL_ID
                     output_channels = [
                         discord.utils.get(ctx.guild.channels, id=channel_id),
                         discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
@@ -1035,8 +1062,7 @@ class ScoreSheetBot(commands.Cog):
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({name}) - {winner}⚔{loser}**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr}) '
-                        f'Rank: {winner_crew.rank} \n'
-                        f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) Rank: {loser_crew.rank} \n'
+                        f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
@@ -1044,6 +1070,8 @@ class ScoreSheetBot(commands.Cog):
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
+
+                    await links[0].add_reaction(YES)
                     for cr in (winner_crew, loser_crew):
                         if not extra_slot_used(cr):
                             if battles_since_sunday(cr) >= 3:
@@ -1073,20 +1101,37 @@ class ScoreSheetBot(commands.Cog):
                     battle_weight_changes(battle_id)
                     winner_crew = crew_lookup(winner, self)
                     loser_crew = crew_lookup(loser, self)
-
-                    battle_name = 'The Arcade'
+                    winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
+                        battle_id)
+                    w_placement = (200 - winner_k) / 30 + 1
+                    l_placement = (200 - loser_k) / 30 + 1
+                    if w_placement < 6:
+                        w_placement_message = f'Placement round {int(w_placement)}'
+                        differential = winner_k / 50
+                        winner_k_message = f'({winner_change // differential}* {differential})'
+                    else:
+                        w_placement_message = ''
+                        winner_k_message = winner_change
+                    if l_placement < 6:
+                        l_placement_message = f'Placement round {int(l_placement)}'
+                        differential = loser_k / 50
+                        loser_k_message = f'({loser_change // differential}* {differential})'
+                    else:
+                        l_placement_message = ''
+                        loser_k_message = loser_change
+                    battle_name = 'Triforce of Wisdom'
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
-                        f'**Winner:** <@&{winner_crew.role_id}> {winner_crew.ladder} '
-                        f'Level {winner_crew.level} {current.winner().difficulty.name}\n'
-                        f'**Loser:** <@&{loser_crew.role_id}> {loser_crew.ladder} '
-                        f'Level {loser_crew.level} {current.loser().difficulty.name}\n'
+                        f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
+                        f'+ {winner_change} = {winner_elo + winner_change}]'
+                        f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
+                        f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
                     await ctx.send(
-                        f'The battle between {winner} and {loser}) '
+                        f'The battle between {winner}({w_placement_message}) and {loser}({l_placement_message}) '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
                     for cr in (winner_crew, loser_crew):
@@ -1095,75 +1140,6 @@ class ScoreSheetBot(commands.Cog):
                                 mod_slot(cr, 1)
                                 await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
                                 set_extra_used(cr)
-                    await links[0].add_reaction(YES)
-            # else:
-            #     current.confirm(await self._battle_crew(ctx, ctx.author))
-            #     await send_sheet(ctx, battle=current)
-            #     if current.confirmed():
-            #         today = date.today()
-            #
-            #         output_channels = [discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
-            #                            discord.utils.get(ctx.guild.channels, name=OUTPUT)]
-            #         winner = current.winner().name
-            #         loser = current.loser().name
-            #         league_id = CURRENT_LEAGUE_ID
-            #         current = self._current(ctx)
-            #         if not current:
-            #             return
-            #         await self._clear_current(ctx)
-            #         links = []
-            #         for output_channel in output_channels:
-            #             link = await send_sheet(output_channel, current)
-            #             links.append(link)
-            #         battle_id = add_finished_battle(current, links[0].jump_url, league_id)
-            #         battle_weight_changes(battle_id)
-            #         winner_crew = crew_lookup(winner, self)
-            #         loser_crew = crew_lookup(loser, self)
-            #         winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
-            #             battle_id, winner_opt_out=winner_crew.destiny_opt_out)
-            #         w_placement = (200 - winner_k) / 30 + 1
-            #         l_placement = (200 - loser_k) / 30 + 1
-            #         if w_placement < 6:
-            #             w_placement_message = f'Placement round {int(w_placement)}'
-            #             differential = winner_k / 50
-            #             winner_k_message = f'({winner_change // differential}* {differential})'
-            #         else:
-            #             w_placement_message = ''
-            #             winner_k_message = winner_change
-            #         if l_placement < 6:
-            #             l_placement_message = f'Placement round {int(l_placement)}'
-            #             differential = loser_k / 50
-            #             loser_k_message = f'({loser_change // differential}* {differential})'
-            #         else:
-            #             l_placement_message = ''
-            #             loser_k_message = loser_change
-            #         destiny_message = 'Opted out' if winner_crew.destiny_opt_out else f'+{d_winner_change}->{d_final}'
-            #         battle_name = 'Trinity League'
-            #         if current.battle_type == BattleType.DESTINY:
-            #             destiny_result(winner_crew.db_id, loser_crew.db_id)
-            #             destiny_message = f'Rank up: {winner_crew.destiny_rank}-> {winner_crew.destiny_rank + 1}'
-            #             battle_name = 'Destiny Battle'
-            #         new_message = (
-            #             f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
-            #             f'{loser} ({loser_crew.abbr})**\n'
-            #             f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
-            #             f'+ {winner_change} = {winner_elo + winner_change}]'
-            #             f'** Destiny**: [{destiny_message}]\n'
-            #             f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
-            #             f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
-            #             f'**Battle:** {battle_id} from {ctx.channel.mention}')
-            #         for link in links:
-            #             await link.edit(content=new_message)
-            #         await ctx.send(
-            #             f'The battle between {winner}({w_placement_message}) and {loser}({l_placement_message}) '
-            #             f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
-            #             f'(Battle number:{battle_id})')
-            #         for cr in (winner_crew, loser_crew):
-            #             if not extra_slot_used(cr):
-            #                 if battles_since_sunday(cr) >= 3:
-            #                     mod_slot(cr, 1)
-            #                     await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
-            #                     set_extra_used(cr)
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
@@ -2324,7 +2300,6 @@ class ScoreSheetBot(commands.Cog):
     @main_only
     @role_call(STAFF_LIST)
     async def addsheet(self, ctx: Context, *, everything: str):
-        today = date.today()
 
         if not ctx.message.attachments:
             await response_message(ctx, 'You need to submit a screenshot of the scoresheet with this.')
@@ -2339,6 +2314,7 @@ class ScoreSheetBot(commands.Cog):
                                    'This command needs to be formatted like this `,addsheet WinningCrew LosingCrew '
                                    'Size FinalScore`')
             return
+        # TODO split by triforce
         two_crews = ' '.join(everything[:-2])
         best = best_of_possibilities(two_crews, self, True)
 
@@ -2365,18 +2341,39 @@ class ScoreSheetBot(commands.Cog):
         league_id = CURRENT_LEAGUE_ID
         battle_id = add_non_ss_battle(winner_crew, loser_crew, players, score, links[0].jump_url, league_id)
 
+        today = date.today()
+
+        winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
+            battle_id)
+        w_placement = (200 - winner_k) / 30 + 1
+        l_placement = (200 - loser_k) / 30 + 1
+        if w_placement < 6:
+            w_placement_message = f'Placement round {int(w_placement)}'
+            differential = winner_k / 50
+            winner_k_message = f'({winner_change // differential}* {differential})'
+        else:
+            w_placement_message = ''
+            winner_k_message = winner_change
+        if l_placement < 6:
+            l_placement_message = f'Placement round {int(l_placement)}'
+            differential = loser_k / 50
+            loser_k_message = f'({loser_change // differential}* {differential})'
+        else:
+            l_placement_message = ''
+            loser_k_message = loser_change
+        battle_name = 'Triforce of Wisdom'
         new_message = (
-            f'**{today.strftime("%B %d, %Y")} (The Arcade) - {winner_crew.name} ({winner_crew.abbr})⚔'
+            f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner_crew.name} ({winner_crew.abbr})⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
-            f'**Winner:** <@&{winner_crew.role_id}> {winner_crew.ladder} '
-            f'Level {winner_crew.level} NORMAL\n'
-            f'**Loser:** <@&{loser_crew.role_id}> {loser_crew.ladder} '
-            f'Level {loser_crew.level} NORMAL\n'
+            f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
+            f'+ {winner_change} = {winner_elo + winner_change}]'
+            f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
+            f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
             f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
             await link.edit(content=new_message)
         await ctx.send(
-            f'The battle between {winner_crew.name}and {loser_crew.name} '
+            f'The battle between {winner_crew.name}({w_placement_message}) and {loser_crew.name}({l_placement_message}) '
             f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
             f'(Battle number:{battle_id})')
         for cr in (winner_crew, loser_crew):
@@ -2385,7 +2382,60 @@ class ScoreSheetBot(commands.Cog):
                     mod_slot(cr, 1)
                     await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
                     set_extra_used(cr)
-        await links[0].add_reaction(YES)
+
+    #
+    #     elif current.battle_type in (BattleType.POWER, BattleType.COURAGE):
+    #     current.confirm(await self._battle_crew(ctx, ctx.author))
+    #     await send_sheet(ctx, battle=current)
+    #     if current.confirmed():
+    #         today = date.today()
+    #         if current.battle_type == BattleType.POWER:
+    #             name = 'Triforce of Power'
+    #             league_id = 22
+    #             channel_id = POWER_CHANNEL_ID
+    #         else:
+    #             name = 'Triforce of Courage'
+    #             league_id = 21
+    #             channel_id = COURAGE_CHANNEL_ID
+    #         output_channels = [
+    #             discord.utils.get(ctx.guild.channels, id=channel_id),
+    #             discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
+    #             discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+    #         winner = current.winner().name
+    #         loser = current.loser().name
+    #         current = self._current(ctx)
+    #         if not current:
+    #             return
+    #         await self._clear_current(ctx)
+    #         links = []
+    #         for output_channel in output_channels:
+    #             link = await send_sheet(output_channel, current)
+    #             links.append(link)
+    #         battle_id = add_finished_battle(current, links[0].jump_url, league_id)
+    #         battle_weight_changes(battle_id)
+    #         winner_crew = crew_lookup(winner, self)
+    #         loser_crew = crew_lookup(loser, self)
+    #         new_message = (
+    #             f'**{today.strftime("%B %d, %Y")} ({name}) - {winner}⚔{loser}**\n'
+    #             f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr}) '
+    #             f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) \n'
+    #             f'**Battle:** {battle_id} from {ctx.channel.mention}')
+    #         for link in links:
+    #             await link.edit(content=new_message)
+    #         await ctx.send(
+    #             f'The battle between {current.team1.name} and {current.team2.name} '
+    #             f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
+    #             f'(Battle number:{battle_id})')
+    #
+    #         await links[0].add_reaction(YES)
+    #         for cr in (winner_crew, loser_crew):
+    #             if not extra_slot_used(cr):
+    #                 if battles_since_sunday(cr) >= 3:
+    #                     mod_slot(cr, 1)
+    #                     await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+    #                     set_extra_used(cr)
+    #
+    # else:
 
     @commands.command(**help_doc['failedreg'])
     @main_only
@@ -2742,7 +2792,7 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
 
     @commands.command(**help_doc['freeze'])
-    @role_call(STAFF_LIST)
+    @role_call([DOCS, MINION, ADMIN, VIOS])
     async def freeze(self, ctx: Context, *, everything: str):
         split = everything.split()
         try:
@@ -2959,7 +3009,8 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['stagelist'])
     async def stagelist(self, ctx: Context):
-        await ctx.send('https://media.discordapp.net/attachments/906245865386160229/1102303503558385714/SCSStagelist2023.png')
+        await ctx.send(
+            'https://media.discordapp.net/attachments/906245865386160229/1102303503558385714/SCSStagelist2023.png')
 
     @commands.command(**help_doc['invite'])
     async def invite(self, ctx: Context):
@@ -3034,6 +3085,29 @@ class ScoreSheetBot(commands.Cog):
         else:
             title = f'All {len(mems)} members with {actual} role'
             color = discord.Color.dark_gold()
+
+        out = discord.Embed(title=title,
+                            description='\n'.join(desc), color=color)
+        await send_long_embed(ctx, out)
+
+    @commands.command(**help_doc['listroles'])
+    async def roster(self, ctx, *, role: str = ''):
+        if role:
+            ambiguous = ambiguous_lookup(role, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+
+        actual, mems, extra = members_with_str_role(actual_crew.name, self)
+        mems.sort(key=lambda x: str(x))
+        mems = [member for member in mems if self.cache.roles.fortyman in member.roles]
+        desc = ['\n'.join([f'{str(member)} {member.mention}' for member in mems])]
+        cr = crew_lookup(actual, self)
+        title = f'All {len(mems)} members on the roster for {actual}'
+        color = cr.color
 
         out = discord.Embed(title=title,
                             description='\n'.join(desc), color=color)
@@ -3384,7 +3458,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
     async def stupid(self, ctx):
-        await handle_decay(self)
+        # await handle_decay(self)
         # message = []
         # for cr in self.cache.crews_by_name.values():
         #     filled = 25 if cr.current_umbra >= cr.max_umbra else 0
@@ -3396,7 +3470,7 @@ class ScoreSheetBot(commands.Cog):
         #
         # await send_long(ctx, '\n'.join(message), '\n')
         #
-        # update_trinity_sheet()
+        update_wisdom_sheet()
         # update_destiny_sheet()
 
     # Deprecated
@@ -3418,15 +3492,16 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(hidden=True, **help_doc['ofrank'])
     @role_call(STAFF_LIST)
     async def initalize_ratings(self, ctx):
-        # crews = list(self.cache.crews_by_name.values())
-        #
-        # crews.sort(key=lambda x: x.rank)
-        # for i, cr in enumerate(crews):
-        #     base = 1000
-        #     calculated = base + 75 * (cr.rank - 1)
-        #     init_rating(cr, calculated)
-        #     print(f'{cr.name}: {calculated} {i}/{len(crews)}')
-        update_bf_sheet()
+        start = 1500
+        current = 0
+        for cid in crews_by_rating():
+            current += 1
+            if current > 20:
+                current = 0
+                start += 50
+            init_crew_rating(cid, start, 20)
+            print(cid, start)
+        # TODO set new elo for wisdom
 
     @commands.command(**help_doc['slots'])
     @main_only
@@ -3523,7 +3598,6 @@ class ScoreSheetBot(commands.Cog):
                       f'{base} base slots\n' \
                       f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
-                      f'with an overall minimum of 5 slots\n' \
                       'For more information, refer to <#430364791245111312>. ' \
                       'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'
 

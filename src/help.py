@@ -128,6 +128,7 @@ help_doc = dict(
                      'Send in the two role names separated by spaces, it will try to find the best match',
                      'role1 role2'),
     listroles=HelpDoc(Categories.misc, 'Find the users with this role', '', 'role'),
+    roster=HelpDoc(Categories.misc, 'Find the members of the crews roster, defaults to author crew', '', 'role'),
     disablelist=HelpDoc(Categories.misc, 'List of channels disabled for jettbot'),
 
     pingrole=HelpDoc(Categories.staff, 'Same As listroles, but pings instead', '', 'role'),
