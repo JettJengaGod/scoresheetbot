@@ -63,6 +63,7 @@ class ScoreSheetBot(commands.Cog):
             await cooldown_handle(self)
             await track_handle(self)
             await self.cache_value.channels.recache_logs.send('Successfully recached.')
+            update_wisdom_sheet()
             # update_trinity_sheet()
             # update_destiny_sheet()
             # update_all_sheets()
@@ -431,7 +432,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     async def cowy(self, ctx: Context, user: discord.Member, size: int):
         if size < 7:
-            await ctx.send('Please enter a size greater than 6.')
+            await ctx.send('Please enter a size 7 or greater.')
             return
         user_crew = crew(ctx.author, self)
         opp_crew = crew(user, self)
@@ -489,7 +490,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     async def power(self, ctx: Context, user: discord.Member, size: int):
         if size < 7:
-            await ctx.send('Please enter a size greater than 6.')
+            await ctx.send('Please enter a size 7 or greater.')
             return
         user_crew = crew(ctx.author, self)
         opp_crew = crew(user, self)
@@ -525,7 +526,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     async def mid(self, ctx: Context, user: discord.Member, size: int):
         if size < 6:
-            await ctx.send('Please enter a size greater than 5.')
+            await ctx.send('Please enter a size 6 or greater.')
             return
         user_crew = crew(ctx.author, self)
         opp_crew = crew(user, self)
