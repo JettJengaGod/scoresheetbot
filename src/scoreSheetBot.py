@@ -59,6 +59,7 @@ class ScoreSheetBot(commands.Cog):
             await cooldown_handle(self)
             await track_handle(self)
             await self.cache_value.channels.recache_logs.send('Successfully recached.')
+            update_wisdom_sheet()
             # update_trinity_sheet()
             # update_destiny_sheet()
             # update_all_sheets()
