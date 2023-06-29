@@ -621,8 +621,7 @@ class ScoreSheetBot(commands.Cog):
                                        f'They can verify by typing `/verify` in any channel and then clicking the '
                                        f'"Click me to verify!" link in the Double Counter dm.')
                 return
-            if not check_roles(user, [FOURTYMAN]) and self._current(ctx).battle_type in (
-                    BattleType.POWER, BattleType.COURAGE):
+            if not check_roles(user, [FOURTYMAN]) and self._current(ctx).battle_type == BattleType.POWER:
                 await response_message(ctx,
                                        f'{user.mention} does not have the `40-Man` role and is not on the roster.')
                 return
