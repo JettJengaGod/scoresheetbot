@@ -264,10 +264,10 @@ class Battle:
             return team.difficulty
 
     def ready_for_countdown(self) -> bool:
-        if self.battle_type != BattleType.ARCADE:
-            return True
-        if self.team1.difficulty == Difficulty.UNSET or self.team2.difficulty == Difficulty.UNSET:
-            return False
+        # if self.battle_type != BattleType.ARCADE:
+        #     return True
+        # if self.team1.difficulty == Difficulty.UNSET or self.team2.difficulty == Difficulty.UNSET:
+        #     return False
         return True
 
     def confirmed(self) -> bool:
@@ -286,9 +286,9 @@ class Battle:
         team = self.lookup(team_name)
         if self.battle_type != BattleType.MOCK:
             team.check_resend(player_id)
-        if self.battle_type == BattleType.ARCADE:
-            if team.difficulty == Difficulty.UNSET:
-                raise StateError(self, f'Team "{team.name}" needs to set difficulty with `,difficulty`')
+        # if self.battle_type == BattleType.ARCADE:
+        #     if team.difficulty == Difficulty.UNSET:
+        #         raise StateError(self, f'Team "{team.name}" needs to set difficulty with `,difficulty`')
         team.add_player(player_name, player_id)
         team.leader.add(leader)
 

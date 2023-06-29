@@ -349,11 +349,6 @@ class ScoreSheetBot(commands.Cog):
             return
         if user_crew != opp_crew:
             await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.WISDOM))
-            if crew_lookup(user_crew, self).ladder != crew_lookup(opp_crew, self).ladder:
-                self._current(ctx).set_difficulty(user_crew, Difficulty.NORMAL)
-                self._current(ctx).set_difficulty(opp_crew, Difficulty.NORMAL)
-                await ctx.send('Defaulted difficulty to NORMAL as this is a cross ladder match.')
-            await ctx.send('Please select the difficulty for both crews!')
 
             await send_sheet(ctx, battle=self._current(ctx))
         else:
@@ -558,11 +553,6 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['countdown'])
     @ss_channel
     async def countdown(self, ctx: Context, seconds: Optional[int] = 10):
-        if self._current(ctx) is not None:
-            if not self._current(ctx).ready_for_countdown():
-                await response_message(ctx, "At least 1 team has not selected difficulty yet! Please use "
-                                            "`,d` or `,difficulty` to be dmed to set it!")
-                return
         if seconds > 10 or seconds < 1:
             await ctx.send('You can only countdown from 10 or less!')
             return
@@ -636,8 +626,7 @@ class ScoreSheetBot(commands.Cog):
                                        f'They can verify by typing `/verify` in any channel and then clicking the '
                                        f'"Click me to verify!" link in the Double Counter dm.')
                 return
-            if not check_roles(user, [FOURTYMAN]) and self._current(ctx).battle_type in (
-                    BattleType.POWER, BattleType.COURAGE):
+            if not check_roles(user, [FOURTYMAN]) and self._current(ctx).battle_type == BattleType.POWER:
                 await response_message(ctx,
                                        f'{user.mention} does not have the `40-Man` role and is not on the roster.')
                 return
@@ -902,56 +891,56 @@ class ScoreSheetBot(commands.Cog):
 
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['difficulty'], aliases=['d'])
-    @main_only
-    @has_sheet
-    @ss_channel
-    @is_lead
-    async def difficulty(self, ctx):
-        await self._reject_outsiders(ctx)
-        if not self._current(ctx).battle_type == BattleType.ARCADE:
-            await response_message(ctx, 'You can only set the difficulty in an Arcade match.')
-            return
-        if not self._current(ctx).check_difficulty(crew(ctx.author, self)) == Difficulty.UNSET:
-            await response_message(ctx, 'Difficulty is already set and cannot be changed.')
-            return
-        await response_message(ctx, f' check your dms!')
-        author_crew = await self._battle_crew(ctx, ctx.author)
-        msg = await ctx.author.send(f'For your battle {self._current(ctx).team1.name} vs '
-                                    f'{self._current(ctx).team2.name} what difficulty do you choose?\n'
-                                    f'Easy {YES}\n'
-                                    f'Normal {NORMAL}\n'
-                                    f'Hard {NO}')
-        await msg.add_reaction(YES)
-        await msg.add_reaction(NORMAL)
-        await msg.add_reaction(NO)
-        diff = Difficulty.UNSET
-
-        def check_reaction(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in (
-                YES, NO, NORMAL)
-
-        while True:
-            try:
-                react, reactor = await self.bot.wait_for('reaction_add', timeout=30, check=check_reaction)
-            except asyncio.TimeoutError:
-                await ctx.author.send(f'Timed out')
-                return False
-            if react.message.id != msg.id:
-                continue
-            if str(react.emoji) == YES and reactor == ctx.author:
-                diff = Difficulty.EASY
-                break
-            elif str(react.emoji) == NO and reactor == ctx.author:
-                diff = Difficulty.HARD
-                break
-            elif str(react.emoji) == NORMAL and reactor == ctx.author:
-                diff = Difficulty.NORMAL
-                break
-
-        self._current(ctx).set_difficulty(author_crew, diff)
-        await ctx.author.send(f'Your difficulty of {diff.name} is confirmed!')
-        await ctx.send(f'{author_crew} selected difficulty!')
+    # @commands.command(**help_doc['difficulty'], aliases=['d'])
+    # @main_only
+    # @has_sheet
+    # @ss_channel
+    # @is_lead
+    # async def difficulty(self, ctx):
+    #     await self._reject_outsiders(ctx)
+    #     if not self._current(ctx).battle_type == BattleType.ARCADE:
+    #         await response_message(ctx, 'You can only set the difficulty in an Arcade match.')
+    #         return
+    #     if not self._current(ctx).check_difficulty(crew(ctx.author, self)) == Difficulty.UNSET:
+    #         await response_message(ctx, 'Difficulty is already set and cannot be changed.')
+    #         return
+    #     await response_message(ctx, f' check your dms!')
+    #     author_crew = await self._battle_crew(ctx, ctx.author)
+    #     msg = await ctx.author.send(f'For your battle {self._current(ctx).team1.name} vs '
+    #                                 f'{self._current(ctx).team2.name} what difficulty do you choose?\n'
+    #                                 f'Easy {YES}\n'
+    #                                 f'Normal {NORMAL}\n'
+    #                                 f'Hard {NO}')
+    #     await msg.add_reaction(YES)
+    #     await msg.add_reaction(NORMAL)
+    #     await msg.add_reaction(NO)
+    #     diff = Difficulty.UNSET
+    #
+    #     def check_reaction(reaction, user):
+    #         return user == ctx.author and str(reaction.emoji) in (
+    #             YES, NO, NORMAL)
+    #
+    #     while True:
+    #         try:
+    #             react, reactor = await self.bot.wait_for('reaction_add', timeout=30, check=check_reaction)
+    #         except asyncio.TimeoutError:
+    #             await ctx.author.send(f'Timed out')
+    #             return False
+    #         if react.message.id != msg.id:
+    #             continue
+    #         if str(react.emoji) == YES and reactor == ctx.author:
+    #             diff = Difficulty.EASY
+    #             break
+    #         elif str(react.emoji) == NO and reactor == ctx.author:
+    #             diff = Difficulty.HARD
+    #             break
+    #         elif str(react.emoji) == NORMAL and reactor == ctx.author:
+    #             diff = Difficulty.NORMAL
+    #             break
+    #
+    #     self._current(ctx).set_difficulty(author_crew, diff)
+    #     await ctx.author.send(f'Your difficulty of {diff.name} is confirmed!')
+    #     await ctx.send(f'{author_crew} selected difficulty!')
 
     @commands.command(**help_doc['confirm'])
     @has_sheet
@@ -1067,7 +1056,7 @@ class ScoreSheetBot(commands.Cog):
                     loser_crew = crew_lookup(loser, self)
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({name}) - {winner}⚔{loser}**\n'
-                        f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr}) '
+                        f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr})\n '
                         f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
@@ -1130,7 +1119,7 @@ class ScoreSheetBot(commands.Cog):
                         f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
-                        f'+ {winner_change} = {winner_elo + winner_change}]'
+                        f'+ {winner_change} = {winner_elo + winner_change}] \n'
                         f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
                         f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
