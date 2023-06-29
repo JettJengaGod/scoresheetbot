@@ -1051,7 +1051,7 @@ class ScoreSheetBot(commands.Cog):
                     loser_crew = crew_lookup(loser, self)
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({name}) - {winner}⚔{loser}**\n'
-                        f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr}) '
+                        f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr})\n '
                         f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
@@ -1114,7 +1114,7 @@ class ScoreSheetBot(commands.Cog):
                         f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
-                        f'+ {winner_change} = {winner_elo + winner_change}]'
+                        f'+ {winner_change} = {winner_elo + winner_change}] \n'
                         f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
                         f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
