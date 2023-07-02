@@ -1165,12 +1165,12 @@ def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
         base = 8
         rollover_max = 3
 
-    if cr.ladder == '**8-Bit**':
-        base = 8
-        rollover_max = 3
-    else:
-        base = 7
-        rollover_max = 2
+    # if cr.ladder == '**8-Bit**':
+    #     base = 8
+    #     rollover_max = 3
+    # else:
+    #     base = 7
+    #     rollover_max = 2
     sl = slots(cr)
     if sl and not cr.freeze:
         rollover = sl[0]
