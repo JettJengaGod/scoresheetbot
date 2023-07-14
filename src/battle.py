@@ -249,6 +249,12 @@ class Battle:
             self.header = 'Trinity Playoff '
         elif self.battle_type == BattleType.ARCADE:
             self.header = 'Arcade '
+        elif self.battle_type == BattleType.WISDOM:
+            self.header = 'Triforce of Wisdom '
+        elif self.battle_type == BattleType.COURAGE:
+            self.header = 'Triforce of Courage  '
+        elif self.battle_type == BattleType.POWER:
+            self.header = 'Triforce of Power  '
         else:
             self.header = ''
 

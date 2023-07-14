@@ -607,6 +607,32 @@ async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
             return False
 
 
+async def wait_choice(options: int,
+                      message: discord.Message, author: discord.Member, bot: discord.Client,
+                      timeout: float = 30.0) -> int:
+    if options > 4:
+        return -1
+    for i in range(options):
+        await message.add_reaction(OPTIONS[i])
+    await message.add_reaction(NO)
+
+    def check(reaction, user):
+        return user == author and str(reaction.emoji) in(OPTIONS) or str(reaction.emoji) == NO
+
+    while True:
+        try:
+            react, reactor = await bot.wait_for('reaction_add', timeout=timeout, check=check)
+        except asyncio.TimeoutError:
+            return False
+        if react.message.id != message.id:
+            continue
+        for i in range(options):
+            if str(react.emoji) == OPTIONS[i] and reactor == author:
+                return i
+        if str(react.emoji) == NO and reactor == author:
+            return -1
+
+
 async def wait_for_multiple_reactions(reactions: List[str], message: discord.Message,
                                       member: discord.Member, bot: discord.Client,
                                       needed: int, timeout: float = 300.0) -> bool:
@@ -815,6 +841,39 @@ class Paged(menus.ListPageSource):
         if self.thumbnail:
             embed.set_thumbnail(url=self.thumbnail)
         return embed
+
+
+class TriforceStatsPaged(menus.ListPageSource):
+    def __init__(self, power: List[Tuple[str, int, int, int]], courage: List[Tuple[str, int, int, int]]):
+
+        title = f'Triforce of Power Stats'
+        power_page = discord.Embed(title=title, color=colour.Color.gold())
+
+        for i in range(1, 5):
+            thing = []
+            j = 0
+            while power[j][3] == i:
+                name, wins, total, group = power[j]
+                thing.append(f'**{name}**: {wins} - {total - wins}')
+
+            power_page.add_field(name=POWER_DIVS[i], value='\n'.join(thing), inline=False)
+        title = f'Triforce of Courage Stats'
+        courage_page = discord.Embed(title=title, color=colour.Color.gold())
+
+        for i in range(1, 5):
+            thing = []
+            j = 0
+            while power[j][3] == i:
+                name, wins, total, group = power[j]
+                thing.append(f'**{name}**: {wins} - {total - wins}')
+
+            courage_page.add_field(name=COURAGE_DIVS[i], value='\n'.join(thing), inline=False)
+
+        data = [power_page, courage_page]
+        super().__init__(data, per_page=1)
+
+    async def format_page(self, menu, entries) -> discord.Embed:
+        return entries
 
 
 class PlayerStatsPaged(menus.ListPageSource):

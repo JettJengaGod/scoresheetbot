@@ -789,6 +789,93 @@ def master_weight_changes(battle_id: int, reverse: bool = False):
     return
 
 
+def power_rankings() -> List[Tuple[str, int, int, int]]:
+    everything = """
+select name, coalesce(wins, 0),(coalesce(c2.p2, 0) + coalesce(c1.p1, 0)) as total, tf_group
+from crews left join
+     (select crew_2, count(*) as p2 from battle where league_id = 22 group by battle.crew_2) as c2 on crew_2 = crews.id
+         left join
+     (select crew_1, count(*) as p1 from battle where league_id = 22 group by battle.crew_1) as c1 on crew_1 = crews.id
+left join
+
+(select winner, count(*) as wins from battle where league_id = 22 group by battle.winner) as w on w.winner = crews.id
+where crews.triforce = 2
+order by tf_group, coalesce(wins,0)desc;"""
+    conn = None
+    ids = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(everything)
+        ids = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return ids
+
+
+def courage_rankings() -> List[Tuple[str, int, int, int]]:
+    everything = """
+select name, coalesce(wins, 0),(coalesce(c2.p2, 0) + coalesce(c1.p1, 0)) as total, tf_group
+from crews left join
+     (select crew_2, count(*) as p2 from battle where league_id = 21 group by battle.crew_2) as c2 on crew_2 = crews.id
+         left join
+     (select crew_1, count(*) as p1 from battle where league_id = 21 group by battle.crew_1) as c1 on crew_1 = crews.id
+left join
+
+(select winner, count(*) as wins from battle where league_id = 21 group by battle.winner) as w on w.winner = crews.id
+where crews.triforce = 1
+order by tf_group, coalesce(wins,0)desc;"""
+    conn = None
+    ids = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(everything)
+        ids = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return ids
+
+
+def wisdom_rankings() -> List[Tuple[int, str, int]]:
+    everything = """
+    select rank() over(order by rating desc), name, rating
+from crews,
+     crew_ratings
+where crews.disbanded = false
+  and crew_ratings.league_id = 20
+  and crews.id = crew_ratings.crew_id
+order by rating desc;"""
+    conn = None
+    ids = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(everything)
+        ids = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return ids
+
+
 def all_battle_ids() -> Sequence[int]:
     everything = """SELECT battle.id FROM battle where league_id=19 order by battle.id asc ;"""
     conn = None
@@ -808,6 +895,7 @@ def all_battle_ids() -> Sequence[int]:
             conn.close()
     return ids
 
+
 def crews_by_rating() -> Sequence[int]:
     everything = """select crew_id from crew_ratings where league_id = 19 order by rating;"""
     conn = None
@@ -826,7 +914,6 @@ def crews_by_rating() -> Sequence[int]:
         if conn is not None:
             conn.close()
     return ids
-
 
 
 def destiny_pair(cr1_id: int, cr2_id: int):
@@ -3250,7 +3337,8 @@ def init_rating(crew: Crew, rating: int, k: int = 50):
             conn.close()
     return
 
-def init_crew_rating(crew_id:int, rating: int, league_id: int):
+
+def init_crew_rating(crew_id: int, rating: int, league_id: int):
     set_rating = """insert into crew_ratings (crew_id, league_id, rating, k) VALUES (
     %s, %s, %s, 50);"""
     conn = None
@@ -3267,6 +3355,7 @@ def init_crew_rating(crew_id:int, rating: int, league_id: int):
         if conn is not None:
             conn.close()
     return
+
 
 def reset_fake_crew_rating(league_id: int):
     set_rating = """update crew_ratings
@@ -3619,6 +3708,26 @@ on conflict (crew_id) do update set choice    = excluded.choice,
     finally:
         if conn is not None:
             conn.close()
+
+
+def update_crew_tf(crew: Crew, triforce: int, group: int) -> None:
+    setup = """
+    update crews set triforce = %s, tf_group = %s where id = %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(setup, triforce, group, (crew_id_from_crews(crew, cur)))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+
 
 
 def all_votes() -> List[str]:

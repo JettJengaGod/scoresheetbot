@@ -348,6 +348,12 @@ class ScoreSheetBot(commands.Cog):
                            f'Please contact an admin if this is incorrect.')
             return
         if user_crew != opp_crew:
+            actual_user = crew_lookup(user_crew, self)
+            actual_opp = crew_lookup(opp_crew, self)
+            if actual_user.triforce > 0 and actual_user.triforce == actual_opp.triforce:
+                await ctx.send(
+                    f"{ctx.author.mention} If this is your assigned weekly battle please `,cancel` this battle and use"
+                    "`,power` or `,courage` instead!")
             await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.WISDOM))
 
             await send_sheet(ctx, battle=self._current(ctx))
@@ -1300,26 +1306,16 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['rankings'])
     async def rankings(self, ctx):
-        crews_sorted_by_ranking = sorted(
-            [cr for cr in self.cache.crews_by_name.values() if cr.ladder.startswith('**16')],
-            key=lambda x: x.ranking, reverse=False)
 
-        crew_ranking_str = [f'**{cr.name}** Level: {cr.level} Points: {cr.points}'
+        crew_ranking_str = [f'{cr[2]}: **{cr[1]}**'
                             for cr
-                            in crews_sorted_by_ranking]
+                            in wisdom_rankings()]
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Arcade 16bit Rankings'),
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Triforce of Wisdom Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
-        crews_sorted_by_ranking = sorted(
-            [cr for cr in self.cache.crews_by_name.values() if cr.ladder.startswith('**8')],
-            key=lambda x: x.ranking, reverse=False)
 
-        crew_ranking_str = [f'**{cr.name}** Level: {cr.level} Points: {cr.points}'
-                            for cr
-                            in crews_sorted_by_ranking]
-
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Arcade 8bit Rankings'),
+        pages = menus.MenuPages(source=TriforceStatsPaged(power_rankings(), courage_rankings()),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
@@ -2079,6 +2075,56 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'{actual_crew.name} current slots: {left}/{total}  ({uf}/3) for unflair.')
         new = cur_slot_set(actual_crew, num)
         await ctx.send(f'Set {actual_crew.name} slots to {new}.')
+
+    @commands.command(**help_doc['setslots'])
+    @role_call(STAFF_LIST)
+    @main_only
+    async def tri(self, ctx, *, name: str = None):
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
+            else:
+                actual_crew = ambiguous
+        else:
+            actual_crew = crew_lookup(crew(ctx.author, self), self)
+            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        if actual_crew.triforce >= 0:
+            msg = await ctx.send(
+                f'{ctx.author.mention}: {actual_crew.name} is already in Triforce of {TRIFORCE[actual_crew.triforce]}\n'
+                f'Do you want to reset that?'
+            )
+            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+                await response_message(ctx, 'Canceled or timed out.')
+                return
+        msg = await ctx.send(
+            f'{ctx.author.mention}: Do you want to place {actual_crew.name} in '
+            f'\nTriforce of Courage {OPTIONS[0]}'
+            f'\nTriforce of Power   {OPTIONS[1]}'
+        )
+        answer = await wait_choice(2, msg, ctx.author, self.bot, 120)
+        if answer == -1:
+            await response_message(ctx, 'Canceled or timed out.')
+            return
+
+        divs = COURAGE_DIVS if answer == 0 else POWER_DIVS
+        message = ['Which division do you want to place them in?']
+        for i in range(1, 5):
+            message.append(f'{divs[i]}: {OPTIONS[i - 1]}')
+        msg = await ctx.send('\n'.join(message))
+        division = await wait_choice(4, msg, ctx.author, self.bot, 120)
+        if division == -1:
+            await response_message(ctx, 'Canceled or timed out.')
+            return
+        msg = await ctx.send(
+            f'To confirm, you want to put {actual_crew.name} in the '
+            f'Triforce of {"Courage" if answer == 0 else "Power"} {divs[division+1]}?')
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
+            await response_message(ctx, 'Canceled or timed out.')
+            return
+        update_crew_tf(actual_crew, answer+1, division+1)
+        await ctx.send(f'{actual_crew.name} triforce status updated!')
 
     @commands.command(**help_doc['setreturnslots'])
     @role_call(STAFF_LIST)
