@@ -159,3 +159,9 @@ SLOT_CUTOFFS = [9, 17, 25, 33, 41, 60, 70, 80]
 RANK_CUTOFF = 4
 
 CURRENT_LEAGUE_ID = 20
+
+POWER_DIVS = ['', 'Ocarina', 'Skyward', 'Twilight', 'Phantom']
+COURAGE_DIVS = ['', 'Eldin', 'Gerudo', 'Faron', 'Lanaryu']
+TRIFORCE = ['Wisdom', 'Courage', 'Power']
+
+OPTIONS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣']
