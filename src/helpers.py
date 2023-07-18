@@ -615,7 +615,7 @@ async def wait_choice(options: int,
     await message.add_reaction(NO)
 
     def check(reaction, user):
-        return user == author and str(reaction.emoji) in(OPTIONS) or str(reaction.emoji) == NO
+        return user == author and str(reaction.emoji) in (OPTIONS) or str(reaction.emoji) == NO
 
     while True:
         try:
@@ -846,24 +846,25 @@ class TriforceStatsPaged(menus.ListPageSource):
 
         title = f'Triforce of Power Stats'
         power_page = discord.Embed(title=title, color=colour.Color.gold())
-
+        j = 0
         for i in range(1, 5):
             thing = []
-            j = 0
-            while power[j][3] == i:
+            while j < len(power) and power[j][3] == i:
                 name, wins, total, group = power[j]
                 thing.append(f'**{name}**: {wins} - {total - wins}')
+                j += 1
 
             power_page.add_field(name=POWER_DIVS[i], value='\n'.join(thing), inline=False)
         title = f'Triforce of Courage Stats'
         courage_page = discord.Embed(title=title, color=colour.Color.gold())
 
+        j = 0
         for i in range(1, 5):
             thing = []
-            j = 0
-            while power[j][3] == i:
-                name, wins, total, group = power[j]
+            while j < len(courage) and courage[j][3] == i:
+                name, wins, total, group = courage[j]
                 thing.append(f'**{name}**: {wins} - {total - wins}')
+                j += 1
 
             courage_page.add_field(name=COURAGE_DIVS[i], value='\n'.join(thing), inline=False)
 
