@@ -352,7 +352,7 @@ class ScoreSheetBot(commands.Cog):
             actual_opp = crew_lookup(opp_crew, self)
             if actual_user.triforce > 0 and actual_user.triforce == actual_opp.triforce:
                 await ctx.send(
-                    f"{ctx.author.mention} If this is your assigned weekly battle please `,cancel` this battle and use"
+                    f"{ctx.author.mention} If this is your assigned weekly battle please `,clear` this battle and use"
                     "`,power` or `,courage` instead!")
             await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.WISDOM))
 
@@ -807,6 +807,10 @@ class ScoreSheetBot(commands.Cog):
                 return
             await self._reject_outsiders(ctx)
             current_crew = await self._battle_crew(ctx, ctx.author)
+            if not check_roles(user, [FOURTYMAN]) and self._current(ctx).battle_type == BattleType.POWER:
+                await response_message(ctx,
+                                       f'{user.mention} does not have the `40-Man` role and is not on the roster.')
+                return
             if current_crew == await self._battle_crew(ctx, user):
                 if check_roles(user, [WATCHLIST]):
                     await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
@@ -2536,13 +2540,14 @@ class ScoreSheetBot(commands.Cog):
             w_placement_message = ''
             winner_k_message = winner_change
 
+        battle_name = 'Triforce of Wisdom - Failed Registration'
         new_message = (
-            f'**{today.strftime("%B %d, %Y")} (Trinity League) - {winner_crew.name} ({winner_crew.abbr})⚔'
-            f'{loser_crew})**\n'
+            f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner_crew.name} ({winner_crew.abbr})⚔'
+            f'{loser_crew} (Failed Reg Crew)**\n'
             f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
-            f'+ {winner_change} = {winner_elo + winner_change}]'
-            f'** Destiny**: [+{d_winner_change}->{d_final}]\n'
-            f'**Loser:** {loser_crew}  \n'
+            f'+ {winner_change} = {winner_elo + winner_change}] \n'
+            f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
+            f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
             f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
             await link.edit(content=new_message)
@@ -2555,6 +2560,7 @@ class ScoreSheetBot(commands.Cog):
                 mod_slot(winner_crew, 1)
                 await ctx.send(f'{winner_crew.name} got a slot back for playing 3 battles this week!')
                 set_extra_used(winner_crew)
+
 
     @commands.command(**help_doc['weirdreg'])
     @main_only
