@@ -877,9 +877,26 @@ class TriforceStatsPaged(menus.ListPageSource):
 
 class PlayerStatsPaged(menus.ListPageSource):
     def __init__(self, member: discord.Member, bot: 'ScoreSheetBot'):
-        weighted, taken, lost = player_stocks(member)
+        season_stats =  discord.Embed(title=f"Season Stats for {str(member)}", color=member.color)
+        weighted, taken, lost, mvps = player_stocks(member, True)
+        total, wins = player_record(member, True)
+        title = f'Crew Battle Stats for {str(member)}'
+        season_stats.add_field(name='Crews record while participating', value=f'{wins}/{total - wins}', inline=True)
+
+        season_stats.add_field(name='MVPs', value=f'{mvps}', inline=True)
+        season_stats.add_field(name='Stocks', value=f'(See .weighted)', inline=False)
+        season_stats.add_field(name='Taken', value=f'{taken}', inline=True)
+        season_stats.add_field(name='Lost', value=f'{lost}', inline=True)
+        season_stats.add_field(name='Weighted Taken', value=f'{round(weighted, 2)}', inline=True)
+        season_stats.add_field(name='Ratio', value=f'{round(taken / max(lost, 1), 2)}', inline=True)
+        season_stats.add_field(name='Weighted Ratio', value=f'{round(weighted / max(lost, 1), 2)}', inline=True)
+        pc = player_chars(member, True)
+        season_stats.add_field(name='Characters played', value='how many battles played in ', inline=False)
+        for char in pc:
+            emoji = string_to_emote(char[1], bot.bot)
+            season_stats.add_field(name=emoji, value=f'{char[0]}', inline=True)
+        weighted, taken, lost, mvps = player_stocks(member)
         total, wins = player_record(member)
-        mvps = player_mvps(member)
         title = f'Crew Battle Stats for {str(member)}'
         cb_stats = discord.Embed(title=title, color=member.color)
         cb_stats.add_field(name='Crews record while participating', value=f'{wins}/{total - wins}', inline=True)
@@ -916,7 +933,7 @@ class PlayerStatsPaged(menus.ListPageSource):
                 ba_stats.add_field(name=emoji, value=f'{char[0]}', inline=True)
         else:
             ba_stats.description = 'This member has no battle arena history.'
-        data = [cb_stats, ba_stats]
+        data = [season_stats, cb_stats, ba_stats]
         super().__init__(data, per_page=1)
 
     async def format_page(self, menu, entries) -> discord.Embed:

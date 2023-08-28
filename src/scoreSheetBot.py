@@ -1384,7 +1384,7 @@ class ScoreSheetBot(commands.Cog):
         pages = menus.MenuPages(source=PlayerStatsPaged(member, self))
         await pages.start(ctx)
 
-    @commands.command(**help_doc['stats'])
+    @commands.command(**help_doc['stats'], aliases=['TAH'])
     @main_only
     async def stats(self, ctx, *, name: str = None):
         if name:
@@ -1400,7 +1400,7 @@ class ScoreSheetBot(commands.Cog):
             pages = menus.MenuPages(source=PlayerStatsPaged(ctx.author, self))
             await pages.start(ctx)
             return
-        record = crew_record(actual_crew)
+        record = crew_record(actual_crew, 20)
         if not record[2]:
             await ctx.send(f'{actual_crew.name} does not have any recorded crew battles with the bot.')
             return
@@ -2118,11 +2118,11 @@ class ScoreSheetBot(commands.Cog):
             return
         msg = await ctx.send(
             f'To confirm, you want to put {actual_crew.name} in the '
-            f'Triforce of {"Courage" if answer == 0 else "Power"} {divs[division+1]}?')
+            f'Triforce of {"Courage" if answer == 0 else "Power"} {divs[division + 1]}?')
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
             await response_message(ctx, 'Canceled or timed out.')
             return
-        update_crew_tf(actual_crew, answer+1, division+1)
+        update_crew_tf(actual_crew, answer + 1, division + 1)
         await ctx.send(f'{actual_crew.name} triforce status updated!')
 
     @commands.command(**help_doc['setreturnslots'])
@@ -2555,7 +2555,6 @@ class ScoreSheetBot(commands.Cog):
                 mod_slot(winner_crew, 1)
                 await ctx.send(f'{winner_crew.name} got a slot back for playing 3 battles this week!')
                 set_extra_used(winner_crew)
-
 
     @commands.command(**help_doc['weirdreg'])
     @main_only
@@ -3501,6 +3500,9 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def stupid(self, ctx):
         # await handle_decay(self)
+        for battle in all_battle_ids():
+            print(battle)
+            battle_weight_changes(battle[0], season=True)
         # message = []
         # for cr in self.cache.crews_by_name.values():
         #     filled = 25 if cr.current_umbra >= cr.max_umbra else 0
@@ -3512,7 +3514,6 @@ class ScoreSheetBot(commands.Cog):
         #
         # await send_long(ctx, '\n'.join(message), '\n')
         #
-        update_wisdom_sheet()
         # update_destiny_sheet()
 
     # Deprecated

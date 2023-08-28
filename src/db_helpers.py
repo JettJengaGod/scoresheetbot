@@ -643,7 +643,7 @@ values (%s, %s, %s, %s, %s);"""
     return winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k
 
 
-def battle_weight_changes(battle_id: int, reverse: bool = False):
+def battle_weight_changes(battle_id: int, reverse: bool = False, season: bool = False):
     # TODO modify this to handle MC/BF matches
     find_matches = """select p1, p2, p1_taken, p2_taken from match where battle_id = %s;"""
     mvps = """select mvps from battle where id = %s;"""
@@ -655,6 +655,81 @@ def battle_weight_changes(battle_id: int, reverse: bool = False):
     select greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from member_stats where member_id = %s;"""
 
     update_weight = """update member_stats set weighted_taken = weighted_taken + %s, taken = taken + %s,
+        lost = lost + %s, played  = played + %s, mvps = mvps + %s
+        where member_id = %s;"""
+    conn = None
+    battle_weight_changes_season(battle_id, reverse)
+    if season:
+        return
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        # Find the matches
+        cur.execute(find_matches, (battle_id,))
+        matches = cur.fetchall()
+        # Get each performance
+        player_weights = {}
+        player_taken = defaultdict(int)
+        player_weighted_taken = defaultdict(int)
+        player_lost = defaultdict(int)
+        for p1, p2, p1_taken, p2_taken in matches:
+            if p1 not in player_weights:
+                cur.execute(current_weight, (p1, p1))
+                ret = cur.fetchone()
+                if ret:
+                    player_weights[p1] = ret[0] / ret[1]
+            if p2 not in player_weights:
+                cur.execute(current_weight, (p2, p2))
+                ret = cur.fetchone()
+                if ret:
+                    player_weights[p2] = ret[0] / ret[1]
+            if reverse:
+                player_taken[p1] -= p1_taken
+                player_taken[p2] -= p2_taken
+                player_weighted_taken[p1] -= p1_taken * player_weights[p2]
+                player_lost[p1] -= p2_taken
+                player_weighted_taken[p2] -= p2_taken * player_weights[p1]
+                player_lost[p2] -= p1_taken
+            else:
+                player_taken[p1] += p1_taken
+                player_taken[p2] += p2_taken
+                player_weighted_taken[p1] += p1_taken * player_weights[p2]
+                player_lost[p1] += p2_taken
+                player_weighted_taken[p2] += p2_taken * player_weights[p1]
+                player_lost[p2] += p1_taken
+
+        played = 0 if reverse else 1
+        cur.execute(mvps, (battle_id,))
+        mvp_list = cur.fetchone()[0]
+
+        for player in player_taken:
+            mvp = 1 if player in mvp_list else 0
+            cur.execute(update_weight,
+                        (player_weighted_taken[player], player_taken[player], player_lost[player], played, mvp, player))
+
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
+
+def battle_weight_changes_season(battle_id: int, reverse: bool = False):
+    # TODO modify this to handle MC/BF matches
+    find_matches = """select p1, p2, p1_taken, p2_taken from match where battle_id = %s;"""
+    mvps = """select mvps from battle where id = %s;"""
+    current_weight = """
+    with current as (
+        insert into member_season_stats(member_id) values (%s) on conflict do nothing returning weighted_taken, lost)
+    select  greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from current
+    union all
+    select greatest(weighted_taken, 1) as weighted_taken, greatest(lost, 1) as lost from member_season_stats where member_id = %s;"""
+
+    update_weight = """update member_season_stats set weighted_taken = weighted_taken + %s, taken = taken + %s,
         lost = lost + %s, played  = played + %s, mvps = mvps + %s
         where member_id = %s;"""
     conn = None
@@ -875,7 +950,7 @@ order by rating desc;"""
 
 
 def all_battle_ids() -> Sequence[int]:
-    everything = """SELECT battle.id FROM battle where league_id=19 order by battle.id asc ;"""
+    everything = """SELECT battle.id FROM battle where league_id  in (20, 21, 22) order by battle.id asc ;"""
     conn = None
     ids = []
     try:
@@ -1673,6 +1748,20 @@ def crew_record(cr: Crew, league: Optional[int] = 0) -> Tuple:
                 group by crews.name
     ) as bttls on bttls.name = wins.name) as crew_wrs;
 """
+    record_with_season = """
+        select * from (select coalesce(wins.name,bttls.name) as name, coalesce(wins.wins,0) as ws, coalesce(bttls.matches,0) as ms  from
+        (select crews.name, count(*) as wins 
+            from crews, battle 
+                where crews.id = battle.winner and crews.id = %s and battle.league_id in (20,21,22)
+                    group by crews.name) 
+        as wins
+        full outer join 
+        (select crews.name, count(*) as matches 
+            from crews, battle 
+                where (crews.id = battle.crew_1 or crews.id = battle.crew_2) and crews.id = %s and battle.league_id in (20,21,22)
+                    group by crews.name
+        ) as bttls on bttls.name = wins.name) as crew_wrs;
+    """
     conn = None
     ret = ()
     try:
@@ -1680,7 +1769,9 @@ def crew_record(cr: Crew, league: Optional[int] = 0) -> Tuple:
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         crew_id = crew_id_from_role_id(cr.role_id, cur)
-        if league:
+        if league == 20:
+            cur.execute(record_with_season, (crew_id, crew_id))
+        elif league:
             cur.execute(record_with_league, (crew_id, league, crew_id, league))
         else:
             cur.execute(record, (crew_id, crew_id))
@@ -1740,9 +1831,12 @@ def crew_matches(cr: Crew) -> List[str]:
     return out
 
 
-def player_stocks(member: discord.Member) -> Tuple[float, int, int]:
+def player_stocks(member: discord.Member, season: bool = False) -> Tuple[float, int, int, int]:
     taken = """
-    select weighted_taken, taken, lost from member_stats where member_id = %s;"""
+    select weighted_taken, taken, lost, mvps from member_stats where member_id = %s;"""
+
+    taken2 = """
+    select weighted_taken, taken, lost, mvps from member_season_stats where member_id = %s;"""
     conn = None
     out = []
     vals = (0, 0)
@@ -1750,7 +1844,8 @@ def player_stocks(member: discord.Member) -> Tuple[float, int, int]:
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
-        cur.execute(taken, (member.id,))
+        query = taken2 if season else taken
+        cur.execute(query, (member.id,))
         vals = cur.fetchone()
 
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1758,7 +1853,7 @@ def player_stocks(member: discord.Member) -> Tuple[float, int, int]:
     finally:
         if conn is not None:
             conn.close()
-    return vals if vals else (0, 0, 0)
+    return vals if vals else (0, 0, 0, 0)
 
 
 def player_mvps(member: discord.Member) -> int:
@@ -1832,7 +1927,7 @@ from (select mvps.battle_id, mvp, sent.id, sent.name
     return out
 
 
-def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
+def player_chars(member: discord.Member, season: bool = False) -> Tuple[Tuple[int, str]]:
     chars = """
         select coalesce(p1.battle_count,0)+coalesce(p2.battle_count,0) as battle_count, coalesce(p1.name, p2.name) from
             (select count(distinct(match.battle_id)) as battle_count, fighters.name
@@ -1844,6 +1939,28 @@ def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
             and fighters.id = match.p2_char_id
         group by fighters.name)) as p2 on p1.name = p2.name
     ;"""
+    season_chars = """
+    select coalesce(p1.battle_count, 0) + coalesce(p2.battle_count, 0) as battle_count, coalesce(p1.name, p2.name)
+from (select count(distinct (match.battle_id)) as battle_count, fighters.name
+      from match,
+           fighters,
+           battle
+      where match.p1 = 353715570233049099
+        and fighters.id = match.p1_char_id
+        and battle.id = match.battle_id
+        and battle.league_id in (20, 21, 22)
+      group by fighters.name) as p1
+         full outer join (
+    (select count(distinct (match.battle_id)) as battle_count, fighters.name
+     from match,
+          fighters,
+          battle
+     where match.p2 = 353715570233049099
+       and fighters.id = match.p2_char_id
+
+       and battle.id = match.battle_id
+       and battle.league_id in (20, 21, 22)
+     group by fighters.name)) as p2 on p1.name = p2.name;"""
     conn = None
     out = []
     vals = []
@@ -1851,7 +1968,8 @@ def player_chars(member: discord.Member) -> Tuple[Tuple[int, str]]:
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
-        cur.execute(chars, (member.id, member.id,))
+        query = season_chars if season else chars
+        cur.execute(query, (member.id, member.id,))
         vals = cur.fetchall()
 
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1908,7 +2026,7 @@ def set_vod(battle_id: int, vod: str) -> None:
     return
 
 
-def player_record(member: discord.Member) -> Tuple[int, int]:
+def player_record(member: discord.Member, season=False) -> Tuple[int, int]:
     win_loss = """
 select p1_total.battles+p2_total.battles as battles, p2_wins.battle_wins+p1_wins.battle_wins as wins from
     (select count(distinct(match.battle_id)) as battles
@@ -1925,6 +2043,33 @@ select p1_total.battles+p2_total.battles as battles, p2_wins.battle_wins+p1_wins
             where match.p2 = %s 
             and battle.crew_2=battle.winner 
             and battle.id=match.battle_id) as p2_wins;"""
+    win_loss_season = """
+    select p1_total.battles + p2_total.battles as battles, p2_wins.battle_wins + p1_wins.battle_wins as wins
+from (select count(distinct (match.battle_id)) as battles
+      from match, battle
+      where match.p1 = 353715570233049099
+        and battle.id = match.battle_id
+        and battle.league_id in (20, 21, 22)) as p1_total,
+     (select count(distinct (match.battle_id)) as battle_wins
+      from match,
+           battle
+      where match.p1 = 353715570233049099
+        and battle.crew_1 = battle.winner
+        and battle.id = match.battle_id
+        and battle.league_id in (20, 21, 22)) as p1_wins,
+     (select count(distinct (match.battle_id)) as battles
+      from match, battle
+      where match.p2 = 353715570233049099
+        and battle.id = match.battle_id
+        and battle.league_id in (20, 21, 22)) as p2_total,
+     (select count(distinct (match.battle_id)) as battle_wins
+      from match,
+           battle
+      where match.p2 = 353715570233049099
+        and battle.crew_2 = battle.winner
+        and battle.id = match.battle_id
+        and battle.league_id in (20, 21, 22)) as p2_wins;
+    """
     conn = None
     out = []
     vals = (0, 0)
@@ -1932,7 +2077,8 @@ select p1_total.battles+p2_total.battles as battles, p2_wins.battle_wins+p1_wins
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
-        cur.execute(win_loss, (member.id, member.id, member.id, member.id,))
+        query = win_loss_season if season else win_loss
+        cur.execute(query, (member.id, member.id, member.id, member.id,))
         vals = cur.fetchone()
 
     except (Exception, psycopg2.DatabaseError) as error:
@@ -3725,7 +3871,6 @@ def update_crew_tf(crew: Crew, triforce: int, group: int) -> None:
     finally:
         if conn is not None:
             conn.close()
-
 
 
 def all_votes() -> List[str]:
