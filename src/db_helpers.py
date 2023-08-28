@@ -1947,7 +1947,7 @@ from (select count(distinct (match.battle_id)) as battle_count, fighters.name
       from match,
            fighters,
            battle
-      where match.p1 = 353715570233049099
+      where match.p1 = %s
         and fighters.id = match.p1_char_id
         and battle.id = match.battle_id
         and battle.league_id in (20, 21, 22)
@@ -1957,7 +1957,7 @@ from (select count(distinct (match.battle_id)) as battle_count, fighters.name
      from match,
           fighters,
           battle
-     where match.p2 = 353715570233049099
+     where match.p2 = %s
        and fighters.id = match.p2_char_id
 
        and battle.id = match.battle_id
@@ -2049,25 +2049,25 @@ select p1_total.battles+p2_total.battles as battles, p2_wins.battle_wins+p1_wins
     select p1_total.battles + p2_total.battles as battles, p2_wins.battle_wins + p1_wins.battle_wins as wins
 from (select count(distinct (match.battle_id)) as battles
       from match, battle
-      where match.p1 = 353715570233049099
+      where match.p1 = %s
         and battle.id = match.battle_id
         and battle.league_id in (20, 21, 22)) as p1_total,
      (select count(distinct (match.battle_id)) as battle_wins
       from match,
            battle
-      where match.p1 = 353715570233049099
+      where match.p1 = %s
         and battle.crew_1 = battle.winner
         and battle.id = match.battle_id
         and battle.league_id in (20, 21, 22)) as p1_wins,
      (select count(distinct (match.battle_id)) as battles
       from match, battle
-      where match.p2 = 353715570233049099
+      where match.p2 = %s
         and battle.id = match.battle_id
         and battle.league_id in (20, 21, 22)) as p2_total,
      (select count(distinct (match.battle_id)) as battle_wins
       from match,
            battle
-      where match.p2 = 353715570233049099
+      where match.p2 = %s
         and battle.crew_2 = battle.winner
         and battle.id = match.battle_id
         and battle.league_id in (20, 21, 22)) as p2_wins;
