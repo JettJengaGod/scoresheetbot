@@ -485,7 +485,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['battle'], aliases=['playoff', 'pob'], group='CB')
+    @commands.command(**help_doc['battle'], aliases=['playoff'], group='CB')
     @main_only
     @no_battle
     @is_lead
