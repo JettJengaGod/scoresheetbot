@@ -550,7 +550,6 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-
     @commands.command(**help_doc['battle'], aliases=['courage'], group='CB')
     @main_only
     @no_battle
@@ -662,9 +661,15 @@ class ScoreSheetBot(commands.Cog):
                                        f'They can verify by typing `/verify` in any channel and then clicking the '
                                        f'"Click me to verify!" link in the Double Counter dm.')
                 return
-            if not check_roles(user, [FOURTYMAN]) and self._current(ctx).battle_type == BattleType.POWER:
+            if not check_roles(user, [FOURTYMAN]) and self._current(ctx).battle_type in (
+                    BattleType.POWER_PLAYOFF, BattleType.POWER):
                 await response_message(ctx,
                                        f'{user.mention} does not have the `40-Man` role and is not on the roster.')
+                return
+            if check_roles(user, [PLAYOFF_LOCKED_ID]) and self._current(ctx).battle_type in (
+                    BattleType.COURAGE_PLAYOFF, BattleType.WISDOM_PLAYOFF):
+                await response_message(ctx,
+                                       f'{user.mention} has the playoff locked role and cannot play in playoff cbs.')
                 return
             await self._reject_outsiders(ctx)
             author_crew = await self._battle_crew(ctx, ctx.author)
@@ -1063,7 +1068,8 @@ class ScoreSheetBot(commands.Cog):
             elif current.battle_type == BattleType.MOCK:
                 await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
-            elif current.battle_type in (BattleType.POWER_PLAYOFF, BattleType.COURAGE_PLAYOFF, BattleType.WISDOM_PLAYOFF):
+            elif current.battle_type in (
+                    BattleType.POWER_PLAYOFF, BattleType.COURAGE_PLAYOFF, BattleType.WISDOM_PLAYOFF):
                 current.confirm(await self._battle_crew(ctx, ctx.author))
                 await send_sheet(ctx, battle=current)
                 if current.confirmed():
