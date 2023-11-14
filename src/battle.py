@@ -42,6 +42,9 @@ class BattleType(Enum):
     WISDOM = 16
     COURAGE = 17
     POWER = 18
+    WISDOM_PLAYOFF = 19
+    COURAGE_PLAYOFF = 20
+    POWER_PLAYOFF = 21
 
 
 class Difficulty(Enum):
@@ -255,6 +258,12 @@ class Battle:
             self.header = 'Triforce of Courage  '
         elif self.battle_type == BattleType.POWER:
             self.header = 'Triforce of Power  '
+        elif self.battle_type == BattleType.WISDOM_PLAYOFF:
+            self.header = 'Triforce of Wisdom Playoff '
+        elif self.battle_type == BattleType.COURAGE_PLAYOFF:
+            self.header = 'Triforce of Courage Playoff '
+        elif self.battle_type == BattleType.POWER_PLAYOFF:
+            self.header = 'Triforce of Power Playoff '
         else:
             self.header = ''
 
