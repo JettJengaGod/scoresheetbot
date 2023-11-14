@@ -360,6 +360,40 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('You can\'t battle your own crew.')
 
+    @commands.command(**help_doc['battle'], aliases=['wisdom_po'], group='CB')
+    @main_only
+    @no_battle
+    @is_lead
+    @ss_channel
+    async def pob(self, ctx: Context, user: discord.Member, size: int):
+        if size < 1:
+            await ctx.send('Please enter a size greater than 0.')
+            return
+        user_crew = crew(ctx.author, self)
+        opp_crew = crew(user, self)
+        if not user_crew:
+            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if not opp_crew:
+            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if user_crew != opp_crew:
+            actual_user = crew_lookup(user_crew, self)
+            actual_opp = crew_lookup(opp_crew, self)
+            if actual_user.triforce > 0 and actual_user.triforce == actual_opp.triforce:
+                await ctx.send(
+                    f"{ctx.author.mention} If this is your assigned weekly battle please `,clear` this battle and use"
+                    "`,power` or `,courage` instead!")
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.WISDOM_PLAYOFF))
+
+            await send_sheet(ctx, battle=self._current(ctx))
+        else:
+            await ctx.send('You can\'t battle your own crew.')
+
     @commands.command(**help_doc['mock'])
     @no_battle
     @ss_channel
@@ -515,10 +549,11 @@ class ScoreSheetBot(commands.Cog):
             if opp_actual.triforce != 2:
                 await ctx.send(f'{opp_crew} is not in Triforce of Power.')
                 return
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.POWER))
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.POWER_PLAYOFF))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
+
 
     @commands.command(**help_doc['battle'], aliases=['courage'], group='CB')
     @main_only
@@ -551,7 +586,7 @@ class ScoreSheetBot(commands.Cog):
             if opp_actual.triforce != 1:
                 await ctx.send(f'{opp_crew} is not in Triforce of Courage.')
                 return
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.COURAGE))
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.COURAGE_PLAYOFF))
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
@@ -1033,19 +1068,23 @@ class ScoreSheetBot(commands.Cog):
             elif current.battle_type == BattleType.MOCK:
                 await self._clear_current(ctx)
                 await ctx.send(f'This battle was confirmed by {ctx.author.mention}.')
-            elif current.battle_type in (BattleType.POWER, BattleType.COURAGE):
+            elif current.battle_type in (BattleType.POWER_PLAYOFF, BattleType.COURAGE_PLAYOFF, BattleType.WISDOM_PLAYOFF):
                 current.confirm(await self._battle_crew(ctx, ctx.author))
                 await send_sheet(ctx, battle=current)
                 if current.confirmed():
                     today = date.today()
-                    if current.battle_type == BattleType.POWER:
-                        name = 'Triforce of Power'
-                        league_id = 22
-                        channel_id = POWER_CHANNEL_ID
+                    if current.battle_type == BattleType.POWER_PLAYOFF:
+                        name = 'Triforce of Power Playoff'
+                        league_id = 25
+                        channel_id = POWER_PO_CHANNEL_ID
+                    elif current.battle_type == BattleType.COURAGE_PLAYOFF:
+                        name = 'Triforce of Courage Playoff'
+                        league_id = 24
+                        channel_id = COURAGE_PO_CHANNEL_ID
                     else:
-                        name = 'Triforce of Courage'
-                        league_id = 21
-                        channel_id = COURAGE_CHANNEL_ID
+                        name = 'Triforce of Wisdom Playoff'
+                        league_id = 23
+                        channel_id = WISDOM_PO_CHANNEL_ID
                     output_channels = [
                         discord.utils.get(ctx.guild.channels, id=channel_id),
                         discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
