@@ -1,3 +1,4 @@
+import asyncio
 from os.path import dirname, realpath
 import sys
 
@@ -7,4 +8,5 @@ sys.path.append(_project_path)
 
 from src.scoreSheetBot import main
 
-main()
+
+asyncio.run(main())

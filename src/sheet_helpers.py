@@ -10,7 +10,7 @@ scope = [
     'https://www.googleapis.com/auth/drive',
     'https://www.googleapis.com/auth/drive.file'
 ]
-file_name = '../client_key.json'
+file_name = 'C:/Users/Owner/PycharmProjects/scoresheetbot/client_key.json'
 creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
 client = gspread.authorize(creds)
 crew_docs_name = 'SCS Crew Docs'  # if os.getenv('VERSION') == 'PROD' else 'Copy of SCS Crew Docs'

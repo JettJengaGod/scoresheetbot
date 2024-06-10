@@ -25,7 +25,6 @@ class ScoreSheetBot(commands.Cog):
         self.battle_map: Dict[str, Battle] = {}
         self.cache_value = cache
         self.cache_time = time.time()
-        self.auto_cache.start()
         self._gambit_message = None
 
     @property
@@ -119,6 +118,8 @@ class ScoreSheetBot(commands.Cog):
         await unlock(ctx.channel)
         await update_channel_open('', ctx.channel)
 
+    def cog_load(self) -> None:
+        self.auto_cache.start()
     def cog_unload(self):
         self.auto_cache.cancel()
 
@@ -3831,16 +3832,17 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'{msg.content}: {result}')
 
 
-def main():
+async def main():
     load_dotenv()
     token = os.getenv('DISCORD_TOKEN')
     bot = commands.Bot(command_prefix=os.getenv('PREFIX'), intents=discord.Intents.all(), case_insensitive=True,
                        allowed_mentions=discord.AllowedMentions(everyone=False))
     bot.remove_command('help')
     cache = src.cache.Cache()
-    bot.add_cog(ScoreSheetBot(bot, cache))
-    bot.run(token)
+
+    await bot.add_cog(ScoreSheetBot(bot, cache))
+    await bot.start(token)
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

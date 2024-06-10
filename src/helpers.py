@@ -3,7 +3,6 @@ import os
 from datetime import date, timedelta
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict, Sequence, ValuesView
 
-from dateutil.relativedelta import relativedelta
 import matplotlib.pyplot as plt
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -1067,7 +1066,7 @@ async def unlock(channel: discord.TextChannel) -> None:
     await channel.edit(sync_permissions=True)
 
 
-def parseTime(timestr: str) -> date:
+def parseTime(timestr: str) -> datetime.date:
     parts = timestr.split(' ')
     current = datetime.now().date()
     for part in parts:
@@ -1078,12 +1077,19 @@ def parseTime(timestr: str) -> date:
         if number <= 0:
             raise ValueError('need to have a number larger than 0')
         if increment == 'm':
-            current += relativedelta(months=+number)
+            current = add_months(current, number)
         if increment == 'w':
-            current += relativedelta(weeks=+number)
+            current += timedelta(weeks=number)
         if increment == 'd':
-            current += relativedelta(days=+number)
+            current += timedelta(days=number)
     return current
+
+def add_months(source_date, months):
+    month = source_date.month - 1 + months
+    year = source_date.year + month // 12
+    month = month % 12 + 1
+    day = min(source_date.day, [31, 29 if year % 4 == 0 and not year % 100 == 0 or year % 400 == 0 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month-1])
+    return datetime(year, month, day).date()
 
 
 async def handle_unfreeze(bot: 'ScoreSheetBot'):
