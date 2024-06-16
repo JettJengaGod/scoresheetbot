@@ -1,4 +1,3 @@
-dateutil
 aiohttp>=3.7.3
 async-timeout>=3.0.1
 atomicwrites>=1.4.0
@@ -26,7 +25,6 @@ pluggy>=0.13.1
 protobuf>=3.14.0
 py>=1.9.0
 pyasn1>=0.4.8
-pyasn1-modules>=0.2.8
 pyparsing>=2.4.7
 pytest>=6.1.2
 python-dotenv>=0.15.0
@@ -39,3 +37,10 @@ toml>=0.10.2
 uritemplate>=3.0.1
 urllib3>=1.26.2
 yarl>=1.6.3
+matplotlib
+gspread
+oauth2client
+psycopg2
+fuzzywuzzy
+discord-ext-menus
+python-Levenshtein
