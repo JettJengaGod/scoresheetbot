@@ -994,6 +994,7 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
                 embed.add_field(name=title, value=text, inline=False)
     if len(embed.fields) == 0:
         return None
+    embed.description = ''
     return embed
 
 
