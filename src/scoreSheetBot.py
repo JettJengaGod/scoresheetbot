@@ -2,7 +2,7 @@ import logging
 import math
 from asyncio import sleep
 
-from discord.ext import commands, tasks, menus
+from discord.ext import commands, tasks
 from discord.ext.commands import Greedy
 
 from elo_helpers import rating_update
@@ -3844,8 +3844,7 @@ async def main():
                        allowed_mentions=discord.AllowedMentions(everyone=False))
     bot.remove_command('help')
     cache = Cache()
-
-    await bot.add_cog(ScoreSheetBot(bot, cache))
+    await bot.add_cog(ScoreSheetBot(bot,cache))
     await bot.start(token)
 
 if __name__ == '__main__':
