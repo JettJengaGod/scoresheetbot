@@ -15,7 +15,8 @@ from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_cre
     remove_member_role, mod_slot, record_unflair, add_member_role, ba_standings, player_stocks, player_record, \
     player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id, \
     trinity_crews, elo_decay, reset_decay, first_crew_flair, track_finished_out, track_down_out, track_finished, \
-    update_member_roles, recent_unflair, get_bracket_predictions, crew_usage, all_crew_usage, all_crew_destiny
+    update_member_roles, recent_unflair, get_bracket_predictions, crew_usage, all_crew_usage, all_crew_destiny, \
+    crew_to_last_played
 from .gambit import Gambit
 from .sheet_helpers import update_all_sheets
 
@@ -654,32 +655,29 @@ async def wait_for_multiple_reactions(reactions: List[str], message: discord.Mes
 
 
 async def handle_decay(bot: 'ScoreSheetBot'):
-    cutoffs = [7, 14, 17, 21, 25, 30, 100, 1000]
-    elo_loss = [0, 25, 0, 50, 0, 100, 0, 0]
+    # TODO Make this start 2 weeks after the reset
+    cutoffs = [7, 14, 21, 28, 1000]
+    elo_loss = [0, DEFAULT_K / 2, DEFAULT_K, DEFAULT_K * 2, 0]
     crews = bot.cache.crews_by_name.values()
-    bf = trinity_crews()
-    last_played = {cr[0]: cr[2] for cr in bf}
+    crews_to_plated = crew_to_last_played()
+    last_played = {cr[0]: cr[1] for cr in crews_to_plated}
     crews_to_message = []
     exempt = ['EFB', 'EVIL', 'S~R', 'JettFakes']
     for cr in crews:
-        if cr.abbr in exempt:
+        if cr.abbr in exempt or not top_percentage(cr):
             continue
         if cr.name in last_played:
             timing = last_played[cr.name]
         else:
             timing = None
-        if cr.total_crews == 0:
-            continue
-        if cr.ranking / cr.total_crews > .4:
-            continue
         if not timing:
             first_flair = first_crew_flair(cr)
             first_flair = datetime(first_flair.year, first_flair.month, first_flair.day)
-            timing = datetime(2022, month=5, day=1)
+            timing = datetime(2024, month=7, day=1)
             if first_flair > timing:
                 timing = first_flair
-        if datetime(2022, month=5, day=1) > timing:
-            timing = datetime(2022, month=5, day=1)
+        if datetime(2024, month=7, day=1) > timing:
+            timing = datetime(2024, month=7, day=1)
         timing = datetime(timing.year, timing.month, timing.day)
         time_since = datetime.now() - timing
 
@@ -750,14 +748,14 @@ def crew_update(bot: 'ScoreSheetBot'):
             if db_crew.db_id in usage:
                 db_crew.softcap_used = usage[db_crew.db_id]
 
-        if db_crew.db_id in destiny:
-            db_crew.current_destiny = destiny[db_crew.db_id][0]
-            db_crew.destiny_opponent = destiny[db_crew.db_id][1]
-            db_crew.destiny_rank = destiny[db_crew.db_id][2]
-            db_crew.destiny_opt_out = destiny[db_crew.db_id][3]
+        # if db_crew.db_id in destiny:
+        #     db_crew.current_destiny = destiny[db_crew.db_id][0]
+        #     db_crew.destiny_opponent = destiny[db_crew.db_id][1]
+        #     db_crew.destiny_rank = destiny[db_crew.db_id][2]
+        #     db_crew.destiny_opt_out = destiny[db_crew.db_id][3]
         bot.cache_value.crews_by_name[cached.name].fromDbCrew(db_crew)
-        # if db_crew.name in rankings:
-        #     bot.cache_value.crews_by_name[cached.name].set_rankings(*rankings[db_crew.name])
+        if db_crew.name in rankings:
+            bot.cache_value.crews_by_name[cached.name].set_rankings(*rankings[db_crew.name])
     for cr in cached_crews.values():
         update_crew(cr)
 
@@ -876,7 +874,7 @@ class TriforceStatsPaged(menus.ListPageSource):
 
 class PlayerStatsPaged(menus.ListPageSource):
     def __init__(self, member: discord.Member, bot: 'ScoreSheetBot'):
-        season_stats =  discord.Embed(title=f"Season Stats for {str(member)}", color=member.color)
+        season_stats = discord.Embed(title=f"Season Stats for {str(member)}", color=member.color)
         weighted, taken, lost, mvps = player_stocks(member, True)
         total, wins = player_record(member, True)
         title = f'Crew Battle Stats for {str(member)}'
@@ -1085,11 +1083,14 @@ def parseTime(timestr: str) -> datetime.date:
             current += timedelta(days=number)
     return current
 
+
 def add_months(source_date, months):
     month = source_date.month - 1 + months
     year = source_date.year + month // 12
     month = month % 12 + 1
-    day = min(source_date.day, [31, 29 if year % 4 == 0 and not year % 100 == 0 or year % 400 == 0 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month-1])
+    day = min(source_date.day,
+              [31, 29 if year % 4 == 0 and not year % 100 == 0 or year % 400 == 0 else 28, 31, 30, 31, 30, 31, 31, 30,
+               31, 30, 31][month - 1])
     return datetime(year, month, day).date()
 
 
@@ -1245,36 +1246,27 @@ def flair_bar_chart(flairs: List[Tuple[str, int]]):
     plt.savefig('fl.png')
 
 
+def top_percentage(crew: Crew) -> bool:
+    return crew.ranking / crew.total_crews <= .4
+
+
 def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
     rollover_max = 2
-    if cr.triforce == 1:
-        base = 7
-    elif cr.triforce == 2:
-        base = 6
-    else:
-        base = 8
-        rollover_max = 3
-
-    # if cr.ladder == '**8-Bit**':
-    #     base = 8
-    #     rollover_max = 3
-    # else:
-    #     base = 7
-    #     rollover_max = 2
+    base = 6 if top_percentage(cr) else 7
     sl = slots(cr)
     if sl and not cr.freeze:
         rollover = sl[0]
     else:
         rollover = 0
-    modifiers = [6, 4, 2, 0, -1, -2, -3, -4, -99]
-    modifer_loc = 0
-    while modifer_loc < len(SLOT_CUTOFFS) and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
-        modifer_loc += 1
+    # modifiers = [6, 4, 2, 0, -1, -2, -3, -4, -99]
+    # modifer_loc = 0
+    # while modifer_loc < len(SLOT_CUTOFFS) and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
+    #     modifer_loc += 1
 
-    total = base + modifiers[modifer_loc]
-    total = max(total, 0) + min(rollover, rollover_max)
+    # total = base + modifiers[modifer_loc]
+    total = max(base, 0) + min(rollover, rollover_max)
 
-    return total, base, modifiers[modifer_loc], min(rollover_max, rollover)
+    return total, base, min(rollover_max, rollover)
 
 
 def calc_reg_slots(members: int) -> int:

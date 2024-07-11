@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 from discord.ext.commands import Greedy
 
 import src.cache
-from src.sheet_helpers import update_gambit_sheet, update_ba_sheet, update_bf_sheet, update_wisdom_sheet
+from src.sheet_helpers import update_gambit_sheet, update_ba_sheet, update_bf_sheet, update_wisdom_sheet, update_rankings_sheet
 from .bracket import Bracket, Questions, NUMBER_QUESTIONS, draw_bracket
 from .character import all_emojis, all_alts
 from .constants import *
@@ -44,6 +44,11 @@ class ScoreSheetBot(commands.Cog):
         await self.cache_value.update(self)
         crew_update(self)
         print(time.time() - self.cache_time)
+        await clear_current_cbs(self)
+        for battle_type in BattleType:
+            summary = battle_summary(self, battle_type)
+            if summary:
+                await send_long_embed(self.cache.channels.current_cbs, summary)
         if os.getenv('VERSION') == 'PROD':
             await clear_current_cbs(self)
             for battle_type in BattleType:
@@ -59,6 +64,7 @@ class ScoreSheetBot(commands.Cog):
             await track_handle(self)
             await self.cache_value.channels.recache_logs.send('Successfully recached.')
             update_wisdom_sheet()
+            update_rankings_sheet()
             # update_trinity_sheet()
             # update_destiny_sheet()
             # update_all_sheets()
@@ -347,49 +353,45 @@ class ScoreSheetBot(commands.Cog):
         if user_crew != opp_crew:
             actual_user = crew_lookup(user_crew, self)
             actual_opp = crew_lookup(opp_crew, self)
-            if actual_user.triforce > 0 and actual_user.triforce == actual_opp.triforce:
-                await ctx.send(
-                    f"{ctx.author.mention} If this is your assigned weekly battle please `,clear` this battle and use"
-                    "`,power` or `,courage` instead!")
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.WISDOM))
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.RANKED))
 
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
-
-    @commands.command(**help_doc['battle'], aliases=['wisdom_po'], group='CB')
-    @main_only
-    @no_battle
-    @is_lead
-    @ss_channel
-    async def pob(self, ctx: Context, user: discord.Member, size: int):
-        if size < 1:
-            await ctx.send('Please enter a size greater than 0.')
-            return
-        user_crew = crew(ctx.author, self)
-        opp_crew = crew(user, self)
-        if not user_crew:
-            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-        if not opp_crew:
-            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-        if user_crew != opp_crew:
-            actual_user = crew_lookup(user_crew, self)
-            actual_opp = crew_lookup(opp_crew, self)
-            if actual_user.triforce > 0 and actual_user.triforce == actual_opp.triforce:
-                await ctx.send(
-                    f"{ctx.author.mention} If this is your assigned weekly battle please `,clear` this battle and use"
-                    "`,power` or `,courage` instead!")
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.WISDOM_PLAYOFF))
-
-            await send_sheet(ctx, battle=self._current(ctx))
-        else:
-            await ctx.send('You can\'t battle your own crew.')
+    #
+    # @commands.command(**help_doc['battle'], aliases=['wisdom_po'], group='CB')
+    # @main_only
+    # @no_battle
+    # @is_lead
+    # @ss_channel
+    # async def pob(self, ctx: Context, user: discord.Member, size: int):
+    #     if size < 1:
+    #         await ctx.send('Please enter a size greater than 0.')
+    #         return
+    #     user_crew = crew(ctx.author, self)
+    #     opp_crew = crew(user, self)
+    #     if not user_crew:
+    #         await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+    #                        f'They might be in an overflow crew or no crew. '
+    #                        f'Please contact an admin if this is incorrect.')
+    #         return
+    #     if not opp_crew:
+    #         await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+    #                        f'They might be in an overflow crew or no crew. '
+    #                        f'Please contact an admin if this is incorrect.')
+    #         return
+    #     if user_crew != opp_crew:
+    #         actual_user = crew_lookup(user_crew, self)
+    #         actual_opp = crew_lookup(opp_crew, self)
+    #         if actual_user.triforce > 0 and actual_user.triforce == actual_opp.triforce:
+    #             await ctx.send(
+    #                 f"{ctx.author.mention} If this is your assigned weekly battle please `,clear` this battle and use"
+    #                 "`,power` or `,courage` instead!")
+    #         await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.WISDOM_PLAYOFF))
+    #
+    #         await send_sheet(ctx, battle=self._current(ctx))
+    #     else:
+    #         await ctx.send('You can\'t battle your own crew.')
 
     @commands.command(**help_doc['mock'])
     @no_battle
@@ -485,107 +487,107 @@ class ScoreSheetBot(commands.Cog):
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
-
-    @commands.command(**help_doc['battle'], aliases=['playoff'], group='CB')
-    @main_only
-    @no_battle
-    @is_lead
-    @ss_channel
-    async def trinity(self, ctx: Context, user: discord.Member, size: int):
-        if size < 7:
-            await ctx.send('Please enter a size greater than 6.')
-            return
-        user_crew = crew(ctx.author, self)
-        opp_crew = crew(user, self)
-        if not user_crew:
-            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-        if not opp_crew:
-            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-        if user_crew != opp_crew:
-            user_actual = crew_lookup(user_crew, self)
-            opp_actual = crew_lookup(opp_crew, self)
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.TRINITY_PLAYOFF))
-            await send_sheet(ctx, battle=self._current(ctx))
-        else:
-            await ctx.send('You can\'t battle your own crew.')
-
-    @commands.command(**help_doc['battle'], aliases=['top'], group='CB')
-    @main_only
-    @no_battle
-    @is_lead
-    @ss_channel
-    async def power(self, ctx: Context, user: discord.Member, size: int):
-        if size < 7:
-            await ctx.send('Please enter a size 7 or greater.')
-            return
-        user_crew = crew(ctx.author, self)
-        opp_crew = crew(user, self)
-        if not user_crew:
-            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-        if not opp_crew:
-            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-
-        if user_crew != opp_crew:
-            user_actual = crew_lookup(user_crew, self)
-            if user_actual.triforce != 2:
-                await ctx.send(f'{user_crew} is not in Triforce of Power.')
-                return
-            opp_actual = crew_lookup(opp_crew, self)
-            if opp_actual.triforce != 2:
-                await ctx.send(f'{opp_crew} is not in Triforce of Power.')
-                return
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.POWER_PLAYOFF))
-            await send_sheet(ctx, battle=self._current(ctx))
-        else:
-            await ctx.send('You can\'t battle your own crew.')
-
-    @commands.command(**help_doc['battle'], aliases=['courage'], group='CB')
-    @main_only
-    @no_battle
-    @is_lead
-    @ss_channel
-    async def mid(self, ctx: Context, user: discord.Member, size: int):
-        if size < 6:
-            await ctx.send('Please enter a size 6 or greater.')
-            return
-        user_crew = crew(ctx.author, self)
-        opp_crew = crew(user, self)
-        if not user_crew:
-            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-        if not opp_crew:
-            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-
-        if user_crew != opp_crew:
-            user_actual = crew_lookup(user_crew, self)
-            if user_actual.triforce != 1:
-                await ctx.send(f'{user_crew} is not in Triforce of Courage.')
-                return
-            opp_actual = crew_lookup(opp_crew, self)
-            if opp_actual.triforce != 1:
-                await ctx.send(f'{opp_crew} is not in Triforce of Courage.')
-                return
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.COURAGE_PLAYOFF))
-            await send_sheet(ctx, battle=self._current(ctx))
-        else:
-            await ctx.send('You can\'t battle your own crew.')
+    #
+    # @commands.command(**help_doc['battle'], aliases=['playoff'], group='CB')
+    # @main_only
+    # @no_battle
+    # @is_lead
+    # @ss_channel
+    # async def trinity(self, ctx: Context, user: discord.Member, size: int):
+    #     if size < 7:
+    #         await ctx.send('Please enter a size greater than 6.')
+    #         return
+    #     user_crew = crew(ctx.author, self)
+    #     opp_crew = crew(user, self)
+    #     if not user_crew:
+    #         await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+    #                        f'They might be in an overflow crew or no crew. '
+    #                        f'Please contact an admin if this is incorrect.')
+    #         return
+    #     if not opp_crew:
+    #         await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+    #                        f'They might be in an overflow crew or no crew. '
+    #                        f'Please contact an admin if this is incorrect.')
+    #         return
+    #     if user_crew != opp_crew:
+    #         user_actual = crew_lookup(user_crew, self)
+    #         opp_actual = crew_lookup(opp_crew, self)
+    #         await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.TRINITY_PLAYOFF))
+    #         await send_sheet(ctx, battle=self._current(ctx))
+    #     else:
+    #         await ctx.send('You can\'t battle your own crew.')
+    #
+    # @commands.command(**help_doc['battle'], aliases=['top'], group='CB')
+    # @main_only
+    # @no_battle
+    # @is_lead
+    # @ss_channel
+    # async def power(self, ctx: Context, user: discord.Member, size: int):
+    #     if size < 7:
+    #         await ctx.send('Please enter a size 7 or greater.')
+    #         return
+    #     user_crew = crew(ctx.author, self)
+    #     opp_crew = crew(user, self)
+    #     if not user_crew:
+    #         await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+    #                        f'They might be in an overflow crew or no crew. '
+    #                        f'Please contact an admin if this is incorrect.')
+    #         return
+    #     if not opp_crew:
+    #         await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+    #                        f'They might be in an overflow crew or no crew. '
+    #                        f'Please contact an admin if this is incorrect.')
+    #         return
+    #
+    #     if user_crew != opp_crew:
+    #         user_actual = crew_lookup(user_crew, self)
+    #         if user_actual.triforce != 2:
+    #             await ctx.send(f'{user_crew} is not in Triforce of Power.')
+    #             return
+    #         opp_actual = crew_lookup(opp_crew, self)
+    #         if opp_actual.triforce != 2:
+    #             await ctx.send(f'{opp_crew} is not in Triforce of Power.')
+    #             return
+    #         await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.POWER_PLAYOFF))
+    #         await send_sheet(ctx, battle=self._current(ctx))
+    #     else:
+    #         await ctx.send('You can\'t battle your own crew.')
+    #
+    # @commands.command(**help_doc['battle'], aliases=['courage'], group='CB')
+    # @main_only
+    # @no_battle
+    # @is_lead
+    # @ss_channel
+    # async def mid(self, ctx: Context, user: discord.Member, size: int):
+    #     if size < 6:
+    #         await ctx.send('Please enter a size 6 or greater.')
+    #         return
+    #     user_crew = crew(ctx.author, self)
+    #     opp_crew = crew(user, self)
+    #     if not user_crew:
+    #         await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+    #                        f'They might be in an overflow crew or no crew. '
+    #                        f'Please contact an admin if this is incorrect.')
+    #         return
+    #     if not opp_crew:
+    #         await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+    #                        f'They might be in an overflow crew or no crew. '
+    #                        f'Please contact an admin if this is incorrect.')
+    #         return
+    #
+    #     if user_crew != opp_crew:
+    #         user_actual = crew_lookup(user_crew, self)
+    #         if user_actual.triforce != 1:
+    #             await ctx.send(f'{user_crew} is not in Triforce of Courage.')
+    #             return
+    #         opp_actual = crew_lookup(opp_crew, self)
+    #         if opp_actual.triforce != 1:
+    #             await ctx.send(f'{opp_crew} is not in Triforce of Courage.')
+    #             return
+    #         await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.COURAGE_PLAYOFF))
+    #         await send_sheet(ctx, battle=self._current(ctx))
+    #     else:
+    #         await ctx.send('You can\'t battle your own crew.')
 
     @commands.command(**help_doc['countdown'])
     @ss_channel
@@ -1134,7 +1136,7 @@ class ScoreSheetBot(commands.Cog):
                                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
                     winner = current.winner().name
                     loser = current.loser().name
-                    league_id = CURRENT_LEAGUE_ID
+                    league_id = CURRENT_LEAGUE_ID #TODO Update Current League ID based on league end
                     current = self._current(ctx)
                     if not current:
                         return
@@ -1149,17 +1151,18 @@ class ScoreSheetBot(commands.Cog):
                     loser_crew = crew_lookup(loser, self)
                     winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
                         battle_id)
-                    w_placement = (200 - winner_k) / 30 + 1
-                    l_placement = (200 - loser_k) / 30 + 1
-                    if w_placement < 6:
-                        w_placement_message = f'Placement round {int(w_placement)}'
+                    w_placement = (STARTING_K - winner_k) / K_CHANGE + 1
+                    l_placement = (STARTING_K - winner_k) / K_CHANGE + 1
+                    if winner_k > DEFAULT_K:
+                        w_placement_message = f'Placement round {int(w_placement)}\n'
                         differential = winner_k / 50
                         winner_k_message = f'({winner_change // differential}* {differential})'
                     else:
                         w_placement_message = ''
                         winner_k_message = winner_change
-                    if l_placement < 6:
-                        l_placement_message = f'Placement round {int(l_placement)}'
+                    if loser_k > DEFAULT_K:
+                        l_placement_message = (f'Placement round {int(l_placement)}\n'
+                                               f'Note: Placement rounds do not impact losses\n')
                         differential = loser_k / 50
                         loser_k_message = f'({loser_change // differential}* {differential})'
                     else:
@@ -1171,8 +1174,10 @@ class ScoreSheetBot(commands.Cog):
                         f'{loser} ({loser_crew.abbr})**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
                         f'+ {winner_change} = {winner_elo + winner_change}] \n'
+                        f'{w_placement_message}'
                         f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
                         f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
+                        f'{l_placement_message}'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
@@ -3635,15 +3640,14 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
-            total, base, modifer, rollover = calc_total_slots(cr)
+            total, base, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) ({cr.member_count} members) \n'
-                        f'Next month {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
+                        f'Next month {total} slots: {base} base + {rollover} rollover.')
 
             # total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \
-                      f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
                       f'with an overall minimum of 5 slots\n' \
                       'For more information, refer to message link in #lead_announcements. ' \
@@ -3669,6 +3673,10 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(hidden=True, **help_doc['slottotals'])
     @role_call(STAFF_LIST)
+    async def season(self, ctx):
+        pass
+    @commands.command(hidden=True, **help_doc['slottotals'])
+    @role_call(STAFF_LIST)
     async def slotfinals(self, ctx):
         crews = list(self.cache.crews_by_name.values())
         desc = []
@@ -3677,15 +3685,14 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
-            total, base, modifer, rollover = calc_total_slots(cr)
+            total, base, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
-                        f'Next month {total} slots: {base} base + {modifer} size mod  + {rollover} rollover.')
+                        f'Next month {total} slots: {base} base + {rollover} rollover.')
 
             total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \
-                      f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
                       'For more information, refer to <#430364791245111312>. ' \
                       'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'
