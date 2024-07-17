@@ -147,7 +147,7 @@ class Crew:
         self.triforce = db_crew.triforce
 
     def set_rankings(self, rank: int, rating: int, total: int):
-        self.ladder = '**Trinity League:** '
+        self.ladder = '**SCS League:** '
         self.ladder += f'{rank}/{total}'
         self.ranking = rank
         self.total_crews = total
