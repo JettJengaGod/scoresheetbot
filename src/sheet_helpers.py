@@ -112,6 +112,31 @@ def update_wisdom_sheet():
         'values': blank_right
     }])
 
+def update_rankings_sheet():
+    sheet = client.open(crew_docs_name).worksheet('Ultimate Ladder')
+    left = []
+    right = []
+
+    for name, tag, wins, losses, finished, opp, rating in wisdom_crews():
+        finished = finished.date().strftime("%m/%d/%y") if finished else ''
+        left.append([name, tag, wins, losses])
+        right.append([opp or '', finished, rating])
+
+    blank_left = [['', '', '', ''] for _ in range(50)]
+    blank_right = [['', '', ''] for _ in range(50)]
+    sheet.batch_update([{
+        'range': f'A3:D{3 + len(left)}',
+        'values': left
+    }, {
+        'range': f'F3:H{3 + len(right)}',
+        'values': right
+    }, {
+        'range': f'A{3 + len(left)}:D{3 + len(left) + 50}',
+        'values': blank_left
+    }, {
+        'range': f'F{3 + len(left)}:H{3 + len(left) + 50}',
+        'values': blank_right
+    }])
 
 def update_destiny_sheet():
     sheet = client.open(crew_docs_name).worksheet('Destiny Ladder')
