@@ -4,7 +4,7 @@ import pprint
 import datetime
 import os
 from src.db_helpers import gambit_standings, past_gambits, past_bets, ba_standings, trinity_crews, mc_stats, \
-    destiny_crews, wisdom_crews
+    destiny_crews, wisdom_crews, current_crews
 
 scope = [
     'https://www.googleapis.com/auth/drive',
@@ -117,7 +117,7 @@ def update_rankings_sheet():
     left = []
     right = []
 
-    for name, tag, wins, losses, finished, opp, rating in wisdom_crews():
+    for name, tag, wins, losses, finished, opp, rating in current_crews():
         finished = finished.date().strftime("%m/%d/%y") if finished else ''
         left.append([name, tag, wins, losses])
         right.append([opp or '', finished, rating])

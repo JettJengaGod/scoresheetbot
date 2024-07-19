@@ -1456,7 +1456,7 @@ class ScoreSheetBot(commands.Cog):
             pages = menus.MenuPages(source=PlayerStatsPaged(ctx.author, self))
             await pages.start(ctx)
             return
-        record = crew_record(actual_crew, 20)
+        record = crew_record(actual_crew, CURRENT_LEAGUE_ID)
         if not record[2]:
             await ctx.send(f'{actual_crew.name} does not have any recorded crew battles with the bot.')
             return
@@ -3598,7 +3598,7 @@ class ScoreSheetBot(commands.Cog):
             if current > 20:
                 current = 0
                 start += 50
-            init_crew_rating(cid, start, 20)
+            init_crew_rating(cid, start, CURRENT_LEAGUE_ID)
             print(cid, start)
         # TODO set new elo for wisdom
 

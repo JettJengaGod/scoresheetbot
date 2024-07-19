@@ -3421,7 +3421,7 @@ from (select max(battle.id) as battle_id, crews.id as crew_id
       from battle,
            crews
       where (crews.id = battle.crew_1
-          or crews.id = battle.crew_2) and battle.league_id = 20
+          or crews.id = battle.crew_2) and battle.league_id = %s
       group by crews.id)
          as newest_battle,
      battle
@@ -3435,7 +3435,7 @@ where disbanded = false;
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
-        cur.execute(crews_and_battles)
+        cur.execute(crews_and_battles, (CURRENT_LEAGUE_ID,))
         ret = cur.fetchall()
         conn.commit()
         cur.close()
