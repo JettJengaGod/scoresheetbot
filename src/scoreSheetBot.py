@@ -63,7 +63,7 @@ class ScoreSheetBot(commands.Cog):
             await cooldown_handle(self)
             await track_handle(self)
             await self.cache_value.channels.recache_logs.send('Successfully recached.')
-            update_wisdom_sheet()
+            # update_wisdom_sheet()
             update_rankings_sheet()
             # update_trinity_sheet()
             # update_destiny_sheet()
@@ -1154,21 +1154,21 @@ class ScoreSheetBot(commands.Cog):
                     w_placement = (STARTING_K - winner_k) / K_CHANGE + 1
                     l_placement = (STARTING_K - winner_k) / K_CHANGE + 1
                     if winner_k > DEFAULT_K:
-                        w_placement_message = f'Placement round {int(w_placement)}\n'
+                        w_placement_message = f'Placement round {int(w_placement)}'
                         differential = winner_k / 50
                         winner_k_message = f'({winner_change // differential}* {differential})'
                     else:
                         w_placement_message = ''
                         winner_k_message = winner_change
                     if loser_k > DEFAULT_K:
-                        l_placement_message = (f'Placement round {int(l_placement)}\n'
+                        l_placement_message = (f'Placement round {int(l_placement)}'
                                                f'Note: Placement rounds do not impact losses\n')
                         differential = loser_k / 50
                         loser_k_message = f'({loser_change // differential}* {differential})'
                     else:
                         l_placement_message = ''
                         loser_k_message = loser_change
-                    battle_name = 'Triforce of Wisdom'
+                    battle_name = 'SCS Ultimate v24.0'
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
@@ -2452,7 +2452,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             l_placement_message = ''
             loser_k_message = loser_change
-        battle_name = 'Triforce of Wisdom'
+        battle_name = 'SCS Ultimate v24.0'
         new_message = (
             f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner_crew.name} ({winner_crew.abbr})⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
@@ -2858,7 +2858,7 @@ class ScoreSheetBot(commands.Cog):
             calced = calc_reg_slots(len(members))
             total_slot_set(flairing_crew, calced)
             desc.append(f'Initiated with {calced} slots.')
-        init_rating(flairing_crew, 1500, 200)
+        init_rating(flairing_crew, 1500, STARTING_K)
 
         embed = discord.Embed(title=f'Crew Reg for {flairing_crew.name}', description='\n'.join(desc),
                               color=flairing_crew.color)
@@ -3590,9 +3590,6 @@ class ScoreSheetBot(commands.Cog):
         current = 0
         for cid in crews_by_rating():
             current += 1
-            if current > 20:
-                current = 0
-                start += 50
             init_crew_rating(cid, start, CURRENT_LEAGUE_ID)
             print(cid, start)
         # TODO set new elo for wisdom

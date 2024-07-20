@@ -73,10 +73,10 @@ class Crew:
     @property
     def embed(self) -> discord.Embed:
         title = f'{self.name}'
-        if self.triforce == 1:
-            title += f' (Triforce of Courage)'
-        if self.triforce == 2:
-            title += f' (Triforce of Power)'
+        # if self.triforce == 1:
+        #     title += f' (Triforce of Courage)'
+        # if self.triforce == 2:
+        #     title += f' (Triforce of Power)'
         if self.overflow:
             title += f' (Overflow) '
         if self.wl:

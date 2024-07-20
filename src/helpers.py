@@ -976,6 +976,8 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
         ty = 'Courage Playoff'
     elif battle_type == BattleType.POWER_PLAYOFF:
         ty = 'Power Playoff'
+    elif battle_type == BattleType.RANKED:
+        ty = 'SCS Ultimate v24.0'
     else:
         ty = 'Undefined'
     title = f'Current {ty} Battles'
