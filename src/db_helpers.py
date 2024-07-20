@@ -972,7 +972,7 @@ def all_battle_ids() -> Sequence[int]:
 
 
 def crews_by_rating() -> Sequence[int]:
-    everything = """select crew_id from crew_ratings where league_id = 19 order by rating;"""
+    everything = """select crews.id from crews where crews.disbanded = false order by crews.id;"""
     conn = None
     ids = []
     try:
@@ -3562,7 +3562,7 @@ def destiny_crews() -> Sequence[Tuple[str, str, int, str, int, str, int]]:
 
 def init_rating(crew: Crew, rating: int, k: int = STARTING_K):
     set_rating = """insert into crew_ratings (crew_id, league_id, rating, k) 
-    values (%s, 20, %s, %s);
+    values (%s, %s, %s, %s);
     """
     conn = None
     try:
@@ -3573,7 +3573,7 @@ def init_rating(crew: Crew, rating: int, k: int = STARTING_K):
         if not cr_id:
             print(f'{crew.name} not in DB!')
             return
-        cur.execute(set_rating, (cr_id, rating, k))
+        cur.execute(set_rating, (cr_id, CURRENT_LEAGUE_ID, rating, k))
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
