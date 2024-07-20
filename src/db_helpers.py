@@ -3560,7 +3560,7 @@ def destiny_crews() -> Sequence[Tuple[str, str, int, str, int, str, int]]:
 
 def init_rating(crew: Crew, rating: int, k: int = STARTING_K):
     set_rating = """insert into crew_ratings (crew_id, league_id, rating, k) 
-    values (%s, %s, %s, %s);
+    values (%s, %s, %s, %s) ON CONFLICT DO NOTHING;
     """
     conn = None
     try:
