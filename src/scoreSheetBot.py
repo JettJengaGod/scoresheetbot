@@ -1161,7 +1161,7 @@ class ScoreSheetBot(commands.Cog):
                         w_placement_message = ''
                         winner_k_message = winner_change
                     if loser_k > DEFAULT_K:
-                        l_placement_message = (f'Placement round {int(l_placement)}'
+                        l_placement_message = (f'Placement round {int(l_placement)} '
                                                f'Note: Placement rounds do not impact losses\n')
                         differential = loser_k / 50
                         loser_k_message = f'({loser_change // differential}* {differential})'
@@ -2446,7 +2446,7 @@ class ScoreSheetBot(commands.Cog):
             w_placement_message = ''
             winner_k_message = winner_change
         if l_placement < 6:
-            l_placement_message = f'Placement round {int(l_placement)}'
+            l_placement_message = f'Placement round {int(l_placement)} '
             differential = loser_k / 50
             loser_k_message = f'({loser_change // differential}* {differential})'
         else:

@@ -157,6 +157,8 @@ class Cache:
                             social.append(f'[Discord]({link})')
                         elif 'twitter.com' in link:
                             social.append(f'[Twitter]({link})')
+                        elif 'x.com' in link:
+                            social.append(f'[Twitter]({link})')
                         elif 'instagram.com' in link:
                             social.append(f'[Insta]({link})')
                         elif 'youtube.com' in link:
