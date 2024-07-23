@@ -1366,11 +1366,7 @@ class ScoreSheetBot(commands.Cog):
                             for cr
                             in wisdom_rankings()]
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Triforce of Wisdom Rankings'),
-                                clear_reactions_after=True)
-        await pages.start(ctx)
-
-        pages = menus.MenuPages(source=TriforceStatsPaged(power_rankings(), courage_rankings()),
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Scs Ultimate v24.0 Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
