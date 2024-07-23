@@ -928,7 +928,7 @@ def wisdom_rankings() -> List[Tuple[int, str, int]]:
 from crews,
      crew_ratings
 where crews.disbanded = false
-  and crew_ratings.league_id = 20
+  and crew_ratings.league_id = 26
   and crews.id = crew_ratings.crew_id
 order by rating desc;"""
     conn = None
