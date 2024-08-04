@@ -1263,15 +1263,15 @@ def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
         rollover = sl[0]
     else:
         rollover = 0
-    # modifiers = [6, 4, 2, 0, -1, -2, -3, -4, -99]
-    # modifer_loc = 0
-    # while modifer_loc < len(SLOT_CUTOFFS) and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
-    #     modifer_loc += 1
+    modifiers = [6, 4, 2, 0, -1, -2, -3, -4, -99]
+    modifer_loc = 0
+    while modifer_loc < len(SLOT_CUTOFFS) and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
+        modifer_loc += 1
 
-    # total = base + modifiers[modifer_loc]
-    total = max(base, 0) + min(rollover, rollover_max)
+    total = base + modifiers[modifer_loc]
+    total = max(total, 0) + min(rollover, rollover_max)
 
-    return total, base, min(rollover_max, rollover)
+    return total, base, modifiers[modifer_loc], min(rollover_max, rollover)
 
 
 def calc_reg_slots(members: int) -> int:

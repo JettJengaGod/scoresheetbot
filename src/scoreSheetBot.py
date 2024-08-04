@@ -2373,7 +2373,7 @@ class ScoreSheetBot(commands.Cog):
             battle_id, forfeit=True)
 
         new_message = (
-            f'**{today.strftime("%B %d, %Y")} (Trinity League) - {winner_crew.name} ({winner_crew.abbr})⚔'
+            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.0 ) - {winner_crew.name} ({winner_crew.abbr})⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
             f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
             f'+ {winner_change} = {winner_elo + winner_change}]'
@@ -2656,8 +2656,8 @@ class ScoreSheetBot(commands.Cog):
 
         winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
             battle_id)
-        w_placement = (200 - winner_k) / 30 + 1
-        l_placement = (200 - winner_k) / 30 + 1
+        w_placement = (STARTING_K - winner_k) / K_CHANGE + 1
+        l_placement = (STARTING_K - loser_k) / K_CHANGE + 1
         if w_placement < 6:
             w_placement_message = f'Placement round {int(w_placement)}'
             differential = winner_k / 50
@@ -2674,7 +2674,7 @@ class ScoreSheetBot(commands.Cog):
             loser_k_message = loser_change
 
         new_message = (
-            f'**{today.strftime("%B %d, %Y")} (Trinity League) - {winner_crew}⚔'
+            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.0) - {winner_crew}⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
             f'**Winner:** {winner_crew} \n'
             f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
@@ -3638,14 +3638,15 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
-            total, base, rollover = calc_total_slots(cr)
+            total, base,modifer, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) ({cr.member_count} members) \n'
-                        f'Next month {total} slots: {base} base + {rollover} rollover.')
+                        f'Next month {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
 
             # total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \
+                      f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
                       f'with an overall minimum of 5 slots\n' \
                       'For more information, refer to message link in #lead_announcements. ' \
@@ -3683,14 +3684,15 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
-            total, base, rollover = calc_total_slots(cr)
+            total, base, modifer, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
-                        f'Next month {total} slots: {base} base + {rollover} rollover.')
+                        f'Next month {total} slots: {base} base + {modifer} size mod  + {rollover} rollover.')
 
             total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \
+                      f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
                       'For more information, refer to <#430364791245111312>. ' \
                       'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'
