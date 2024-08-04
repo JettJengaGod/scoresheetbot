@@ -928,7 +928,7 @@ def wisdom_rankings() -> List[Tuple[int, str, int]]:
 from crews,
      crew_ratings
 where crews.disbanded = false
-  and crew_ratings.league_id = 26
+  and crew_ratings.league_id = %s
   and crews.id = crew_ratings.crew_id
 order by rating desc;"""
     conn = None
@@ -937,7 +937,7 @@ order by rating desc;"""
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
-        cur.execute(everything)
+        cur.execute(everything, (CURRENT_LEAGUE_ID,))
         ids = cur.fetchall()
         conn.commit()
         cur.close()
