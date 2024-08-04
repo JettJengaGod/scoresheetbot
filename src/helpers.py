@@ -1266,9 +1266,9 @@ def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
         modifer_loc += 1
 
     total = base + modifiers[modifer_loc]
-    total = max(base, 0) + min(rollover, rollover_max)
+    total = max(total, 0) + min(rollover, rollover_max)
 
-    return total, base, min(rollover_max, rollover)
+    return total, base, modifiers[modifer_loc], min(rollover_max, rollover)
 
 
 def calc_reg_slots(members: int) -> int:
