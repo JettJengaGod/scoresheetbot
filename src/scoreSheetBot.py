@@ -1024,14 +1024,7 @@ class ScoreSheetBot(commands.Cog):
                     new_message = (f'**{today.strftime("%B %d, %Y")} (Registration) - {winner}⚔{loser}**\n'
                                    f'**Winner:** {winner} \n'
                                    f'**Loser:** {loser}\n')
-                    if successful:
-                        new_message += (f'Successful registration battle! Please allow doc keepers to finish the'
-                                        f' registration process and submit this crew battle using `,addsheet '
-                                        f'{winner} {loser} {current.team1.num_players} {final_score}`')
-                    else:
-                        new_message += (f'{current.team2.name} failed to register. Doc keepers can submit this battle'
-                                        f'using `,failedreg {winner} {loser} {current.team1.num_players} '
-                                        f'{final_score}`')
+
                     for link in links:
                         await link.edit(content=new_message)
                     # TODO Make this work for registration battles
@@ -1168,7 +1161,7 @@ class ScoreSheetBot(commands.Cog):
                     else:
                         l_placement_message = ''
                         loser_k_message = loser_change
-                    battle_name = 'SCS Ultimate v24.0'
+                    battle_name = 'SCS Ultimate v24.1'
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
@@ -1361,7 +1354,7 @@ class ScoreSheetBot(commands.Cog):
                             for cr
                             in wisdom_rankings()]
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Scs Ultimate v24.0 Rankings'),
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Scs Ultimate v24.1 Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
@@ -2368,7 +2361,7 @@ class ScoreSheetBot(commands.Cog):
             battle_id, forfeit=True)
 
         new_message = (
-            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.0 ) - {winner_crew.name} ({winner_crew.abbr})⚔'
+            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.1 ) - {winner_crew.name} ({winner_crew.abbr})⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
             f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
             f'+ {winner_change} = {winner_elo + winner_change}]'
@@ -2448,7 +2441,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             l_placement_message = ''
             loser_k_message = loser_change
-        battle_name = 'SCS Ultimate v24.0'
+        battle_name = 'SCS Ultimate v24.1'
         new_message = (
             f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner_crew.name} ({winner_crew.abbr})⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
@@ -2669,7 +2662,7 @@ class ScoreSheetBot(commands.Cog):
             loser_k_message = loser_change
 
         new_message = (
-            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.0) - {winner_crew}⚔'
+            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.1) - {winner_crew}⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
             f'**Winner:** {winner_crew} \n'
             f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
