@@ -491,35 +491,35 @@ class ScoreSheetBot(commands.Cog):
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
-    #
-    # @commands.command(**help_doc['battle'], aliases=['playoff'], group='CB')
-    # @main_only
-    # @no_battle
-    # @is_lead
-    # @ss_channel
-    # async def trinity(self, ctx: Context, user: discord.Member, size: int):
-    #     if size < 7:
-    #         await ctx.send('Please enter a size greater than 6.')
-    #         return
-    #     user_crew = crew(ctx.author, self)
-    #     opp_crew = crew(user, self)
-    #     if not user_crew:
-    #         await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
-    #                        f'They might be in an overflow crew or no crew. '
-    #                        f'Please contact an admin if this is incorrect.')
-    #         return
-    #     if not opp_crew:
-    #         await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
-    #                        f'They might be in an overflow crew or no crew. '
-    #                        f'Please contact an admin if this is incorrect.')
-    #         return
-    #     if user_crew != opp_crew:
-    #         user_actual = crew_lookup(user_crew, self)
-    #         opp_actual = crew_lookup(opp_crew, self)
-    #         await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.TRINITY_PLAYOFF))
-    #         await send_sheet(ctx, battle=self._current(ctx))
-    #     else:
-    #         await ctx.send('You can\'t battle your own crew.')
+
+    @commands.command(**help_doc['battle'], aliases=['pob'], group='CB')
+    @main_only
+    @no_battle
+    @is_lead
+    @ss_channel
+    async def playoff(self, ctx: Context, user: discord.Member, size: int):
+        if size < 7:
+            await ctx.send('Please enter a size greater than 6.')
+            return
+        user_crew = crew(ctx.author, self)
+        opp_crew = crew(user, self)
+        if not user_crew:
+            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if not opp_crew:
+            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
+                           f'They might be in an overflow crew or no crew. '
+                           f'Please contact an admin if this is incorrect.')
+            return
+        if user_crew != opp_crew:
+            user_actual = crew_lookup(user_crew, self)
+            opp_actual = crew_lookup(opp_crew, self)
+            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.PLAYOFF))
+            await send_sheet(ctx, battle=self._current(ctx))
+        else:
+            await ctx.send('You can\'t battle your own crew.')
     #
     # @commands.command(**help_doc['battle'], aliases=['top'], group='CB')
     # @main_only
@@ -1107,6 +1107,48 @@ class ScoreSheetBot(commands.Cog):
                     loser_crew = crew_lookup(loser, self)
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({name}) - {winner}⚔{loser}**\n'
+                        f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr})\n '
+                        f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) \n'
+                        f'**Battle:** {battle_id} from {ctx.channel.mention}')
+                    for link in links:
+                        await link.edit(content=new_message)
+                    await ctx.send(
+                        f'The battle between {current.team1.name} and {current.team2.name} '
+                        f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
+                        f'(Battle number:{battle_id})')
+
+                    await links[0].add_reaction(YES)
+                    for cr in (winner_crew, loser_crew):
+                        if not extra_slot_used(cr):
+                            if battles_since_sunday(cr) >= 3:
+                                mod_slot(cr, 1)
+                                await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                                set_extra_used(cr)
+            elif current.battle_type == BattleType.PLAYOFF:
+                current.confirm(await self._battle_crew(ctx, ctx.author))
+                await send_sheet(ctx, battle=current)
+                if current.confirmed():
+                    today = date.today()
+                    output_channels = [
+                        discord.utils.get(ctx.guild.channels, id=1290884656732049469),
+                        discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
+                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
+                    winner = current.winner().name
+                    loser = current.loser().name
+                    current = self._current(ctx)
+                    if not current:
+                        return
+                    await self._clear_current(ctx)
+                    links = []
+                    for output_channel in output_channels:
+                        link = await send_sheet(output_channel, current)
+                        links.append(link)
+                    battle_id = add_finished_battle(current, links[0].jump_url, 28)
+                    battle_weight_changes(battle_id)
+                    winner_crew = crew_lookup(winner, self)
+                    loser_crew = crew_lookup(loser, self)
+                    new_message = (
+                        f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.0 Playoff) - {winner}⚔{loser}**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr})\n '
                         f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
