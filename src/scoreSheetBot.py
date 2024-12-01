@@ -1208,7 +1208,7 @@ class ScoreSheetBot(commands.Cog):
                     else:
                         l_placement_message = ''
                         loser_k_message = loser_change
-                    battle_name = 'SCS Ultimate v24.1'
+                    battle_name = 'SCS Ultimate v24.2'
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
@@ -1401,7 +1401,7 @@ class ScoreSheetBot(commands.Cog):
                             for cr
                             in wisdom_rankings()]
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Scs Ultimate v24.1 Rankings'),
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Scs Ultimate v24.2 Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
@@ -2408,7 +2408,7 @@ class ScoreSheetBot(commands.Cog):
             battle_id, forfeit=True)
 
         new_message = (
-            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.1 ) - {winner_crew.name} ({winner_crew.abbr})⚔'
+            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.2 ) - {winner_crew.name} ({winner_crew.abbr})⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
             f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
             f'+ {winner_change} = {winner_elo + winner_change}]'
@@ -2488,7 +2488,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             l_placement_message = ''
             loser_k_message = loser_change
-        battle_name = 'SCS Ultimate v24.1'
+        battle_name = 'SCS Ultimate v24.2'
         new_message = (
             f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner_crew.name} ({winner_crew.abbr})⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
@@ -2709,7 +2709,7 @@ class ScoreSheetBot(commands.Cog):
             loser_k_message = loser_change
 
         new_message = (
-            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.1) - {winner_crew}⚔'
+            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.2) - {winner_crew}⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
             f'**Winner:** {winner_crew} \n'
             f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
