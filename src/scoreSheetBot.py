@@ -26,6 +26,8 @@ class ScoreSheetBot(commands.Cog):
         self.cache_value = cache
         self.cache_time = time.time()
         self._gambit_message = None
+        self.current_league = ""
+        self.past_2_weeks = False
 
     @property
     def cache(self) -> src.cache.Cache:
@@ -35,6 +37,11 @@ class ScoreSheetBot(commands.Cog):
         return self.cache_value
 
     async def _cache_process(self, backup=False):
+        self.current_league, start_date, reset = current_league_name()
+        if start_date:
+            self.past_2_weeks = True if datetime.now() - start_date > timedelta(days=14) else False
+            if self.past_2_weeks and not reset:
+                reset_k()
         self.cache_time = time.time()
         if self.cache_value.channels and os.getenv('VERSION') == 'PROD':
             if backup:
@@ -1197,22 +1204,22 @@ class ScoreSheetBot(commands.Cog):
                         winner_k_message = winner_change
                     if loser_k > DEFAULT_K:
                         l_placement_message = (f'Placement round {int(l_placement)} '
-                                               f'Note: Placement rounds do not impact losses\n')
+                                               f'(No effect for loss)\n')
                         differential = loser_k / 50
                         loser_k_message = f'({loser_change // differential}* {differential})'
                     else:
                         l_placement_message = ''
                         loser_k_message = loser_change
-                    battle_name = 'SCS Ultimate v24.2'
+                    battle_name = self.current_league
                     new_message = (
                         f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner} ({winner_crew.abbr})⚔'
                         f'{loser} ({loser_crew.abbr})**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
-                        f'+ {winner_change} = {winner_elo + winner_change}] \n'
-                        f'{w_placement_message}'
+                        f'+ {winner_change} = {winner_elo + winner_change}] '
+                        f'{w_placement_message}\n'
                         f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
-                        f'- {abs(loser_change)} = {loser_elo + loser_change}] \n'
-                        f'{l_placement_message}'
+                        f'- {abs(loser_change)} = {loser_elo + loser_change}] '
+                        f'{l_placement_message}\n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
@@ -1396,7 +1403,7 @@ class ScoreSheetBot(commands.Cog):
                             for cr
                             in wisdom_rankings()]
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title='Scs Ultimate v24.2 Rankings'),
+        pages = menus.MenuPages(source=Paged(crew_ranking_str, title=f'{self.current_league} Rankings'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
@@ -2403,7 +2410,7 @@ class ScoreSheetBot(commands.Cog):
             battle_id, forfeit=True)
 
         new_message = (
-            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.2 ) - {winner_crew.name} ({winner_crew.abbr})⚔'
+            f'**{today.strftime("%B %d, %Y")} ({self.current_league}) - {winner_crew.name} ({winner_crew.abbr})⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
             f'**Winner:** <@&{winner_crew.role_id}> [{winner_elo} '
             f'+ {winner_change} = {winner_elo + winner_change}]'
@@ -2483,7 +2490,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             l_placement_message = ''
             loser_k_message = loser_change
-        battle_name = 'SCS Ultimate v24.2'
+        battle_name = self.current_league
         new_message = (
             f'**{today.strftime("%B %d, %Y")} ({battle_name}) - {winner_crew.name} ({winner_crew.abbr})⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
@@ -2704,7 +2711,7 @@ class ScoreSheetBot(commands.Cog):
             loser_k_message = loser_change
 
         new_message = (
-            f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.2) - {winner_crew}⚔'
+            f'**{today.strftime("%B %d, %Y")} ({self.current_league}) - {winner_crew}⚔'
             f'{loser_crew.name} ({loser_crew.abbr})**\n'
             f'**Winner:** {winner_crew} \n'
             f'**Loser:** <@&{loser_crew.role_id}> [{loser_elo} '
@@ -2889,7 +2896,8 @@ class ScoreSheetBot(commands.Cog):
             calced = calc_reg_slots(len(members))
             total_slot_set(flairing_crew, calced)
             desc.append(f'Initiated with {calced} slots.')
-        init_rating(flairing_crew, 1500, STARTING_K)
+        starting_k = 50 if self.past_2_weeks else STARTING_K
+        init_rating(flairing_crew, 1500, starting_k)
 
         embed = discord.Embed(title=f'Crew Reg for {flairing_crew.name}', description='\n'.join(desc),
                               color=flairing_crew.color)
@@ -3367,7 +3375,6 @@ class ScoreSheetBot(commands.Cog):
         await send_long(ctx, out, ',')
 
     @commands.command(hidden=True, **help_doc['bigcrew'])
-    @role_call(STAFF_LIST)
     async def bigcrew(self, ctx, over: Optional[int] = 40):
         big = []
         for cr in self.cache.crews_by_name.values():

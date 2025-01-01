@@ -1045,6 +1045,29 @@ def destiny_unpair(cr1_id: int, cr2_id: int):
     return
 
 
+def current_league_name() -> Tuple[str, datetime.date, bool]:
+    name, start_date, reset = "", None, True
+    league_name = """select league_name, start_date,reset from leagues, current_season where league_id = current_season.league_id;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(league_name)
+        ret = cur.fetchone()
+        if ret:
+            name, start_date, reset = ret
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return name, start_date,reset
+
+
 def destiny_result(winner_id: int, loser_id: int):
     both = """update destiny_gain set current_amount = 0, opponent = null where crew_id in (%s, %s);"""
     winner = """update destiny_gain set rank = rank + 1 where crew_id = %s;"""
@@ -3581,6 +3604,28 @@ def init_rating(crew: Crew, rating: int, k: int = STARTING_K):
             conn.close()
     return
 
+def reset_k( k: int = DEFAULT_K):
+    set_rating = """update crew_ratings set k = %s where league_id = %s;
+    """
+    set_reset = """update current_season set reset = true where league_id = %s;
+    """
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(set_rating, ( k, CURRENT_LEAGUE_ID))
+
+        cur.execute(set_reset, (CURRENT_LEAGUE_ID,))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return
+
 
 def init_crew_rating(crew_id: int, rating: int, league_id: int):
     set_rating = """insert into crew_ratings (crew_id, league_id, rating, k) VALUES (
@@ -3759,7 +3804,6 @@ def record_nicknames(member_nicks: Sequence[Tuple[int, str]]):
         if conn is not None:
             conn.close()
     return
-
 
 def elo_decay(crew: Crew, amount: int):
     modify = """update crews set decay_level = decay_level+1 where id = %s;"""

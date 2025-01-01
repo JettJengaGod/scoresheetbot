@@ -977,7 +977,7 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
     elif battle_type == BattleType.POWER_PLAYOFF:
         ty = 'Power Playoff'
     elif battle_type == BattleType.RANKED:
-        ty = 'SCS Ultimate v24.2'
+        ty = bot.current_league
     else:
         ty = 'Undefined'
     title = f'Current {ty} Battles'
@@ -1253,14 +1253,14 @@ def top_percentage(crew: Crew) -> bool:
 
 
 def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
-    rollover_max = 2
+    rollover_max = 3
     base = 6 if top_percentage(cr) else 7
     sl = slots(cr)
     if sl and not cr.freeze:
         rollover = sl[0]
     else:
         rollover = 0
-    modifiers = [6, 4, 2, 0, -1, -2, -3, -4, -99]
+    modifiers = [6, 4, 2, 0, -2, -99]
     modifer_loc = 0
     while modifer_loc < len(SLOT_CUTOFFS) and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
         modifer_loc += 1
