@@ -1260,7 +1260,7 @@ def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
         rollover = sl[0]
     else:
         rollover = 0
-    modifiers = [6, 4, 2, 0, -2, -99]
+    modifiers = [6, 4, 2, 0, -2, -4, -99]
     modifer_loc = 0
     while modifer_loc < len(SLOT_CUTOFFS) and cr.member_count >= SLOT_CUTOFFS[modifer_loc]:
         modifer_loc += 1
