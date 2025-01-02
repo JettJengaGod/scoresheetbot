@@ -162,7 +162,7 @@ class PlayoffType(Enum):
 SLOT_CUTOFFS = [9, 17, 25, 30, 40, 50, 100]
 RANK_CUTOFF = 4
 
-CURRENT_LEAGUE_ID = 30 # TODO replace with DB table for current season
+CURRENT_LEAGUE_ID = 29 # TODO replace with DB table for current season
 
 POWER_DIVS = ['', 'Ocarina', 'Skyward', 'Twilight', 'Phantom']
 COURAGE_DIVS = ['', 'Eldin', 'Gerudo', 'Faron', 'Lanaryu']
