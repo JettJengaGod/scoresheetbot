@@ -1257,7 +1257,7 @@ def top_percentage(crew: Crew) -> bool:
 
 def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
     rollover_max = 3
-    base = 6 if top_percentage(cr) else 7
+    base = 7 # if top_percentage(cr) else 7
     sl = slots(cr)
     if sl and not cr.freeze:
         rollover = sl[0]
