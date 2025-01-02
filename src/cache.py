@@ -33,6 +33,7 @@ class Cache:
         self.non_crew_roles_overflow: List[str] = []
         self.crews_by_tag: Dict[str, Crew] = {}
         self.flairing_allowed: bool = True
+        self.current_league_id: int = 0
 
     async def update(self, bot: 'ScoreSheetBot'):
         self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
