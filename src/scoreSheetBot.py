@@ -39,7 +39,7 @@ class ScoreSheetBot(commands.Cog):
     async def _cache_process(self, backup=False):
         self.current_league, start_date, reset = current_league_name()
         if start_date:
-            self.past_2_weeks = True if datetime.now() - start_date > timedelta(days=14) else False
+            self.past_2_weeks = True if datetime.now().date() - start_date > timedelta(days=14) else False
             if self.past_2_weeks and not reset:
                 reset_k()
         self.cache_time = time.time()

@@ -1047,7 +1047,8 @@ def destiny_unpair(cr1_id: int, cr2_id: int):
 
 def current_league_name() -> Tuple[str, datetime.date, bool]:
     name, start_date, reset = "", None, True
-    league_name = """select league_name, start_date,reset from leagues, current_season where league_id = current_season.league_id;"""
+    league_name = """select name, start_date,reset from league, current_season where league.id = current_season.league_id;
+"""
     conn = None
     try:
         params = config()
