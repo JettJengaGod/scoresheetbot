@@ -1542,8 +1542,8 @@ FROM (
     JOIN match ON match.battle_id = battle.id
     WHERE battle.crew_1 = %s
       and battle.league_id = %s
-      AND battle.finished >= date_trunc('month', NOW())
-      AND battle.finished < date_trunc('month', NOW()) + INTERVAL '1 month'
+      AND battle.finished >= date_trunc('month', NOW()) - INTERVAL '1 month'
+      AND battle.finished < date_trunc('month', NOW())
 
     UNION
 
@@ -1552,16 +1552,16 @@ FROM (
     JOIN match ON match.battle_id = battle.id
     WHERE battle.crew_2 = %s
       and battle.league_id = %s
-      AND battle.finished >= date_trunc('month', NOW())
-      AND battle.finished < date_trunc('month', NOW()) + INTERVAL '1 month'
+      AND battle.finished >= date_trunc('month', NOW()) - INTERVAL '1 month'
+      AND battle.finished < date_trunc('month', NOW())
 ) AS combined_players;"""
 
     number_of_battles = """select count(*)
 from battle
 where (crew_1 = %s or crew_2 = %s)
   and battle.league_id = %s
-  and finished >= date_trunc('month', NOW())
-  AND finished < date_trunc('month', NOW()) + INTERVAL '1 month';"""
+      AND battle.finished >= date_trunc('month', NOW()) - INTERVAL '1 month'
+      AND battle.finished < date_trunc('month', NOW());"""
 
     conn = None
     players, battles = 0, 0

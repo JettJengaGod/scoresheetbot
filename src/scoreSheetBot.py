@@ -3687,11 +3687,16 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
+            hardcap, diversity, crew_staff, activity = calc_hardcap(cr)
             total, base,modifer, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) ({cr.member_count} members) \n'
                         f'Next month {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
+            desc.append(f'Your new hardcap is: {hardcap} (50 + {diversity} for diversity + {activity} for activity '
+                        f'+ {crew_staff} for crew staff) ')
 
+            # cr.set_hardcap(hardcap)
+            # set_hardcap(cr)
             # total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \
@@ -3733,11 +3738,15 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
+            hardcap, diversity, crew_staff, activity = calc_hardcap(cr)
             total, base, modifer, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
                         f'Next month {total} slots: {base} base + {modifer} size mod  + {rollover} rollover.')
-
+            desc.append(f'Your new hardcap is: {hardcap} (50 + {diversity} for diversity + {activity} for activity '
+                        f'+ {crew_staff} for crew staff) ')
+            cr.set_hardcap(hardcap)
+            set_hardcap(cr)
             total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \
