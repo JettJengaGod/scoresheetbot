@@ -16,7 +16,7 @@ from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_cre
     player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id, \
     trinity_crews, elo_decay, reset_decay, first_crew_flair, track_finished_out, track_down_out, track_finished, \
     update_member_roles, recent_unflair, get_bracket_predictions, crew_usage, all_crew_usage, all_crew_destiny, \
-    crew_to_last_played
+    crew_to_last_played, hardcap_info, set_hardcap
 from .gambit import Gambit
 from .sheet_helpers import update_all_sheets
 
@@ -725,14 +725,40 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
         add_member_and_crew(member, member_crew)
 
 
+def calc_hardcap(cr: Crew)-> int:
+    base_cap = 50
+    players, battles = hardcap_info(cr, CURRENT_LEAGUE_ID)
+    activity = players/(cr.member_count - len(cr.crew_staff))
+
+    diversity = 0
+    if activity >= .55:
+        diversity = 8
+    elif activity >= .5:
+        diversity = 6
+    elif activity >= .45:
+        diversity = 4
+    elif activity >= .4:
+        diversity = 2
+    cr_activity = min(12, battles)
+    crew_staff = min(5, len(cr.crew_staff))
+    return base_cap + diversity + crew_staff + cr_activity
+
 def crew_update(bot: 'ScoreSheetBot'):
     cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache_value.crews_by_name.values() if
                                      cr.role_id != -1}
+    for cr in cached_crews.values():
+        if cr.member_count >= 45:
+            new = calc_hardcap(cr)
+            if new != cr.hardcap:
+                print(new, cr.hardcap)
+                bot.cache_value.crews_by_name[cr.name].set_hardcap(new)
+                set_hardcap(cr)
     db_crews = sorted(all_crews(), key=lambda x: x.name)
 
     usage = {cr[2]: cr[0] for cr in all_crew_usage()}
     destiny = {cr[0]: [cr[1], cr[2], cr[3], cr[4]] for cr in all_crew_destiny()}
     rankings = crew_rankings()
+
     missing = []
     for db_crew in db_crews:
         if db_crew.discord_id in cached_crews:

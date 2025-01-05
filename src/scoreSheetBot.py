@@ -635,6 +635,9 @@ class ScoreSheetBot(commands.Cog):
                     if check_roles(user, [WATCHLIST]):
                         await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
                         return
+                    if check_roles(user, [CREW_STAFF]):
+                        await ctx.send(f'Crew Staff: {user.mention} cannot play in ranked battles.')
+                        return
                     if check_roles(user, [JOIN_CD]):
                         await ctx.send(
                             f'{user.mention} joined this crew less than '
@@ -812,6 +815,9 @@ class ScoreSheetBot(commands.Cog):
                 if author_crew == player_crew:
                     if check_roles(user, [WATCHLIST]):
                         await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
+                        return
+                    if check_roles(user, [CREW_STAFF]):
+                        await ctx.send(f'Crew Staff: {user.mention} cannot play in ranked battles.')
                         return
                     if check_roles(user, [JOIN_CD]):
                         await ctx.send(
@@ -1739,6 +1745,7 @@ class ScoreSheetBot(commands.Cog):
                 await member.edit(nick=nick_without_prefix(member.display_name))
                 await member.remove_roles(self.cache.roles.overflow)
                 await member.remove_roles(self.cache.roles.fortyman)
+                await member.remove_roles(self.cache.roles.crew_staff)
                 await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader)
                 await track_cycle(member, self.cache.scs)
                 after = set(ctx.guild.get_member(member.id).roles)
@@ -1817,7 +1824,12 @@ class ScoreSheetBot(commands.Cog):
         if left <= 0:
             await response_message(ctx, f'{flairing_crew.name} has no flairing slots left ({left}/{total})')
             return
+        if flairing_crew.member_count>= flairing_crew.hardcap:
 
+            await response_message(ctx, f'{flairing_crew.name} ({flairing_crew.member_count} members) '
+                                        f'has hit their hardcap of {flairing_crew.hardcap}, '
+                                        f'to flair more members please see this post (https://discord.com/channels/430361913369690113/518298974818402306/1312519394945138708)')
+            return
         of_before, of_after = None, None
         if flairing_crew.overflow:
             of_user = self.cache.overflow_server.get_member(member.id)
