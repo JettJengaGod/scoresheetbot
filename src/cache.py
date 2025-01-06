@@ -81,6 +81,7 @@ class Cache:
             everyone = discord.utils.get(server.roles, name='@everyone')
             poach_me = discord.utils.get(server.roles, id=POACH_ME_ID)
             playoff_locked = discord.utils.get(server.roles, id=PLAYOFF_LOCKED_ID)
+            crew_staff = discord.utils.get(server.roles, name=CREW_STAFF)
 
         return Roles
 
@@ -188,6 +189,8 @@ class Cache:
                         self.crews_by_name[crew].leader_ids.append(member.id)
                     if r2.name == ADVISOR:
                         self.crews_by_name[crew].advisors.append(str(member))
+                    if r2.name == CREW_STAFF:
+                        self.crews_by_name[crew].crew_staff.append(str(member))
         for role in self.scs.roles:
             if role.name in self.crews_by_name.keys():
                 self.crews_by_name[role.name].color = role.color

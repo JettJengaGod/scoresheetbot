@@ -24,6 +24,7 @@ class DbCrew:
     softcap_max: int = 0
     member_count: int = 0
     triforce: int = 0
+    hardcap: int = 0
     softcap_used: int = 0
     current_destiny: int = 0
     destiny_opponent: str = ''
@@ -69,6 +70,8 @@ class Crew:
     destiny_opt_out: bool = False
     ranking_string = ''
     triforce = 0
+    hardcap: int = 0
+    crew_staff: List[str] = dataclasses.field(default_factory=list)
 
     @property
     def embed(self) -> discord.Embed:
@@ -82,7 +85,8 @@ class Crew:
         if self.wl:
             title += ' WATCHLISTED'
         description = [f'**Tag:** {self.abbr}\n', f'**Total Members:** {self.member_count}\n']
-
+        if self.member_count > 45:
+            description += [f'**Hardcap:** {self.hardcap}\n']
         # if self.trinity_rating:
         #     description.append(f'**Trinity Rating:** {self.trinity_rating}\n')
         if self.ladder:
@@ -145,7 +149,10 @@ class Crew:
         self.destiny_opt_out = db_crew.destiny_opt_out
         self.member_count = db_crew.member_count
         self.triforce = db_crew.triforce
+        self.hardcap = db_crew.hardcap
 
+    def set_hardcap(self, hardcap: int):
+        self.hardcap = hardcap
     def set_rankings(self, rank: int, rating: int, total: int):
         self.ladder = '**SCS League:** '
         self.ladder += f'{rank}/{total}'

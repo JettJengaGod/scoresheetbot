@@ -137,6 +137,7 @@ class ScoreSheetBot(commands.Cog):
 
     def cog_load(self) -> None:
         self.auto_cache.start()
+
     def cog_unload(self):
         self.auto_cache.cancel()
 
@@ -369,6 +370,7 @@ class ScoreSheetBot(commands.Cog):
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
+
     #
     # @commands.command(**help_doc['battle'], aliases=['wisdom_po'], group='CB')
     # @main_only
@@ -527,6 +529,7 @@ class ScoreSheetBot(commands.Cog):
             await send_sheet(ctx, battle=self._current(ctx))
         else:
             await ctx.send('You can\'t battle your own crew.')
+
     #
     # @commands.command(**help_doc['battle'], aliases=['top'], group='CB')
     # @main_only
@@ -639,6 +642,9 @@ class ScoreSheetBot(commands.Cog):
                 if author_crew == player_crew:
                     if check_roles(user, [WATCHLIST]):
                         await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
+                        return
+                    if check_roles(user, [CREW_STAFF]):
+                        await ctx.send(f'Crew Staff: {user.mention} cannot play in ranked battles.')
                         return
                     if check_roles(user, [JOIN_CD]):
                         await ctx.send(
@@ -817,6 +823,9 @@ class ScoreSheetBot(commands.Cog):
                 if author_crew == player_crew:
                     if check_roles(user, [WATCHLIST]):
                         await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
+                        return
+                    if check_roles(user, [CREW_STAFF]):
+                        await ctx.send(f'Crew Staff: {user.mention} cannot play in ranked battles.')
                         return
                     if check_roles(user, [JOIN_CD]):
                         await ctx.send(
@@ -1183,7 +1192,7 @@ class ScoreSheetBot(commands.Cog):
                                        discord.utils.get(ctx.guild.channels, name=OUTPUT)]
                     winner = current.winner().name
                     loser = current.loser().name
-                    league_id = CURRENT_LEAGUE_ID #TODO Update Current League ID based on league end
+                    league_id = CURRENT_LEAGUE_ID  # TODO Update Current League ID based on league end
                     current = self._current(ctx)
                     if not current:
                         return
@@ -1744,6 +1753,7 @@ class ScoreSheetBot(commands.Cog):
                 await member.edit(nick=nick_without_prefix(member.display_name))
                 await member.remove_roles(self.cache.roles.overflow)
                 await member.remove_roles(self.cache.roles.fortyman)
+                await member.remove_roles(self.cache.roles.crew_staff)
                 await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader)
                 await track_cycle(member, self.cache.scs)
                 after = set(ctx.guild.get_member(member.id).roles)
@@ -1822,7 +1832,11 @@ class ScoreSheetBot(commands.Cog):
         if left <= 0:
             await response_message(ctx, f'{flairing_crew.name} has no flairing slots left ({left}/{total})')
             return
-
+        if flairing_crew.member_count >= (flairing_crew.hardcap - len(flairing_crew.crew_staff)):
+            await response_message(ctx, f'{flairing_crew.name} ({flairing_crew.member_count} members) '
+                                        f'has hit their hardcap of {flairing_crew.hardcap}, '
+                                        f'to flair more members please see this post (https://discord.com/channels/430361913369690113/518298974818402306/1312519394945138708)')
+            return
         of_before, of_after = None, None
         if flairing_crew.overflow:
             of_user = self.cache.overflow_server.get_member(member.id)
@@ -3394,6 +3408,20 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'These Crews have {over} members or more', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 
+    @commands.command(**help_doc['softcap'])
+    async def hardcap(self, ctx, cr: Optional[str] = ''):
+        if cr:
+            actual = crew_lookup(cr, self)
+        else:
+            actual = crew_lookup(crew(ctx.author, self), self)
+
+        total, diversity, cr_activity, players, activity, battles = calc_hardcap_current(actual)
+        await ctx.send(
+            f'Crew {actual.name} will have a hardcap of {total}: 50 + {diversity} (diversity) + {cr_activity} (activity) if the month ended right now\n'
+            f'{players} players /{actual.member_count - len(actual.crew_staff)} members = {activity} diversity bonus\n'
+            f'{battles} crew battles bonus (max 12)')
+        return
+
     @commands.command(hidden=True, **help_doc['softcap'])
     async def softcap(self, ctx, cr: Optional[str] = ''):
         if not cr:
@@ -3680,11 +3708,16 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
-            total, base,modifer, rollover = calc_total_slots(cr)
+            hardcap, diversity, activity = calc_hardcap(cr)
+            total, base, modifer, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) ({cr.member_count} members) \n'
                         f'Next month {total} slots: {base} base + {modifer} size mod + {rollover} rollover.')
+            desc.append(f'Your new hardcap is: {hardcap} (50 + {diversity} for diversity + {activity} for activity '
+                        f'+ {len(cr.crew_staff)} crew staff don\'t count) ')
 
+            # cr.set_hardcap(hardcap)
+            # set_hardcap(cr)
             # total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \
@@ -3716,6 +3749,7 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def season(self, ctx):
         pass
+
     @commands.command(hidden=True, **help_doc['slottotals'])
     @role_call(STAFF_LIST)
     async def slotfinals(self, ctx):
@@ -3726,11 +3760,15 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
+            hardcap, diversity, activity = calc_hardcap(cr)
             total, base, modifer, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
                         f'Next month {total} slots: {base} base + {modifer} size mod  + {rollover} rollover.')
-
+            desc.append(f'Your new hardcap is: {hardcap} (50 + {diversity} for diversity + {activity} for activity '
+                        f'+ {len(cr.crew_staff)} crew staff don\'t count) ')
+            cr.set_hardcap(hardcap)
+            set_hardcap(cr)
             total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \

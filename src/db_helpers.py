@@ -1233,7 +1233,8 @@ def all_crews() -> List[DbCrew]:
        id,
        softcap_max,
        coalesce(members.member_count, 0) as member_count,
-       triforce
+       triforce,
+       hardcap
 
 FROM crews
          left join (select battle.finished                                                              as finished,
@@ -1477,6 +1478,23 @@ def crew_usage_jan(cr: Crew, month_mod: int = 0) -> Dict[int, List[str]]:
             conn.close()
     return players
 
+def set_hardcap(crew: Crew) -> None:
+    update_hardcap = """update crews set hardcap = %s where id = %s"""
+
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cr_id = crew_id_from_name(crew.name, cur)
+        cur.execute(update_hardcap, (crew.hardcap, cr_id))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
 
 def update_crew(crew: Crew) -> None:
     current = """SELECT id, discord_id, tag, name, rank, overflow FROM crews
@@ -1517,6 +1535,112 @@ def update_crew(crew: Crew) -> None:
     finally:
         if conn is not None:
             conn.close()
+
+def hardcap_info(crew: Crew, season_id: int) -> Tuple[int, int]:
+    unique_players =  """ SELECT COUNT(DISTINCT player_id) AS unique_players
+FROM (
+    SELECT p1 AS player_id
+    FROM battle
+    JOIN match ON match.battle_id = battle.id
+    WHERE battle.crew_1 = %s
+      and battle.league_id = %s
+      AND battle.finished >= date_trunc('month', NOW()) - INTERVAL '1 month'
+      AND battle.finished < date_trunc('month', NOW())
+
+    UNION
+
+    SELECT p2 AS player_id
+    FROM battle
+    JOIN match ON match.battle_id = battle.id
+    WHERE battle.crew_2 = %s
+      and battle.league_id = %s
+      AND battle.finished >= date_trunc('month', NOW()) - INTERVAL '1 month'
+      AND battle.finished < date_trunc('month', NOW())
+) AS combined_players;"""
+
+    number_of_battles = """select count(*)
+from battle
+where (crew_1 = %s or crew_2 = %s)
+  and battle.league_id = %s
+      AND battle.finished >= date_trunc('month', NOW()) - INTERVAL '1 month'
+      AND battle.finished < date_trunc('month', NOW());"""
+
+    conn = None
+    players, battles = 0, 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        crew_id = crew_id_from_name(crew.name, cur)
+        print(crew.name, crew_id)
+        cur.execute(unique_players, (crew_id, season_id, crew_id, season_id))
+        res = cur.fetchone()
+        if res:
+            players = res[0]
+        cur.execute(number_of_battles, (crew_id, crew_id, season_id,))
+        res = cur.fetchone()
+        if res:
+            battles = res[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return players, battles
+
+def hardcap_info_current(crew: Crew, season_id: int) -> Tuple[int, int]:
+    unique_players =  """ SELECT COUNT(DISTINCT player_id) AS unique_players
+FROM (
+    SELECT p1 AS player_id
+    FROM battle
+    JOIN match ON match.battle_id = battle.id
+    WHERE battle.crew_1 = %s
+      and battle.league_id = %s
+      AND battle.finished > date_trunc('month', NOW())
+
+    UNION
+
+    SELECT p2 AS player_id
+    FROM battle
+    JOIN match ON match.battle_id = battle.id
+    WHERE battle.crew_2 = %s
+      and battle.league_id = %s
+      AND battle.finished > date_trunc('month', NOW())
+
+) AS combined_players;"""
+
+    number_of_battles = """select count(*)
+from battle
+where (crew_1 = %s or crew_2 = %s)
+  and battle.league_id = %s
+      AND battle.finished > date_trunc('month', NOW());"""
+
+    conn = None
+    players, battles = 0, 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        crew_id = crew_id_from_name(crew.name, cur)
+        print(crew.name, crew_id)
+        cur.execute(unique_players, (crew_id, season_id, crew_id, season_id))
+        res = cur.fetchone()
+        if res:
+            players = res[0]
+        cur.execute(number_of_battles, (crew_id, crew_id, season_id,))
+        res = cur.fetchone()
+        if res:
+            battles = res[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return players, battles
 
 
 def update_crew_tomain(crew: Crew, new_role_id: int) -> None:
