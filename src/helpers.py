@@ -725,7 +725,7 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
         add_member_and_crew(member, member_crew)
 
 
-def calc_hardcap(cr: Crew)-> Tuple[int, int, int, int]:
+def calc_hardcap(cr: Crew)-> Tuple[int, int, int]:
     base_cap = 50
     players, battles = hardcap_info(cr, CURRENT_LEAGUE_ID)
     activity = players/(cr.member_count - len(cr.crew_staff))
@@ -740,9 +740,8 @@ def calc_hardcap(cr: Crew)-> Tuple[int, int, int, int]:
     elif activity >= .4:
         diversity = 2
     cr_activity = min(12, battles)
-    crew_staff = min(5, len(cr.crew_staff))
     # print(cr.name, 'diversity:', diversity, 'crew_staff:', crew_staff, "cr_activity:", cr_activity)
-    return base_cap + diversity + crew_staff + cr_activity, diversity, crew_staff, cr_activity
+    return base_cap + diversity + cr_activity, diversity, cr_activity
 
 def crew_update(bot: 'ScoreSheetBot'):
     cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache_value.crews_by_name.values() if

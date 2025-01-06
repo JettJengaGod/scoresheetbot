@@ -1824,7 +1824,7 @@ class ScoreSheetBot(commands.Cog):
         if left <= 0:
             await response_message(ctx, f'{flairing_crew.name} has no flairing slots left ({left}/{total})')
             return
-        if flairing_crew.member_count>= flairing_crew.hardcap:
+        if flairing_crew.member_count >= (flairing_crew.hardcap - len(flairing_crew.crew_staff)):
 
             await response_message(ctx, f'{flairing_crew.name} ({flairing_crew.member_count} members) '
                                         f'has hit their hardcap of {flairing_crew.hardcap}, '
@@ -3738,13 +3738,13 @@ class ScoreSheetBot(commands.Cog):
             print(f'{i}/{len(crews)} pt 1')
             if cr.member_count == 0:
                 continue
-            hardcap, diversity, crew_staff, activity = calc_hardcap(cr)
+            hardcap, diversity, activity = calc_hardcap(cr)
             total, base, modifer, rollover = calc_total_slots(cr)
             left, cur_total = slots(cr)
             desc.append(f'{cr.name}: This month({left}/{cur_total}) \n'
                         f'Next month {total} slots: {base} base + {modifer} size mod  + {rollover} rollover.')
             desc.append(f'Your new hardcap is: {hardcap} (50 + {diversity} for diversity + {activity} for activity '
-                        f'+ {crew_staff} for crew staff) ')
+                        f'+ {len(cr.crew_staff)} crew staff don\'t count) ')
             cr.set_hardcap(hardcap)
             set_hardcap(cr)
             total_slot_set(cr, total)
