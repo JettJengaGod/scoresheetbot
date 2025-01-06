@@ -16,7 +16,7 @@ from .db_helpers import add_member_and_crew, crew_correct, all_crews, update_cre
     player_mvps, player_chars, ba_record, ba_elo, ba_chars, db_crew_members, crew_rankings, disband_crew_from_id, \
     trinity_crews, elo_decay, reset_decay, first_crew_flair, track_finished_out, track_down_out, track_finished, \
     update_member_roles, recent_unflair, get_bracket_predictions, crew_usage, all_crew_usage, all_crew_destiny, \
-    crew_to_last_played, hardcap_info, set_hardcap
+    crew_to_last_played, hardcap_info, set_hardcap, hardcap_info_current
 from .gambit import Gambit
 from .sheet_helpers import update_all_sheets
 
@@ -725,10 +725,10 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
         add_member_and_crew(member, member_crew)
 
 
-def calc_hardcap(cr: Crew)-> Tuple[int, int, int]:
+def calc_hardcap(cr: Crew) -> Tuple[int, int, int]:
     base_cap = 50
     players, battles = hardcap_info(cr, CURRENT_LEAGUE_ID)
-    activity = players/(cr.member_count - len(cr.crew_staff))
+    activity = players / (cr.member_count - len(cr.crew_staff))
 
     diversity = 0
     if activity >= .55:
@@ -742,6 +742,26 @@ def calc_hardcap(cr: Crew)-> Tuple[int, int, int]:
     cr_activity = min(12, battles)
     # print(cr.name, 'diversity:', diversity, 'crew_staff:', crew_staff, "cr_activity:", cr_activity)
     return base_cap + diversity + cr_activity, diversity, cr_activity
+
+
+def calc_hardcap_current(cr: Crew) -> Tuple[int, int, int, int, float, int]:
+    base_cap = 50
+    players, battles = hardcap_info_current(cr, CURRENT_LEAGUE_ID)
+    activity = players / (cr.member_count - len(cr.crew_staff))
+
+    diversity = 0
+    if activity >= .55:
+        diversity = 8
+    elif activity >= .5:
+        diversity = 6
+    elif activity >= .45:
+        diversity = 4
+    elif activity >= .4:
+        diversity = 2
+    cr_activity = min(12, battles)
+    # print(cr.name, 'diversity:', diversity, 'crew_staff:', crew_staff, "cr_activity:", cr_activity)
+    return base_cap + diversity + cr_activity, diversity, cr_activity, players, activity, battles
+
 
 def crew_update(bot: 'ScoreSheetBot'):
     cached_crews: Dict[int, Crew] = {cr.role_id: cr for cr in bot.cache_value.crews_by_name.values() if
@@ -1273,7 +1293,7 @@ def top_percentage(crew: Crew) -> bool:
 
 def calc_total_slots(cr: Crew) -> Tuple[int, int, int, int]:
     rollover_max = 3
-    base = 7 # if top_percentage(cr) else 7
+    base = 7  # if top_percentage(cr) else 7
     sl = slots(cr)
     if sl and not cr.freeze:
         rollover = sl[0]

@@ -1588,6 +1588,58 @@ where (crew_1 = %s or crew_2 = %s)
             conn.close()
     return players, battles
 
+def hardcap_info_current(crew: Crew, season_id: int) -> Tuple[int, int]:
+    unique_players =  """ SELECT COUNT(DISTINCT player_id) AS unique_players
+FROM (
+    SELECT p1 AS player_id
+    FROM battle
+    JOIN match ON match.battle_id = battle.id
+    WHERE battle.crew_1 = %s
+      and battle.league_id = %s
+      AND battle.finished > date_trunc('month', NOW())
+
+    UNION
+
+    SELECT p2 AS player_id
+    FROM battle
+    JOIN match ON match.battle_id = battle.id
+    WHERE battle.crew_2 = %s
+      and battle.league_id = %s
+      AND battle.finished > date_trunc('month', NOW())
+
+) AS combined_players;"""
+
+    number_of_battles = """select count(*)
+from battle
+where (crew_1 = %s or crew_2 = %s)
+  and battle.league_id = %s
+      AND battle.finished > date_trunc('month', NOW());"""
+
+    conn = None
+    players, battles = 0, 0
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        crew_id = crew_id_from_name(crew.name, cur)
+        print(crew.name, crew_id)
+        cur.execute(unique_players, (crew_id, season_id, crew_id, season_id))
+        res = cur.fetchone()
+        if res:
+            players = res[0]
+        cur.execute(number_of_battles, (crew_id, crew_id, season_id,))
+        res = cur.fetchone()
+        if res:
+            battles = res[0]
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return players, battles
+
 
 def update_crew_tomain(crew: Crew, new_role_id: int) -> None:
     current = """SELECT id, discord_id, tag, name, rank, overflow FROM crews
