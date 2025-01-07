@@ -84,7 +84,7 @@ class Crew:
             title += f' (Overflow) '
         if self.wl:
             title += ' WATCHLISTED'
-        description = [f'**Tag:** {self.abbr}\n', f'**Total Members:** {self.member_count}\n']
+        description = [f'**Tag:** {self.abbr}\n', f'**Total Members:** {self.member_count - len(self.crew_staff)}\n']
         if self.member_count > 45:
             description += [f'**Hardcap:** {self.hardcap}\n']
         # if self.trinity_rating:
