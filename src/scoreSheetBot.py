@@ -1829,9 +1829,10 @@ class ScoreSheetBot(commands.Cog):
             await response_message(ctx, f'{flairing_crew.name} has no flairing slots left ({left}/{total})')
             return
         if flairing_crew.member_count >= (flairing_crew.hardcap - len(flairing_crew.crew_staff)):
-            await response_message(ctx, f'{flairing_crew.name} ({flairing_crew.member_count} members) '
-                                        f'has hit their hardcap of {flairing_crew.hardcap}, '
-                                        f'to flair more members please see this post (https://discord.com/channels/430361913369690113/518298974818402306/1312519394945138708)')
+            await response_message(ctx,
+                                   f'{flairing_crew.name} ({flairing_crew.member_count - len(flairing_crew.crew_staff)} members) '
+                                   f'has hit their hardcap of {flairing_crew.hardcap}, '
+                                   f'to flair more members please see this post (https://discord.com/channels/430361913369690113/518298974818402306/1312519394945138708)')
             return
         of_before, of_after = None, None
         if flairing_crew.overflow:
