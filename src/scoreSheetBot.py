@@ -1828,7 +1828,7 @@ class ScoreSheetBot(commands.Cog):
         if left <= 0:
             await response_message(ctx, f'{flairing_crew.name} has no flairing slots left ({left}/{total})')
             return
-        if flairing_crew.member_count >= (flairing_crew.hardcap - len(flairing_crew.crew_staff)):
+        if flairing_crew.member_count - len(flairing_crew.crew_staff) >= flairing_crew.hardcap:
             await response_message(ctx,
                                    f'{flairing_crew.name} ({flairing_crew.member_count - len(flairing_crew.crew_staff)} members) '
                                    f'has hit their hardcap of {flairing_crew.hardcap}, '
