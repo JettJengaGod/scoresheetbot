@@ -222,8 +222,6 @@ class ScoreSheetBot(commands.Cog):
                 if y.name == 'help':
                     cmds_desc += ('{} - {}'.format(y.name, y.help) + '\n')
             halp.add_field(name='Help Commands', value=cmds_desc[0:len(cmds_desc) - 1], inline=False)
-            if not isinstance(ctx.channel, discord.channel.DMChannel):
-                await ctx.message.add_reaction(emoji='✉')
             await ctx.message.author.send(embed=halp)
         else:
             if len(group) > 1:
@@ -258,9 +256,6 @@ class ScoreSheetBot(commands.Cog):
                 if not found:
                     halp = discord.Embed(title='Error!', description=f'Command {group} not found.',
                                          color=discord.Color.red())
-                else:
-                    if not isinstance(ctx.channel, discord.channel.DMChannel):
-                        await ctx.message.add_reaction(emoji='✉')
                 await ctx.message.author.send('', embed=halp)
 
     ''' **********************************CB COMMANDS ******************************************'''
@@ -1642,7 +1637,7 @@ class ScoreSheetBot(commands.Cog):
             if check_roles(member, [ADVISOR]):
                 await response_message(ctx,
                                        f'Only staff can promote to leader. '
-                                       f'Ping the Doc Keeper role in {self.cache.channels.flairing_questions.mention} '
+                                       f'Ping the Doc Keeper role in {self.cache.channels.questions.mention} '
                                        f'and have a majority of leaders confirm.')
                 return
             if not check_roles(ctx.author, [LEADER]):
@@ -1671,7 +1666,7 @@ class ScoreSheetBot(commands.Cog):
                 return
             if check_roles(member, [LEADER]):
                 await response_message(ctx, f'Only staff can demote leaders. Ping the Doc Keeper role in '
-                                            f'{self.cache.channels.flairing_questions.mention} '
+                                            f'{self.cache.channels.questions.mention} '
                                             f'and have a majority of leaders confirm, '
                                             f'OR have the individual being demoted confirm.')
                 return
@@ -1889,7 +1884,6 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['predictions'])
     async def predictions(self, ctx):
-        await ctx.message.add_reaction(emoji='✉')
         await ctx.message.delete(delay=5)
         crew_names = ['Black Halo', 'Arpeggio', 'Dream Casters', 'Holy Knights', 'Valerian',
                       'Sound of Perfervid', 'Midnight Sun', 'Phantom Troupe', 'Flow State Gaming',
@@ -1919,7 +1913,7 @@ class ScoreSheetBot(commands.Cog):
         bracket_crews = [crew_lookup(cr, self) for cr in crew_names]
         bracket_crews.insert(1, bye)
         bracket_crews.insert(9, bye)
-        await ctx.message.add_reaction(emoji='✉')
+        # await ctx.message.add_reaction(emoji='✉')
         await ctx.message.delete(delay=5)
         await ctx.author.send('Please answer both of the following to completion! You can check your predictions after'
                               ' with `,predictions` or modify your predictions by using `,predict` again.')
@@ -3413,6 +3407,7 @@ class ScoreSheetBot(commands.Cog):
             actual = crew_lookup(crew(ctx.author, self), self)
 
         total, diversity, cr_activity, players, activity, battles = calc_hardcap_current(actual)
+        diversity = round(diversity, 2)
         await ctx.send(
             f'Crew {actual.name} will have a hardcap of {total}: 50 + {diversity} (diversity) + {cr_activity} (activity) if the month ended right now\n'
             f'{players} players /{actual.member_count - len(actual.crew_staff)} members = {activity} diversity bonus\n'
@@ -3459,7 +3454,7 @@ class ScoreSheetBot(commands.Cog):
             embed = discord.Embed(title=f'Usage of each member of {actual.name} from this month ({len(usage)} total)',
                                   description='\n'.join(desc), color=discord.Color.random())
             await send_long_embed(ctx.author, embed)
-            await ctx.message.add_reaction(emoji='✉')
+            # await ctx.message.add_reaction(emoji='✉')
         else:
             if datetime.now().month == 1:
                 usage = all_crew_usage_jan(1)
@@ -3478,7 +3473,7 @@ class ScoreSheetBot(commands.Cog):
             embed = discord.Embed(title='Number of unique players in cbs this month by each crew',
                                   description='\n'.join(desc), color=discord.Color.random())
             await send_long_embed(ctx.author, embed)
-            await ctx.message.add_reaction(emoji='✉')
+            # await ctx.message.add_reaction(emoji='✉')
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
@@ -3771,6 +3766,8 @@ class ScoreSheetBot(commands.Cog):
                       f'{base} base slots\n' \
                       f'{modifer} from size modifier\n' \
                       f'{rollover} rollover slots\n' \
+                      f'Your new hardcap is: {hardcap} (50 + {diversity} for diversity + {activity} for activity \n'\
+                      f'+ {len(cr.crew_staff)} crew staff don\'t count)\n'\
                       'For more information, refer to <#430364791245111312>. ' \
                       'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'
 

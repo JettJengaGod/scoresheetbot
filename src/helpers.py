@@ -739,6 +739,7 @@ def calc_hardcap(cr: Crew) -> Tuple[int, int, int]:
         diversity = 4
     elif activity >= .4:
         diversity = 2
+    diversity = round(diversity, 2)
     cr_activity = min(12, battles)
     # print(cr.name, 'diversity:', diversity, 'crew_staff:', crew_staff, "cr_activity:", cr_activity)
     return base_cap + diversity + cr_activity, diversity, cr_activity
