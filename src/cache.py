@@ -99,6 +99,7 @@ class Cache:
             current_cbs = discord.utils.get(server.channels, id=CURRENT_CBS)
             testing = discord.utils.get(server.channels, id=776644633349849108)
             master_bracket = discord.utils.get(server.channels, id=896401892920397865)
+            questions = discord.utils.get(server.channels, id=492166249174925312)
 
         return Channels
 
