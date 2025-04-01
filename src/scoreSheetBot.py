@@ -1150,12 +1150,12 @@ class ScoreSheetBot(commands.Cog):
                     for output_channel in output_channels:
                         link = await send_sheet(output_channel, current)
                         links.append(link)
-                    battle_id = add_finished_battle(current, links[0].jump_url, 28)
+                    battle_id = add_finished_battle(current, links[0].jump_url, 32)
                     battle_weight_changes(battle_id)
                     winner_crew = crew_lookup(winner, self)
                     loser_crew = crew_lookup(loser, self)
                     new_message = (
-                        f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.0 Playoff) - {winner}⚔{loser}**\n'
+                        f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v24.2 Playoff) - {winner}⚔{loser}**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr})\n '
                         f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
