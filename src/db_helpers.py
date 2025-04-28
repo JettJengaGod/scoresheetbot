@@ -1588,8 +1588,8 @@ where (crew_1 = %s or crew_2 = %s)
             conn.close()
     return players, battles
 
-def hardcap_info_current(crew: Crew, season_id: int) -> Tuple[int, int]:
-    unique_players =  """ SELECT COUNT(DISTINCT player_id) AS unique_players
+def hardcap_info_current(crew: Crew, season_ids: List[int]) -> Tuple[int, int]:
+    unique_players =  """ SELECT DISTINCT player_id AS unique_players
 FROM (
     SELECT p1 AS player_id
     FROM battle
@@ -1617,20 +1617,24 @@ where (crew_1 = %s or crew_2 = %s)
 
     conn = None
     players, battles = 0, 0
+    player_set = set()
     try:
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         crew_id = crew_id_from_name(crew.name, cur)
         print(crew.name, crew_id)
-        cur.execute(unique_players, (crew_id, season_id, crew_id, season_id))
-        res = cur.fetchone()
-        if res:
-            players = res[0]
-        cur.execute(number_of_battles, (crew_id, crew_id, season_id,))
-        res = cur.fetchone()
-        if res:
-            battles = res[0]
+        for season_id in season_ids:
+            cur.execute(unique_players, (crew_id, season_id, crew_id, season_id))
+            res = cur.fetchall()
+            if res:
+                for player in res:
+                    player_set.add(player)
+
+            cur.execute(number_of_battles, (crew_id, crew_id, season_id,))
+            res = cur.fetchone()
+            if res:
+                battles += res[0]
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1638,7 +1642,7 @@ where (crew_1 = %s or crew_2 = %s)
     finally:
         if conn is not None:
             conn.close()
-    return players, battles
+    return len(player_set), battles
 
 
 def update_crew_tomain(crew: Crew, new_role_id: int) -> None:
@@ -3754,7 +3758,7 @@ def reset_k( k: int = DEFAULT_K):
 
 def init_crew_rating(crew_id: int, rating: int, league_id: int):
     set_rating = """insert into crew_ratings (crew_id, league_id, rating, k) VALUES (
-    %s, %s, %s, %s);"""
+    %s, %s, %s, %s) on conflict (crew_id, league_id) do nothing ;"""
     conn = None
     try:
         params = config()

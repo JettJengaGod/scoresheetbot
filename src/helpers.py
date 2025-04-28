@@ -747,7 +747,7 @@ def calc_hardcap(cr: Crew) -> Tuple[int, int, int]:
 
 def calc_hardcap_current(cr: Crew) -> Tuple[int, int, int, int, float, int]:
     base_cap = 50
-    players, battles = hardcap_info_current(cr, CURRENT_LEAGUE_ID)
+    players, battles = hardcap_info_current(cr, [CURRENT_LEAGUE_ID,32])
     activity = players / (cr.member_count - len(cr.crew_staff))
 
     diversity = 0
