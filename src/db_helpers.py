@@ -1536,14 +1536,13 @@ def update_crew(crew: Crew) -> None:
         if conn is not None:
             conn.close()
 
-def hardcap_info(crew: Crew, season_id: int) -> Tuple[int, int]:
+def hardcap_info(crew: Crew) -> Tuple[int, int]:
     unique_players =  """ SELECT COUNT(DISTINCT player_id) AS unique_players
 FROM (
     SELECT p1 AS player_id
     FROM battle
     JOIN match ON match.battle_id = battle.id
     WHERE battle.crew_1 = %s
-      and battle.league_id = %s
       AND battle.finished >= date_trunc('month', NOW()) - INTERVAL '1 month'
       AND battle.finished < date_trunc('month', NOW())
 
@@ -1553,7 +1552,6 @@ FROM (
     FROM battle
     JOIN match ON match.battle_id = battle.id
     WHERE battle.crew_2 = %s
-      and battle.league_id = %s
       AND battle.finished >= date_trunc('month', NOW()) - INTERVAL '1 month'
       AND battle.finished < date_trunc('month', NOW())
 ) AS combined_players;"""
@@ -1561,7 +1559,6 @@ FROM (
     number_of_battles = """select count(*)
 from battle
 where (crew_1 = %s or crew_2 = %s)
-  and battle.league_id = %s
       AND battle.finished >= date_trunc('month', NOW()) - INTERVAL '1 month'
       AND battle.finished < date_trunc('month', NOW());"""
 
@@ -1573,11 +1570,11 @@ where (crew_1 = %s or crew_2 = %s)
         cur = conn.cursor()
         crew_id = crew_id_from_name(crew.name, cur)
         print(crew.name, crew_id)
-        cur.execute(unique_players, (crew_id, season_id, crew_id, season_id))
+        cur.execute(unique_players, (crew_id, crew_id))
         res = cur.fetchone()
         if res:
             players = res[0]
-        cur.execute(number_of_battles, (crew_id, crew_id, season_id,))
+        cur.execute(number_of_battles, (crew_id, crew_id,))
         res = cur.fetchone()
         if res:
             battles = res[0]
@@ -1597,7 +1594,6 @@ FROM (
     FROM battle
     JOIN match ON match.battle_id = battle.id
     WHERE battle.crew_1 = %s
-      and battle.league_id = %s
       AND battle.finished > date_trunc('month', NOW())
 
     UNION
@@ -1606,7 +1602,6 @@ FROM (
     FROM battle
     JOIN match ON match.battle_id = battle.id
     WHERE battle.crew_2 = %s
-      and battle.league_id = %s
       AND battle.finished > date_trunc('month', NOW())
 
 ) AS combined_players;"""
@@ -1614,7 +1609,6 @@ FROM (
     number_of_battles = """select count(*)
 from battle
 where (crew_1 = %s or crew_2 = %s)
-  and battle.league_id = %s
       AND battle.finished > date_trunc('month', NOW());"""
 
     conn = None
@@ -1626,17 +1620,16 @@ where (crew_1 = %s or crew_2 = %s)
         cur = conn.cursor()
         crew_id = crew_id_from_name(crew.name, cur)
         print(crew.name, crew_id)
-        for season_id in season_ids:
-            cur.execute(unique_players, (crew_id, season_id, crew_id, season_id))
-            res = cur.fetchall()
-            if res:
-                for player in res:
-                    player_set.add(player)
+        cur.execute(unique_players, (crew_id, crew_id))
+        res = cur.fetchall()
+        if res:
+            for player in res:
+                player_set.add(player)
 
-            cur.execute(number_of_battles, (crew_id, crew_id, season_id,))
-            res = cur.fetchone()
-            if res:
-                battles += res[0]
+        cur.execute(number_of_battles, (crew_id, crew_id,))
+        res = cur.fetchone()
+        if res:
+            battles += res[0]
         conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
