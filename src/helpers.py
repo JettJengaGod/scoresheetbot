@@ -727,7 +727,7 @@ def member_crew_to_db(member: discord.Member, bot: 'ScoreSheetBot'):
 
 def calc_hardcap(cr: Crew) -> Tuple[int, int, int]:
     base_cap = 50
-    players, battles = hardcap_info(cr, CURRENT_LEAGUE_ID)
+    players, battles = hardcap_info(cr)
     activity = players / (cr.member_count - len(cr.crew_staff))
 
     diversity = 0

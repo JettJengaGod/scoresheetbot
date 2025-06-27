@@ -3717,7 +3717,7 @@ class ScoreSheetBot(commands.Cog):
                       f'{rollover} rollover slots\n' \
                       f'with an overall minimum of 5 slots\n' \
                       'For more information, refer to message link in #lead_announcements. ' \
-                      'This bot will not be able to respond to any questions you have, so use #questions_feedback'
+                      'This bot will not be able to respond to any questions you have, so use <#492166249174925312>'
             crew_msg[cr.name] = message
 
         # for member in self.cache.scs.members:
@@ -3741,6 +3741,21 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def season(self, ctx):
         pass
+
+    @commands.command(hidden=True, **help_doc['slottotals'])
+    @role_call(STAFF_LIST)
+    async def backfill(self, ctx):
+        crews = list(self.cache.crews_by_name.values())
+
+        for i, cr in enumerate(crews):
+            print(cr.name, cr.hardcap)
+            print(f'{i}/{len(crews)} pt 1')
+            if cr.member_count == 0:
+                continue
+            hardcap, diversity, activity = calc_hardcap(cr)
+            cr.set_hardcap(hardcap)
+            set_hardcap(cr)
+            print(cr.hardcap)
 
     @commands.command(hidden=True, **help_doc['slottotals'])
     @role_call(STAFF_LIST)
@@ -3769,7 +3784,7 @@ class ScoreSheetBot(commands.Cog):
                       f'Your new hardcap is: {hardcap} (50 + {diversity} for diversity + {activity} for activity \n'\
                       f'+ {len(cr.crew_staff)} crew staff don\'t count)\n'\
                       'For more information, refer to <#430364791245111312>. ' \
-                      'This bot will not be able to respond to any questions you have, so use <#786842350822490122>.'
+                      'This bot will not be able to respond to any questions you have, so use <#492166249174925312>.'
 
             # if cr.member_count >= 40:
             #     softcap_set(cr, round(cr.member_count / 3))
