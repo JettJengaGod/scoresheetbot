@@ -2093,7 +2093,7 @@ from (select count(distinct (match.battle_id)) as battle_count, fighters.name
       where match.p1 = %s
         and fighters.id = match.p1_char_id
         and battle.id = match.battle_id
-        and battle.league_id in (20, 21, 22)
+        and battle.league_id = 33
       group by fighters.name) as p1
          full outer join (
     (select count(distinct (match.battle_id)) as battle_count, fighters.name
@@ -2104,7 +2104,7 @@ from (select count(distinct (match.battle_id)) as battle_count, fighters.name
        and fighters.id = match.p2_char_id
 
        and battle.id = match.battle_id
-       and battle.league_id in (20, 21, 22)
+       and battle.league_id = 33
      group by fighters.name)) as p2 on p1.name = p2.name;"""
     conn = None
     out = []
@@ -2194,26 +2194,26 @@ from (select count(distinct (match.battle_id)) as battles
       from match, battle
       where match.p1 = %s
         and battle.id = match.battle_id
-        and battle.league_id in (20, 21, 22)) as p1_total,
+        and battle.league_id = 33) as p1_total,
      (select count(distinct (match.battle_id)) as battle_wins
       from match,
            battle
       where match.p1 = %s
         and battle.crew_1 = battle.winner
         and battle.id = match.battle_id
-        and battle.league_id in (20, 21, 22)) as p1_wins,
+        and battle.league_id = 33) as p1_wins,
      (select count(distinct (match.battle_id)) as battles
       from match, battle
       where match.p2 = %s
         and battle.id = match.battle_id
-        and battle.league_id in (20, 21, 22)) as p2_total,
+        and battle.league_id = 33) as p2_total,
      (select count(distinct (match.battle_id)) as battle_wins
       from match,
            battle
       where match.p2 = %s
         and battle.crew_2 = battle.winner
         and battle.id = match.battle_id
-        and battle.league_id in (20, 21, 22)) as p2_wins;
+        and battle.league_id = 33) as p2_wins;
     """
     conn = None
     out = []
