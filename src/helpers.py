@@ -747,7 +747,7 @@ def calc_hardcap(cr: Crew) -> Tuple[int, int, int]:
 
 def calc_hardcap_current(cr: Crew) -> Tuple[int, int, int, int, float, int]:
     base_cap = 50
-    players, battles = hardcap_info_current(cr, [CURRENT_LEAGUE_ID,32])
+    players, battles = hardcap_info_current(cr, [CURRENT_LEAGUE_ID,33])
     activity = players / (cr.member_count - len(cr.crew_staff))
 
     diversity = 0
@@ -1016,6 +1016,8 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
         ty = 'Courage Playoff'
     elif battle_type == BattleType.POWER_PLAYOFF:
         ty = 'Power Playoff'
+    elif battle_type == BattleType.PLAYOFF:
+        ty = 'SCS 25.1 Playoff'
     elif battle_type == BattleType.RANKED:
         ty = bot.current_league
     else:
