@@ -678,11 +678,6 @@ class ScoreSheetBot(commands.Cog):
                 await response_message(ctx,
                                        f'{user.mention} does not have the `40-Man` role and is not on the roster.')
                 return
-            if check_roles(user, [PLAYOFF_LOCKED_ID]) and self._current(ctx).battle_type in (
-                    BattleType.COURAGE_PLAYOFF, BattleType.WISDOM_PLAYOFF):
-                await response_message(ctx,
-                                       f'{user.mention} has the playoff locked role and cannot play in playoff cbs.')
-                return
             await self._reject_outsiders(ctx)
             author_crew = await self._battle_crew(ctx, ctx.author)
             player_crew = await self._battle_crew(ctx, user)
