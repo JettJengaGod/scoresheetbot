@@ -322,7 +322,6 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         await member.edit(nick=f'{flairing_crew.abbr} | {member_nick}')
     else:
         main_crew = discord.utils.get(bot.cache.scs.roles, name=flairing_crew.name)
-        await member.add_roles(main_crew, bot.cache.roles.playoff_locked)
     if check_roles(member, [TRACK[2]]):
         await member.remove_roles(bot.cache.roles.track3)
         await member.add_roles(bot.cache.roles.true_locked)
