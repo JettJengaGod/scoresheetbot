@@ -357,7 +357,7 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
         if len(cr.leaders) == remaining_req:
             await flairing_info.send(f'{bot.cache.roles.docs.mention}: {user_crew}\'s last leader just unflaired')
     await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.fortyman, bot.cache.roles.leader,
-                              bot.cache.roles.poach_me,
+                              bot.cache.roles.poach_me, bot.cache.roles.crew_staff,
                               reason=f'Unflaired by {author.name}')
 
 

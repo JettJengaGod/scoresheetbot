@@ -3017,7 +3017,8 @@ class ScoreSheetBot(commands.Cog):
                     await user.remove_roles(cr_role, reason=f'Unflaired by {ctx.author.name}')
             else:
                 await member.remove_roles(cr_role)
-            await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader, self.cache.roles.poach_me,
+            await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader,
+                                      self.cache.roles.poach_me, self.cache.roles.crew_staff,
                                       reason=f'Unflaired in disband by {ctx.author.name}')
 
         await cr_role.delete(reason=f'disbanded by {ctx.author.name}')
