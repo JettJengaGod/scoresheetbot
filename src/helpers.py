@@ -325,6 +325,7 @@ async def flair(member: discord.Member, flairing_crew: Crew, bot: 'ScoreSheetBot
         await member.edit(nick=f'{flairing_crew.abbr} | {member_nick}')
     else:
         main_crew = discord.utils.get(bot.cache.scs.roles, name=flairing_crew.name)
+        await member.add_roles(main_crew)
     if check_roles(member, [TRACK[2]]):
         await member.remove_roles(bot.cache.roles.track3)
         await member.add_roles(bot.cache.roles.true_locked)
@@ -360,7 +361,7 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
         if len(cr.leaders) == remaining_req:
             await flairing_info.send(f'{bot.cache.roles.docs.mention}: {user_crew}\'s last leader just unflaired')
     await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.fortyman, bot.cache.roles.leader,
-                              bot.cache.roles.poach_me,
+                              bot.cache.roles.poach_me, bot.cache.roles.crew_staff,
                               reason=f'Unflaired by {author.name}')
 
 
