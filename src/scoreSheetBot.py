@@ -1160,8 +1160,6 @@ class ScoreSheetBot(commands.Cog):
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
-
-                    await links[0].add_reaction(YES)
                     for cr in (winner_crew, loser_crew):
                         if not extra_slot_used(cr):
                             if battles_since_sunday(cr) >= 3:
