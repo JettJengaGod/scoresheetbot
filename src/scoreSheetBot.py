@@ -1149,12 +1149,12 @@ class ScoreSheetBot(commands.Cog):
                     for output_channel in output_channels:
                         link = await send_sheet(output_channel, current)
                         links.append(link)
-                    battle_id = add_finished_battle(current, links[0].jump_url, 34)
+                    battle_id = add_finished_battle(current, links[0].jump_url, 36)
                     battle_weight_changes(battle_id)
                     winner_crew = crew_lookup(winner, self)
                     loser_crew = crew_lookup(loser, self)
                     new_message = (
-                        f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v25.1 Playoff) - {winner}⚔{loser}**\n'
+                        f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v25.2 Playoff) - {winner}⚔{loser}**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr})\n '
                         f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
@@ -1164,8 +1164,6 @@ class ScoreSheetBot(commands.Cog):
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
-
-                    await links[0].add_reaction(YES)
                     for cr in (winner_crew, loser_crew):
                         if not extra_slot_used(cr):
                             if battles_since_sunday(cr) >= 3:
