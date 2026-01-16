@@ -3651,6 +3651,43 @@ class ScoreSheetBot(commands.Cog):
             print(cid, start)
         # TODO set new elo for wisdom
 
+    @commands.command(hidden=True, **help_doc['ofrank'])
+    @role_call(STAFF_LIST)
+    async def manual_battle(self, ctx,battle_id: int ):
+
+        crew1, crew2, finished, link = battle_info(battle_id)
+        embed = discord.Embed(title='Are you sure you want to re-run this crew battle?',
+                              description=f'{crew1} vs {crew2}\n'
+                                          f'On: {finished} [link]({link})', color=discord.Color.random())
+        msg = await ctx.send(embed=embed)
+        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await ctx.message.delete(delay=5)
+            await msg.delete(delay=2)
+            await resp.delete(delay=5)
+            return
+        winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
+            battle_id)
+        w_placement = (STARTING_K - winner_k) / K_CHANGE + 1
+        l_placement = (STARTING_K - loser_k) / K_CHANGE + 1
+        if winner_k > DEFAULT_K:
+            w_placement_message = f'Placement round {int(w_placement)}'
+            differential = winner_k / 50
+            winner_k_message = f'({winner_change // differential}* {differential})'
+        else:
+            w_placement_message = ''
+            winner_k_message = winner_change
+        if loser_k > DEFAULT_K:
+            l_placement_message = (f'Placement round {int(l_placement)} '
+                                   f'(No effect for loss)\n')
+            differential = loser_k / 50
+            loser_k_message = f'({loser_change // differential}* {differential})'
+        else:
+            l_placement_message = ''
+            loser_k_message = loser_change
+
+        await ctx.send( f' ({w_placement_message}) ({l_placement_message}) ')
+
     @commands.command(**help_doc['slots'])
     @main_only
     async def slots(self, ctx, *, name: str = None):
