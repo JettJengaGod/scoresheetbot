@@ -1471,7 +1471,7 @@ class ScoreSheetBot(commands.Cog):
         pages = menus.MenuPages(source=PlayerStatsPaged(member, self))
         await pages.start(ctx)
 
-    @commands.command(**help_doc['stats'], aliases=['TAH'])
+    @commands.command(**help_doc['stats'])
     @main_only
     async def stats(self, ctx, *, name: str = None):
         if name:
@@ -1976,7 +1976,7 @@ class ScoreSheetBot(commands.Cog):
             if self._gambit_message:
                 await self._gambit_message.delete()
 
-    @gamb.command()
+    @gamb.command(aliases=['TAH'])
     @main_only
     @role_call([MINION, ADMIN, LU, GAMB_OL])
     async def cancel(self, ctx: Context):
@@ -3145,7 +3145,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['stagelist'])
     async def stagelist(self, ctx: Context):
         await ctx.send(
-            'https://media.discordapp.net/attachments/906245865386160229/1102303503558385714/SCSStagelist2023.png')
+            'https://media.discordapp.net/attachments/1179837359508959385/1468055123640189082/image.png')
 
     @commands.command(**help_doc['invite'])
     async def invite(self, ctx: Context):
