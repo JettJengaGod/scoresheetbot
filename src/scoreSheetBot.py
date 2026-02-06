@@ -2,6 +2,7 @@ import logging
 import math
 from asyncio import sleep
 
+from discord import app_commands
 from discord.ext import commands, tasks
 from discord.ext.commands import Greedy
 
@@ -166,6 +167,15 @@ class ScoreSheetBot(commands.Cog):
     @auto_cache.before_loop
     async def wait_for_bot(self):
         await self.bot.wait_until_ready()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        logging.info(f'Bot is ready. Syncing slash commands...')
+        try:
+            synced = await self.bot.tree.sync()
+            logging.info(f'Synced {len(synced)} slash commands.')
+        except Exception as e:
+            logging.error(f'Failed to sync slash commands: {e}')
 
     @commands.Cog.listener()
     async def on_member_remove(self, user):
@@ -1401,8 +1411,7 @@ class ScoreSheetBot(commands.Cog):
                             for cr
                             in wisdom_rankings()]
 
-        pages = menus.MenuPages(source=Paged(crew_ranking_str, title=f'{self.current_league} Rankings'),
-                                clear_reactions_after=True)
+        pages = PaginatorView(Paged(crew_ranking_str, title=f'{self.current_league} Rankings').get_pages())
         await pages.start(ctx)
 
     @commands.command(**help_doc['umbralotto'])
@@ -1450,7 +1459,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['battles'])
     async def battles(self, ctx):
 
-        pages = menus.MenuPages(source=Paged(all_battles(), title='Battles'), clear_reactions_after=True)
+        pages = PaginatorView(Paged(all_battles(), title='Battles').get_pages())
         await pages.start(ctx)
 
     @commands.command(**help_doc['vod'])
@@ -1468,23 +1477,23 @@ class ScoreSheetBot(commands.Cog):
 
         else:
             member = ctx.author
-        pages = menus.MenuPages(source=PlayerStatsPaged(member, self))
+        pages = PaginatorView(PlayerStatsPaged(member, self).get_pages())
         await pages.start(ctx)
 
-    @commands.command(**help_doc['stats'], aliases=['TAH'])
+    @commands.command(**help_doc['stats'])
     @main_only
     async def stats(self, ctx, *, name: str = None):
         if name:
             ambiguous = ambiguous_lookup(name, self)
             if isinstance(ambiguous, discord.Member):
 
-                pages = menus.MenuPages(source=PlayerStatsPaged(ambiguous, self))
+                pages = PaginatorView(PlayerStatsPaged(ambiguous, self).get_pages())
                 await pages.start(ctx)
                 return
             else:
                 actual_crew = ambiguous
         else:
-            pages = menus.MenuPages(source=PlayerStatsPaged(ctx.author, self))
+            pages = PaginatorView(PlayerStatsPaged(ctx.author, self).get_pages())
             await pages.start(ctx)
             return
         record = crew_record(actual_crew, CURRENT_LEAGUE_ID)
@@ -1492,9 +1501,8 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{actual_crew.name} does not have any recorded crew battles with the bot.')
             return
         title = f'{actual_crew.name}: {record[1]}-{int(record[2]) - int(record[1])}'
-        pages = menus.MenuPages(
-            source=Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon),
-            clear_reactions_after=True)
+        pages = PaginatorView(
+            Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon).get_pages())
         await pages.start(ctx)
 
     @commands.command(**help_doc['history'])
@@ -1556,9 +1564,8 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{actual_crew.name} does not have any recorded crew battles with the bot.')
             return
         title = f'{actual_crew.name}: {record[1]}-{int(record[2]) - int(record[1])}'
-        pages = menus.MenuPages(
-            source=Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon),
-            clear_reactions_after=True)
+        pages = PaginatorView(
+            Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon).get_pages())
         await pages.start(ctx)
 
     @commands.command(**help_doc['logo'])
@@ -1979,7 +1986,7 @@ class ScoreSheetBot(commands.Cog):
     @gamb.command()
     @main_only
     @role_call([MINION, ADMIN, LU, GAMB_OL])
-    async def cancel(self, ctx: Context):
+    async def cancel(self, ctx: Context, aliases=['clear']):
         cg = current_gambit()
         if not cg:
             await response_message(ctx, f'Gambit not started, please use `,gamb start`')
@@ -2800,8 +2807,7 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['usage'])
     @role_call([DOCS, MINION, ADMIN, CERTIFIED])
     async def usage(self, ctx: Context):
-        pages = menus.MenuPages(source=Paged(command_leaderboard(), title='Command usage counts'),
-                                clear_reactions_after=True)
+        pages = PaginatorView(Paged(command_leaderboard(), title='Command usage counts').get_pages())
         await pages.start(ctx)
 
     @commands.command(**help_doc['pending'], hidden=True)
@@ -3740,7 +3746,7 @@ class ScoreSheetBot(commands.Cog):
                         f'+ {len(cr.crew_staff)} crew staff don\'t count) ')
 
             # cr.set_hardcap(hardcap)
-            # set_hardcap(cr)
+        # set_hardcap(cr)
             # total_slot_set(cr, total)
             message = f'{cr.name} has {total} flairing slots this month:\n' \
                       f'{base} base slots\n' \
@@ -3957,6 +3963,109 @@ class ScoreSheetBot(commands.Cog):
         msg = await ctx.send(datetime.today().strftime("%Y/%m/%d %H:%M:%S"))
         result = await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot)
         await ctx.send(f'{msg.content}: {result}')
+
+    # ==================== SLASH COMMANDS ====================
+
+    @app_commands.command(name='stats', description='View player or crew statistics')
+    @app_commands.describe(name='Player name or crew name to look up (leave empty for your own stats)')
+    async def slash_stats(self, interaction: discord.Interaction, name: str = None):
+        """View player or crew statistics."""
+        await interaction.response.defer()
+        if name:
+            try:
+                ambiguous = ambiguous_lookup(name, self)
+                if isinstance(ambiguous, discord.Member):
+                    pages = PaginatorView(PlayerStatsPaged(ambiguous, self).get_pages())
+                    await interaction.followup.send(embed=pages.pages[0], view=pages)
+                    pages.message = await interaction.original_response()
+                    return
+                else:
+                    actual_crew = ambiguous
+            except ValueError as e:
+                await interaction.followup.send(str(e))
+                return
+        else:
+            pages = PaginatorView(PlayerStatsPaged(interaction.user, self).get_pages())
+            await interaction.followup.send(embed=pages.pages[0], view=pages)
+            pages.message = await interaction.original_response()
+            return
+
+        record = crew_record(actual_crew, CURRENT_LEAGUE_ID)
+        if not record[2]:
+            await interaction.followup.send(f'{actual_crew.name} does not have any recorded crew battles with the bot.')
+            return
+        title = f'{actual_crew.name}: {record[1]}-{int(record[2]) - int(record[1])}'
+        pages = PaginatorView(
+            Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon).get_pages())
+        await interaction.followup.send(embed=pages.pages[0], view=pages)
+        pages.message = await interaction.original_response()
+
+    @app_commands.command(name='rankings', description='View current league crew rankings')
+    async def slash_rankings(self, interaction: discord.Interaction):
+        """View current league crew rankings."""
+        await interaction.response.defer()
+        crew_ranking_str = [f'{cr[2]}: **{cr[1]}**' for cr in wisdom_rankings()]
+        pages = PaginatorView(Paged(crew_ranking_str, title=f'{self.current_league} Rankings').get_pages())
+        await interaction.followup.send(embed=pages.pages[0], view=pages)
+        pages.message = await interaction.original_response()
+
+    @app_commands.command(name='crew', description='View information about a crew')
+    @app_commands.describe(name='Crew name or tag to look up (leave empty for your own crew)')
+    async def slash_crew(self, interaction: discord.Interaction, name: str = None):
+        """View crew information."""
+        await interaction.response.defer()
+        try:
+            if name:
+                actual_crew = crew_lookup(name, self)
+            else:
+                user_crew = crew(interaction.user, self)
+                actual_crew = crew_lookup(user_crew, self)
+        except ValueError as e:
+            await interaction.followup.send(str(e))
+            return
+
+        embed = actual_crew.embed(self)
+        await interaction.followup.send(embed=embed)
+
+    @app_commands.command(name='coin', description='Flip a coin')
+    async def slash_coin(self, interaction: discord.Interaction):
+        """Flip a coin."""
+        result = random.choice(['Heads', 'Tails'])
+        embed = discord.Embed(title='Coin Flip', description=f'🪙 **{result}**', color=discord.Color.gold())
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name='help', description='Get help with bot commands')
+    @app_commands.describe(command='Specific command to get help for')
+    async def slash_help(self, interaction: discord.Interaction, command: str = None):
+        """Get help with bot commands."""
+        if command:
+            if command in help_doc:
+                doc = help_doc[command]
+                embed = discord.Embed(
+                    title=f'Help: {command}',
+                    description=doc.get('help', 'No description available.'),
+                    color=discord.Color.blue()
+                )
+                if 'brief' in doc:
+                    embed.add_field(name='Brief', value=doc['brief'], inline=False)
+            else:
+                embed = discord.Embed(
+                    title='Command Not Found',
+                    description=f'No help found for `{command}`. Use `,help` for a list of commands.',
+                    color=discord.Color.red()
+                )
+        else:
+            embed = discord.Embed(
+                title='ScoreSheetBot Help',
+                description='Use `,help <command>` for detailed help on a specific command.\n\n'
+                            '**Categories:**\n'
+                            '• Crew Battles: `,battle`, `,send`, `,end`, `,confirm`\n'
+                            '• Stats: `,stats`, `,rankings`, `,crew`, `,history`\n'
+                            '• Flairing: `,flair`, `,unflair`, `,promote`\n'
+                            '• Fun: `,coin`, `,slots`, `,gambit`',
+                color=discord.Color.blue()
+            )
+        await interaction.response.send_message(embed=embed)
 
 
 async def main():

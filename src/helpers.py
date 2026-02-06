@@ -26,7 +26,8 @@ from fuzzywuzzy import process, fuzz
 import asyncio
 import discord
 from statistics import stdev
-from discord.ext import commands, menus
+from discord.ext import commands
+from discord import ui
 from .battle import *
 import time
 from .constants import *
@@ -583,6 +584,58 @@ def noverlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[disc
     return out
 
 
+class ConfirmView(ui.View):
+    """A View with Confirm/Cancel buttons for confirmation dialogs."""
+
+    def __init__(self, author: discord.Member, *, timeout: float = 30.0):
+        super().__init__(timeout=timeout)
+        self.author = author
+        self.value: Optional[bool] = None
+        self.message: Optional[discord.Message] = None
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.author.id:
+            await interaction.response.send_message("This confirmation is not for you.", ephemeral=True)
+            return False
+        return True
+
+    @ui.button(label='Confirm', style=discord.ButtonStyle.green, emoji='✅')
+    async def confirm(self, interaction: discord.Interaction, button: ui.Button):
+        self.value = True
+        await interaction.response.edit_message(view=None)
+        self.stop()
+
+    @ui.button(label='Cancel', style=discord.ButtonStyle.red, emoji='❌')
+    async def cancel(self, interaction: discord.Interaction, button: ui.Button):
+        self.value = False
+        await interaction.response.edit_message(view=None)
+        self.stop()
+
+    async def on_timeout(self):
+        self.value = False
+        if self.message:
+            try:
+                await self.message.edit(view=None)
+            except discord.NotFound:
+                pass
+
+
+async def wait_for_confirmation(ctx_or_channel, author: discord.Member, message_content: str,
+                                timeout: float = 30.0) -> Tuple[bool, Optional[discord.Message]]:
+    """Send a confirmation message with buttons and wait for user response.
+
+    Returns a tuple of (confirmed: bool, message: Optional[discord.Message]).
+    """
+    view = ConfirmView(author, timeout=timeout)
+    if hasattr(ctx_or_channel, 'send'):
+        msg = await ctx_or_channel.send(message_content, view=view)
+    else:
+        msg = await ctx_or_channel.send(message_content, view=view)
+    view.message = msg
+    await view.wait()
+    return view.value if view.value is not None else False, msg
+
+
 async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
                                        message: discord.Message, author: discord.Member, bot: discord.Client,
                                        timeout: float = 30.0) -> bool:
@@ -860,27 +913,90 @@ def strfdelta(tdelta, fmt):
     return fmt.format(**d)
 
 
-class Paged(menus.ListPageSource):
-    def __init__(self, data, title: str, color: Optional[discord.Color] = discord.Color.purple(),
+class PaginatorView(ui.View):
+    """A View-based paginator that replaces discord-ext-menus."""
+
+    def __init__(self, pages: List[discord.Embed], *, timeout: float = 180.0):
+        super().__init__(timeout=timeout)
+        self.pages = pages
+        self.current_page = 0
+        self.message: Optional[discord.Message] = None
+        self._update_buttons()
+
+    def _update_buttons(self):
+        self.first_page.disabled = self.current_page == 0
+        self.prev_page.disabled = self.current_page == 0
+        self.next_page.disabled = self.current_page >= len(self.pages) - 1
+        self.last_page.disabled = self.current_page >= len(self.pages) - 1
+
+    @ui.button(label='<<', style=discord.ButtonStyle.grey)
+    async def first_page(self, interaction: discord.Interaction, button: ui.Button):
+        self.current_page = 0
+        self._update_buttons()
+        await interaction.response.edit_message(embed=self.pages[self.current_page], view=self)
+
+    @ui.button(label='<', style=discord.ButtonStyle.blurple)
+    async def prev_page(self, interaction: discord.Interaction, button: ui.Button):
+        self.current_page = max(0, self.current_page - 1)
+        self._update_buttons()
+        await interaction.response.edit_message(embed=self.pages[self.current_page], view=self)
+
+    @ui.button(label='>', style=discord.ButtonStyle.blurple)
+    async def next_page(self, interaction: discord.Interaction, button: ui.Button):
+        self.current_page = min(len(self.pages) - 1, self.current_page + 1)
+        self._update_buttons()
+        await interaction.response.edit_message(embed=self.pages[self.current_page], view=self)
+
+    @ui.button(label='>>', style=discord.ButtonStyle.grey)
+    async def last_page(self, interaction: discord.Interaction, button: ui.Button):
+        self.current_page = len(self.pages) - 1
+        self._update_buttons()
+        await interaction.response.edit_message(embed=self.pages[self.current_page], view=self)
+
+    @ui.button(label='X', style=discord.ButtonStyle.red)
+    async def stop_pages(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.edit_message(view=None)
+        self.stop()
+
+    async def on_timeout(self):
+        if self.message:
+            try:
+                await self.message.edit(view=None)
+            except discord.NotFound:
+                pass
+
+    async def start(self, ctx: Context):
+        self.message = await ctx.send(embed=self.pages[0], view=self)
+
+
+class Paged:
+    """Helper class to create paginated embeds from a list of data."""
+
+    def __init__(self, data: List, title: str, color: Optional[discord.Color] = discord.Color.purple(),
                  thumbnail: Optional[str] = '', per_page: Optional[int] = 10):
-        super().__init__(data, per_page=per_page)
+        self.data = data
         self.title = title
         self.color = color
         self.thumbnail = thumbnail
+        self.per_page = per_page
 
-    async def format_page(self, menu, entries) -> discord.Embed:
-        offset = menu.current_page * self.per_page
+    def get_pages(self) -> List[discord.Embed]:
+        pages = []
+        for i in range(0, len(self.data), self.per_page):
+            entries = self.data[i:i + self.per_page]
+            offset = i
+            joined = '\n'.join(f'{j + 1}. {v}' for j, v in enumerate(entries, start=offset))
+            embed = discord.Embed(description=joined, title=self.title, colour=self.color)
+            if self.thumbnail:
+                embed.set_thumbnail(url=self.thumbnail)
+            pages.append(embed)
+        return pages if pages else [discord.Embed(title=self.title, description="No data", colour=self.color)]
 
-        joined = '\n'.join(f'{i + 1}. {v}' for i, v in enumerate(entries, start=offset))
-        embed = discord.Embed(description=joined, title=self.title, colour=self.color)
-        if self.thumbnail:
-            embed.set_thumbnail(url=self.thumbnail)
-        return embed
 
+class TriforceStatsPaged:
+    """Helper class to create Triforce stats pages."""
 
-class TriforceStatsPaged(menus.ListPageSource):
     def __init__(self, power: List[Tuple[str, int, int, int]], courage: List[Tuple[str, int, int, int]]):
-
         title = f'Triforce of Power Stats'
         power_page = discord.Embed(title=title, color=colour.Color.gold())
         j = 0
@@ -890,8 +1006,9 @@ class TriforceStatsPaged(menus.ListPageSource):
                 name, wins, total, group = power[j]
                 thing.append(f'**{name}**: {wins} - {total - wins}')
                 j += 1
+            if thing:
+                power_page.add_field(name=POWER_DIVS[i], value='\n'.join(thing), inline=False)
 
-            power_page.add_field(name=POWER_DIVS[i], value='\n'.join(thing), inline=False)
         title = f'Triforce of Courage Stats'
         courage_page = discord.Embed(title=title, color=colour.Color.gold())
 
@@ -902,22 +1019,22 @@ class TriforceStatsPaged(menus.ListPageSource):
                 name, wins, total, group = courage[j]
                 thing.append(f'**{name}**: {wins} - {total - wins}')
                 j += 1
+            if thing:
+                courage_page.add_field(name=COURAGE_DIVS[i], value='\n'.join(thing), inline=False)
 
-            courage_page.add_field(name=COURAGE_DIVS[i], value='\n'.join(thing), inline=False)
+        self.pages = [power_page, courage_page]
 
-        data = [power_page, courage_page]
-        super().__init__(data, per_page=1)
-
-    async def format_page(self, menu, entries) -> discord.Embed:
-        return entries
+    def get_pages(self) -> List[discord.Embed]:
+        return self.pages
 
 
-class PlayerStatsPaged(menus.ListPageSource):
+class PlayerStatsPaged:
+    """Helper class to create player stats pages."""
+
     def __init__(self, member: discord.Member, bot: 'ScoreSheetBot'):
         season_stats = discord.Embed(title=f"Season Stats for {str(member)}", color=member.color)
         weighted, taken, lost, mvps = player_stocks(member, True)
         total, wins = player_record(member, True)
-        title = f'Crew Battle Stats for {str(member)}'
         season_stats.add_field(name='Crews record while participating', value=f'{wins}/{total - wins}', inline=True)
 
         season_stats.add_field(name='MVPs', value=f'{mvps}', inline=True)
@@ -932,6 +1049,7 @@ class PlayerStatsPaged(menus.ListPageSource):
         for char in pc:
             emoji = string_to_emote(char[1], bot.bot)
             season_stats.add_field(name=emoji, value=f'{char[0]}', inline=True)
+
         weighted, taken, lost, mvps = player_stocks(member)
         total, wins = player_record(member)
         title = f'Crew Battle Stats for {str(member)}'
@@ -954,14 +1072,12 @@ class PlayerStatsPaged(menus.ListPageSource):
         ba_stats = discord.Embed(title=f'Battle Arena Stats for {str(member)}', color=member.color)
         elo = ba_elo(member)
         if elo:
-
             wins, losses = ba_record(member)
             elo = ba_elo(member)
             ba_stats.add_field(name='record', value=f'{wins}/{losses}', inline=True)
             ba_stats.add_field(name='winrate', value=f'{round(wins / (losses + wins), 2) * 100}%', inline=True)
 
             ba_stats.add_field(name='Rating', value=f'{elo}', inline=False)
-            # TODO Add ranking here
 
             ba_stats.add_field(name='Characters played', value='how many matches played in ', inline=False)
             chars = ba_chars(member)
@@ -970,11 +1086,10 @@ class PlayerStatsPaged(menus.ListPageSource):
                 ba_stats.add_field(name=emoji, value=f'{char[0]}', inline=True)
         else:
             ba_stats.description = 'This member has no battle arena history.'
-        data = [season_stats, cb_stats, ba_stats]
-        super().__init__(data, per_page=1)
+        self.pages = [season_stats, cb_stats, ba_stats]
 
-    async def format_page(self, menu, entries) -> discord.Embed:
-        return entries
+    def get_pages(self) -> List[discord.Embed]:
+        return self.pages
 
 
 def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[discord.Embed]:
