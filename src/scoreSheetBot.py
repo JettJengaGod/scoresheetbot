@@ -1234,7 +1234,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
-    @commands.command(**help_doc['clear'])
+    @commands.command(**help_doc['clear'],  aliases=['cancel'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -1976,32 +1976,32 @@ class ScoreSheetBot(commands.Cog):
             if self._gambit_message:
                 await self._gambit_message.delete()
 
-    @gamb.command(aliases=['TAH'])
-    @main_only
-    @role_call([MINION, ADMIN, LU, GAMB_OL])
-    async def cancel(self, ctx: Context):
-        cg = current_gambit()
-        if not cg:
-            await response_message(ctx, f'Gambit not started, please use `,gamb start`')
-            return
-        msg = await ctx.send(f'Are you sure you want to cancel the gambit between {cg.team1} and {cg.team2}?')
-        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
-            return
-        for member_id, amount, cr in all_bets():
-            member = self.bot.get_user(member_id)
-            if member:
-                total = refund_member_gcoins(member, amount)
-                msg = (f'The gambit between {cg.team1} and {cg.team2} was canceled, '
-                       f'you have been refunded {amount} G-Coins for your bet on {cr}.\n'
-                       f'You now have {total} G-Coins.')
-
-                try:
-                    await member.send(msg)
-                except discord.errors.Forbidden:
-                    await ctx.send(f'{str(member)} is not accepting dms.')
-        cancel_gambit()
-        await ctx.send(f'Gambit between {cg.team1} and {cg.team2} cancelled. All participants have been refunded.')
+    # @gamb.command()
+    # @main_only
+    # @role_call([MINION, ADMIN, LU, GAMB_OL])
+    # async def cancel(self, ctx: Context):
+    #     cg = current_gambit()
+    #     if not cg:
+    #         await response_message(ctx, f'Gambit not started, please use `,gamb start`')
+    #         return
+    #     msg = await ctx.send(f'Are you sure you want to cancel the gambit between {cg.team1} and {cg.team2}?')
+    #     if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+    #         await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+    #         return
+    #     for member_id, amount, cr in all_bets():
+    #         member = self.bot.get_user(member_id)
+    #         if member:
+    #             total = refund_member_gcoins(member, amount)
+    #             msg = (f'The gambit between {cg.team1} and {cg.team2} was canceled, '
+    #                    f'you have been refunded {amount} G-Coins for your bet on {cr}.\n'
+    #                    f'You now have {total} G-Coins.')
+    #
+    #             try:
+    #                 await member.send(msg)
+    #             except discord.errors.Forbidden:
+    #                 await ctx.send(f'{str(member)} is not accepting dms.')
+    #     cancel_gambit()
+    #     await ctx.send(f'Gambit between {cg.team1} and {cg.team2} cancelled. All participants have been refunded.')
 
     @gamb.command()
     @main_only
