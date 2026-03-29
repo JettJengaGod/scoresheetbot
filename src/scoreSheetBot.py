@@ -612,7 +612,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def send(self, ctx: Context, user: discord.Member, team: str = None):
-        if self._current(ctx).battle_type == BattleType.REG:
+        if self._current(ctx).battle_type in (BattleType.REG, BattleType.RANKED, BattleType.PLAYOFF):
             if not check_roles(user, [VERIFIED]):
                 await response_message(ctx,
                                        f'{user.mention} does not have the DC Verified role. Which is required for '
