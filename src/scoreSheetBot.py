@@ -634,9 +634,6 @@ class ScoreSheetBot(commands.Cog):
                     if check_roles(user, [WATCHLIST]):
                         await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
                         return
-                    if check_roles(user, [CREW_STAFF]):
-                        await ctx.send(f'Crew Staff: {user.mention} cannot play in ranked battles.')
-                        return
                     if check_roles(user, [JOIN_CD]):
                         await ctx.send(
                             f'{user.mention} joined this crew less than '
