@@ -612,7 +612,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def send(self, ctx: Context, user: discord.Member, team: str = None):
-        if self._current(ctx).battle_type in (BattleType.REG, BattleType.RANKED, BattleType.PLAYOFF):
+        if self._current(ctx).battle_type == BattleType.REG:
             if not check_roles(user, [VERIFIED]):
                 await response_message(ctx,
                                        f'{user.mention} does not have the DC Verified role. Which is required for '
@@ -682,6 +682,9 @@ class ScoreSheetBot(commands.Cog):
             author_crew = await self._battle_crew(ctx, ctx.author)
             player_crew = await self._battle_crew(ctx, user)
             if author_crew == player_crew:
+                if check_roles(user, [CREW_STAFF]):
+                    await ctx.send(f'Crew Staff: {user.mention} cannot play in ranked battles.')
+                    return
                 if check_roles(user, [WATCHLIST]):
                     await ctx.send(f'Watch listed player {user.mention} cannot play in ranked battles.')
                     return
