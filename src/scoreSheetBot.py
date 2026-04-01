@@ -499,8 +499,8 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     @ss_channel
     async def playoff(self, ctx: Context, user: discord.Member, size: int):
-        if size < 7:
-            await ctx.send('Please enter a size greater than 6.')
+        if size < 6:
+            await ctx.send('Please enter a size greater than 5.')
             return
         user_crew = crew(ctx.author, self)
         opp_crew = crew(user, self)
