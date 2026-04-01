@@ -1148,12 +1148,12 @@ class ScoreSheetBot(commands.Cog):
                     for output_channel in output_channels:
                         link = await send_sheet(output_channel, current)
                         links.append(link)
-                    battle_id = add_finished_battle(current, links[0].jump_url, 38)
+                    battle_id = add_finished_battle(current, links[0].jump_url, 40)
                     battle_weight_changes(battle_id)
                     winner_crew = crew_lookup(winner, self)
                     loser_crew = crew_lookup(loser, self)
                     new_message = (
-                        f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v25.3 Playoff) - {winner}⚔{loser}**\n'
+                        f'**{today.strftime("%B %d, %Y")} (SCS Ultimate v26.0 Playoff) - {winner}⚔{loser}**\n'
                         f'**Winner:** <@&{winner_crew.role_id}> ({winner_crew.abbr})\n '
                         f'**Loser:** <@&{loser_crew.role_id}> ({loser_crew.abbr}) \n'
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
@@ -3202,7 +3202,7 @@ class ScoreSheetBot(commands.Cog):
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
-    @commands.command(**help_doc['listroles'])
+    @commands.command(**help_doc['listroles'], aliases=['roster'])
     async def listroles(self, ctx, *, role: str):
         actual, mems, extra = members_with_str_role(role, self)
         mems.sort(key=lambda x: str(x))
@@ -3227,29 +3227,29 @@ class ScoreSheetBot(commands.Cog):
         out = discord.Embed(title=title,
                             description='\n'.join(desc), color=color)
         await send_long_embed(ctx, out)
-
-    @commands.command(**help_doc['listroles'])
-    async def roster(self, ctx, *, role: str = ''):
-        if role:
-            ambiguous = ambiguous_lookup(role, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-
-        actual, mems, extra = members_with_str_role(actual_crew.name, self)
-        mems.sort(key=lambda x: str(x))
-        mems = [member for member in mems if self.cache.roles.fortyman in member.roles]
-        desc = ['\n'.join([f'{str(member)} {member.mention}' for member in mems])]
-        cr = crew_lookup(actual, self)
-        title = f'All {len(mems)} members on the roster for {actual}'
-        color = cr.color
-
-        out = discord.Embed(title=title,
-                            description='\n'.join(desc), color=color)
-        await send_long_embed(ctx, out)
+    #
+    # @commands.command(**help_doc['listroles'])
+    # async def roster(self, ctx, *, role: str = ''):
+    #     if role:
+    #         ambiguous = ambiguous_lookup(role, self)
+    #         if isinstance(ambiguous, discord.Member):
+    #             actual_crew = crew_lookup(crew(ambiguous, self), self)
+    #         else:
+    #             actual_crew = ambiguous
+    #     else:
+    #         actual_crew = crew_lookup(crew(ctx.author, self), self)
+    #
+    #     actual, mems, extra = members_with_str_role(actual_crew.name, self)
+    #     mems.sort(key=lambda x: str(x))
+    #     mems = [member for member in mems if self.cache.roles.fortyman in member.roles]
+    #     desc = ['\n'.join([f'{str(member)} {member.mention}' for member in mems])]
+    #     cr = crew_lookup(actual, self)
+    #     title = f'All {len(mems)} members on the roster for {actual}'
+    #     color = cr.color
+    #
+    #     out = discord.Embed(title=title,
+    #                         description='\n'.join(desc), color=color)
+    #     await send_long_embed(ctx, out)
 
     @commands.command(**help_doc['pingrole'])
     @role_call(STAFF_LIST)
