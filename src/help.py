@@ -65,8 +65,7 @@ help_doc = dict(
     lock=HelpDoc(Categories.cb, 'Locks the cb room to only crews playing in it'),
     unlock=HelpDoc(Categories.cb, 'Unlocks cb room to everyone'),
     forfeit=HelpDoc(Categories.cb, 'Forfeits a crew battle'),
-    crew=HelpDoc(Categories.crews, 'If provided with an argument, will search for a user\'s crew or '
-                                   'crew and output that, otherwise provides author\'s crew', '',
+    crew=HelpDoc(Categories.crews, 'Searches for a user or crew, or provides author\'s crew', '',
                  'Optional<User/Crew>'),
     status=HelpDoc(Categories.cb, 'Current status of the battle'),
     chars=HelpDoc(Categories.cb, 'Prints all characters names and their corresponding emojis'),
@@ -90,8 +89,7 @@ help_doc = dict(
     disable=HelpDoc(Categories.staff, 'Disables the bot in a channel', '', 'ChannelMention'),
     usage=HelpDoc(Categories.staff, 'Shows the usage stats of each command'),
 
-    deactivate=HelpDoc(Categories.staff, 'Deactivates a command so the bot will not '
-                                         'be able to use it till reactivation, also reactivates commands', '',
+    deactivate=HelpDoc(Categories.staff, 'Deactivates or reactivates a command for the bot', '',
                        'CommandName'),
     countdown=HelpDoc(Categories.cb, 'Counts down for x seconds (defaults to 3).'),
     slots=HelpDoc(Categories.crews, 'Find out the remaining slots of a crew'),
@@ -104,15 +102,12 @@ help_doc = dict(
     playerstats=HelpDoc(Categories.crews, 'Stats for a player'),
     stats=HelpDoc(Categories.crews, 'Stats for a player or crew, depending on what you send in'),
     battles=HelpDoc(Categories.crews, 'All battles that have been recorded with the bot'),
-    unflair=HelpDoc(Categories.flairing, 'Unflairs you from your crew or a member from your crew if you are a leader '
-                                         'if you are an admin, unflairs anyone', '', 'Optional<Member>'),
+    unflair=HelpDoc(Categories.flairing, 'Unflairs a member from their crew', '', 'Optional<Member>'),
     multiflair=HelpDoc(Categories.flairing,
-                       'Flairs multiple people for your crew or for a specific crew if you are an admin.'
-                       'Only use spaces between members, and mention mention each one', '',
+                       'Flairs multiple people for a crew. Space separate and mention each.', '',
                        'Member1 Member2 Member3 Optional<Crew>'),
     multiunflair=HelpDoc(Categories.flairing,
-                         'Unflairs multiple people for your crew or for a specific crew if you are an admin.'
-                         'Only use spaces between members, and mention mention each one', '',
+                         'Unflairs multiple people for a crew. Space separate and mention each.', '',
                          'Member1 Member2 Member3'),
     flair=HelpDoc(Categories.flairing, 'Flairs someone for your crew or for a specific crew if you are an admin', '',
                   'Member Optional<Crew>'),
@@ -137,7 +132,7 @@ help_doc = dict(
                            'Sets the return slots for a crew to a specific number (Only values 1,2,3)', '',
                            'number Crew'),
     cooldown=HelpDoc(Categories.staff,
-                     'Finds the current cooldown for each of recently flaired users and fixes any that might have been missed'),
+                     'Finds and fixes cooldowns for recently flaired users'),
     non_crew=HelpDoc(Categories.staff, 'Returns a list of all non crew roles (should be small)'),
     overflow=HelpDoc(Categories.staff, 'Returns a two lists of overflow incorrectly tagged members'),
     ofrank=HelpDoc(Categories.staff, 'Returns all overflow crews and info about them'),
@@ -145,8 +140,7 @@ help_doc = dict(
     flairing_on=HelpDoc(Categories.staff, 'Turns flairing back on'),
     pair=HelpDoc(Categories.staff, 'Pairs 2 crews for destiny', 'Crew1 Crew2'),
     freeze=HelpDoc(Categories.staff, 'Freezes a crews registration for a time.',
-                   'If you pass in a time it will stop a crew from registering for that amount of time,'
-                   ' accepts xD or xW or xM for x days, weeks or months respectively', 'CREW Optional[length]'),
+                   'Pass in length to stop reg for a time (xD, xW, xM)', 'CREW Optional[length]'),
     disband=HelpDoc(Categories.staff,
                     'Disbands an overflow crew removing all crew related roles from all members. (requires confirm)',
                     usage='CrewName or Tag'),
@@ -167,8 +161,7 @@ help_doc = dict(
     make_lead=HelpDoc(Categories.staff, 'Makes a user a leader on their crew', '', 'User'),
     bigcrew=HelpDoc(Categories.staff, 'Returns all the crews that are bigger than x, default 40', '', 'Crew min'),
     softcap=HelpDoc(Categories.crews,
-                    'Returns the number of unique players used by crews last month or the players and each cb'
-                    'for a specific crew', '', 'Optional[Crew]'),
+                    'Returns the number of unique players used by a crew last month', '', 'Optional[Crew]'),
     crnumbers=HelpDoc(Categories.staff, 'Helpful numbers for crew analysis'),
     cancelcb=HelpDoc(Categories.staff, 'Cancel a crew battle that happened in the past', '',
                      'battleId Optional[Reason]'),
@@ -181,8 +174,7 @@ help_doc = dict(
                      'Winner Loser'),
     failedreg=HelpDoc(Categories.staff, 'Adds a new reg cb sheet to the database and in scoresheet_history', '',
                       'Winner Loser Size FinalScore'),
-    weirdreg=HelpDoc(Categories.staff, 'Adds a new reg cb sheet where the registering crew won but didn\'t reg'
-                                       'to the database and in scoresheet_history', '',
+    weirdreg=HelpDoc(Categories.staff, 'Adds a reg cb sheet where the registering crew won but didn\'t reg', '',
                      'LosingCrew WinningRegCrew Size FinalScore'),
     pingoverlap=HelpDoc(Categories.staff, 'Pings the overlap between two roles', '', 'role 1 role 2'),
     pingnoverlap=HelpDoc(Categories.staff, 'Pings all members with the first role but not the 2nd', '',
@@ -199,5 +191,19 @@ help_doc = dict(
     predictions=HelpDoc(Categories.gambit, 'Tells you your predictions for the MC playoffs'),
     predict=HelpDoc(Categories.gambit, 'Lets you predict the MC playoffs'),
     result=HelpDoc(Categories.ba, 'Submits a battle arena result'),
-    vote=HelpDoc(Categories.misc, 'Vote for an option between 1 and 4')
+    vote=HelpDoc(Categories.misc, 'Vote for an option between 1 and 4'),
+    strawhat=HelpDoc(Categories.cb, 'Start a Strawhat playoff Scoresheet', '', '@OpponentName size'),
+    cowy=HelpDoc(Categories.cb, 'Start a Cowy playoff Scoresheet', '', '@OpponentName size'),
+    playoff=HelpDoc(Categories.cb, 'Start a general playoff Scoresheet', '', '@OpponentName size'),
+    hardcap=HelpDoc(Categories.crews, 'Calculates the hardcap for a crew', '', 'Optional[Crew]'),
+    rate=HelpDoc(Categories.staff, 'Shows stats about a crew rating', '', ''),
+    categoryrole=HelpDoc(Categories.staff, 'Syncs the category roles', '', ''),
+    stupid=HelpDoc(Categories.staff, 'Fixes weird anomalies', '', ''),
+    initalize_ratings=HelpDoc(Categories.staff, 'Initializes ratings for crews', '', ''),
+    manual_battle=HelpDoc(Categories.staff, 'Manually adds a battle to the database', '', ''),
+    update_elos=HelpDoc(Categories.staff, 'Updates ELOs for players', '', ''),
+    savenicks=HelpDoc(Categories.staff, 'Saves all users nicknames to db', '', ''),
+    season=HelpDoc(Categories.staff, 'Starts a new league season', '', ''),
+    backfill=HelpDoc(Categories.staff, 'Backfills missing historical data', '', ''),
+    slotfinals=HelpDoc(Categories.staff, 'Calculates slots based on final stats', '', '')
 )

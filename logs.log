@@ -13,3 +13,53 @@ Traceback (most recent call last):
     ret = f'{res[1]} has thanked alexjett {res[0]} times.\n'
              ~~~^^^
 TypeError: 'NoneType' object is not subscriptable
+Traceback (most recent call last):
+  File "D:\Coding\Antigravity\scoresheetbot\scoresheetbot\src\db_helpers.py", line 1055, in current_league_name
+    conn = psycopg2.connect(**params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\Owner\.virtualenvs\scoresheetbot-QhaK6dOh\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.OperationalError: connection to server at "ssb-do-user-8293799-0.b.db.ondigitalocean.com" (206.189.163.75), port 25060 failed: FATAL:  password authentication failed for user "antigravity"
+
+Traceback (most recent call last):
+  File "D:\Coding\Antigravity\scoresheetbot\scoresheetbot\src\db_helpers.py", line 1055, in current_league_name
+    conn = psycopg2.connect(**params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Owner\.virtualenvs\scoresheetbot-QhaK6dOh\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.OperationalError: connection to server at "ssb-do-user-8293799-0.b.db.ondigitalocean.com" (206.189.163.75), port 25060 failed: FATAL:  password authentication failed for user "antigravity"
+
+Traceback (most recent call last):
+  File "C:\Users\Owner\.virtualenvs\scoresheetbot-QhaK6dOh\Lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\Antigravity\scoresheetbot\scoresheetbot\src\decorators.py", line 126, in wrapped_f
+    return await func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\Antigravity\scoresheetbot\scoresheetbot\src\scoreSheetBot.py", line 3967, in sync
+    await self.bot.tree.sync()
+  File "C:\Users\Owner\.virtualenvs\scoresheetbot-QhaK6dOh\Lib\site-packages\discord\app_commands\tree.py", line 1121, in sync
+    raise CommandSyncFailure(e, commands) from None
+discord.app_commands.errors.CommandSyncFailure: Failed to upload commands to Discord (HTTP status 400, error code 50035)
+In command 'crew' defined in function 'ScoreSheetBot.crew'
+  description: Must be 100 or fewer in length.
+In command 'unflair' defined in function 'ScoreSheetBot.unflair'
+  description: Must be 100 or fewer in length.
+In command 'multiflair' defined in function 'ScoreSheetBot.multiflair'
+  description: Must be 100 or fewer in length.
+In command 'multiunflair' defined in function 'ScoreSheetBot.multiunflair'
+  description: Must be 100 or fewer in length.
+In command 'cooldown' defined in function 'ScoreSheetBot.cooldown'
+  description: Must be 100 or fewer in length.
+In command 'weirdreg' defined in function 'ScoreSheetBot.weirdreg'
+  description: Must be 100 or fewer in length.
+In command 'deactivate' defined in function 'ScoreSheetBot.deactivate'
+  description: Must be 100 or fewer in length.
+In command 'freeze' defined in function 'ScoreSheetBot.freeze'
+  description: Must be 100 or fewer in length.
+In command 'hardcap' defined in function 'ScoreSheetBot.hardcap'
+  description: Must be 100 or fewer in length.
+In command 'softcap' defined in function 'ScoreSheetBot.softcap'
+  description: Must be 100 or fewer in length.

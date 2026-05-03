@@ -465,3 +465,10 @@ class TestInternalMethods(SSBTestBase):
     def test_cache_property(self):
         self.assertIsNotNone(self.ssb.cache)
         self.assertIsNotNone(self.ssb.cache.scs)
+
+    async def test_sync_command(self):
+        ctx = self.make_ctx(author_roles=[mocks.MockRole(name=ADMIN)])
+        self.bot.tree = AsyncMock()
+        await self.invoke('sync', ctx)
+        self.bot.tree.sync.assert_called_once()
+        ctx.send.assert_called_with('Command tree synced.')
