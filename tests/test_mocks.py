@@ -318,11 +318,11 @@ class MockObjectTests(unittest.TestCase):
     def test_spec_propagation_of_mock_subclasses(self):
         """Test if the `spec` does not propagate to attributes of the mock object."""
         test_values = (
-            (mocks.MockGuild, "region"),
+            (mocks.MockGuild, "owner_id"),
             (mocks.MockRole, "mentionable"),
             (mocks.MockMember, "display_name"),
             (mocks.MockBot, "owner_id"),
-            (mocks.MockContext, "command_failed"),
+            (mocks.MockContext, "invoked_with"),
             (mocks.MockMessage, "mention_everyone"),
             (mocks.MockEmoji, 'managed'),
             (mocks.MockPartialEmoji, 'url'),

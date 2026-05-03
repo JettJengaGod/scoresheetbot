@@ -121,7 +121,6 @@ output_channel_data = {
 guild_data = {
     'id': 430361913369690113,
     'name': 'Smash Crew Server',
-    'region': 'US-east',
     'verification_level': 3,
     'default_notications': 1,
     'afk_timeout': 900,
@@ -226,7 +225,7 @@ leader = MockRole(name=LEADER)
 admin = MockRole(name=ADMIN)
 
 # Create a Member instance to get a realistic Mock of `discord.Member`
-member_data = {'user': 'lemon', 'roles': [1]}
+member_data = {'user': 'lemon', 'roles': [1], 'flags': 0}
 state_mock = unittest.mock.MagicMock()
 member_instance = discord.Member(data=member_data, guild=guild_instance, state=state_mock)
 
@@ -264,7 +263,14 @@ class MockMember(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin
     # Create a User instance to get a realistic Mock of `discord.User`
 
 
-user_instance = discord.User(data=unittest.mock.MagicMock(), state=unittest.mock.MagicMock())
+user_data = {
+    'id': 1,
+    'username': 'user',
+    'discriminator': '0001',
+    'avatar': None,
+    'global_name': None,
+}
+user_instance = discord.User(data=user_data, state=unittest.mock.MagicMock())
 
 
 class MockUser(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin):
@@ -306,7 +312,7 @@ class MockBot(CustomMockMixin, unittest.mock.MagicMock):
     Instances of this class will follow the specifications of `discord.ext.commands.Bot` instances.
     For more information, see the `MockGuild` docstring.
     """
-    spec_set = commands.Bot(command_prefix=',', guild=MockGuild(), emojis=MockEmoji())
+    spec_set = commands.Bot(command_prefix=',', guild=MockGuild(), emojis=MockEmoji(), intents=discord.Intents.default())
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -370,8 +376,7 @@ message_data = {
     'webhook_id': 431341013479718912,
     'attachments': [],
     'embeds': [],
-    'application': 'Python Discord',
-    'activity': 'mocking',
+
     'channel': unittest.mock.MagicMock(),
     'edited_timestamp': '2019-10-14T15:33:48+00:00',
     'type': 'message',
@@ -386,7 +391,7 @@ channel = unittest.mock.MagicMock()
 message_instance = discord.Message(state=state, channel=channel, data=message_data)
 
 # Create a Context instance to get a realistic MagicMock of `discord.ext.commands.Context`
-context_instance = Context(message=unittest.mock.MagicMock(), prefix=unittest.mock.MagicMock())
+context_instance = Context(message=unittest.mock.MagicMock(), prefix=';', bot=unittest.mock.MagicMock(), view=unittest.mock.MagicMock())
 
 
 class MockContext(CustomMockMixin, unittest.mock.MagicMock):
@@ -405,7 +410,7 @@ class MockContext(CustomMockMixin, unittest.mock.MagicMock):
         self.channel = kwargs.get('channel', MockTextChannel())
 
 
-attachment_instance = discord.Attachment(data=unittest.mock.MagicMock(id=1), state=unittest.mock.MagicMock())
+attachment_instance = discord.Attachment(data={'id': 1, 'filename': 'test.png', 'size': 1, 'url': 'http://test.com', 'proxy_url': 'http://test.com'}, state=unittest.mock.MagicMock())
 
 
 class MockAttachment(CustomMockMixin, unittest.mock.MagicMock):
@@ -468,7 +473,7 @@ class MockReaction(CustomMockMixin, unittest.mock.MagicMock):
         self.__str__.return_value = str(self.emoji)
 
 
-webhook_instance = discord.Webhook(data=unittest.mock.MagicMock(), adapter=unittest.mock.MagicMock())
+webhook_instance = discord.Webhook(data={'id': 1, 'type': 1}, session=unittest.mock.MagicMock())
 
 
 class MockAsyncWebhook(CustomMockMixin, unittest.mock.MagicMock):
@@ -484,7 +489,6 @@ class MockAsyncWebhook(CustomMockMixin, unittest.mock.MagicMock):
 HK = Crew(
     name='Holy Knights',
     abbr='HK',
-    merit=100,
     member_count=10,
     leaders=['Meli'],
     advisors=['Bob']
@@ -492,7 +496,6 @@ HK = Crew(
 FSGood = Crew(
     name='FSGood',
     abbr='FSG',
-    merit=-100,
     member_count=10,
     leaders=['Cowy'],
     advisors=['Kip']
@@ -500,7 +503,6 @@ FSGood = Crew(
 Ballers = Crew(
     name='Ballers',
     abbr='BAL',
-    merit=-100,
     member_count=10,
     leaders=['Cowy'],
     advisors=['Kip'],
@@ -559,7 +561,7 @@ def cache() -> Cache:
         MockRole(name=ADVISOR),
         ballers_role,
     ]
-    fake_cache.scs.channels = [MockTextChannel(name=FLAIRING_LOGS)]
+    fake_cache.scs.channels = [MockTextChannel(name=FLAIRING_LOGS), MockTextChannel(name=FLAIRING_INFO)]
     fake_cache.channels = fake_cache.channel_factory(fake_cache.scs)
     fake_cache.roles = fake_cache.role_factory(fake_cache.scs)
     fake_cache.main_members = fake_cache.members_by_name(fake_cache.scs.members)
@@ -587,3 +589,56 @@ class MockSSB(CustomMockMixin, unittest.mock.MagicMock):
     def __init__(self, **kwargs) -> None:
         default_kwargs = {'bot': MockBot(), 'cache': Cache}
         super().__init__(**collections.ChainMap(kwargs, default_kwargs))
+
+
+class MockCursor(unittest.mock.MagicMock):
+    """
+    A MagicMock subclass to simulate a psycopg2 cursor.
+    Records executed queries and allows overriding fetched results.
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.queries = []
+        self.fetch_results = []
+        self._default_fetch = None
+
+    def execute(self, query, vars=None):
+        self.queries.append((query, vars))
+
+    def fetchone(self):
+        if self.fetch_results:
+            return self.fetch_results.pop(0)
+        return self._default_fetch
+
+    def fetchall(self):
+        if self.fetch_results:
+            return self.fetch_results.pop(0)
+        return []
+
+    def fetchmany(self, size=None):
+        if self.fetch_results:
+            return self.fetch_results.pop(0)
+        return []
+
+    def set_results(self, results):
+        """Helper to pre-load results for fetch calls."""
+        self.fetch_results = results
+
+
+class MockConnection(unittest.mock.MagicMock):
+    """
+    A MagicMock subclass to simulate a psycopg2 connection.
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.mock_cursor = MockCursor()
+
+    def cursor(self):
+        return self.mock_cursor
+
+    def commit(self):
+        pass
+
+    def close(self):
+        pass
+

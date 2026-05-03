@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "D:\Coding\Antigravity\scoresheetbot\scoresheetbot\src\db_helpers.py", line 63, in add_thanks
+    ret = f'{res[1]} has thanked alexjett {res[0]} times.\n'
+             ~~~^^^
+TypeError: 'NoneType' object is not subscriptable
+Traceback (most recent call last):
+  File "D:\Coding\Antigravity\scoresheetbot\scoresheetbot\src\db_helpers.py", line 63, in add_thanks
+    ret = f'{res[1]} has thanked alexjett {res[0]} times.\n'
+             ~~~^^^
+TypeError: 'NoneType' object is not subscriptable
+Traceback (most recent call last):
+  File "D:\Coding\Antigravity\scoresheetbot\scoresheetbot\src\db_helpers.py", line 63, in add_thanks
+    ret = f'{res[1]} has thanked alexjett {res[0]} times.\n'
+             ~~~^^^
+TypeError: 'NoneType' object is not subscriptable

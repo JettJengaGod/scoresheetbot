@@ -74,32 +74,32 @@ class BattleSetupTest(unittest.TestCase):
 
 
 class BattleTimerTest(unittest.TestCase):
-    @freeze_time(datetime(year=1, month=7, day=12,
+    @freeze_time(datetime(year=2020, month=7, day=12,
                           hour=15, minute=6, second=3))
     def setUp(self) -> None:
         self.battle = Battle(TEAM1_NAME, TEAM2_NAME, 1)
 
-    @freeze_time(datetime(year=1, month=7, day=12,
+    @freeze_time(datetime(year=2020, month=7, day=12,
                           hour=15, minute=6, second=3))
     def test_initial_timer(self):
-        self.assertEqual(datetime(year=1, month=7, day=12,
+        self.assertEqual(datetime(year=2020, month=7, day=12,
                                   hour=15, minute=6, second=3), self.battle.time)
         expected = f'It has been 0 seconds since the crew battle started.'
         self.assertEqual(self.battle.timer(), expected)
 
-    @freeze_time(datetime(year=1, month=7, day=12,
+    @freeze_time(datetime(year=2020, month=7, day=12,
                           hour=15, minute=6, second=4))
     def test_1_second(self):
         expected = f'It has been 1 second since the crew battle started.'
         self.assertEqual(self.battle.timer(), expected)
 
-    @freeze_time(datetime(year=1, month=7, day=12,
+    @freeze_time(datetime(year=2020, month=7, day=12,
                           hour=15, minute=7, second=3))
     def test_1_minute(self):
         expected = f'It has been 1 minute and 0 seconds since the crew battle started.'
         self.assertEqual(self.battle.timer(), expected)
 
-    @freeze_time(datetime(year=1, month=7, day=12,
+    @freeze_time(datetime(year=2020, month=7, day=12,
                           hour=15, minute=8, second=4))
     def test_2_minute(self):
         expected = f'It has been 2 minutes and 1 second since the crew battle started.'
@@ -109,7 +109,7 @@ class BattleTimerTest(unittest.TestCase):
 
 class BattleInternalTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.battle = Battle(TEAM1_NAME, TEAM2_NAME, 5)
+        self.battle = Battle(TEAM1_NAME, TEAM2_NAME, 5, battle_type=BattleType.MOCK)
         self.battle.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME)
         self.battle.add_player(team_name=TEAM2_NAME, player_name=PLAYER2_NAME, leader=PLAYER2_NAME)
 
@@ -195,7 +195,7 @@ class BattleInternalTest(unittest.TestCase):
 
 
     def test_battle_mvps(self):
-        battle2 = Battle(TEAM1_NAME, TEAM2_NAME, 1)
+        battle2 = Battle(TEAM1_NAME, TEAM2_NAME, 1, battle_type=BattleType.MOCK)
         battle2.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME)
         battle2.add_player(team_name=TEAM2_NAME, player_name=Players[1].name, leader=PLAYER2_NAME)
         battle2.finish_match(3, 0, Chars[1], Chars[2])
@@ -206,7 +206,7 @@ class BattleInternalTest(unittest.TestCase):
 
 class BattleBigTest(unittest.TestCase):
     def test_big_battle(self):
-        battle = Battle(TEAM1_NAME, TEAM2_NAME, 7)
+        battle = Battle(TEAM1_NAME, TEAM2_NAME, 7, battle_type=BattleType.MOCK)
         battle.add_player(team_name=TEAM1_NAME, player_name=Players[0].name, leader=PLAYER1_NAME)
         battle.add_player(team_name=TEAM2_NAME, player_name=Players[7].name, leader=PLAYER2_NAME)
         battle.finish_match(3, 2, Chars[0], Chars[7])
