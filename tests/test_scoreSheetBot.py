@@ -472,3 +472,11 @@ class TestInternalMethods(SSBTestBase):
         await self.invoke('sync', ctx)
         self.bot.tree.sync.assert_called_once()
         ctx.send.assert_called_with('Command tree synced.')
+
+    async def test_desync_command(self):
+        ctx = self.make_ctx(author_roles=[mocks.MockRole(name=ADMIN)])
+        self.bot.tree = AsyncMock()
+        await self.invoke('desync', ctx)
+        self.bot.tree.clear_commands.assert_called_once_with(guild=None)
+        self.bot.tree.sync.assert_called_once()
+        ctx.send.assert_called_with('Command tree desynced and cleared globally.')

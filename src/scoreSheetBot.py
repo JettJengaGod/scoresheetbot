@@ -818,7 +818,7 @@ class ScoreSheetBot(commands.Cog):
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['end'], aliases=['e'])
+    @commands.hybrid_command(**help_doc['end'], aliases=['e'])
     @has_sheet
     @ss_channel
     async def end(self, ctx: Context, char1: str, stocks1: int, char2: str, stocks2: int):
@@ -829,7 +829,7 @@ class ScoreSheetBot(commands.Cog):
                                         Character(char2, self.bot))
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.hybrid_command(**help_doc['endlag'])
+    @commands.command(**help_doc['endlag'])
     @has_sheet
     @ss_channel
     async def endlag(self, ctx: Context, char1: str, stocks1: int, char2: str, stocks2: int):
@@ -3832,6 +3832,23 @@ class ScoreSheetBot(commands.Cog):
     async def sync(self, ctx: Context):
         await self.bot.tree.sync()
         await ctx.send('Command tree synced.')
+
+    @commands.command(name='desync', brief='Desyncs the bot command tree globally')
+    @app_commands.default_permissions(manage_roles=True)
+    @role_call(STAFF_LIST)
+    async def desync(self, ctx: Context):
+        self.bot.tree.clear_commands(guild=None)
+        await self.bot.tree.sync()
+        await ctx.send('Command tree desynced and cleared globally.')
+    
+    @commands.command(name='desync', brief='Syncs the bot command tree')
+    @app_commands.default_permissions(manage_roles=True)
+    @role_call(STAFF_LIST)
+    async def desync(self, ctx: Context):
+        self.bot.tree.clear_commands(guild=None)
+        await self.bot.tree.sync()
+        await ctx.send('Command tree desynced and cleared globally.')
+
 
 
     @commands.command(name='listcmds', brief='Lists the bot commands')
