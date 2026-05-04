@@ -265,7 +265,7 @@ class ScoreSheetBot(commands.Cog):
     async def cb(self, ctx):
         await self.help(ctx, 'cb')
 
-    @commands.command(**help_doc['lock'], aliases=['mohamed', 'nohamed', 'lk'])
+    @commands.hybrid_command(**help_doc['lock'], aliases=['mohamed', 'nohamed', 'lk'])
     @main_only
     @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
@@ -326,7 +326,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('There needs to be a ranked battle running to use this command.')
             return
 
-    @commands.command(**help_doc['unlock'])
+    @commands.hybrid_command(**help_doc['unlock'])
     @main_only
     @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
@@ -334,7 +334,7 @@ class ScoreSheetBot(commands.Cog):
         await unlock(ctx.channel)
         await ctx.send('Unlocked the channel for all crews to use.')
 
-    @commands.command(**help_doc['battle'], aliases=['wisdom'], group='CB')
+    @commands.hybrid_command(**help_doc['battle'], aliases=['wisdom'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -399,7 +399,7 @@ class ScoreSheetBot(commands.Cog):
     #     else:
     #         await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['mock'])
+    @commands.hybrid_command(**help_doc['mock'])
     @no_battle
     @ss_channel
     async def mock(self, ctx: Context, team1: str, team2: str, size: int):
@@ -409,7 +409,7 @@ class ScoreSheetBot(commands.Cog):
         await self._set_current(ctx, Battle(team1, team2, size, BattleType.MOCK))
         await ctx.send(embed=self._current(ctx).embed())
 
-    @commands.command(**help_doc['reg'])
+    @commands.hybrid_command(**help_doc['reg'])
     @main_only
     @no_battle
     @is_lead
@@ -436,65 +436,7 @@ class ScoreSheetBot(commands.Cog):
         await self._set_current(ctx, Battle(real_crew, registering_crew, size, BattleType.REG))
         await ctx.send(embed=self._current(ctx).embed())
 
-    @commands.command(**help_doc['strawhat'], aliases=['straw'], group='CB')
-    @main_only
-    @no_battle
-    @is_lead
-    @ss_channel
-    async def strawhat(self, ctx: Context, user: discord.Member, size: int):
-        if size < 6:
-            await ctx.send('Please enter a size greater than 5.')
-            return
-        user_crew = crew(ctx.author, self)
-        opp_crew = crew(user, self)
-        if not user_crew:
-            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-        if not opp_crew:
-            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-        if user_crew != opp_crew:
-            user_actual = crew_lookup(user_crew, self)
-            opp_actual = crew_lookup(opp_crew, self)
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.SH_PLAYOFF))
-            await send_sheet(ctx, battle=self._current(ctx))
-        else:
-            await ctx.send('You can\'t battle your own crew.')
-
-    @commands.command(**help_doc['cowy'], aliases=['cowybattle'], group='CB')
-    @main_only
-    @no_battle
-    @is_lead
-    @ss_channel
-    async def cowy(self, ctx: Context, user: discord.Member, size: int):
-        if size < 7:
-            await ctx.send('Please enter a size 7 or greater.')
-            return
-        user_crew = crew(ctx.author, self)
-        opp_crew = crew(user, self)
-        if not user_crew:
-            await ctx.send(f'{ctx.author.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-        if not opp_crew:
-            await ctx.send(f'{user.name}\'s crew didn\'t show up correctly. '
-                           f'They might be in an overflow crew or no crew. '
-                           f'Please contact an admin if this is incorrect.')
-            return
-        if user_crew != opp_crew:
-            user_actual = crew_lookup(user_crew, self)
-            opp_actual = crew_lookup(opp_crew, self)
-            await self._set_current(ctx, Battle(user_crew, opp_crew, size, BattleType.COWY))
-            await send_sheet(ctx, battle=self._current(ctx))
-        else:
-            await ctx.send('You can\'t battle your own crew.')
-
-    @commands.command(**help_doc['playoff'], aliases=['pob'], group='CB')
+    @commands.hybrid_command(**help_doc['playoff'], aliases=['pob'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -596,7 +538,7 @@ class ScoreSheetBot(commands.Cog):
     #     else:
     #         await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['countdown'])
+    @commands.hybrid_command(**help_doc['countdown'])
     @ss_channel
     async def countdown(self, ctx: Context, seconds: Optional[int] = 10):
         if seconds > 10 or seconds < 1:
@@ -608,7 +550,7 @@ class ScoreSheetBot(commands.Cog):
             await sleep(1)
         await ctx.send('Finished!')
 
-    @commands.command(**help_doc['send'], aliases=['s'])
+    @commands.hybrid_command(**help_doc['send'], aliases=['s'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -700,7 +642,7 @@ class ScoreSheetBot(commands.Cog):
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['use_ext'])
+    @commands.hybrid_command(**help_doc['use_ext'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -742,7 +684,7 @@ class ScoreSheetBot(commands.Cog):
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['forfeit'], aliases=['ff'])
+    @commands.hybrid_command(**help_doc['forfeit'], aliases=['ff'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -781,13 +723,13 @@ class ScoreSheetBot(commands.Cog):
             self._current(ctx).forfeit(author_crew)
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['ext'])
+    @commands.hybrid_command(**help_doc['ext'])
     @has_sheet
     @ss_channel
     async def ext(self, ctx):
         await ctx.send(self._current(ctx).ext_str())
 
-    @commands.command(**help_doc['replace'], aliases=['r'])
+    @commands.hybrid_command(**help_doc['replace'], aliases=['r'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -879,29 +821,26 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['end'], aliases=['e'])
     @has_sheet
     @ss_channel
-    async def end(self, ctx: Context, char1: Union[str, discord.Emoji], stocks1: int, char2: Union[str, discord.Emoji],
-                  stocks2: int):
+    async def end(self, ctx: Context, char1: str, stocks1: int, char2: str, stocks2: int):
         await self._reject_outsiders(ctx)
 
         self._current(ctx).finish_match(stocks1, stocks2,
-                                        Character(str(char1), self.bot, is_usable_emoji(char1, self.bot)),
-                                        Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
+                                        Character(char1, self.bot),
+                                        Character(char2, self.bot))
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['endlag'])
+    @commands.hybrid_command(**help_doc['endlag'])
     @has_sheet
     @ss_channel
-    async def endlag(self, ctx: Context, char1: Union[str, discord.Emoji], stocks1: int,
-                     char2: Union[str, discord.Emoji],
-                     stocks2: int):
+    async def endlag(self, ctx: Context, char1: str, stocks1: int, char2: str, stocks2: int):
         await self._reject_outsiders(ctx)
 
         self._current(ctx).finish_lag(stocks1, stocks2,
-                                      Character(str(char1), self.bot, is_usable_emoji(char1, self.bot)),
-                                      Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
+                                      Character(char1, self.bot),
+                                      Character(char2, self.bot))
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['resize'], aliases=['extend'])
+    @commands.hybrid_command(**help_doc['resize'], aliases=['extend'])
     @is_lead
     @has_sheet
     @ss_channel
@@ -913,7 +852,7 @@ class ScoreSheetBot(commands.Cog):
         self._current(ctx).resize(new_size)
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['arena'], aliases=['id', 'arena_id', 'lobby'])
+    @commands.hybrid_command(**help_doc['arena'], aliases=['id', 'arena_id', 'lobby'])
     @has_sheet
     @ss_channel
     async def arena(self, ctx: Context, id_str: str = ''):
@@ -924,7 +863,7 @@ class ScoreSheetBot(commands.Cog):
             return
         await ctx.send(f'The lobby id is {self._current(ctx).id}')
 
-    @commands.command(**help_doc['stream'], aliases=['streamer', 'stream_link'])
+    @commands.hybrid_command(**help_doc['stream'], aliases=['streamer', 'stream_link'])
     @has_sheet
     @ss_channel
     async def stream(self, ctx: Context, stream: str = ''):
@@ -937,7 +876,7 @@ class ScoreSheetBot(commands.Cog):
             return
         await ctx.send(f'The stream is {self._current(ctx).stream}')
 
-    @commands.command(**help_doc['undo'])
+    @commands.hybrid_command(**help_doc['undo'])
     @main_only
     @has_sheet
     @ss_channel
@@ -1001,7 +940,7 @@ class ScoreSheetBot(commands.Cog):
     #     await ctx.author.send(f'Your difficulty of {diff.name} is confirmed!')
     #     await ctx.send(f'{author_crew} selected difficulty!')
 
-    @commands.command(**help_doc['confirm'])
+    @commands.hybrid_command(**help_doc['confirm'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -1238,7 +1177,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
-    @commands.command(**help_doc['clear'],  aliases=['cancel'])
+    @commands.hybrid_command(**help_doc['clear'],  aliases=['cancel'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -1259,19 +1198,19 @@ class ScoreSheetBot(commands.Cog):
         await self._clear_current(ctx)
         await ctx.send(f'{ctx.author.mention} cleared the crew battle.')
 
-    @commands.command(**help_doc['status'])
+    @commands.hybrid_command(**help_doc['status'])
     @has_sheet
     @ss_channel
     async def status(self, ctx):
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['timer'], aliases=['🤓'])
+    @commands.hybrid_command(**help_doc['timer'], aliases=['🤓'])
     @has_sheet
     @ss_channel
     async def timer(self, ctx):
         await ctx.send(self._current(ctx).timer())
 
-    @commands.command(**help_doc['timerstock'])
+    @commands.hybrid_command(**help_doc['timerstock'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -1292,7 +1231,7 @@ class ScoreSheetBot(commands.Cog):
 
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['char'])
+    @commands.hybrid_command(**help_doc['char'])
     async def char(self, ctx: Context, emoji):
         if is_usable_emoji(emoji, self.bot):
             await ctx.send(emoji)
@@ -1300,7 +1239,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'What you put: {string_to_emote(emoji, self.bot)}')
             await ctx.send(f'All alts in order: {all_alts(emoji, self.bot)}')
 
-    @commands.command(**help_doc['chars'])
+    @commands.hybrid_command(**help_doc['chars'])
     @ss_channel
     async def chars(self, ctx):
         emojis = all_emojis(self.bot)
@@ -1398,7 +1337,7 @@ class ScoreSheetBot(commands.Cog):
     async def crews(self, ctx):
         await self.help(ctx, 'crews')
 
-    @commands.command(**help_doc['rankings'])
+    @commands.hybrid_command(**help_doc['rankings'])
     async def rankings(self, ctx):
 
         crew_ranking_str = [f'{cr[2]}: **{cr[1]}**'
@@ -1409,62 +1348,20 @@ class ScoreSheetBot(commands.Cog):
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
-    @commands.command(**help_doc['umbralotto'])
-    async def umbralotto(self, ctx, rank: int):
-        if 0 > rank or rank > 6:
-            await response_message(ctx, 'There are no crews at that rank')
-            return
-        possibles = []
-        rank_ups = set()
-        for cr in self.cache.crews_by_name.values():
-            if cr.rank == rank:
-                possibles.append(cr.name)
-            if cr.rank_up:
-                rank_ups.add(cr.name)
-                rank_ups.add(cr.rank_up)
-        if not possibles:
-            await response_message(ctx, 'There are no crews at that rank')
-            return
-        for i, cr in reversed(list(enumerate(possibles))):
-            if cr in rank_ups:
-                possibles.pop(i)
-        await ctx.send(f'You got {random.choice(possibles)} as a rank {rank} crew.')
-
-    @commands.command(**help_doc['umbralotto'])
-    async def umbralottotest(self, ctx, rank: int):
-        if 0 > rank or rank > 6:
-            await response_message(ctx, 'There are no crews at that rank')
-            return
-        possibles = []
-        for cr in self.cache.crews_by_name.values():
-            if cr.rank == rank:
-                possibles.append(cr.name)
-        if not possibles:
-            await response_message(ctx, 'There are no crews at that rank')
-            return
-        possibles_dict = {name: 0 for name in possibles}
-        for _ in range(100000):
-            choice = random.choice(possibles)
-            possibles_dict[choice] += 1
-        outstring = ''
-        for possible in possibles_dict:
-            outstring += f'{possible}: {possibles_dict[possible]}\n'
-        await ctx.send(outstring)
-
-    @commands.command(**help_doc['battles'])
+    @commands.hybrid_command(**help_doc['battles'])
     async def battles(self, ctx):
 
         pages = menus.MenuPages(source=Paged(all_battles(), title='Battles'), clear_reactions_after=True)
         await pages.start(ctx)
 
-    @commands.command(**help_doc['vod'])
+    @commands.hybrid_command(**help_doc['vod'])
     @role_call([CERTIFIED, ADMIN, DOCS, MINION])
     async def vod(self, ctx, battle_id: int, vod: str):
 
         set_vod(battle_id, vod)
         await ctx.send(f'{ctx.author.name} set battle {battle_id}\'s vod to {vod}.')
 
-    @commands.command(**help_doc['playerstats'])
+    @commands.hybrid_command(**help_doc['playerstats'])
     @main_only
     async def playerstats(self, ctx, *, name: str = None):
         if name:
@@ -1475,7 +1372,7 @@ class ScoreSheetBot(commands.Cog):
         pages = menus.MenuPages(source=PlayerStatsPaged(member, self))
         await pages.start(ctx)
 
-    @commands.command(**help_doc['stats'])
+    @commands.hybrid_command(**help_doc['stats'])
     @main_only
     async def stats(self, ctx, *, name: str = None):
         if name:
@@ -1501,7 +1398,7 @@ class ScoreSheetBot(commands.Cog):
             clear_reactions_after=True)
         await pages.start(ctx)
 
-    @commands.command(**help_doc['history'])
+    @commands.hybrid_command(**help_doc['history'])
     @main_only
     async def history(self, ctx, *, name: str = None):
         in_server = True
@@ -1542,7 +1439,7 @@ class ScoreSheetBot(commands.Cog):
         embed.description = '\n'.join(desc)
         await send_long_embed(ctx, embed)
 
-    @commands.command(**help_doc['crewstats'])
+    @commands.hybrid_command(**help_doc['crewstats'])
     @main_only
     async def crewstats(self, ctx, *, name: str = None):
         if name:
@@ -1565,7 +1462,7 @@ class ScoreSheetBot(commands.Cog):
             clear_reactions_after=True)
         await pages.start(ctx)
 
-    @commands.command(**help_doc['logo'])
+    @commands.hybrid_command(**help_doc['logo'])
     @main_only
     async def logo(self, ctx, *, name: str = None):
         if name:
@@ -1582,7 +1479,7 @@ class ScoreSheetBot(commands.Cog):
         embed.set_image(url=actual_crew.icon)
         await ctx.send(embed=embed)
 
-    @commands.command(**help_doc['crew'])
+    @commands.hybrid_command(**help_doc['crew'])
     @main_only
     async def crew(self, ctx, *, name: str = None):
         if name:
@@ -1603,7 +1500,7 @@ class ScoreSheetBot(commands.Cog):
     async def flairing(self, ctx):
         await self.help(ctx, 'flairing')
 
-    @commands.command(**help_doc['promote'])
+    @commands.hybrid_command(**help_doc['promote'])
     @main_only
     @flairing_required
     async def promote(self, ctx: Context, member: discord.Member):
@@ -1647,7 +1544,7 @@ class ScoreSheetBot(commands.Cog):
         await response_message(ctx, f'Successfully promoted {member.mention} to {result}.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
-    @commands.command(**help_doc['demote'])
+    @commands.hybrid_command(**help_doc['demote'])
     @main_only
     @flairing_required
     async def demote(self, ctx: Context, member: discord.Member):
@@ -1679,7 +1576,7 @@ class ScoreSheetBot(commands.Cog):
         await response_message(ctx, f'Successfully demoted {member.mention} from {result}.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
-    @commands.command(hidden=True)
+    @commands.hybrid_command(hidden=True)
     @main_only
     @flairing_required
     @app_commands.default_permissions(manage_roles=True)
@@ -1710,7 +1607,7 @@ class ScoreSheetBot(commands.Cog):
         await response_message(ctx, f'Successfully made {member.mention} a leader.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
-    @commands.command(**help_doc['unflair'])
+    @commands.hybrid_command(**help_doc['unflair'])
     @main_only
     @flairing_required
     async def unflair(self, ctx: Context, user: Optional[str]):
@@ -1777,7 +1674,7 @@ class ScoreSheetBot(commands.Cog):
         await self.cache.channels.flair_log.send(
             embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
-    @commands.command(**help_doc['flair'])
+    @commands.hybrid_command(**help_doc['flair'])
     @main_only
     @flairing_required
     async def flair(self, ctx: Context, member: discord.Member, *, new_crew: str = None):
@@ -1863,14 +1760,14 @@ class ScoreSheetBot(commands.Cog):
         await self.cache.channels.flair_log.send(
             embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
-    @commands.command(**help_doc['multiflair'])
+    @commands.hybrid_command(**help_doc['multiflair'])
     @main_only
     @flairing_required
     async def multiflair(self, ctx: Context, members: Greedy[discord.Member], new_crew: str = None):
         for member in set(members):
             await self.flair(ctx, member, new_crew=new_crew)
 
-    @commands.command(**help_doc['multiunflair'])
+    @commands.hybrid_command(**help_doc['multiunflair'])
     @main_only
     @flairing_required
     async def multiunflair(self, ctx: Context, *, everything: str):
@@ -2152,7 +2049,7 @@ class ScoreSheetBot(commands.Cog):
     async def staff(self, ctx):
         await self.help(ctx, 'staff')
 
-    @commands.command(**help_doc['setslots'])
+    @commands.hybrid_command(**help_doc['setslots'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     @main_only
@@ -2173,7 +2070,7 @@ class ScoreSheetBot(commands.Cog):
         new = cur_slot_set(actual_crew, num)
         await ctx.send(f'Set {actual_crew.name} slots to {new}.')
 
-    @commands.command(**help_doc['setslots'])
+    @commands.hybrid_command(**help_doc['setslots'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     @main_only
@@ -2224,7 +2121,7 @@ class ScoreSheetBot(commands.Cog):
         update_crew_tf(actual_crew, answer + 1, division + 1)
         await ctx.send(f'{actual_crew.name} triforce status updated!')
 
-    @commands.command(**help_doc['setreturnslots'])
+    @commands.hybrid_command(**help_doc['setreturnslots'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     @main_only
@@ -2249,7 +2146,7 @@ class ScoreSheetBot(commands.Cog):
         uf, left, total = set_return_slots(actual_crew, num)
         await ctx.send(f'Set {actual_crew.name} new slots: {left}/{total}  ({uf}/3) for unflair.')
 
-    @commands.command(hidden=True)
+    @commands.hybrid_command(hidden=True)
     @main_only
     @flairing_required
     @app_commands.default_permissions(manage_roles=True)
@@ -2277,7 +2174,7 @@ class ScoreSheetBot(commands.Cog):
             uf += 2
             await self.setreturnslots(ctx, uf, name=actual_crew.name)
 
-    @commands.command(**help_doc['cooldown'], hidden=True)
+    @commands.hybrid_command(**help_doc['cooldown'], hidden=True)
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def cooldown(self, ctx):
@@ -2291,25 +2188,8 @@ class ScoreSheetBot(commands.Cog):
                 out.append(f'{str(user)} was flaired {strfdelta(tdelta, "{hours} hours and {minutes} minutes ago")}')
         await send_long(ctx, '\n'.join(out), '\n')
 
-    @commands.command(**help_doc['charge'])
-    @role_call([MINION, ADMIN])
-    async def charge(self, ctx, member: discord.Member, amount: int, *, reason: str = 'None Specified'):
-        current = member_gcoins(member)
-        if amount > current:
-            await response_message(ctx,
-                                   f'{member.mention} only has {current} G-Coins, they cannot be charged {amount}.')
-            return
-        msg = await ctx.send(
-            f'{ctx.author.mention}: are you sure you want to charge {member.mention} {amount} G-Coins? For {reason}'
-        )
-        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
-            await response_message(ctx, 'Canceled or timed out.')
-            return
-        final = charge(member.id, amount, reason)
-        await ctx.send(f'{member.mention} sucessfully was charged {amount} G-Coins for {reason}! They now have {final}'
-                       f' G-Coins.')
 
-    @commands.command(**help_doc['non_crew'], hidden=True)
+    @commands.hybrid_command(**help_doc['non_crew'], hidden=True)
     @main_only
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
@@ -2327,7 +2207,7 @@ class ScoreSheetBot(commands.Cog):
         out.append('```')
         await ctx.send(''.join(out))
 
-    @commands.command(**help_doc['opt'])
+    @commands.hybrid_command(**help_doc['opt'])
     @main_only
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
@@ -2349,7 +2229,7 @@ class ScoreSheetBot(commands.Cog):
             destiny_opt(cr.db_id, True)
             await ctx.send(f'{cr.name} opted out of destiny! (Rc to see)')
 
-    @commands.command(**help_doc['pair'])
+    @commands.hybrid_command(**help_doc['pair'])
     @main_only
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
@@ -2387,7 +2267,7 @@ class ScoreSheetBot(commands.Cog):
         crew_2.destiny_opponent = crew_1.name
         await ctx.send(f'{crew_1.name} has been paired with {crew_2.name} for destiny!')
 
-    @commands.command(**help_doc['addforfeit'], hidden=True, aliases=['addff'])
+    @commands.hybrid_command(**help_doc['addforfeit'], hidden=True, aliases=['addff'])
     @main_only
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
@@ -2442,7 +2322,7 @@ class ScoreSheetBot(commands.Cog):
             f'has been confirmed and posted in {output_channels[0].mention}. '
             f'(Battle number:{battle_id})')
 
-    @commands.command(**help_doc['addsheet'])
+    @commands.hybrid_command(**help_doc['addsheet'])
     @main_only
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
@@ -2584,7 +2464,7 @@ class ScoreSheetBot(commands.Cog):
     #
     # else:
 
-    @commands.command(**help_doc['failedreg'])
+    @commands.hybrid_command(**help_doc['failedreg'])
     @main_only
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
@@ -2664,7 +2544,7 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(f'{winner_crew.name} got a slot back for playing 3 battles this week!')
                 set_extra_used(winner_crew)
 
-    @commands.command(**help_doc['weirdreg'])
+    @commands.hybrid_command(**help_doc['weirdreg'])
     @main_only
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
@@ -2750,35 +2630,22 @@ class ScoreSheetBot(commands.Cog):
                     await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
                     set_extra_used(cr)
 
-    @commands.command(**help_doc['overflow'], hidden=True)
-    @role_call([ADMIN, MINION])
-    async def overflow(self, ctx: Context):
-        first, second = await overflow_anomalies(self)
-        out = ['These members have the role, but are not in an overflow crew.']
-        for member in first:
-            out.append(f'> {member}')
-        out.append('These members are flaired in the overflow server, but have no role here')
-        for member in second:
-            out.append(f'> {member}')
-        out_str = '\n'.join(out)
-        embed = discord.Embed(description=out_str, title="Overflow Anomalies")
-        await send_long_embed(ctx, embed)
 
-    @commands.command(**help_doc['flairing_off'], hidden=True)
+    @commands.hybrid_command(**help_doc['flairing_off'], hidden=True)
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def flairing_off(self, ctx: Context):
         self.cache.flairing_allowed = False
         await ctx.send('Flairing has been disabled for the time being.')
 
-    @commands.command(**help_doc['flairing_on'], hidden=True)
+    @commands.hybrid_command(**help_doc['flairing_on'], hidden=True)
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def flairing_on(self, ctx: Context):
         self.cache.flairing_allowed = True
         await ctx.send('Flairing has been re-enabled.')
 
-    @commands.command(**help_doc['disable'])
+    @commands.hybrid_command(**help_doc['disable'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def disable(self, ctx: Context, channel: discord.TextChannel):
@@ -2797,7 +2664,7 @@ class ScoreSheetBot(commands.Cog):
             add_disabled_channel(channel.id)
             await ctx.send(f'JettBot disabled in {channel.name}.')
 
-    @commands.command(**help_doc['deactivate'])
+    @commands.hybrid_command(**help_doc['deactivate'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def deactivate(self, ctx: Context, command: str):
@@ -2818,14 +2685,14 @@ class ScoreSheetBot(commands.Cog):
             set_command_activation(command_name, True)
             await ctx.send(f'`{command_name}` deactivated.')
 
-    @commands.command(**help_doc['usage'])
+    @commands.hybrid_command(**help_doc['usage'])
     @role_call([DOCS, MINION, ADMIN, CERTIFIED])
     async def usage(self, ctx: Context):
         pages = menus.MenuPages(source=Paged(command_leaderboard(), title='Command usage counts'),
                                 clear_reactions_after=True)
         await pages.start(ctx)
 
-    @commands.command(**help_doc['pending'], hidden=True)
+    @commands.hybrid_command(**help_doc['pending'], hidden=True)
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def pending(self, ctx: Context):
@@ -2836,12 +2703,7 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(chan.mention)
                 await send_sheet(ctx, battle)
 
-    @commands.command(**help_doc['po'], hidden=True)
-    @main_only
-    async def po(self, ctx: Context):
-        await send_long_embed(ctx, battle_summary(self))
-
-    @commands.command(**help_doc['register'])
+    @commands.hybrid_command(**help_doc['register'])
     @main_only
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
@@ -2931,7 +2793,7 @@ class ScoreSheetBot(commands.Cog):
         await send_long_embed(ctx, embed)
         await send_long_embed(self.cache.channels.flair_log, embed)
 
-    @commands.command(**help_doc['fixslot'], hidden=True)
+    @commands.hybrid_command(**help_doc['fixslot'], hidden=True)
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def fixslot(self, ctx, *, name: str = None):
@@ -2949,7 +2811,8 @@ class ScoreSheetBot(commands.Cog):
         mod_slot(cr, 1)
         await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
 
-    @commands.command(**help_doc['freeze'])
+    @commands.hybrid_command(**help_doc['freeze'])
+    @app_commands.default_permissions(manage_roles=True)
     @role_call([DOCS, MINION, ADMIN, VIOS])
     async def freeze(self, ctx: Context, *, everything: str):
         split = everything.split()
@@ -2996,7 +2859,7 @@ class ScoreSheetBot(commands.Cog):
                 freeze_crew(actual, datetime(2069, 4, 20))
                 await ctx.send(f'{actual.name} frozen indefinitely.')
 
-    @commands.command(**help_doc['disband'], hidden=True)
+    @commands.hybrid_command(**help_doc['disband'], hidden=True)
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def disband(self, ctx, *, name: str = None):
@@ -3054,7 +2917,7 @@ class ScoreSheetBot(commands.Cog):
         await send_long_embed(ctx, response_embed)
         await send_long_embed(self.cache.channels.flair_log, response_embed)
 
-    @commands.command(**help_doc['tomain'], hidden=True)
+    @commands.hybrid_command(**help_doc['tomain'], hidden=True)
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def tomain(self, ctx, *, name: str = None):
@@ -3113,7 +2976,7 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'{ctx.author.mention} don\'t forget to move the crew role in the list!')
         await send_long_embed(ctx, response_embed)
 
-    @commands.command(**help_doc['recache'], hidden=True, aliases=['rc'])
+    @commands.hybrid_command(**help_doc['recache'], hidden=True, aliases=['rc'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def recache(self, ctx: Context):
@@ -3122,7 +2985,7 @@ class ScoreSheetBot(commands.Cog):
         self.auto_cache.restart()
         await ctx.send('The cache has been reset, everything should be updated now.')
 
-    @commands.command(**help_doc['retag'], hidden=True)
+    @commands.hybrid_command(**help_doc['retag'], hidden=True)
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def retag(self, ctx, *, name: str = None):
@@ -3170,20 +3033,20 @@ class ScoreSheetBot(commands.Cog):
     async def misc(self, ctx):
         await self.help(ctx, 'misc')
 
-    @commands.command(**help_doc['stagelist'])
+    @commands.hybrid_command(**help_doc['stagelist'])
     async def stagelist(self, ctx: Context):
         await ctx.send(
             'https://media.discordapp.net/attachments/1179837359508959385/1468055123640189082/image.png')
 
-    @commands.command(**help_doc['invite'])
+    @commands.hybrid_command(**help_doc['invite'])
     async def invite(self, ctx: Context):
         await ctx.send('https://smashcrewserver.com')
 
-    @commands.command(**help_doc['records'])
+    @commands.hybrid_command(**help_doc['records'])
     async def records(self, ctx: Context):
         await ctx.send('https://elo.smashcrewserver.com')
 
-    @commands.command(**help_doc['thank'])
+    @commands.hybrid_command(**help_doc['thank'])
     @banned_channels(['crew_flairing', 'scs_docs_updates'])
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def thank(self, ctx: Context):
@@ -3192,14 +3055,14 @@ class ScoreSheetBot(commands.Cog):
                        f'{add_thanks(ctx.author)} \n(If you want to thank him with money you can do so here. '
                        f'https://www.buymeacoffee.com/alexjett)')
 
-    @commands.command(**help_doc['thankboard'])
+    @commands.hybrid_command(**help_doc['thankboard'])
     @banned_channels(['crew_flairing', 'scs_docs_updates'])
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def thankboard(self, ctx: Context):
 
         await ctx.send(embed=thank_board(ctx.author))
 
-    @commands.command(**help_doc['coin'])
+    @commands.hybrid_command(**help_doc['coin'])
     async def coin(self, ctx: Context, member: discord.Member = None):
 
         flip = bool(random.getrandbits(1))
@@ -3223,11 +3086,11 @@ class ScoreSheetBot(commands.Cog):
         out.insert(0, 'List of channels the bot is disabled in:')
         await ctx.send('\n'.join(out))
 
-    @commands.command(**help_doc['guide'])
+    @commands.hybrid_command(**help_doc['guide'])
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
-    @commands.command(**help_doc['listroles'], aliases=['roster'])
+    @commands.hybrid_command(**help_doc['listroles'], aliases=['roster'])
     async def listroles(self, ctx, *, role: str):
         actual, mems, extra = members_with_str_role(role, self)
         mems.sort(key=lambda x: str(x))
@@ -3276,7 +3139,7 @@ class ScoreSheetBot(commands.Cog):
     #                         description='\n'.join(desc), color=color)
     #     await send_long_embed(ctx, out)
 
-    @commands.command(**help_doc['pingrole'])
+    @commands.hybrid_command(**help_doc['pingrole'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def pingrole(self, ctx, *, role: str):
@@ -3286,46 +3149,7 @@ class ScoreSheetBot(commands.Cog):
             out.append(mem.mention)
         await ctx.send(''.join(out))
 
-    @commands.command(**help_doc['vote'])
-    @role_call([LEADER])
-    async def vote(self, ctx, option: int):
-        options = ('', 'Keep slot system unchanged',
-                   'Keep slot system, but add a modifier where low ranked crews get additional slots (scaled by rank)',
-                   'Keep slot system, but change it so 2 unflairs is a returned slot rather than 3',
-                   'Remove slots, reimplement old merge rules (this option is no longer valid)')
-        cr = crew_lookup(crew(ctx.author, self), self)
-        current_vote = get_crew_vote(cr)
-        if current_vote:
-            msg = await ctx.send(f'Your crew {cr.name} has already voted for \n```{options[current_vote[1]]} ```\n '
-                                 f'made by {current_vote[2]}. Would you like to overwrite this?')
-            if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!', delete_after=5)
-                await ctx.message.delete()
-                await msg.delete()
-                return
-            await msg.delete()
-        else:
-            await response_message(ctx, 'Only crews that voted in the first vote are allowed to revote. '
-                                        f'Your crew {cr.name} did not.')
-            return
-        if not (0 < option < 4):
-            await response_message(ctx, 'You must input a number between 1 and 3')
-            return
-
-        msg = await ctx.send(f'Your crew {cr.name} selected \n```{options[option]} ```\n '
-                             f'made by {ctx.author.mention}. Please confirm')
-        if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!', delete_after=5)
-            await ctx.message.delete()
-            await msg.delete()
-            return
-        await ctx.send(f'{ctx.author.mention}: Confirmed your above choice.', delete_after=5)
-
-        await msg.delete()
-        await ctx.message.delete()
-        set_crew_vote(cr, option, ctx.author.id)
-
-    @commands.command(**help_doc['overlap'])
+    @commands.hybrid_command(**help_doc['overlap'])
     async def overlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
@@ -3342,7 +3166,7 @@ class ScoreSheetBot(commands.Cog):
 
         await send_long(ctx, out, ',')
 
-    @commands.command(**help_doc['noverlap'])
+    @commands.hybrid_command(**help_doc['noverlap'])
     async def noverlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
@@ -3359,7 +3183,7 @@ class ScoreSheetBot(commands.Cog):
 
         await send_long(ctx, out, ',')
 
-    @commands.command(hidden=True, **help_doc['pingoverlap'])
+    @commands.hybrid_command(hidden=True, **help_doc['pingoverlap'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def pingoverlap(self, ctx, *, two_roles: str = None):
@@ -3384,7 +3208,7 @@ class ScoreSheetBot(commands.Cog):
 
         await send_long(ctx, out, ',')
 
-    @commands.command(hidden=True, **help_doc['pingoverlap'])
+    @commands.hybrid_command(hidden=True, **help_doc['pingoverlap'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def pingnoverlap(self, ctx, *, two_roles: str = None):
@@ -3409,7 +3233,7 @@ class ScoreSheetBot(commands.Cog):
 
         await send_long(ctx, out, ',')
 
-    @commands.command(hidden=True, **help_doc['bigcrew'])
+    @commands.hybrid_command(hidden=True, **help_doc['bigcrew'])
     async def bigcrew(self, ctx, over: Optional[int] = 40):
         big = []
         for cr in self.cache.crews_by_name.values():
@@ -3424,7 +3248,7 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'These Crews have {over} members or more', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 
-    @commands.command(**help_doc['hardcap'])
+    @commands.hybrid_command(**help_doc['hardcap'])
     async def hardcap(self, ctx, cr: Optional[str] = ''):
         if cr:
             actual = crew_lookup(cr, self)
@@ -3439,7 +3263,7 @@ class ScoreSheetBot(commands.Cog):
             f'{battles} crew battles bonus (max 12)')
         return
 
-    @commands.command(hidden=True, **help_doc['softcap'])
+    @commands.hybrid_command(hidden=True, **help_doc['softcap'])
     async def softcap(self, ctx, cr: Optional[str] = ''):
         if not cr:
             if not check_roles(ctx.author, STAFF_LIST):
@@ -3593,7 +3417,7 @@ class ScoreSheetBot(commands.Cog):
             if summary:
                 await send_long_embed(self.cache.channels.current_cbs, summary)
 
-    @commands.command(hidden=True, **help_doc['categoryrole'])
+    @commands.hybrid_command(hidden=True, **help_doc['categoryrole'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def categoryrole(self, ctx, member: discord.Member):
@@ -3602,7 +3426,7 @@ class ScoreSheetBot(commands.Cog):
 
         await set_categories(member, self.cache.categories)
 
-    @commands.command(hidden=True, **help_doc['cancelcb'])
+    @commands.hybrid_command(hidden=True, **help_doc['cancelcb'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def cancelcb(self, ctx, battle_id: int, *, reason: str = ''):
@@ -3690,7 +3514,7 @@ class ScoreSheetBot(commands.Cog):
             print(cid, start)
         # TODO set new elo for wisdom
 
-    @commands.command(hidden=True, **help_doc['manual_battle'])
+    @commands.hybrid_command(hidden=True, **help_doc['manual_battle'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def manual_battle(self, ctx,battle_id: int ):
@@ -3728,7 +3552,7 @@ class ScoreSheetBot(commands.Cog):
 
         await ctx.send( f' ({w_placement_message}) ({l_placement_message}) ')
 
-    @commands.command(**help_doc['slots'])
+    @commands.hybrid_command(**help_doc['slots'])
     @main_only
     async def slots(self, ctx, *, name: str = None):
         if name:
@@ -3762,7 +3586,7 @@ class ScoreSheetBot(commands.Cog):
         left, total, unflairs = extra_slots(actual_crew)
         await ctx.send(f'{actual_crew.name} has ({left}/{total} slots) and {unflairs}/3 unflairs till a new slot.')
 
-    @commands.command(hidden=True, **help_doc['slottotals'])
+    @commands.hybrid_command(hidden=True, **help_doc['slottotals'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def slottotals(self, ctx):
@@ -3810,11 +3634,6 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 
-    @commands.command(hidden=True, **help_doc['season'])
-    @app_commands.default_permissions(manage_roles=True)
-    @role_call(STAFF_LIST)
-    async def season(self, ctx):
-        pass
 
     @commands.command(hidden=True, **help_doc['backfill'])
     @app_commands.default_permissions(manage_roles=True)
@@ -3832,7 +3651,7 @@ class ScoreSheetBot(commands.Cog):
             set_hardcap(cr)
             print(cr.hardcap)
 
-    @commands.command(hidden=True, **help_doc['slotfinals'])
+    @commands.hybrid_command(hidden=True, **help_doc['slotfinals'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def slotfinals(self, ctx):
@@ -3888,19 +3707,19 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 
-    @commands.command(**help_doc['savenicks'])
-    @app_commands.default_permissions(manage_roles=True)
-    @role_call(STAFF_LIST)
-    @main_only
-    async def savenicks(self, ctx):
-        members = ctx.guild.members
-        tuples = []
-        for i, mem in enumerate(members):
-            tuples.append((mem.id, mem.display_name))
-            print(f'{i + 1}/{len(members)}')
-        record_nicknames(tuples)
+    # @commands.hybrid_command(**help_doc['savenicks'])
+    # @app_commands.default_permissions(manage_roles=True)
+    # @role_call(STAFF_LIST)
+    # @main_only
+    # async def savenicks(self, ctx):
+    #     members = ctx.guild.members
+    #     tuples = []
+    #     for i, mem in enumerate(members):
+    #         tuples.append((mem.id, mem.display_name))
+    #         print(f'{i + 1}/{len(members)}')
+    #     record_nicknames(tuples)
 
-    @commands.command(hidden=True, **help_doc['flaircounts'])
+    @commands.hybrid_command(hidden=True, **help_doc['flaircounts'])
     @app_commands.default_permissions(manage_roles=True)
     @role_call(STAFF_LIST)
     async def flaircounts(self, ctx, long: Optional[str]):
@@ -4013,6 +3832,16 @@ class ScoreSheetBot(commands.Cog):
     async def sync(self, ctx: Context):
         await self.bot.tree.sync()
         await ctx.send('Command tree synced.')
+
+
+    @commands.command(name='listcmds', brief='Lists the bot commands')
+    @app_commands.default_permissions(manage_roles=True)
+    @role_call(STAFF_LIST)
+    async def listcmds(self, ctx: Context):
+        await ctx.send('Listing commands...')
+        cmds = await self.bot.tree.fetch_commands(guild=ctx.guild)
+        for c in cmds:
+            await ctx.send(f"{c.name}: default_member_permissions={c.default_member_permissions}")
 
 
 async def main():
