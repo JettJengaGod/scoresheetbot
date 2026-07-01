@@ -22,14 +22,14 @@ def rating_update(p1: EloPlayer, p2: EloPlayer, result: int) -> Tuple[int, int]:
     # Case when Player 1 wins
     # return the Elo Ratings
     if result:
-        p1_change = math.ceil(p1.k * (1 - prob_1))
-        p2_change = math.floor(p2.k * (0 - prob_2))
+        p1_change = round(p1.k * (1 - prob_1))
+        p2_change = round(p2.k * (0 - prob_2))
 
     # Case when Player 2 wins
     # return the Elo Ratings
     else:
-        p1_change = math.floor(p1.k * (0 - prob_1))
-        p2_change = math.ceil(p2.k * (1 - prob_2))
+        p1_change = round(p1.k * (0 - prob_1))
+        p2_change = round(p2.k * (1 - prob_2))
     return p1_change, p2_change
 
 
