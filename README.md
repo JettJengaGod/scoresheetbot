@@ -20,11 +20,23 @@
 1. Under the app, create a Bot.
 1. Under Bot/Privileged Gateway Intents, enable both presence intent and server members intent.
 1. Copy `.envexample` to `.env`, and add the token from the Bot page.
-1. Invite your bot to your test server via `https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&permissions=519232&scope=bot`, where the client id is found in your General Information page.
+1. Invite your bot to your test server via `https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&permissions=519232&scope=bot%20applications.commands`, where the client id is found in your General Information page.
+   * The `applications.commands` scope is what lets the bot's slash commands show up. A bot invited without it can be re-authorised with the same link.
+1. Optional: set `SYNC_GUILD_ID` in `.env` to your test server's id. Slash commands are then registered on that server when the bot starts and appear straight away; without it they are registered globally, which can take a while to show up.
 
 ### Datbase Setup
 1. Setup your `database.ini` file based on the example provided.
 
+
+### Slash commands
+
+Every command can be used with the prefix (`,send`) or as a slash command (`/send`); both run the same code.
+Staff commands are grouped under `/staff`, for example `/staff battle addsheet`.
+Slash commands are registered when the bot starts. After adding or changing a command, staff can re-register them with `,sync`.
+
+### Tests
+
+Run `python -m pytest tests`. `tests/data` holds recorded snapshots of command output; after an intended change, re-record them with `UPDATE_SNAPSHOTS=1 python -m pytest tests` and review the diff.
 
 ### Run Bot
 

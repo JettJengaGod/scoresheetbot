@@ -65,10 +65,13 @@ class FakeContext:
         self.invoked_subcommand = None
         self.prefix = ','
         self.sent: List[Dict[str, Any]] = []
+        # Whether each entry of `sent` was only shown to the author.
+        self.ephemeral: List[bool] = []
         self.deferred = False
 
     async def send(self, content=None, *, embed=None, ephemeral=False, **kwargs) -> FakeMessage:
         self.sent.append({'content': content, 'embed': embed.to_dict() if embed else None})
+        self.ephemeral.append(ephemeral)
         return FakeMessage(content, embed, author=self.bot.user)
 
     async def defer(self, *, ephemeral=False):
@@ -90,7 +93,11 @@ def make_cog() -> ScoreSheetBot:
     bot.emojis = []
     bot.guilds = [cache.scs, cache.overflow_server]
     bot.command_prefix = ','
+    bot._before_invoke = bot._after_invoke = None
     cog = ScoreSheetBot(bot, cache)
+    bot.get_command = lambda name: find_command(cog, name)
+    for command in cog.walk_commands():
+        command.cog = cog  # normally done when the cog is added to a bot
     return cog
 
 
@@ -114,9 +121,27 @@ def no_external_services():
         yield
 
 
-async def invoke(cog: ScoreSheetBot, name: str, ctx: FakeContext, *args, **kwargs) -> None:
-    """Runs command `name` in discord.py's order: checks, before hook, callback; errors go to the handler."""
+def is_hybrid(command: commands.Command) -> bool:
+    return isinstance(command, (commands.HybridCommand, commands.HybridGroup))
+
+
+async def invoke_slash(cog: ScoreSheetBot, name: str, ctx: FakeContext, /, **options) -> None:
+    """Runs the slash command for prefix command `name` with the options a user would fill in."""
+    slash = cog.slash.by_prefix_name[name]
+    with no_external_services(),             unittest.mock.patch.object(cog, 'slash_context', unittest.mock.AsyncMock(return_value=ctx)):
+        await slash.callback(ctx.interaction, **options)
+
+
+async def invoke(cog: ScoreSheetBot, name: str, ctx: FakeContext, /, *args, **kwargs) -> None:
+    """Runs command `name` the way discord.py would for the context's mode.
+
+    A prefix or hybrid command runs its checks, the cog's before hook and its callback, with errors going to
+    the cog's handler. In slash mode a command that has a separate slash front end is run through that.
+    """
     command = find_command(cog, name)
+    if ctx.mode == SLASH and not is_hybrid(command) and name in cog.slash.by_prefix_name:
+        bound = inspect.signature(command.callback).bind(cog, ctx, *args, **kwargs)
+        return await invoke_slash(cog, name, ctx, **dict(list(bound.arguments.items())[2:]))
     ctx.command = command
     with no_external_services():
         try:
@@ -128,6 +153,7 @@ async def invoke(cog: ScoreSheetBot, name: str, ctx: FakeContext, *args, **kwarg
                     raise commands.CheckFailure(f'The check functions for command {name} failed.')
             await cog.cog_before_invoke(ctx)
             await command.callback(cog, ctx, *args, **kwargs)
+            await cog.cog_after_invoke(ctx)
         except Exception as error:  # the bot reports every failure to the channel through this handler
             await cog.on_command_error(ctx, error)
 

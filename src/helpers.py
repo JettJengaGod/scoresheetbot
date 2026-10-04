@@ -437,6 +437,13 @@ async def delete_invocation(ctx: Context, delay: Optional[float] = None) -> None
         await ctx.message.delete(delay=delay)
 
 
+def invocation_attachments(ctx: Context) -> List[discord.Attachment]:
+    """The files sent with a command: attached to a prefix command's message, or given as slash options."""
+    if ctx.interaction is not None:
+        return getattr(ctx, 'slash_attachments', [])
+    return ctx.message.attachments
+
+
 async def response_message(ctx: Context, msg: str) -> discord.Message:
     msg = await ctx.send(f'{ctx.author.mention}: {msg}')
     await delete_invocation(ctx, delay=1)

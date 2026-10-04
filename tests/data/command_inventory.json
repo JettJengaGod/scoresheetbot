@@ -16,7 +16,33 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "winner",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "loser",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "screenshot",
+     "required": true,
+     "type": "Attachment"
+    },
+    {
+     "name": "screenshot2",
+     "required": false,
+     "type": "Attachment"
+    }
+   ],
+   "path": "staff battle addforfeit"
+  }
  },
  "addsheet": {
   "aliases": [],
@@ -33,7 +59,43 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "winner",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "loser",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "players",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "score",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "screenshot",
+     "required": true,
+     "type": "Attachment"
+    },
+    {
+     "name": "screenshot2",
+     "required": false,
+     "type": "Attachment"
+    }
+   ],
+   "path": "staff battle addsheet"
+  }
  },
  "arena": {
   "aliases": [
@@ -54,14 +116,26 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "id_str",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "arena"
+  }
  },
  "ba": {
   "aliases": [],
   "category": null,
   "guards": [],
   "is_group": true,
-  "params": []
+  "params": [],
+  "slash": null
  },
  "backfill": {
   "aliases": [],
@@ -70,7 +144,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff battle backfill"
+  }
  },
  "battle": {
   "aliases": [
@@ -97,14 +176,35 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "user",
+     "required": true,
+     "type": "Member"
+    },
+    {
+     "name": "size",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "battle"
+  }
  },
  "battles": {
   "aliases": [],
   "category": "crews",
   "guards": [],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "battles"
+  }
  },
  "bet": {
   "aliases": [],
@@ -120,7 +220,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "amount",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "crew",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "bet"
+  }
  },
  "bigcrew": {
   "aliases": [],
@@ -134,7 +250,18 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "over",
+     "required": false,
+     "type": "int"
+    }
+   ],
+   "path": "bigcrew"
+  }
  },
  "cancelcb": {
   "aliases": [],
@@ -156,7 +283,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "battle_id",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "reason",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff battle cancelcb"
+  }
  },
  "categoryrole": {
   "aliases": [],
@@ -172,14 +315,26 @@
     "rest": false,
     "type": "Member"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "member",
+     "required": true,
+     "type": "Member"
+    }
+   ],
+   "path": "staff flair categoryrole"
+  }
  },
  "cb": {
   "aliases": [],
   "category": null,
   "guards": [],
   "is_group": true,
-  "params": []
+  "params": [],
+  "slash": null
  },
  "char": {
   "aliases": [],
@@ -193,7 +348,18 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "emoji",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "char"
+  }
  },
  "charge": {
   "aliases": [],
@@ -221,7 +387,28 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "member",
+     "required": true,
+     "type": "Member"
+    },
+    {
+     "name": "amount",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "reason",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff bot charge"
+  }
  },
  "chars": {
   "aliases": [],
@@ -230,7 +417,12 @@
    "ss_channel"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "chars"
+  }
  },
  "clear": {
   "aliases": [
@@ -243,7 +435,12 @@
    "is_lead"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "clear"
+  }
  },
  "coin": {
   "aliases": [],
@@ -257,7 +454,18 @@
     "rest": false,
     "type": "Member"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "member",
+     "required": false,
+     "type": "Member"
+    }
+   ],
+   "path": "coin"
+  }
  },
  "coins": {
   "aliases": [],
@@ -273,7 +481,18 @@
     "rest": false,
     "type": "Member"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "member",
+     "required": false,
+     "type": "Member"
+    }
+   ],
+   "path": "coins"
+  }
  },
  "confirm": {
   "aliases": [],
@@ -284,7 +503,12 @@
    "is_lead"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "confirm"
+  }
  },
  "cooldown": {
   "aliases": [],
@@ -293,7 +517,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff crew cooldown"
+  }
  },
  "countdown": {
   "aliases": [],
@@ -309,7 +538,18 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "seconds",
+     "required": false,
+     "type": "int"
+    }
+   ],
+   "path": "countdown"
+  }
  },
  "cowy": {
   "aliases": [
@@ -336,7 +576,23 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "user",
+     "required": true,
+     "type": "Member"
+    },
+    {
+     "name": "size",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "cowy"
+  }
  },
  "crew": {
   "aliases": [],
@@ -352,14 +608,26 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "crew"
+  }
  },
  "crews": {
   "aliases": [],
   "category": null,
   "guards": [],
   "is_group": true,
-  "params": []
+  "params": [],
+  "slash": null
  },
  "crewstats": {
   "aliases": [],
@@ -375,7 +643,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "crewstats"
+  }
  },
  "crnumbers": {
   "aliases": [],
@@ -384,7 +663,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff crew crnumbers"
+  }
  },
  "deactivate": {
   "aliases": [],
@@ -400,7 +684,18 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "command",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "staff bot deactivate"
+  }
  },
  "dele": {
   "aliases": [],
@@ -409,7 +704,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff bot dele"
+  }
  },
  "demote": {
   "aliases": [],
@@ -426,7 +726,18 @@
     "rest": false,
     "type": "Member"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "member",
+     "required": true,
+     "type": "Member"
+    }
+   ],
+   "path": "demote"
+  }
  },
  "disable": {
   "aliases": [],
@@ -442,14 +753,30 @@
     "rest": false,
     "type": "TextChannel"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "channel",
+     "required": true,
+     "type": "TextChannel"
+    }
+   ],
+   "path": "staff bot disable"
+  }
  },
  "disablelist": {
   "aliases": [],
   "category": "misc",
   "guards": [],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "disablelist"
+  }
  },
  "disband": {
   "aliases": [],
@@ -465,7 +792,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff crew disband"
+  }
  },
  "end": {
   "aliases": [
@@ -502,7 +840,33 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "char1",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "stocks1",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "char2",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "stocks2",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "end"
+  }
  },
  "endlag": {
   "aliases": [],
@@ -537,7 +901,33 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "char1",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "stocks1",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "char2",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "stocks2",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "endlag"
+  }
  },
  "ext": {
   "aliases": [],
@@ -547,7 +937,12 @@
    "ss_channel"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "ext"
+  }
  },
  "failedreg": {
   "aliases": [],
@@ -564,7 +959,43 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "winner",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "registering_crew",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "players",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "score",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "screenshot",
+     "required": true,
+     "type": "Attachment"
+    },
+    {
+     "name": "screenshot2",
+     "required": false,
+     "type": "Attachment"
+    }
+   ],
+   "path": "staff battle failedreg"
+  }
  },
  "fixslot": {
   "aliases": [],
@@ -580,7 +1011,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff slots fixslot"
+  }
  },
  "fixunflair": {
   "aliases": [],
@@ -598,7 +1040,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff flair fixunflair"
+  }
  },
  "flair": {
   "aliases": [],
@@ -621,7 +1074,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "member",
+     "required": true,
+     "type": "Member"
+    },
+    {
+     "name": "new_crew",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "flair"
+  }
  },
  "flaircounts": {
   "aliases": [],
@@ -637,14 +1106,26 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "long",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff crew flaircounts"
+  }
  },
  "flairing": {
   "aliases": [],
   "category": null,
   "guards": [],
   "is_group": true,
-  "params": []
+  "params": [],
+  "slash": null
  },
  "flairing_off": {
   "aliases": [],
@@ -653,7 +1134,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff flair flairing_off"
+  }
  },
  "flairing_on": {
   "aliases": [],
@@ -662,7 +1148,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff flair flairing_on"
+  }
  },
  "forfeit": {
   "aliases": [
@@ -682,7 +1173,18 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "team",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "forfeit"
+  }
  },
  "freeze": {
   "aliases": [],
@@ -698,7 +1200,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "crew",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "length",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff crew freeze"
+  }
  },
  "gamb": {
   "aliases": [],
@@ -708,7 +1226,12 @@
    "role_call([MINION, ADMIN, LU])"
   ],
   "is_group": true,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "gamb status"
+  }
  },
  "gamb close": {
   "aliases": [],
@@ -731,7 +1254,23 @@
     "rest": false,
     "type": "TextChannel"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "stream",
+     "required": false,
+     "type": "str"
+    },
+    {
+     "name": "channel",
+     "required": false,
+     "type": "TextChannel"
+    }
+   ],
+   "path": "gamb close"
+  }
  },
  "gamb finish": {
   "aliases": [],
@@ -748,7 +1287,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "winner",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "gamb finish"
+  }
  },
  "gamb start": {
   "aliases": [],
@@ -771,7 +1321,23 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "c1",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "c2",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "gamb start"
+  }
  },
  "gamb update": {
   "aliases": [],
@@ -781,14 +1347,24 @@
    "role_call([MINION, ADMIN, LU, GAMB_OL])"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "gamb update"
+  }
  },
  "guide": {
   "aliases": [],
   "category": "misc",
   "guards": [],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "guide"
+  }
  },
  "hardcap": {
   "aliases": [],
@@ -802,7 +1378,18 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "cr",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "hardcap"
+  }
  },
  "help": {
   "aliases": [],
@@ -816,7 +1403,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "command",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "help"
+  }
  },
  "history": {
   "aliases": [],
@@ -832,7 +1430,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "history"
+  }
  },
  "initalize_ratings": {
   "aliases": [],
@@ -841,14 +1450,24 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff battle initalize_ratings"
+  }
  },
  "invite": {
   "aliases": [],
   "category": "misc",
   "guards": [],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "invite"
+  }
  },
  "listroles": {
   "aliases": [
@@ -864,7 +1483,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "role",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "listroles"
+  }
  },
  "lock": {
   "aliases": [
@@ -886,7 +1516,18 @@
     "rest": false,
     "type": "Member"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "streamer",
+     "required": false,
+     "type": "Member"
+    }
+   ],
+   "path": "lock"
+  }
  },
  "logo": {
   "aliases": [],
@@ -902,7 +1543,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "logo"
+  }
  },
  "make_lead": {
   "aliases": [],
@@ -920,7 +1572,18 @@
     "rest": false,
     "type": "Member"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "member",
+     "required": true,
+     "type": "Member"
+    }
+   ],
+   "path": "staff flair make_lead"
+  }
  },
  "manual_battle": {
   "aliases": [],
@@ -936,14 +1599,26 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "battle_id",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "staff battle manual_battle"
+  }
  },
  "misc": {
   "aliases": [],
   "category": null,
   "guards": [],
   "is_group": true,
-  "params": []
+  "params": [],
+  "slash": null
  },
  "mock": {
   "aliases": [],
@@ -972,7 +1647,28 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "team1",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "team2",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "size",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "mock"
+  }
  },
  "multiflair": {
   "aliases": [],
@@ -995,7 +1691,23 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "members",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "new_crew",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "multiflair"
+  }
  },
  "multiunflair": {
   "aliases": [],
@@ -1012,7 +1724,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "members",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "multiunflair"
+  }
  },
  "non_crew": {
   "aliases": [],
@@ -1022,7 +1745,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff crew non_crew"
+  }
  },
  "noverlap": {
   "aliases": [],
@@ -1036,7 +1764,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "role1",
+     "required": true,
+     "type": "Role"
+    },
+    {
+     "name": "role2",
+     "required": true,
+     "type": "Role"
+    }
+   ],
+   "path": "noverlap"
+  }
  },
  "odds": {
   "aliases": [],
@@ -1045,7 +1789,12 @@
    "gambit_channel"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "odds"
+  }
  },
  "opt": {
   "aliases": [],
@@ -1062,7 +1811,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff crew opt"
+  }
  },
  "overflow": {
   "aliases": [],
@@ -1071,7 +1831,12 @@
    "role_call([ADMIN, MINION])"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff crew overflow"
+  }
  },
  "overlap": {
   "aliases": [],
@@ -1085,7 +1850,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "role1",
+     "required": true,
+     "type": "Role"
+    },
+    {
+     "name": "role2",
+     "required": true,
+     "type": "Role"
+    }
+   ],
+   "path": "overlap"
+  }
  },
  "pair": {
   "aliases": [],
@@ -1102,7 +1883,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "crew1",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "crew2",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "staff crew pair"
+  }
  },
  "pending": {
   "aliases": [],
@@ -1111,7 +1908,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff flair pending"
+  }
  },
  "pingnoverlap": {
   "aliases": [],
@@ -1127,7 +1929,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "role1",
+     "required": true,
+     "type": "Role"
+    },
+    {
+     "name": "role2",
+     "required": true,
+     "type": "Role"
+    }
+   ],
+   "path": "staff flair pingnoverlap"
+  }
  },
  "pingoverlap": {
   "aliases": [],
@@ -1143,7 +1961,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "role1",
+     "required": true,
+     "type": "Role"
+    },
+    {
+     "name": "role2",
+     "required": true,
+     "type": "Role"
+    }
+   ],
+   "path": "staff flair pingoverlap"
+  }
  },
  "pingrole": {
   "aliases": [],
@@ -1159,7 +1993,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "role",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "staff flair pingrole"
+  }
  },
  "playerstats": {
   "aliases": [],
@@ -1175,7 +2020,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "playerstats"
+  }
  },
  "playoff": {
   "aliases": [
@@ -1202,7 +2058,23 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "user",
+     "required": true,
+     "type": "Member"
+    },
+    {
+     "name": "size",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "playoff"
+  }
  },
  "po": {
   "aliases": [],
@@ -1211,21 +2083,36 @@
    "main_only"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "po"
+  }
  },
  "predict": {
   "aliases": [],
   "category": "gambit",
   "guards": [],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "predict"
+  }
  },
  "predictions": {
   "aliases": [],
   "category": "gambit",
   "guards": [],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "predictions"
+  }
  },
  "promote": {
   "aliases": [],
@@ -1242,14 +2129,30 @@
     "rest": false,
     "type": "Member"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "member",
+     "required": true,
+     "type": "Member"
+    }
+   ],
+   "path": "promote"
+  }
  },
  "rankings": {
   "aliases": [],
   "category": "crews",
   "guards": [],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "rankings"
+  }
  },
  "rate": {
   "aliases": [],
@@ -1258,7 +2161,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff battle rate"
+  }
  },
  "recache": {
   "aliases": [
@@ -1269,14 +2177,24 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff bot recache"
+  }
  },
  "records": {
   "aliases": [],
   "category": "misc",
   "guards": [],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "records"
+  }
  },
  "reg": {
   "aliases": [],
@@ -1295,7 +2213,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "crew_name",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "size",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "reg"
+  }
  },
  "register": {
   "aliases": [],
@@ -1319,7 +2253,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "members",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "new_crew",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "staff crew register"
+  }
  },
  "replace": {
   "aliases": [
@@ -1345,7 +2295,23 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "user",
+     "required": true,
+     "type": "Member"
+    },
+    {
+     "name": "team",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "replace"
+  }
  },
  "resize": {
   "aliases": [
@@ -1365,7 +2331,18 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "new_size",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "resize"
+  }
  },
  "result": {
   "aliases": [],
@@ -1385,7 +2362,38 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "opponent",
+     "required": true,
+     "type": "Member"
+    },
+    {
+     "name": "your_characters",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "your_score",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "opponent_score",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "opponent_characters",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "result"
+  }
  },
  "retag": {
   "aliases": [],
@@ -1401,7 +2409,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff crew retag"
+  }
  },
  "savenicks": {
   "aliases": [],
@@ -1411,7 +2430,12 @@
    "main_only"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff flair savenicks"
+  }
  },
  "season": {
   "aliases": [],
@@ -1420,7 +2444,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff battle season"
+  }
  },
  "send": {
   "aliases": [
@@ -1446,7 +2475,23 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "user",
+     "required": true,
+     "type": "Member"
+    },
+    {
+     "name": "team",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "send"
+  }
  },
  "setreturnslots": {
   "aliases": [],
@@ -1469,7 +2514,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "num",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff slots setreturnslots"
+  }
  },
  "setslots": {
   "aliases": [],
@@ -1492,7 +2553,23 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "num",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff slots setslots"
+  }
  },
  "slotfinals": {
   "aliases": [],
@@ -1501,7 +2578,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff slots slotfinals"
+  }
  },
  "slots": {
   "aliases": [],
@@ -1517,7 +2599,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "slots"
+  }
  },
  "slottotals": {
   "aliases": [],
@@ -1526,7 +2619,12 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff slots slottotals"
+  }
  },
  "softcap": {
   "aliases": [],
@@ -1540,21 +2638,38 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "cr",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "softcap"
+  }
  },
  "staff": {
   "aliases": [],
   "category": null,
   "guards": [],
   "is_group": true,
-  "params": []
+  "params": [],
+  "slash": null
  },
  "stagelist": {
   "aliases": [],
   "category": "misc",
   "guards": [],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "stagelist"
+  }
  },
  "stats": {
   "aliases": [],
@@ -1570,7 +2685,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "stats"
+  }
  },
  "status": {
   "aliases": [],
@@ -1580,7 +2706,12 @@
    "ss_channel"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "status"
+  }
  },
  "strawhat": {
   "aliases": [
@@ -1607,7 +2738,23 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "user",
+     "required": true,
+     "type": "Member"
+    },
+    {
+     "name": "size",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "strawhat"
+  }
  },
  "stream": {
   "aliases": [
@@ -1627,7 +2774,18 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "stream",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "stream"
+  }
  },
  "stupid": {
   "aliases": [],
@@ -1636,7 +2794,26 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff bot stupid"
+  }
+ },
+ "sync": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff bot sync"
+  }
  },
  "test": {
   "aliases": [],
@@ -1645,7 +2822,8 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": true,
-  "params": []
+  "params": [],
+  "slash": null
  },
  "test confirm": {
   "aliases": [],
@@ -1654,7 +2832,8 @@
    "role_call(STAFF_LIST)"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": null
  },
  "thank": {
   "aliases": [],
@@ -1663,7 +2842,12 @@
    "banned_channels(['crew_flairing', 'scs_docs_updates'])"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "thank"
+  }
  },
  "thankboard": {
   "aliases": [],
@@ -1672,7 +2856,12 @@
    "banned_channels(['crew_flairing', 'scs_docs_updates'])"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "thankboard"
+  }
  },
  "timer": {
   "aliases": [
@@ -1684,7 +2873,12 @@
    "ss_channel"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "timer"
+  }
  },
  "timerstock": {
   "aliases": [],
@@ -1702,7 +2896,18 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "team",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "timerstock"
+  }
  },
  "tomain": {
   "aliases": [],
@@ -1718,7 +2923,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff crew tomain"
+  }
  },
  "tri": {
   "aliases": [],
@@ -1735,7 +2951,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff crew tri"
+  }
  },
  "umbralotto": {
   "aliases": [],
@@ -1749,7 +2976,18 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "rank",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "umbralotto"
+  }
  },
  "umbralottotest": {
   "aliases": [],
@@ -1763,7 +3001,18 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "rank",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "umbralottotest"
+  }
  },
  "undo": {
   "aliases": [],
@@ -1775,7 +3024,12 @@
    "is_lead"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "undo"
+  }
  },
  "unflair": {
   "aliases": [],
@@ -1792,7 +3046,18 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "user",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "unflair"
+  }
  },
  "unlock": {
   "aliases": [],
@@ -1803,7 +3068,12 @@
    "ss_channel"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "hybrid",
+   "options": [],
+   "path": "unlock"
+  }
  },
  "update_elos": {
   "aliases": [],
@@ -1820,7 +3090,18 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "name",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff battle update_elos"
+  }
  },
  "usage": {
   "aliases": [],
@@ -1829,7 +3110,12 @@
    "role_call([DOCS, MINION, ADMIN, CERTIFIED])"
   ],
   "is_group": false,
-  "params": []
+  "params": [],
+  "slash": {
+   "kind": "twin",
+   "options": [],
+   "path": "staff bot usage"
+  }
  },
  "use_ext": {
   "aliases": [],
@@ -1847,7 +3133,18 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "team",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "use_ext"
+  }
  },
  "vod": {
   "aliases": [],
@@ -1869,7 +3166,23 @@
     "rest": false,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "battle_id",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "vod",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "staff battle vod"
+  }
  },
  "vote": {
   "aliases": [],
@@ -1885,7 +3198,18 @@
     "rest": false,
     "type": "int"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "hybrid",
+   "options": [
+    {
+     "name": "option",
+     "required": true,
+     "type": "int"
+    }
+   ],
+   "path": "vote"
+  }
  },
  "weirdreg": {
   "aliases": [],
@@ -1902,6 +3226,42 @@
     "rest": true,
     "type": "str"
    }
-  ]
+  ],
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "losing_crew",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "registering_crew",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "players",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "score",
+     "required": true,
+     "type": "int"
+    },
+    {
+     "name": "screenshot",
+     "required": true,
+     "type": "Attachment"
+    },
+    {
+     "name": "screenshot2",
+     "required": false,
+     "type": "Attachment"
+    }
+   ],
+   "path": "staff battle weirdreg"
+  }
  }
 }

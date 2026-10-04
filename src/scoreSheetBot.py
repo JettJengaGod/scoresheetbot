@@ -14,6 +14,7 @@ from .constants import *
 from .db_helpers import *
 from .decorators import *
 from .help import help_doc
+from .slash import EPHEMERAL, SlashCommands
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,6 +30,7 @@ class ScoreSheetBot(commands.Cog):
         self._gambit_message = None
         self.current_league = ""
         self.past_2_weeks = False
+        self.slash = SlashCommands(self)
 
     @property
     def cache(self) -> src.cache.Cache:
@@ -156,20 +158,29 @@ class ScoreSheetBot(commands.Cog):
             raise GuardFailure(f'{ctx.command.name} is deactivated, and cannot be used for now.')
         if ctx.interaction:
             # A slash command has to be acknowledged within 3 seconds, and plenty of commands take longer.
-            await ctx.defer()
+            await ctx.defer(ephemeral=ctx.command.qualified_name in EPHEMERAL)
+            # Discord shows the command as still running until it gets a reply, so note whether one was sent.
+            send = ctx.send
 
-    async def run_slash(self, interaction: discord.Interaction, command_name: str, core, *args, **kwargs):
-        """Runs `core(ctx, ...)` for a slash command as if it were the prefix command `command_name`.
+            async def tracked_send(*args, **kwargs):
+                ctx.slash_replied = True
+                return await send(*args, **kwargs)
+
+            ctx.send = tracked_send
+
+    async def run_slash(self, interaction: discord.Interaction, command_name: str, *args, attachments=(), **kwargs):
+        """Runs the prefix command `command_name` for a slash command, with the given arguments.
 
         The slash command gets that command's guards, hooks, usage counting and error handling, so the two
         can only differ in how their arguments are collected.
         """
         ctx = await self.slash_context(interaction)
         ctx.command = command = self.bot.get_command(command_name)
+        ctx.slash_attachments = list(attachments)
         try:
             await command.can_run(ctx)
             await command.call_before_hooks(ctx)
-            await core(ctx, *args, **kwargs)
+            await command.callback(self, ctx, *args, **kwargs)
             await command.call_after_hooks(ctx)
         except Exception as error:
             await self.on_command_error(ctx, error)
@@ -178,6 +189,9 @@ class ScoreSheetBot(commands.Cog):
         return await Context.from_interaction(interaction)
 
     async def cog_after_invoke(self, ctx):
+        if ctx.interaction and not getattr(ctx, 'slash_replied', False):
+            # The command answered somewhere else (a DM, another channel) or had nothing to say.
+            await ctx.send('Done.')
         if os.getenv('VERSION') == 'PROD':
             increment_command_used(ctx.command.name)
 
@@ -223,12 +237,19 @@ class ScoreSheetBot(commands.Cog):
             else:
                 add_member_and_roles(member)
 
+    async def _help_reply(self, ctx: Context, *args, **kwargs):
+        """Help is private: a DM for a prefix command, a reply only the author sees for a slash command."""
+        if ctx.interaction:
+            await ctx.send(*args, ephemeral=True, **kwargs)
+        else:
+            await ctx.author.send(*args, **kwargs)
+
     @commands.command(help='Shows this command')
     async def help(self, ctx, *group):
         """Gets all categories and commands of mine."""
         main_user = self.cache.scs.get_member(ctx.author.id)
         if not main_user:
-            await ctx.author.send('You need to be a member of the scs to access this help.')
+            await self._help_reply(ctx, 'You need to be a member of the scs to access this help.')
             return
         staff = check_roles(main_user, STAFF_LIST)
         if not group:
@@ -244,12 +265,12 @@ class ScoreSheetBot(commands.Cog):
                 if y.name == 'help':
                     cmds_desc += ('{} - {}'.format(y.name, y.help) + '\n')
             halp.add_field(name='Help Commands', value=cmds_desc[0:len(cmds_desc) - 1], inline=False)
-            await ctx.message.author.send(embed=halp)
+            await self._help_reply(ctx, embed=halp)
         else:
             if len(group) > 1:
                 halp = discord.Embed(title='Error!', description='You can only send 1 group or command name!',
                                      color=discord.Color.red())
-                await ctx.message.author.send(embed=halp)
+                await self._help_reply(ctx, embed=halp)
                 return
             else:
                 found = False
@@ -273,12 +294,12 @@ class ScoreSheetBot(commands.Cog):
                                                          description=f'{cmd.description}\n'
                                                                      f'{self.bot.command_prefix}{cmd.name} {cmd.usage}')
                                 else:
-                                    await ctx.author.send('That command is hidden.')
+                                    await self._help_reply(ctx, 'That command is hidden.')
                             found = True
                 if not found:
                     halp = discord.Embed(title='Error!', description=f'Command {group} not found.',
                                          color=discord.Color.red())
-                await ctx.message.author.send('', embed=halp)
+                await self._help_reply(ctx, '', embed=halp)
 
     ''' **********************************CB COMMANDS ******************************************'''
 
@@ -286,7 +307,7 @@ class ScoreSheetBot(commands.Cog):
     async def cb(self, ctx):
         await self.help(ctx, 'cb')
 
-    @commands.command(**help_doc['lock'], aliases=['mohamed', 'nohamed', 'lk'])
+    @commands.hybrid_command(**help_doc['lock'], aliases=['mohamed', 'nohamed', 'lk'])
     @main_only
     @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
@@ -347,7 +368,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('There needs to be a ranked battle running to use this command.')
             return
 
-    @commands.command(**help_doc['unlock'])
+    @commands.hybrid_command(**help_doc['unlock'])
     @main_only
     @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
@@ -355,7 +376,7 @@ class ScoreSheetBot(commands.Cog):
         await unlock(ctx.channel)
         await ctx.send('Unlocked the channel for all crews to use.')
 
-    @commands.command(**help_doc['battle'], aliases=['wisdom'], group='CB')
+    @commands.hybrid_command(**help_doc['battle'], aliases=['wisdom'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -420,7 +441,7 @@ class ScoreSheetBot(commands.Cog):
     #     else:
     #         await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['mock'])
+    @commands.hybrid_command(**help_doc['mock'])
     @no_battle
     @ss_channel
     async def mock(self, ctx: Context, team1: str, team2: str, size: int):
@@ -457,7 +478,7 @@ class ScoreSheetBot(commands.Cog):
         await self._set_current(ctx, Battle(real_crew, registering_crew, size, BattleType.REG))
         await ctx.send(embed=self._current(ctx).embed())
 
-    @commands.command(**help_doc['battle'], aliases=['straw'], group='CB')
+    @commands.hybrid_command(**help_doc['battle'], aliases=['straw'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -486,7 +507,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['battle'], aliases=['cowybattle'], group='CB')
+    @commands.hybrid_command(**help_doc['battle'], aliases=['cowybattle'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -515,7 +536,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['battle'], aliases=['pob'], group='CB')
+    @commands.hybrid_command(**help_doc['battle'], aliases=['pob'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -617,7 +638,7 @@ class ScoreSheetBot(commands.Cog):
     #     else:
     #         await ctx.send('You can\'t battle your own crew.')
 
-    @commands.command(**help_doc['countdown'])
+    @commands.hybrid_command(**help_doc['countdown'])
     @ss_channel
     async def countdown(self, ctx: Context, seconds: Optional[int] = 10):
         if seconds > 10 or seconds < 1:
@@ -629,7 +650,7 @@ class ScoreSheetBot(commands.Cog):
             await sleep(1)
         await ctx.send('Finished!')
 
-    @commands.command(**help_doc['send'], aliases=['s'])
+    @commands.hybrid_command(**help_doc['send'], aliases=['s'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -721,7 +742,7 @@ class ScoreSheetBot(commands.Cog):
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['use_ext'])
+    @commands.hybrid_command(**help_doc['use_ext'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -763,7 +784,7 @@ class ScoreSheetBot(commands.Cog):
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['forfeit'], aliases=['ff'])
+    @commands.hybrid_command(**help_doc['forfeit'], aliases=['ff'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -802,13 +823,13 @@ class ScoreSheetBot(commands.Cog):
             self._current(ctx).forfeit(author_crew)
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['ext'])
+    @commands.hybrid_command(**help_doc['ext'])
     @has_sheet
     @ss_channel
     async def ext(self, ctx):
         await ctx.send(self._current(ctx).ext_str())
 
-    @commands.command(**help_doc['replace'], aliases=['r'])
+    @commands.hybrid_command(**help_doc['replace'], aliases=['r'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -922,7 +943,7 @@ class ScoreSheetBot(commands.Cog):
                                       Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['resize'], aliases=['extend'])
+    @commands.hybrid_command(**help_doc['resize'], aliases=['extend'])
     @is_lead
     @has_sheet
     @ss_channel
@@ -934,7 +955,7 @@ class ScoreSheetBot(commands.Cog):
         self._current(ctx).resize(new_size)
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['arena'], aliases=['id', 'arena_id', 'lobby'])
+    @commands.hybrid_command(**help_doc['arena'], aliases=['id', 'arena_id', 'lobby'])
     @has_sheet
     @ss_channel
     async def arena(self, ctx: Context, id_str: str = ''):
@@ -945,7 +966,7 @@ class ScoreSheetBot(commands.Cog):
             return
         await ctx.send(f'The lobby id is {self._current(ctx).id}')
 
-    @commands.command(**help_doc['stream'], aliases=['streamer', 'stream_link'])
+    @commands.hybrid_command(**help_doc['stream'], aliases=['streamer', 'stream_link'])
     @has_sheet
     @ss_channel
     async def stream(self, ctx: Context, stream: str = ''):
@@ -958,7 +979,7 @@ class ScoreSheetBot(commands.Cog):
             return
         await ctx.send(f'The stream is {self._current(ctx).stream}')
 
-    @commands.command(**help_doc['undo'])
+    @commands.hybrid_command(**help_doc['undo'])
     @main_only
     @has_sheet
     @ss_channel
@@ -1022,7 +1043,7 @@ class ScoreSheetBot(commands.Cog):
     #     await ctx.author.send(f'Your difficulty of {diff.name} is confirmed!')
     #     await ctx.send(f'{author_crew} selected difficulty!')
 
-    @commands.command(**help_doc['confirm'])
+    @commands.hybrid_command(**help_doc['confirm'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -1259,7 +1280,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
-    @commands.command(**help_doc['clear'],  aliases=['cancel'])
+    @commands.hybrid_command(**help_doc['clear'],  aliases=['cancel'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -1280,19 +1301,19 @@ class ScoreSheetBot(commands.Cog):
         await self._clear_current(ctx)
         await ctx.send(f'{ctx.author.mention} cleared the crew battle.')
 
-    @commands.command(**help_doc['status'])
+    @commands.hybrid_command(**help_doc['status'])
     @has_sheet
     @ss_channel
     async def status(self, ctx):
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['timer'], aliases=['🤓'])
+    @commands.hybrid_command(**help_doc['timer'], aliases=['🤓'])
     @has_sheet
     @ss_channel
     async def timer(self, ctx):
         await ctx.send(self._current(ctx).timer())
 
-    @commands.command(**help_doc['timerstock'])
+    @commands.hybrid_command(**help_doc['timerstock'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -1313,7 +1334,7 @@ class ScoreSheetBot(commands.Cog):
 
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.command(**help_doc['char'])
+    @commands.hybrid_command(**help_doc['char'])
     async def char(self, ctx: Context, emoji):
         if is_usable_emoji(emoji, self.bot):
             await ctx.send(emoji)
@@ -1321,7 +1342,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'What you put: {string_to_emote(emoji, self.bot)}')
             await ctx.send(f'All alts in order: {all_alts(emoji, self.bot)}')
 
-    @commands.command(**help_doc['chars'])
+    @commands.hybrid_command(**help_doc['chars'])
     @ss_channel
     async def chars(self, ctx):
         emojis = all_emojis(self.bot)
@@ -1419,7 +1440,7 @@ class ScoreSheetBot(commands.Cog):
     async def crews(self, ctx):
         await self.help(ctx, 'crews')
 
-    @commands.command(**help_doc['rankings'])
+    @commands.hybrid_command(**help_doc['rankings'])
     async def rankings(self, ctx):
 
         crew_ranking_str = [f'{cr[2]}: **{cr[1]}**'
@@ -1429,7 +1450,7 @@ class ScoreSheetBot(commands.Cog):
         pages = PaginatorView(Paged(crew_ranking_str, title=f'{self.current_league} Rankings').get_pages())
         await pages.start(ctx)
 
-    @commands.command(**help_doc['umbralotto'])
+    @commands.hybrid_command(**help_doc['umbralotto'])
     async def umbralotto(self, ctx, rank: int):
         if 0 > rank or rank > 6:
             await response_message(ctx, 'There are no crews at that rank')
@@ -1450,7 +1471,7 @@ class ScoreSheetBot(commands.Cog):
                 possibles.pop(i)
         await ctx.send(f'You got {random.choice(possibles)} as a rank {rank} crew.')
 
-    @commands.command(**help_doc['umbralotto'])
+    @commands.hybrid_command(**help_doc['umbralotto'])
     async def umbralottotest(self, ctx, rank: int):
         if 0 > rank or rank > 6:
             await response_message(ctx, 'There are no crews at that rank')
@@ -1471,7 +1492,7 @@ class ScoreSheetBot(commands.Cog):
             outstring += f'{possible}: {possibles_dict[possible]}\n'
         await ctx.send(outstring)
 
-    @commands.command(**help_doc['battles'])
+    @commands.hybrid_command(**help_doc['battles'])
     async def battles(self, ctx):
 
         pages = PaginatorView(Paged(all_battles(), title='Battles').get_pages())
@@ -1484,7 +1505,7 @@ class ScoreSheetBot(commands.Cog):
         set_vod(battle_id, vod)
         await ctx.send(f'{ctx.author.name} set battle {battle_id}\'s vod to {vod}.')
 
-    @commands.command(**help_doc['playerstats'])
+    @commands.hybrid_command(**help_doc['playerstats'])
     @main_only
     async def playerstats(self, ctx, *, name: str = None):
         if name:
@@ -1495,7 +1516,7 @@ class ScoreSheetBot(commands.Cog):
         pages = PaginatorView(PlayerStatsPaged(member, self).get_pages())
         await pages.start(ctx)
 
-    @commands.command(**help_doc['stats'])
+    @commands.hybrid_command(**help_doc['stats'])
     @main_only
     async def stats(self, ctx, *, name: str = None):
         if name:
@@ -1519,7 +1540,7 @@ class ScoreSheetBot(commands.Cog):
         pages = PaginatorView(Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon).get_pages())
         await pages.start(ctx)
 
-    @commands.command(**help_doc['history'])
+    @commands.hybrid_command(**help_doc['history'])
     @main_only
     async def history(self, ctx, *, name: str = None):
         in_server = True
@@ -1560,7 +1581,7 @@ class ScoreSheetBot(commands.Cog):
         embed.description = '\n'.join(desc)
         await send_long_embed(ctx, embed)
 
-    @commands.command(**help_doc['crewstats'])
+    @commands.hybrid_command(**help_doc['crewstats'])
     @main_only
     async def crewstats(self, ctx, *, name: str = None):
         if name:
@@ -1581,7 +1602,7 @@ class ScoreSheetBot(commands.Cog):
         pages = PaginatorView(Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon).get_pages())
         await pages.start(ctx)
 
-    @commands.command(**help_doc['logo'])
+    @commands.hybrid_command(**help_doc['logo'])
     @main_only
     async def logo(self, ctx, *, name: str = None):
         if name:
@@ -1598,7 +1619,7 @@ class ScoreSheetBot(commands.Cog):
         embed.set_image(url=actual_crew.icon)
         await ctx.send(embed=embed)
 
-    @commands.command(**help_doc['crew'])
+    @commands.hybrid_command(**help_doc['crew'])
     @main_only
     async def crew(self, ctx, *, name: str = None):
         if name:
@@ -1619,7 +1640,7 @@ class ScoreSheetBot(commands.Cog):
     async def flairing(self, ctx):
         await self.help(ctx, 'flairing')
 
-    @commands.command(**help_doc['promote'])
+    @commands.hybrid_command(**help_doc['promote'])
     @main_only
     @flairing_required
     async def promote(self, ctx: Context, member: discord.Member):
@@ -1663,7 +1684,7 @@ class ScoreSheetBot(commands.Cog):
         await response_message(ctx, f'Successfully promoted {member.mention} to {result}.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
-    @commands.command(**help_doc['demote'])
+    @commands.hybrid_command(**help_doc['demote'])
     @main_only
     @flairing_required
     async def demote(self, ctx: Context, member: discord.Member):
@@ -1725,7 +1746,7 @@ class ScoreSheetBot(commands.Cog):
         await response_message(ctx, f'Successfully made {member.mention} a leader.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
-    @commands.command(**help_doc['unflair'])
+    @commands.hybrid_command(**help_doc['unflair'])
     @main_only
     @flairing_required
     async def unflair(self, ctx: Context, user: Optional[str]):
@@ -1792,7 +1813,7 @@ class ScoreSheetBot(commands.Cog):
         await self.cache.channels.flair_log.send(
             embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
-    @commands.command(**help_doc['flair'])
+    @commands.hybrid_command(**help_doc['flair'])
     @main_only
     @flairing_required
     async def flair(self, ctx: Context, member: discord.Member, *, new_crew: str = None):
@@ -1895,7 +1916,7 @@ class ScoreSheetBot(commands.Cog):
 
     ''' ***********************************GAMBIT COMMANDS ************************************************'''
 
-    @commands.command(**help_doc['predictions'])
+    @commands.hybrid_command(**help_doc['predictions'])
     async def predictions(self, ctx):
         await delete_invocation(ctx, delay=5)
         crew_names = ['Black Halo', 'Arpeggio', 'Dream Casters', 'Holy Knights', 'Valerian',
@@ -1916,7 +1937,7 @@ class ScoreSheetBot(commands.Cog):
             out_str.append(question + ': ' + str(answers[i][0]))
         await ctx.author.send(content='\n'.join(out_str))
 
-    @commands.command(**help_doc['predict'])
+    @commands.hybrid_command(**help_doc['predict'])
     async def predict(self, ctx):
         crew_names = ['Black Halo', 'Arpeggio', 'Dream Casters', 'Holy Knights', 'Valerian',
                       'Sound of Perfervid', 'Midnight Sun', 'Phantom Troupe', 'Flow State Gaming',
@@ -1933,13 +1954,13 @@ class ScoreSheetBot(commands.Cog):
         await ctx.author.send('Bracket choosing', view=Bracket(bracket_crews, ctx.author))
         await ctx.author.send('Extra questions! (10 points each)', view=Questions(ctx.author))
 
-    @commands.command(**help_doc['coins'])
+    @commands.hybrid_command(**help_doc['coins'])
     @main_only
     async def coins(self, ctx: Context, member: Optional[discord.Member] = None):
         member = member or ctx.author
         await ctx.send(f'{str(member)} has {member_gcoins(member)} G-Coins.')
 
-    @commands.group(name='gamb', invoke_without_command=True)
+    @commands.hybrid_group(name='gamb', invoke_without_command=True, fallback='status')
     @main_only
     @role_call([MINION, ADMIN, LU])
     async def gamb(self, ctx: Context):
@@ -1972,7 +1993,7 @@ class ScoreSheetBot(commands.Cog):
     @gamb.command()
     @main_only
     @role_call([MINION, ADMIN, LU, GAMB_OL])
-    async def close(self, ctx: Context, stream: Optional[str] = '', channel: Optional[discord.TextChannel] = ''):
+    async def close(self, ctx: Context, stream: Optional[str] = '', channel: Optional[discord.TextChannel] = None):
         cg = current_gambit()
         if not cg:
             await response_message(ctx, f'Gambit not started, please use `,gamb start`')
@@ -2151,7 +2172,7 @@ class ScoreSheetBot(commands.Cog):
 
             await update_gambit_message(current_gambit(), self)
 
-    @commands.command(**help_doc['odds'])
+    @commands.hybrid_command(**help_doc['odds'])
     @gambit_channel
     async def odds(self, ctx: Context):
         cg = current_gambit()
@@ -2400,7 +2421,7 @@ class ScoreSheetBot(commands.Cog):
     async def addforfeit(self, ctx: Context, *, everything: str):
         today = date.today()
 
-        if not ctx.message.attachments:
+        if not invocation_attachments(ctx):
             await response_message(ctx, 'You need to submit a screenshot of the forfeit with this.')
             return
 
@@ -2423,7 +2444,7 @@ class ScoreSheetBot(commands.Cog):
                            discord.utils.get(ctx.guild.channels, name=OUTPUT)]
         links = []
         for output_channel in output_channels:
-            files = [await attachment.to_file() for attachment in ctx.message.attachments]
+            files = [await attachment.to_file() for attachment in invocation_attachments(ctx)]
             link = await output_channel.send(files=files)
             links.append(link)
 
@@ -2453,7 +2474,7 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def addsheet(self, ctx: Context, *, everything: str):
 
-        if not ctx.message.attachments:
+        if not invocation_attachments(ctx):
             await response_message(ctx, 'You need to submit a screenshot of the scoresheet with this.')
             return
 
@@ -2486,7 +2507,7 @@ class ScoreSheetBot(commands.Cog):
                            discord.utils.get(ctx.guild.channels, name=OUTPUT)]
         links = []
         for output_channel in output_channels:
-            files = [await attachment.to_file() for attachment in ctx.message.attachments]
+            files = [await attachment.to_file() for attachment in invocation_attachments(ctx)]
             link = await output_channel.send(files=files)
             links.append(link)
 
@@ -2595,7 +2616,7 @@ class ScoreSheetBot(commands.Cog):
     async def failedreg(self, ctx: Context, *, everything: str):
         today = date.today()
 
-        if not ctx.message.attachments:
+        if not invocation_attachments(ctx):
             await response_message(ctx, 'You need to submit a screenshot of the scoresheet with this.')
             return
 
@@ -2628,7 +2649,7 @@ class ScoreSheetBot(commands.Cog):
                            discord.utils.get(ctx.guild.channels, name=OUTPUT)]
         links = []
         for output_channel in output_channels:
-            files = [await attachment.to_file() for attachment in ctx.message.attachments]
+            files = [await attachment.to_file() for attachment in invocation_attachments(ctx)]
             link = await output_channel.send(files=files)
             links.append(link)
 
@@ -2674,7 +2695,7 @@ class ScoreSheetBot(commands.Cog):
     async def weirdreg(self, ctx: Context, *, everything: str):
         today = date.today()
 
-        if not ctx.message.attachments:
+        if not invocation_attachments(ctx):
             await response_message(ctx, 'You need to submit a screenshot of the scoresheet with this.')
             return
 
@@ -2707,7 +2728,7 @@ class ScoreSheetBot(commands.Cog):
                            discord.utils.get(ctx.guild.channels, name=OUTPUT)]
         links = []
         for output_channel in output_channels:
-            files = [await attachment.to_file() for attachment in ctx.message.attachments]
+            files = [await attachment.to_file() for attachment in invocation_attachments(ctx)]
             link = await output_channel.send(files=files)
             links.append(link)
         league_id = CURRENT_LEAGUE_ID
@@ -2833,7 +2854,7 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(chan.mention)
                 await send_sheet(ctx, battle)
 
-    @commands.command(**help_doc['po'], hidden=True)
+    @commands.hybrid_command(**help_doc['po'], hidden=True)
     @main_only
     async def po(self, ctx: Context):
         await send_long_embed(ctx, battle_summary(self))
@@ -3106,6 +3127,12 @@ class ScoreSheetBot(commands.Cog):
         await ctx.send(f'{ctx.author.mention} don\'t forget to move the crew role in the list!')
         await send_long_embed(ctx, response_embed)
 
+    @commands.command(**help_doc['sync'], hidden=True)
+    @role_call(STAFF_LIST)
+    async def sync(self, ctx: Context):
+        count = await sync_slash_commands(self.bot)
+        await ctx.send(f'Synced {count} slash commands.')
+
     @commands.command(**help_doc['recache'], hidden=True, aliases=['rc'])
     @role_call(STAFF_LIST)
     async def recache(self, ctx: Context):
@@ -3161,20 +3188,20 @@ class ScoreSheetBot(commands.Cog):
     async def misc(self, ctx):
         await self.help(ctx, 'misc')
 
-    @commands.command(**help_doc['stagelist'])
+    @commands.hybrid_command(**help_doc['stagelist'])
     async def stagelist(self, ctx: Context):
         await ctx.send(
             'https://media.discordapp.net/attachments/1179837359508959385/1468055123640189082/image.png')
 
-    @commands.command(**help_doc['invite'])
+    @commands.hybrid_command(**help_doc['invite'])
     async def invite(self, ctx: Context):
         await ctx.send('https://smashcrewserver.com')
 
-    @commands.command(**help_doc['records'])
+    @commands.hybrid_command(**help_doc['records'])
     async def records(self, ctx: Context):
         await ctx.send('https://elo.smashcrewserver.com')
 
-    @commands.command(**help_doc['thank'])
+    @commands.hybrid_command(**help_doc['thank'])
     @banned_channels(['crew_flairing', 'scs_docs_updates'])
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def thank(self, ctx: Context):
@@ -3183,14 +3210,14 @@ class ScoreSheetBot(commands.Cog):
                        f'{add_thanks(ctx.author)} \n(If you want to thank him with money you can do so here. '
                        f'https://www.buymeacoffee.com/alexjett)')
 
-    @commands.command(**help_doc['thankboard'])
+    @commands.hybrid_command(**help_doc['thankboard'])
     @banned_channels(['crew_flairing', 'scs_docs_updates'])
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def thankboard(self, ctx: Context):
 
         await ctx.send(embed=thank_board(ctx.author))
 
-    @commands.command(**help_doc['coin'])
+    @commands.hybrid_command(**help_doc['coin'])
     async def coin(self, ctx: Context, member: discord.Member = None):
 
         flip = bool(random.getrandbits(1))
@@ -3207,18 +3234,18 @@ class ScoreSheetBot(commands.Cog):
         res = 'heads' if flip else 'tails'
         await ctx.send(f'Your coin flip landed on {res}', file=discord.File(f'img/{res}.png'))
 
-    @commands.command(**help_doc['disablelist'])
+    @commands.hybrid_command(**help_doc['disablelist'])
     async def disablelist(self, ctx: Context):
         ids = disabled_channels()
         out = [f'<#{id_num}>' for id_num in ids]
         out.insert(0, 'List of channels the bot is disabled in:')
         await ctx.send('\n'.join(out))
 
-    @commands.command(**help_doc['guide'])
+    @commands.hybrid_command(**help_doc['guide'])
     async def guide(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1ICpPcH3etnkcZk8Zc9wn2Aqz1yeAIH_cAWPPUUVgl9I/edit')
 
-    @commands.command(**help_doc['listroles'], aliases=['roster'])
+    @commands.hybrid_command(**help_doc['listroles'], aliases=['roster'])
     async def listroles(self, ctx, *, role: str):
         actual, mems, extra = members_with_str_role(role, self)
         mems.sort(key=lambda x: str(x))
@@ -3276,7 +3303,7 @@ class ScoreSheetBot(commands.Cog):
             out.append(mem.mention)
         await ctx.send(''.join(out))
 
-    @commands.command(**help_doc['vote'])
+    @commands.hybrid_command(**help_doc['vote'])
     @role_call([LEADER])
     async def vote(self, ctx, option: int):
         options = ('', 'Keep slot system unchanged',
@@ -3397,7 +3424,7 @@ class ScoreSheetBot(commands.Cog):
 
         await send_long(ctx, out, ',')
 
-    @commands.command(hidden=True, **help_doc['bigcrew'])
+    @commands.hybrid_command(hidden=True, **help_doc['bigcrew'])
     async def bigcrew(self, ctx, over: Optional[int] = 40):
         big = []
         for cr in self.cache.crews_by_name.values():
@@ -3412,7 +3439,7 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'These Crews have {over} members or more', description='\n'.join(desc))
         await send_long_embed(ctx, embed)
 
-    @commands.command(**help_doc['softcap'])
+    @commands.hybrid_command(**help_doc['softcap'])
     async def hardcap(self, ctx, cr: Optional[str] = ''):
         if cr:
             actual = crew_lookup(cr, self)
@@ -3427,7 +3454,7 @@ class ScoreSheetBot(commands.Cog):
             f'{battles} crew battles bonus (max 12)')
         return
 
-    @commands.command(hidden=True, **help_doc['softcap'])
+    @commands.hybrid_command(hidden=True, **help_doc['softcap'])
     async def softcap(self, ctx, cr: Optional[str] = ''):
         if not cr:
             if not check_roles(ctx.author, STAFF_LIST):
@@ -3707,7 +3734,7 @@ class ScoreSheetBot(commands.Cog):
 
         await ctx.send( f' ({w_placement_message}) ({l_placement_message}) ')
 
-    @commands.command(**help_doc['slots'])
+    @commands.hybrid_command(**help_doc['slots'])
     @main_only
     async def slots(self, ctx, *, name: str = None):
         if name:

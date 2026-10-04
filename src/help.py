@@ -85,6 +85,7 @@ help_doc = dict(
     difficulty=HelpDoc(Categories.cb, 'Sets the difficulty for an arcade match'),
     ext=HelpDoc(Categories.cb, 'Prints out extension status'),
     recache=HelpDoc(Categories.staff, 'Updates the cache. Admin only'),
+    sync=HelpDoc(Categories.staff, 'Re-registers the slash commands with Discord. Admin only'),
     pending=HelpDoc(Categories.staff, 'Prints pending battles. Admin only'),
     po=HelpDoc(Categories.staff, 'Prints all final stand cbs in a summary'),
     disable=HelpDoc(Categories.staff, 'Disables the bot in a channel', '', 'ChannelMention'),
