@@ -41,5 +41,4 @@ gspread
 oauth2client
 psycopg2
 fuzzywuzzy
-discord-ext-menus
 python-Levenshtein
