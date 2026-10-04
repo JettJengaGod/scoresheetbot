@@ -20,7 +20,7 @@ from discord.ext import commands
 
 import src.cache
 from src import scoreSheetBot
-from src.slash import ALLOWED_IN_DMS, PREFIX_ONLY, STAFF_GROUPS
+from src.slash import ALLOWED_IN_DMS, CB_COMMANDS, PREFIX_ONLY, STAFF_GROUPS
 from tests.harness import assert_snapshot, is_hybrid, make_cog
 
 COMMAND_DECORATORS = ('command', 'group', 'hybrid_command', 'hybrid_group')
@@ -186,6 +186,17 @@ class CommandInventoryTest(unittest.TestCase):
             with self.subTest(command=name):
                 restricted = [g for g in guards[name] if g.startswith('role_call') and 'LEADER' not in g]
                 self.assertEqual([], restricted, 'staff-only command is not under /staff')
+
+    def test_crew_battle_commands_are_under_cb(self):
+        self.assertEqual(len(CB_COMMANDS), len(set(CB_COMMANDS)))
+        for name in CB_COMMANDS:
+            with self.subTest(command=name):
+                self.assertEqual(f'cb {name}', self.slash[name].qualified_name)
+                self.assertFalse(is_hybrid(self.prefix[name]), 'a hybrid would also register a top level command')
+        # Every command in the cb help category is in the group, bar the two character lookups.
+        category = {name for name, command in self.prefix.items() if command.help == 'cb'}
+        self.assertEqual({'char', 'chars'}, category - set(CB_COMMANDS))
+        self.assertEqual(set(), set(CB_COMMANDS) - category)
 
     def test_discord_limits(self):
         valid_name = re.compile(r'^[-_a-z0-9]{1,32}$')

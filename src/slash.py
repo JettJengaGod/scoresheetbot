@@ -3,8 +3,9 @@
 Every prefix command is reachable as a slash command in one of three ways:
 
 * a hybrid command, declared in the cog, for player commands whose arguments Discord can express as-is;
-* a "twin" generated here with the same options as the prefix command, used for staff commands so they can
-  live under `/staff <group> <command>` while keeping their flat prefix names;
+* a "twin" generated here with the same options as the prefix command, used for crew battle and staff
+  commands so they can live under `/cb <command>` and `/staff <group> <command>` while keeping their flat
+  prefix names;
 * a hand written front end here, for commands whose prefix form takes free text that slash commands can ask
   for as separate typed options.
 
@@ -25,6 +26,13 @@ if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
 
 DESCRIPTION_LIMIT = 100
+
+# Crew battle commands live under /cb <command>. Discord allows 25 commands per group and this is 25, so
+# the next one needs a subgroup (or to stay top level, like the character lookups `char` and `chars`).
+CB_COMMANDS: List[str] = [
+    'battle', 'mock', 'reg', 'strawhat', 'cowy', 'playoff', 'send', 'replace', 'end', 'endlag', 'undo',
+    'resize', 'forfeit', 'confirm', 'clear', 'status', 'timer', 'timerstock', 'ext', 'use_ext', 'arena',
+    'stream', 'lock', 'unlock', 'countdown']
 
 # Where each staff command lives: /staff <group> <command>. Discord allows 25 commands per group.
 STAFF_GROUPS: Dict[str, tuple] = {
@@ -201,17 +209,19 @@ class SlashCommands:
         self.typed = self._typed_front_ends()
         prefix_commands = {command.qualified_name: command for command in cog.walk_commands()}
 
+        cb = app_commands.Group(name='cb', description='Run a crew battle', guild_only=True)
+        for name in CB_COMMANDS:
+            self._add(prefix_commands[name], parent=cb)
+
         staff = app_commands.Group(name='staff', description='Staff commands', guild_only=True)
-        staff_names = set()
         for group_name, (group_description, names) in STAFF_GROUPS.items():
             group = app_commands.Group(name=group_name, description=group_description, parent=staff)
             for name in names:
-                staff_names.add(name)
                 self._add(prefix_commands[name], parent=group)
 
-        top_level = [staff]
+        top_level = [cb, staff]
         for name, command in prefix_commands.items():
-            if name in PREFIX_ONLY or name in staff_names:
+            if name in PREFIX_ONLY or name in self.by_prefix_name:
                 continue
             if isinstance(command, (commands.HybridCommand, commands.HybridGroup)):
                 self._document_hybrid(command)

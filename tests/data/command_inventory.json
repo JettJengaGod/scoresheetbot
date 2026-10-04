@@ -118,7 +118,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "id_str",
@@ -126,7 +126,7 @@
      "type": "str"
     }
    ],
-   "path": "arena"
+   "path": "cb arena"
   }
  },
  "ba": {
@@ -178,7 +178,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "user",
@@ -191,7 +191,7 @@
      "type": "int"
     }
    ],
-   "path": "battle"
+   "path": "cb battle"
   }
  },
  "battles": {
@@ -437,9 +437,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "clear"
+   "path": "cb clear"
   }
  },
  "coin": {
@@ -505,9 +505,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "confirm"
+   "path": "cb confirm"
   }
  },
  "cooldown": {
@@ -540,7 +540,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "seconds",
@@ -548,7 +548,7 @@
      "type": "int"
     }
    ],
-   "path": "countdown"
+   "path": "cb countdown"
   }
  },
  "cowy": {
@@ -578,7 +578,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "user",
@@ -591,7 +591,7 @@
      "type": "int"
     }
    ],
-   "path": "cowy"
+   "path": "cb cowy"
   }
  },
  "crew": {
@@ -865,7 +865,7 @@
      "type": "int"
     }
    ],
-   "path": "end"
+   "path": "cb end"
   }
  },
  "endlag": {
@@ -926,7 +926,7 @@
      "type": "int"
     }
    ],
-   "path": "endlag"
+   "path": "cb endlag"
   }
  },
  "ext": {
@@ -939,9 +939,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "ext"
+   "path": "cb ext"
   }
  },
  "failedreg": {
@@ -1175,7 +1175,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "team",
@@ -1183,7 +1183,7 @@
      "type": "str"
     }
    ],
-   "path": "forfeit"
+   "path": "cb forfeit"
   }
  },
  "freeze": {
@@ -1518,7 +1518,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "streamer",
@@ -1526,7 +1526,7 @@
      "type": "Member"
     }
    ],
-   "path": "lock"
+   "path": "cb lock"
   }
  },
  "logo": {
@@ -1649,7 +1649,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "team1",
@@ -1667,7 +1667,7 @@
      "type": "int"
     }
    ],
-   "path": "mock"
+   "path": "cb mock"
   }
  },
  "multiflair": {
@@ -2060,7 +2060,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "user",
@@ -2073,7 +2073,7 @@
      "type": "int"
     }
    ],
-   "path": "playoff"
+   "path": "cb playoff"
   }
  },
  "po": {
@@ -2228,7 +2228,7 @@
      "type": "int"
     }
    ],
-   "path": "reg"
+   "path": "cb reg"
   }
  },
  "register": {
@@ -2297,7 +2297,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "user",
@@ -2310,7 +2310,7 @@
      "type": "str"
     }
    ],
-   "path": "replace"
+   "path": "cb replace"
   }
  },
  "resize": {
@@ -2333,7 +2333,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "new_size",
@@ -2341,7 +2341,7 @@
      "type": "int"
     }
    ],
-   "path": "resize"
+   "path": "cb resize"
   }
  },
  "result": {
@@ -2477,7 +2477,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "user",
@@ -2490,7 +2490,7 @@
      "type": "str"
     }
    ],
-   "path": "send"
+   "path": "cb send"
   }
  },
  "setreturnslots": {
@@ -2708,9 +2708,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "status"
+   "path": "cb status"
   }
  },
  "strawhat": {
@@ -2740,7 +2740,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "user",
@@ -2753,7 +2753,7 @@
      "type": "int"
     }
    ],
-   "path": "strawhat"
+   "path": "cb strawhat"
   }
  },
  "stream": {
@@ -2776,7 +2776,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "stream",
@@ -2784,7 +2784,7 @@
      "type": "str"
     }
    ],
-   "path": "stream"
+   "path": "cb stream"
   }
  },
  "stupid": {
@@ -2875,9 +2875,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "timer"
+   "path": "cb timer"
   }
  },
  "timerstock": {
@@ -2898,7 +2898,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "team",
@@ -2906,7 +2906,7 @@
      "type": "str"
     }
    ],
-   "path": "timerstock"
+   "path": "cb timerstock"
   }
  },
  "tomain": {
@@ -3026,9 +3026,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "undo"
+   "path": "cb undo"
   }
  },
  "unflair": {
@@ -3070,9 +3070,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "unlock"
+   "path": "cb unlock"
   }
  },
  "update_elos": {
@@ -3135,7 +3135,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "team",
@@ -3143,7 +3143,7 @@
      "type": "str"
     }
    ],
-   "path": "use_ext"
+   "path": "cb use_ext"
   }
  },
  "vod": {

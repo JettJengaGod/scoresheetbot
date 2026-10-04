@@ -307,7 +307,7 @@ class ScoreSheetBot(commands.Cog):
     async def cb(self, ctx):
         await self.help(ctx, 'cb')
 
-    @commands.hybrid_command(**help_doc['lock'], aliases=['mohamed', 'nohamed', 'lk'])
+    @commands.command(**help_doc['lock'], aliases=['mohamed', 'nohamed', 'lk'])
     @main_only
     @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
@@ -368,7 +368,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('There needs to be a ranked battle running to use this command.')
             return
 
-    @commands.hybrid_command(**help_doc['unlock'])
+    @commands.command(**help_doc['unlock'])
     @main_only
     @role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])
     @ss_channel
@@ -376,7 +376,7 @@ class ScoreSheetBot(commands.Cog):
         await unlock(ctx.channel)
         await ctx.send('Unlocked the channel for all crews to use.')
 
-    @commands.hybrid_command(**help_doc['battle'], aliases=['wisdom'], group='CB')
+    @commands.command(**help_doc['battle'], aliases=['wisdom'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -441,7 +441,7 @@ class ScoreSheetBot(commands.Cog):
     #     else:
     #         await ctx.send('You can\'t battle your own crew.')
 
-    @commands.hybrid_command(**help_doc['mock'])
+    @commands.command(**help_doc['mock'])
     @no_battle
     @ss_channel
     async def mock(self, ctx: Context, team1: str, team2: str, size: int):
@@ -478,7 +478,7 @@ class ScoreSheetBot(commands.Cog):
         await self._set_current(ctx, Battle(real_crew, registering_crew, size, BattleType.REG))
         await ctx.send(embed=self._current(ctx).embed())
 
-    @commands.hybrid_command(**help_doc['battle'], aliases=['straw'], group='CB')
+    @commands.command(**help_doc['battle'], aliases=['straw'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -507,7 +507,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-    @commands.hybrid_command(**help_doc['battle'], aliases=['cowybattle'], group='CB')
+    @commands.command(**help_doc['battle'], aliases=['cowybattle'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -536,7 +536,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('You can\'t battle your own crew.')
 
-    @commands.hybrid_command(**help_doc['battle'], aliases=['pob'], group='CB')
+    @commands.command(**help_doc['battle'], aliases=['pob'], group='CB')
     @main_only
     @no_battle
     @is_lead
@@ -638,7 +638,7 @@ class ScoreSheetBot(commands.Cog):
     #     else:
     #         await ctx.send('You can\'t battle your own crew.')
 
-    @commands.hybrid_command(**help_doc['countdown'])
+    @commands.command(**help_doc['countdown'])
     @ss_channel
     async def countdown(self, ctx: Context, seconds: Optional[int] = 10):
         if seconds > 10 or seconds < 1:
@@ -650,7 +650,7 @@ class ScoreSheetBot(commands.Cog):
             await sleep(1)
         await ctx.send('Finished!')
 
-    @commands.hybrid_command(**help_doc['send'], aliases=['s'])
+    @commands.command(**help_doc['send'], aliases=['s'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -742,7 +742,7 @@ class ScoreSheetBot(commands.Cog):
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.hybrid_command(**help_doc['use_ext'])
+    @commands.command(**help_doc['use_ext'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -784,7 +784,7 @@ class ScoreSheetBot(commands.Cog):
                 return
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.hybrid_command(**help_doc['forfeit'], aliases=['ff'])
+    @commands.command(**help_doc['forfeit'], aliases=['ff'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -823,13 +823,13 @@ class ScoreSheetBot(commands.Cog):
             self._current(ctx).forfeit(author_crew)
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.hybrid_command(**help_doc['ext'])
+    @commands.command(**help_doc['ext'])
     @has_sheet
     @ss_channel
     async def ext(self, ctx):
         await ctx.send(self._current(ctx).ext_str())
 
-    @commands.hybrid_command(**help_doc['replace'], aliases=['r'])
+    @commands.command(**help_doc['replace'], aliases=['r'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -943,7 +943,7 @@ class ScoreSheetBot(commands.Cog):
                                       Character(str(char2), self.bot, is_usable_emoji(char2, self.bot)))
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.hybrid_command(**help_doc['resize'], aliases=['extend'])
+    @commands.command(**help_doc['resize'], aliases=['extend'])
     @is_lead
     @has_sheet
     @ss_channel
@@ -955,7 +955,7 @@ class ScoreSheetBot(commands.Cog):
         self._current(ctx).resize(new_size)
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.hybrid_command(**help_doc['arena'], aliases=['id', 'arena_id', 'lobby'])
+    @commands.command(**help_doc['arena'], aliases=['id', 'arena_id', 'lobby'])
     @has_sheet
     @ss_channel
     async def arena(self, ctx: Context, id_str: str = ''):
@@ -966,7 +966,7 @@ class ScoreSheetBot(commands.Cog):
             return
         await ctx.send(f'The lobby id is {self._current(ctx).id}')
 
-    @commands.hybrid_command(**help_doc['stream'], aliases=['streamer', 'stream_link'])
+    @commands.command(**help_doc['stream'], aliases=['streamer', 'stream_link'])
     @has_sheet
     @ss_channel
     async def stream(self, ctx: Context, stream: str = ''):
@@ -979,7 +979,7 @@ class ScoreSheetBot(commands.Cog):
             return
         await ctx.send(f'The stream is {self._current(ctx).stream}')
 
-    @commands.hybrid_command(**help_doc['undo'])
+    @commands.command(**help_doc['undo'])
     @main_only
     @has_sheet
     @ss_channel
@@ -1043,7 +1043,7 @@ class ScoreSheetBot(commands.Cog):
     #     await ctx.author.send(f'Your difficulty of {diff.name} is confirmed!')
     #     await ctx.send(f'{author_crew} selected difficulty!')
 
-    @commands.hybrid_command(**help_doc['confirm'])
+    @commands.command(**help_doc['confirm'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -1280,7 +1280,7 @@ class ScoreSheetBot(commands.Cog):
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
-    @commands.hybrid_command(**help_doc['clear'],  aliases=['cancel'])
+    @commands.command(**help_doc['clear'],  aliases=['cancel'])
     @has_sheet
     @ss_channel
     @is_lead
@@ -1301,19 +1301,19 @@ class ScoreSheetBot(commands.Cog):
         await self._clear_current(ctx)
         await ctx.send(f'{ctx.author.mention} cleared the crew battle.')
 
-    @commands.hybrid_command(**help_doc['status'])
+    @commands.command(**help_doc['status'])
     @has_sheet
     @ss_channel
     async def status(self, ctx):
         await send_sheet(ctx, battle=self._current(ctx))
 
-    @commands.hybrid_command(**help_doc['timer'], aliases=['🤓'])
+    @commands.command(**help_doc['timer'], aliases=['🤓'])
     @has_sheet
     @ss_channel
     async def timer(self, ctx):
         await ctx.send(self._current(ctx).timer())
 
-    @commands.hybrid_command(**help_doc['timerstock'])
+    @commands.command(**help_doc['timerstock'])
     @has_sheet
     @ss_channel
     @is_lead
