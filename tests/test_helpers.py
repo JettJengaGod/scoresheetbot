@@ -6,13 +6,13 @@ from freezegun import freeze_time
 
 
 class HelpersTest(unittest.IsolatedAsyncioTestCase):
-    def test_channel_from_key(self):
-        test_key = 'aaaa|bbbbb'
-        self.assertEqual(channel_from_key(test_key), 'bbbbb')
+    def test_channel_id_from_key(self):
+        test_key = 'aaaa|12345'
+        self.assertEqual(channel_id_from_key(test_key), 12345)
 
     def test_key_string(self):
         ctx = mocks.MockContext()
-        epxected = str(ctx.guild) + '|' + str(ctx.channel)
+        epxected = str(ctx.guild) + '|' + str(ctx.channel.id)
         self.assertEqual(key_string(ctx), epxected)
 
     def test_escape(self):
@@ -100,6 +100,7 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
             member.roles = [bot.cache.roles.overflow]
             of_member = mocks.MockMember(name='Steve', id=int('4' * 17), roles=[mocks.ballers_role])
             bot.cache.overflow_server.members.append(of_member)
+            bot.bot.guilds = [bot.cache.overflow_server]
             self.assertEqual(mocks.Ballers.name, crew(member, bot))
 
     async def test_track_cycle(self):
@@ -168,7 +169,7 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
             target.roles = [mocks.hk_role, mocks.leader]
             with self.assertRaises(ValueError) as ve:
                 compare_crew_and_power(author, target, bot)
-            self.assertEqual(str(ve.exception), f'A majority of leaders must approve unflairing leader{target.mention}.'
+            self.assertEqual(str(ve.exception), f'A majority of leaders must approve unflairing leader {target.mention}.'
                                                 f' Tag the Doc Keeper role in {bot.cache.channels.flairing_questions} for assistance.')
         with self.subTest('Advisor:Advisor'):
             author.roles = [mocks.hk_role, mocks.advisor]
@@ -262,37 +263,43 @@ class HelpersTest(unittest.IsolatedAsyncioTestCase):
     async def test_flair(self):
         bot = mocks.MockSSB(cache=mocks.cache())
         bob = mocks.MockMember(name='bob', id=1)
+        verified = mocks.MockRole(name=VERIFIED)
         with self.subTest('True Locked'):
             bob.roles = [mocks.MockRole(name=TRUE_LOCKED)]
             with self.assertRaises(ValueError) as ve:
                 await flair(bob, mocks.HK, bot)
             self.assertEqual(str(ve.exception),
-                             f'{bob.display_name} cannot be flaired because they are {TRUE_LOCKED}.')
+                             f'{bob.mention} cannot be flaired because they are {TRUE_LOCKED}.')
         with self.subTest('Join CD'):
             bob.roles = [mocks.MockRole(name=JOIN_CD)]
             with self.assertRaises(ValueError) as ve:
                 await flair(bob, mocks.HK, bot)
             self.assertEqual(str(ve.exception),
-                             f'{bob.display_name} cannot be flaired because they have {JOIN_CD}.')
-        with self.subTest('Free Agent non overflow.'):
+                             f'{bob.mention} cannot be flaired because they have {JOIN_CD}.')
+        with self.subTest('Not verified'):
             bob.roles = [bot.cache.roles.free_agent]
+            with self.assertRaises(ValueError) as ve:
+                await flair(bob, mocks.HK, bot)
+            self.assertIn('does not have the DC Verified role', str(ve.exception))
+        with self.subTest('Free Agent non overflow.'):
+            bob.roles = [bot.cache.roles.free_agent, verified]
             await flair(bob, mocks.HK, bot)
             after = set(bob.roles)
-            expected = {mocks.hk_role, bot.cache.roles.join_cd}
+            expected = {mocks.hk_role, bot.cache.roles.join_cd, verified}
             self.assertEqual(expected, after)
         with self.subTest('Track 2 non overflow.'):
-            bob.roles = [bot.cache.roles.track3]
+            bob.roles = [bot.cache.roles.track3, verified]
             await flair(bob, mocks.HK, bot)
             after = set(bob.roles)
-            expected = {mocks.hk_role, bot.cache.roles.join_cd, bot.cache.roles.true_locked}
+            expected = {mocks.hk_role, bot.cache.roles.join_cd, bot.cache.roles.true_locked, verified}
             self.assertEqual(expected, after)
         with self.subTest('Overflow.'):
             overflow_bob = mocks.MockMember(name='bob', id=1)
-            bob.roles = [bot.cache.roles.overflow]
+            bob.roles = [bot.cache.roles.overflow, verified]
             bot.cache.overflow_server.members = [overflow_bob]
             await flair(bob, mocks.Ballers, bot)
             after_main = set(bob.roles)
-            expected_main = {bot.cache.roles.join_cd, bot.cache.roles.overflow}
+            expected_main = {bot.cache.roles.join_cd, bot.cache.roles.overflow, verified}
             self.assertEqual(expected_main, after_main)
             after_overflow = set(overflow_bob.roles)
 
