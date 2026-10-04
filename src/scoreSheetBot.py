@@ -1640,7 +1640,7 @@ class ScoreSheetBot(commands.Cog):
     async def flairing(self, ctx):
         await self.help(ctx, 'flairing')
 
-    @commands.hybrid_command(**help_doc['promote'])
+    @commands.command(**help_doc['promote'])
     @main_only
     @flairing_required
     async def promote(self, ctx: Context, member: discord.Member):
@@ -1684,7 +1684,7 @@ class ScoreSheetBot(commands.Cog):
         await response_message(ctx, f'Successfully promoted {member.mention} to {result}.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
-    @commands.hybrid_command(**help_doc['demote'])
+    @commands.command(**help_doc['demote'])
     @main_only
     @flairing_required
     async def demote(self, ctx: Context, member: discord.Member):
@@ -1746,7 +1746,7 @@ class ScoreSheetBot(commands.Cog):
         await response_message(ctx, f'Successfully made {member.mention} a leader.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
-    @commands.hybrid_command(**help_doc['unflair'])
+    @commands.command(**help_doc['unflair'])
     @main_only
     @flairing_required
     async def unflair(self, ctx: Context, user: Optional[str]):
@@ -1813,7 +1813,7 @@ class ScoreSheetBot(commands.Cog):
         await self.cache.channels.flair_log.send(
             embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
-    @commands.hybrid_command(**help_doc['flair'])
+    @commands.command(**help_doc['flair'])
     @main_only
     @flairing_required
     async def flair(self, ctx: Context, member: discord.Member, *, new_crew: str = None):

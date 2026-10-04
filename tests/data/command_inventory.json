@@ -728,7 +728,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "member",
@@ -736,7 +736,7 @@
      "type": "Member"
     }
    ],
-   "path": "demote"
+   "path": "f demote"
   }
  },
  "disable": {
@@ -1076,7 +1076,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "member",
@@ -1089,7 +1089,7 @@
      "type": "str"
     }
    ],
-   "path": "flair"
+   "path": "f flair"
   }
  },
  "flaircounts": {
@@ -1706,7 +1706,7 @@
      "type": "str"
     }
    ],
-   "path": "multiflair"
+   "path": "f multiflair"
   }
  },
  "multiunflair": {
@@ -1734,7 +1734,7 @@
      "type": "str"
     }
    ],
-   "path": "multiunflair"
+   "path": "f multiunflair"
   }
  },
  "non_crew": {
@@ -2131,7 +2131,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "member",
@@ -2139,7 +2139,7 @@
      "type": "Member"
     }
    ],
-   "path": "promote"
+   "path": "f promote"
   }
  },
  "rankings": {
@@ -3048,7 +3048,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "user",
@@ -3056,7 +3056,7 @@
      "type": "str"
     }
    ],
-   "path": "unflair"
+   "path": "f unflair"
   }
  },
  "unlock": {

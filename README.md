@@ -31,7 +31,7 @@
 ### Slash commands
 
 Every command can be used with the prefix (`,send`) or as a slash command (`/cb send`); both run the same code.
-Crew battle commands are grouped under `/cb` and staff commands under `/staff`, for example `/staff battle addsheet`.
+Crew battle commands are grouped under `/cb`, flairing commands under `/f` and staff commands under `/staff`, for example `/staff battle addsheet`.
 Slash commands are registered when the bot starts. After adding or changing a command, staff can re-register them with `,sync`.
 
 ### Tests

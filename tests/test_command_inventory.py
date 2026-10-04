@@ -20,7 +20,7 @@ from discord.ext import commands
 
 import src.cache
 from src import scoreSheetBot
-from src.slash import ALLOWED_IN_DMS, CB_COMMANDS, PREFIX_ONLY, STAFF_GROUPS
+from src.slash import ALLOWED_IN_DMS, CB_COMMANDS, F_COMMANDS, PREFIX_ONLY, STAFF_GROUPS
 from tests.harness import assert_snapshot, is_hybrid, make_cog
 
 COMMAND_DECORATORS = ('command', 'group', 'hybrid_command', 'hybrid_group')
@@ -197,6 +197,14 @@ class CommandInventoryTest(unittest.TestCase):
         category = {name for name, command in self.prefix.items() if command.help == 'cb'}
         self.assertEqual({'char', 'chars'}, category - set(CB_COMMANDS))
         self.assertEqual(set(), set(CB_COMMANDS) - category)
+
+    def test_flairing_commands_are_under_f(self):
+        for name in F_COMMANDS:
+            with self.subTest(command=name):
+                self.assertEqual(f'f {name}', self.slash[name].qualified_name)
+                self.assertFalse(is_hybrid(self.prefix[name]), 'a hybrid would also register a top level command')
+        category = {name for name, command in self.prefix.items() if command.help == 'flairing'}
+        self.assertEqual(category, set(F_COMMANDS))
 
     def test_every_command_has_its_own_help_text(self):
         """Catches a command decorated with another command's help entry, or with none."""
