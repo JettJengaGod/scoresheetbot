@@ -1,0 +1,1907 @@
+{
+ "addforfeit": {
+  "aliases": [
+   "addff"
+  ],
+  "category": "staff",
+  "guards": [
+   "main_only",
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "everything",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "addsheet": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "main_only",
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "everything",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "arena": {
+  "aliases": [
+   "arena_id",
+   "id",
+   "lobby"
+  ],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "id_str",
+    "required": false,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "ba": {
+  "aliases": [],
+  "category": null,
+  "guards": [],
+  "is_group": true,
+  "params": []
+ },
+ "backfill": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "battle": {
+  "aliases": [
+   "wisdom"
+  ],
+  "category": "cb",
+  "guards": [
+   "main_only",
+   "no_battle",
+   "is_lead",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "user",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   },
+   {
+    "name": "size",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "battles": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [],
+  "is_group": false,
+  "params": []
+ },
+ "bet": {
+  "aliases": [],
+  "category": "gambit",
+  "guards": [
+   "gambit_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "everything",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "bigcrew": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "over",
+    "required": false,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "cancelcb": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "battle_id",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   },
+   {
+    "name": "reason",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "categoryrole": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "member",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   }
+  ]
+ },
+ "cb": {
+  "aliases": [],
+  "category": null,
+  "guards": [],
+  "is_group": true,
+  "params": []
+ },
+ "char": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "emoji",
+    "required": true,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "charge": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call([MINION, ADMIN])"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "member",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   },
+   {
+    "name": "amount",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   },
+   {
+    "name": "reason",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "chars": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "clear": {
+  "aliases": [
+   "cancel"
+  ],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel",
+   "is_lead"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "coin": {
+  "aliases": [],
+  "category": "misc",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "member",
+    "required": false,
+    "rest": false,
+    "type": "Member"
+   }
+  ]
+ },
+ "coins": {
+  "aliases": [],
+  "category": "gambit",
+  "guards": [
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "member",
+    "required": false,
+    "rest": false,
+    "type": "Member"
+   }
+  ]
+ },
+ "confirm": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel",
+   "is_lead"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "cooldown": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "countdown": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "seconds",
+    "required": false,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "cowy": {
+  "aliases": [
+   "cowybattle"
+  ],
+  "category": "cb",
+  "guards": [
+   "main_only",
+   "no_battle",
+   "is_lead",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "user",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   },
+   {
+    "name": "size",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "crew": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "crews": {
+  "aliases": [],
+  "category": null,
+  "guards": [],
+  "is_group": true,
+  "params": []
+ },
+ "crewstats": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "crnumbers": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "deactivate": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "command",
+    "required": true,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "dele": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "demote": {
+  "aliases": [],
+  "category": "flairing",
+  "guards": [
+   "main_only",
+   "flairing_required"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "member",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   }
+  ]
+ },
+ "disable": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "channel",
+    "required": true,
+    "rest": false,
+    "type": "TextChannel"
+   }
+  ]
+ },
+ "disablelist": {
+  "aliases": [],
+  "category": "misc",
+  "guards": [],
+  "is_group": false,
+  "params": []
+ },
+ "disband": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "end": {
+  "aliases": [
+   "e"
+  ],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "char1",
+    "required": true,
+    "rest": false,
+    "type": "str | Emoji"
+   },
+   {
+    "name": "stocks1",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   },
+   {
+    "name": "char2",
+    "required": true,
+    "rest": false,
+    "type": "str | Emoji"
+   },
+   {
+    "name": "stocks2",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "endlag": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "char1",
+    "required": true,
+    "rest": false,
+    "type": "str | Emoji"
+   },
+   {
+    "name": "stocks1",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   },
+   {
+    "name": "char2",
+    "required": true,
+    "rest": false,
+    "type": "str | Emoji"
+   },
+   {
+    "name": "stocks2",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "ext": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "failedreg": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "main_only",
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "everything",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "fixslot": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "fixunflair": {
+  "aliases": [],
+  "category": null,
+  "guards": [
+   "main_only",
+   "flairing_required",
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "flair": {
+  "aliases": [],
+  "category": "flairing",
+  "guards": [
+   "main_only",
+   "flairing_required"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "member",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   },
+   {
+    "name": "new_crew",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "flaircounts": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "long",
+    "required": true,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "flairing": {
+  "aliases": [],
+  "category": null,
+  "guards": [],
+  "is_group": true,
+  "params": []
+ },
+ "flairing_off": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "flairing_on": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "forfeit": {
+  "aliases": [
+   "ff"
+  ],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel",
+   "is_lead"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "team",
+    "required": false,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "freeze": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call([DOCS, MINION, ADMIN, VIOS])"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "everything",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "gamb": {
+  "aliases": [],
+  "category": null,
+  "guards": [
+   "main_only",
+   "role_call([MINION, ADMIN, LU])"
+  ],
+  "is_group": true,
+  "params": []
+ },
+ "gamb close": {
+  "aliases": [],
+  "category": null,
+  "guards": [
+   "main_only",
+   "role_call([MINION, ADMIN, LU, GAMB_OL])"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "stream",
+    "required": false,
+    "rest": false,
+    "type": "str"
+   },
+   {
+    "name": "channel",
+    "required": false,
+    "rest": false,
+    "type": "TextChannel"
+   }
+  ]
+ },
+ "gamb finish": {
+  "aliases": [],
+  "category": null,
+  "guards": [
+   "main_only",
+   "role_call([MINION, ADMIN, LU, GAMB_OL])"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "winner",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "gamb start": {
+  "aliases": [],
+  "category": null,
+  "guards": [
+   "main_only",
+   "role_call([MINION, ADMIN, LU, GAMB_OL])"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "c1",
+    "required": true,
+    "rest": false,
+    "type": "str"
+   },
+   {
+    "name": "c2",
+    "required": true,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "gamb update": {
+  "aliases": [],
+  "category": null,
+  "guards": [
+   "main_only",
+   "role_call([MINION, ADMIN, LU, GAMB_OL])"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "guide": {
+  "aliases": [],
+  "category": "misc",
+  "guards": [],
+  "is_group": false,
+  "params": []
+ },
+ "hardcap": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "cr",
+    "required": false,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "help": {
+  "aliases": [],
+  "category": "Shows this command",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "group",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "history": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "initalize_ratings": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "invite": {
+  "aliases": [],
+  "category": "misc",
+  "guards": [],
+  "is_group": false,
+  "params": []
+ },
+ "listroles": {
+  "aliases": [
+   "roster"
+  ],
+  "category": "misc",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "role",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "lock": {
+  "aliases": [
+   "lk",
+   "mohamed",
+   "nohamed"
+  ],
+  "category": "cb",
+  "guards": [
+   "main_only",
+   "role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "streamer",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   }
+  ]
+ },
+ "logo": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "make_lead": {
+  "aliases": [],
+  "category": null,
+  "guards": [
+   "main_only",
+   "flairing_required",
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "member",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   }
+  ]
+ },
+ "manual_battle": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "battle_id",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "misc": {
+  "aliases": [],
+  "category": null,
+  "guards": [],
+  "is_group": true,
+  "params": []
+ },
+ "mock": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "no_battle",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "team1",
+    "required": true,
+    "rest": false,
+    "type": "str"
+   },
+   {
+    "name": "team2",
+    "required": true,
+    "rest": false,
+    "type": "str"
+   },
+   {
+    "name": "size",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "multiflair": {
+  "aliases": [],
+  "category": "flairing",
+  "guards": [
+   "main_only",
+   "flairing_required"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "members",
+    "required": true,
+    "rest": false,
+    "type": "Greedy[Member]"
+   },
+   {
+    "name": "new_crew",
+    "required": false,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "multiunflair": {
+  "aliases": [],
+  "category": "flairing",
+  "guards": [
+   "main_only",
+   "flairing_required"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "everything",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "non_crew": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "main_only",
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "noverlap": {
+  "aliases": [],
+  "category": "misc",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "two_roles",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "odds": {
+  "aliases": [],
+  "category": "gambit",
+  "guards": [
+   "gambit_channel"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "opt": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "main_only",
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "overflow": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call([ADMIN, MINION])"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "overlap": {
+  "aliases": [],
+  "category": "misc",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "two_roles",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "pair": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "main_only",
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "everything",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "pending": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "pingnoverlap": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "two_roles",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "pingoverlap": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "two_roles",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "pingrole": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "role",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "playerstats": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "playoff": {
+  "aliases": [
+   "pob"
+  ],
+  "category": "cb",
+  "guards": [
+   "main_only",
+   "no_battle",
+   "is_lead",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "user",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   },
+   {
+    "name": "size",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "po": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "main_only"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "predict": {
+  "aliases": [],
+  "category": "gambit",
+  "guards": [],
+  "is_group": false,
+  "params": []
+ },
+ "predictions": {
+  "aliases": [],
+  "category": "gambit",
+  "guards": [],
+  "is_group": false,
+  "params": []
+ },
+ "promote": {
+  "aliases": [],
+  "category": "flairing",
+  "guards": [
+   "main_only",
+   "flairing_required"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "member",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   }
+  ]
+ },
+ "rankings": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [],
+  "is_group": false,
+  "params": []
+ },
+ "rate": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "recache": {
+  "aliases": [
+   "rc"
+  ],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "records": {
+  "aliases": [],
+  "category": "misc",
+  "guards": [],
+  "is_group": false,
+  "params": []
+ },
+ "reg": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "main_only",
+   "no_battle",
+   "is_lead",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "everything",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "register": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "main_only",
+   "role_call(STAFF_LIST)",
+   "flairing_required"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "members",
+    "required": true,
+    "rest": false,
+    "type": "Greedy[Member]"
+   },
+   {
+    "name": "new_crew",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "replace": {
+  "aliases": [
+   "r"
+  ],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel",
+   "is_lead"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "user",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   },
+   {
+    "name": "team",
+    "required": false,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "resize": {
+  "aliases": [
+   "extend"
+  ],
+  "category": "cb",
+  "guards": [
+   "is_lead",
+   "has_sheet",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "new_size",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "result": {
+  "aliases": [],
+  "category": "ba",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "opponent",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   },
+   {
+    "name": "everything",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "retag": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "savenicks": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [
+   "role_call(STAFF_LIST)",
+   "main_only"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "season": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "send": {
+  "aliases": [
+   "s"
+  ],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel",
+   "is_lead"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "user",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   },
+   {
+    "name": "team",
+    "required": false,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "setreturnslots": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)",
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "num",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   },
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "setslots": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)",
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "num",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   },
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "slotfinals": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "slots": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "slottotals": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "softcap": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "cr",
+    "required": false,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "staff": {
+  "aliases": [],
+  "category": null,
+  "guards": [],
+  "is_group": true,
+  "params": []
+ },
+ "stagelist": {
+  "aliases": [],
+  "category": "misc",
+  "guards": [],
+  "is_group": false,
+  "params": []
+ },
+ "stats": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "status": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "strawhat": {
+  "aliases": [
+   "straw"
+  ],
+  "category": "cb",
+  "guards": [
+   "main_only",
+   "no_battle",
+   "is_lead",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "user",
+    "required": true,
+    "rest": false,
+    "type": "Member"
+   },
+   {
+    "name": "size",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "stream": {
+  "aliases": [
+   "stream_link",
+   "streamer"
+  ],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "stream",
+    "required": false,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "stupid": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "test": {
+  "aliases": [],
+  "category": null,
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": true,
+  "params": []
+ },
+ "test confirm": {
+  "aliases": [],
+  "category": null,
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "thank": {
+  "aliases": [],
+  "category": "misc",
+  "guards": [
+   "banned_channels(['crew_flairing', 'scs_docs_updates'])"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "thankboard": {
+  "aliases": [],
+  "category": "misc",
+  "guards": [
+   "banned_channels(['crew_flairing', 'scs_docs_updates'])"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "timer": {
+  "aliases": [
+   "🤓"
+  ],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "timerstock": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel",
+   "is_lead"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "team",
+    "required": false,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "tomain": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "tri": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)",
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "umbralotto": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "rank",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "umbralottotest": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [],
+  "is_group": false,
+  "params": [
+   {
+    "name": "rank",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "undo": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "main_only",
+   "has_sheet",
+   "ss_channel",
+   "is_lead"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "unflair": {
+  "aliases": [],
+  "category": "flairing",
+  "guards": [
+   "main_only",
+   "flairing_required"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "user",
+    "required": true,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "unlock": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "main_only",
+   "role_call([MINION, ADMIN, DOCS, LEADER, ADVISOR])",
+   "ss_channel"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "update_elos": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [
+   "role_call(STAFF_LIST)",
+   "main_only"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "name",
+    "required": false,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ },
+ "usage": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call([DOCS, MINION, ADMIN, CERTIFIED])"
+  ],
+  "is_group": false,
+  "params": []
+ },
+ "use_ext": {
+  "aliases": [],
+  "category": "cb",
+  "guards": [
+   "has_sheet",
+   "ss_channel",
+   "is_lead"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "team",
+    "required": false,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "vod": {
+  "aliases": [],
+  "category": "crews",
+  "guards": [
+   "role_call([CERTIFIED, ADMIN, DOCS, MINION])"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "battle_id",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   },
+   {
+    "name": "vod",
+    "required": true,
+    "rest": false,
+    "type": "str"
+   }
+  ]
+ },
+ "vote": {
+  "aliases": [],
+  "category": "misc",
+  "guards": [
+   "role_call([LEADER])"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "option",
+    "required": true,
+    "rest": false,
+    "type": "int"
+   }
+  ]
+ },
+ "weirdreg": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "main_only",
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "everything",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ]
+ }
+}

@@ -1,0 +1,195 @@
+[
+ {
+  "command": "battle",
+  "sent": [
+   {
+    "content": "Please enter a size greater than 0.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "battle",
+  "sent": [
+   {
+    "content": "You can't battle your own crew.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "battle",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: Waiting  \nFSGood: Waiting",
+     "title": "Holy Knights vs FSGood",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": "<@!11>: <@!13> does not have the DC Verified role. Which is required for crew battle participation.They can verify by typing `/verify` in any channel and then clicking the \"Click me to verify!\" link in the Double Counter dm.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": "FSG Player is not on Holy Knights please choose someone else.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: HK\\_Player  3 stocks  \nFSGood: Waiting",
+     "title": "Holy Knights vs FSGood",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: HK\\_Player  3 stocks  \nFSGood: FSG Player  3 stocks",
+     "title": "Holy Knights vs FSGood",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "end",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\n\nCurrent score: Holy Knights[15] - FSGood[12] \nHoly Knights: HK\\_Player None 3 stocks  \nFSGood: Waiting",
+     "title": "Holy Knights vs FSGood",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "end",
+  "sent": [
+   {
+    "content": "<@!31>: end failed because:<MockMember spec_set='Member'> has no crew or something is wrong.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "end",
+  "sent": [
+   {
+    "content": "\"end\" did not work because:The match is not ready yet, ['FSGood'] still need players",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": "\"send\" did not work because:FSGood has only played 1 unique players and must send  at least 4 unique players before resending someone.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\n\nCurrent score: Holy Knights[15] - FSGood[12] \nHoly Knights: HK\\_Player None 3 stocks  \nFSGood: FSG Lead  3 stocks",
+     "title": "Holy Knights vs FSGood",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "timerstock",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\n\nCurrent score: Holy Knights[14] - FSGood[12] \nHoly Knights: HK\\_Player None 2 stocks  \nFSGood: FSG Lead  3 stocks",
+     "title": "Holy Knights vs FSGood",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "replace",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\nHoly Knights subbed HK\\_Player  with HK Lead with 2 stocks left.\n\nCurrent score: Holy Knights[14] - FSGood[12] \nHoly Knights: HK Lead  2 stocks  \nFSGood: FSG Lead  3 stocks",
+     "title": "Holy Knights vs FSGood",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "undo",
+  "sent": [
+   {
+    "content": "Note: undoing a replace on the scoresheet doesn't actually undo the replace, you need to use `,replace @player` with the original player to do that.",
+    "embed": null
+   },
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\n\nCurrent score: Holy Knights[14] - FSGood[12] \nHoly Knights: HK Lead  2 stocks  \nFSGood: FSG Lead  3 stocks",
+     "title": "Holy Knights vs FSGood",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "resize",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n6 vs 6 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\n\nCurrent score: Holy Knights[17] - FSGood[15] \nHoly Knights: HK Lead  2 stocks  \nFSGood: FSG Lead  3 stocks",
+     "title": "Holy Knights vs FSGood",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "confirm",
+  "sent": [
+   {
+    "content": "The battle is not over yet, wait till then to confirm.",
+    "embed": null
+   }
+  ]
+ }
+]

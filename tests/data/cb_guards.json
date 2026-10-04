@@ -1,0 +1,87 @@
+[
+ {
+  "command": "battle",
+  "sent": [
+   {
+    "content": "Cannot use this bot in this channel, try a channel with `⚔` in the channel name.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "battle",
+  "sent": [
+   {
+    "content": "Only a leader or advisor or admin can run this command.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": "Battle is not started.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "status",
+  "sent": [
+   {
+    "content": "Battle is not started.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "battle",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: Waiting  \nFSGood: Waiting",
+     "title": "Holy Knights vs FSGood",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "battle",
+  "sent": [
+   {
+    "content": "A battle is already going in this channel.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": "Only a leader or advisor or admin can run this command.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "status",
+  "sent": [
+   {
+    "content": "Battle is not started.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "lock",
+  "sent": [
+   {
+    "content": "<@!31>: You need to be one of ['v2 Minion', 'SCS Admin', 'Doc Keeper', 'Leader', 'Advisor'] to run lock",
+    "embed": null
+   }
+  ]
+ }
+]
