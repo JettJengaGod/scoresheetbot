@@ -129,6 +129,14 @@ def root(slash):
     return slash
 
 
+def payload_of(slash) -> dict:
+    """What would be sent to Discord for `slash`. Newer discord.py versions need the command tree for this."""
+    if 'tree' in inspect.signature(slash.to_dict).parameters:
+        bot = commands.Bot(command_prefix=',', intents=discord.Intents.none())
+        return slash.to_dict(bot.tree)
+    return slash.to_dict()
+
+
 def text_size(payload: dict) -> int:
     """Characters Discord counts towards a command's size limit: names, descriptions and choice values."""
     size = len(payload['name']) + len(payload['description'])
@@ -184,7 +192,7 @@ class CommandInventoryTest(unittest.TestCase):
         roots = {id(root(slash)): root(slash) for slash in self.slash.values()}
         self.assertLessEqual(len(roots), 100)
         for top in roots.values():
-            payload = top.to_dict()
+            payload = payload_of(top)
             with self.subTest(command=top.name):
                 self.assertLessEqual(text_size(payload), 8000)
                 json.dumps(payload)
@@ -201,7 +209,7 @@ class CommandInventoryTest(unittest.TestCase):
                     self.assertRegex(option.name, valid_name)
                     self.assertTrue(1 <= len(option.description) <= 100, option.name)
                     self.assertNotEqual(PLACEHOLDER, option.description, f'{option.name} has no description')
-                required = [o['required'] for o in slash.to_dict().get('options', [])]
+                required = [o['required'] for o in payload_of(slash).get('options', [])]
                 self.assertEqual(sorted(required, reverse=True), required, 'required options must come first')
 
     def test_commands_are_server_only_except_help(self):

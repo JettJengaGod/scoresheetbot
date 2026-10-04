@@ -159,9 +159,10 @@ async def invoke(cog: ScoreSheetBot, name: str, ctx: FakeContext, /, *args, **kw
 
 
 def _normalize(value):
-    """Removes run-to-run noise: random battle colours and the memory addresses in mock reprs."""
+    """Removes noise: random battle colours, memory addresses in mock reprs, and the embed `flags` field
+    that only newer discord.py versions include."""
     if isinstance(value, dict):
-        return {k: _normalize(v) for k, v in value.items() if k != 'color'}
+        return {k: _normalize(v) for k, v in value.items() if k not in ('color', 'flags')}
     if isinstance(value, list):
         return [_normalize(v) for v in value]
     if isinstance(value, str):
