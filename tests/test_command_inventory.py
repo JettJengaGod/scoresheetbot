@@ -20,7 +20,7 @@ from discord.ext import commands
 
 import src.cache
 from src import scoreSheetBot
-from src.slash import ALLOWED_IN_DMS, CB_COMMANDS, F_COMMANDS, PREFIX_ONLY, STAFF_GROUPS
+from src.slash import ALLOWED_IN_DMS, GROUPS, PREFIX_ONLY, SLASH_NAMES, STAFF_GROUPS
 from tests.harness import assert_snapshot, is_hybrid, make_cog
 
 COMMAND_DECORATORS = ('command', 'group', 'hybrid_command', 'hybrid_group')
@@ -187,24 +187,30 @@ class CommandInventoryTest(unittest.TestCase):
                 restricted = [g for g in guards[name] if g.startswith('role_call') and 'LEADER' not in g]
                 self.assertEqual([], restricted, 'staff-only command is not under /staff')
 
-    def test_crew_battle_commands_are_under_cb(self):
-        self.assertEqual(len(CB_COMMANDS), len(set(CB_COMMANDS)))
-        for name in CB_COMMANDS:
-            with self.subTest(command=name):
-                self.assertEqual(f'cb {name}', self.slash[name].qualified_name)
-                self.assertFalse(is_hybrid(self.prefix[name]), 'a hybrid would also register a top level command')
-        # Every command in the cb help category is in the group, bar the two character lookups.
-        category = {name for name, command in self.prefix.items() if command.help == 'cb'}
-        self.assertEqual({'char', 'chars'}, category - set(CB_COMMANDS))
-        self.assertEqual(set(), set(CB_COMMANDS) - category)
+    def test_commands_are_sorted_into_sections(self):
+        sectioned = [name for _, names in GROUPS.values() for name in names]
+        staff = [name for _, names in STAFF_GROUPS.values() for name in names]
+        self.assertEqual(len(sectioned + staff), len(set(sectioned + staff)), 'a command is in two sections')
+        for section, (_, names) in GROUPS.items():
+            for name in names:
+                with self.subTest(command=name):
+                    slash_name = SLASH_NAMES.get(name, self.prefix[name].name)
+                    self.assertEqual(f'{section} {slash_name}', self.slash[name].qualified_name)
+        # help is the only command left outside a section.
+        self.assertEqual({'help'}, set(self.slash) - set(sectioned) - set(staff))
+        self.assertEqual([], [name for name, command in self.prefix.items() if is_hybrid(command)],
+                         'a hybrid would also register a top level slash command')
 
-    def test_flairing_commands_are_under_f(self):
-        for name in F_COMMANDS:
-            with self.subTest(command=name):
-                self.assertEqual(f'f {name}', self.slash[name].qualified_name)
-                self.assertFalse(is_hybrid(self.prefix[name]), 'a hybrid would also register a top level command')
-        category = {name for name, command in self.prefix.items() if command.help == 'flairing'}
-        self.assertEqual(category, set(F_COMMANDS))
+    def test_sections_follow_the_help_categories(self):
+        def category(name):
+            return {n for n, command in self.prefix.items() if command.help == name}
+
+        # /cb is at Discord's limit, so the two character lookups are in misc instead.
+        self.assertEqual({'char', 'chars'}, category('cb') - set(GROUPS['cb'][1]))
+        self.assertEqual(set(), set(GROUPS['cb'][1]) - category('cb'))
+        self.assertEqual(category('flairing'), set(GROUPS['f'][1]))
+        self.assertEqual(category('gambit'), set(GROUPS['gambit'][1]))
+        self.assertEqual(category('ba'), {'result'})
 
     def test_every_command_has_its_own_help_text(self):
         """Catches a command decorated with another command's help entry, or with none."""

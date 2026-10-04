@@ -1116,7 +1116,7 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
     elif battle_type == BattleType.POWER_PLAYOFF:
         ty = 'Power Playoff'
     elif battle_type == BattleType.PLAYOFF:
-        ty = 'SCS 25.2 Playoff'
+        ty = 'SCS 26.2 Playoff'
     elif battle_type == BattleType.RANKED:
         ty = bot.current_league
     else:

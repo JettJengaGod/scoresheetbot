@@ -201,9 +201,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "battles"
+   "path": "crew battles"
   }
  },
  "bet": {
@@ -235,7 +235,7 @@
      "type": "str"
     }
    ],
-   "path": "bet"
+   "path": "gambit bet"
   }
  },
  "bigcrew": {
@@ -252,7 +252,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "over",
@@ -260,7 +260,7 @@
      "type": "int"
     }
    ],
-   "path": "bigcrew"
+   "path": "crew bigcrew"
   }
  },
  "cancelcb": {
@@ -350,7 +350,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "emoji",
@@ -358,7 +358,7 @@
      "type": "str"
     }
    ],
-   "path": "char"
+   "path": "misc char"
   }
  },
  "charge": {
@@ -419,9 +419,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "chars"
+   "path": "misc chars"
   }
  },
  "clear": {
@@ -456,7 +456,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "member",
@@ -464,7 +464,7 @@
      "type": "Member"
     }
    ],
-   "path": "coin"
+   "path": "misc coin"
   }
  },
  "coins": {
@@ -483,7 +483,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "member",
@@ -491,7 +491,7 @@
      "type": "Member"
     }
    ],
-   "path": "coins"
+   "path": "gambit coins"
   }
  },
  "confirm": {
@@ -610,7 +610,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "name",
@@ -618,7 +618,7 @@
      "type": "str"
     }
    ],
-   "path": "crew"
+   "path": "crew info"
   }
  },
  "crews": {
@@ -645,7 +645,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "name",
@@ -653,7 +653,7 @@
      "type": "str"
     }
    ],
-   "path": "crewstats"
+   "path": "crew crewstats"
   }
  },
  "crnumbers": {
@@ -773,9 +773,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "disablelist"
+   "path": "misc disablelist"
   }
  },
  "disband": {
@@ -1228,9 +1228,9 @@
   "is_group": true,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "gamb status"
+   "path": "gambit status"
   }
  },
  "gamb close": {
@@ -1256,7 +1256,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "stream",
@@ -1269,7 +1269,7 @@
      "type": "TextChannel"
     }
    ],
-   "path": "gamb close"
+   "path": "gambit close"
   }
  },
  "gamb finish": {
@@ -1289,7 +1289,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "winner",
@@ -1297,7 +1297,7 @@
      "type": "str"
     }
    ],
-   "path": "gamb finish"
+   "path": "gambit finish"
   }
  },
  "gamb start": {
@@ -1323,7 +1323,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "c1",
@@ -1336,7 +1336,7 @@
      "type": "str"
     }
    ],
-   "path": "gamb start"
+   "path": "gambit start"
   }
  },
  "gamb update": {
@@ -1349,9 +1349,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "gamb update"
+   "path": "gambit update"
   }
  },
  "guide": {
@@ -1361,9 +1361,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "guide"
+   "path": "misc guide"
   }
  },
  "hardcap": {
@@ -1380,7 +1380,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "cr",
@@ -1388,7 +1388,7 @@
      "type": "str"
     }
    ],
-   "path": "hardcap"
+   "path": "crew hardcap"
   }
  },
  "help": {
@@ -1432,7 +1432,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "name",
@@ -1440,7 +1440,7 @@
      "type": "str"
     }
    ],
-   "path": "history"
+   "path": "crew history"
   }
  },
  "initalize_ratings": {
@@ -1464,9 +1464,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "invite"
+   "path": "misc invite"
   }
  },
  "listroles": {
@@ -1485,7 +1485,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "role",
@@ -1493,7 +1493,7 @@
      "type": "str"
     }
    ],
-   "path": "listroles"
+   "path": "roles listroles"
   }
  },
  "lock": {
@@ -1545,7 +1545,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "name",
@@ -1553,7 +1553,7 @@
      "type": "str"
     }
    ],
-   "path": "logo"
+   "path": "crew logo"
   }
  },
  "make_lead": {
@@ -1779,7 +1779,7 @@
      "type": "Role"
     }
    ],
-   "path": "noverlap"
+   "path": "roles noverlap"
   }
  },
  "odds": {
@@ -1791,9 +1791,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "odds"
+   "path": "gambit odds"
   }
  },
  "opt": {
@@ -1865,7 +1865,7 @@
      "type": "Role"
     }
    ],
-   "path": "overlap"
+   "path": "roles overlap"
   }
  },
  "pair": {
@@ -2022,7 +2022,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "name",
@@ -2030,7 +2030,7 @@
      "type": "str"
     }
    ],
-   "path": "playerstats"
+   "path": "crew playerstats"
   }
  },
  "playoff": {
@@ -2085,9 +2085,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "po"
+   "path": "crew po"
   }
  },
  "predict": {
@@ -2097,9 +2097,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "predict"
+   "path": "gambit predict"
   }
  },
  "predictions": {
@@ -2109,9 +2109,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "predictions"
+   "path": "gambit predictions"
   }
  },
  "promote": {
@@ -2149,9 +2149,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "rankings"
+   "path": "crew rankings"
   }
  },
  "rate": {
@@ -2191,9 +2191,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "records"
+   "path": "misc records"
   }
  },
  "reg": {
@@ -2392,7 +2392,7 @@
      "type": "str"
     }
    ],
-   "path": "result"
+   "path": "misc result"
   }
  },
  "retag": {
@@ -2601,7 +2601,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "name",
@@ -2609,7 +2609,7 @@
      "type": "str"
     }
    ],
-   "path": "slots"
+   "path": "crew slots"
   }
  },
  "slottotals": {
@@ -2640,7 +2640,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "cr",
@@ -2648,7 +2648,7 @@
      "type": "str"
     }
    ],
-   "path": "softcap"
+   "path": "crew softcap"
   }
  },
  "staff": {
@@ -2666,9 +2666,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "stagelist"
+   "path": "misc stagelist"
   }
  },
  "stats": {
@@ -2687,7 +2687,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "name",
@@ -2695,7 +2695,7 @@
      "type": "str"
     }
    ],
-   "path": "stats"
+   "path": "crew stats"
   }
  },
  "status": {
@@ -2844,9 +2844,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "thank"
+   "path": "misc thank"
   }
  },
  "thankboard": {
@@ -2858,9 +2858,9 @@
   "is_group": false,
   "params": [],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [],
-   "path": "thankboard"
+   "path": "misc thankboard"
   }
  },
  "timer": {
@@ -2978,7 +2978,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "rank",
@@ -2986,7 +2986,7 @@
      "type": "int"
     }
    ],
-   "path": "umbralotto"
+   "path": "crew umbralotto"
   }
  },
  "umbralottotest": {
@@ -3003,7 +3003,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "rank",
@@ -3011,7 +3011,7 @@
      "type": "int"
     }
    ],
-   "path": "umbralottotest"
+   "path": "crew umbralottotest"
   }
  },
  "undo": {
@@ -3200,7 +3200,7 @@
    }
   ],
   "slash": {
-   "kind": "hybrid",
+   "kind": "twin",
    "options": [
     {
      "name": "option",
@@ -3208,7 +3208,7 @@
      "type": "int"
     }
    ],
-   "path": "vote"
+   "path": "misc vote"
   }
  },
  "weirdreg": {

@@ -1,16 +1,14 @@
 """Slash command front ends for the bot's prefix commands.
 
-Every prefix command is reachable as a slash command in one of three ways:
+Prefix commands keep their flat names (`,send`), while their slash commands are sorted into sections
+(`/cb send`, `/staff battle addsheet`). Each slash command is one of two kinds:
 
-* a hybrid command, declared in the cog, for player commands whose arguments Discord can express as-is;
-* a "twin" generated here with the same options as the prefix command, used for crew battle and staff
-  commands so they can live under `/cb <command>`, `/f <command>` and `/staff <group> <command>` while
-  keeping their flat prefix names;
+* a "twin" generated here with the same options as the prefix command;
 * a hand written front end here, for commands whose prefix form takes free text that slash commands can ask
   for as separate typed options.
 
-Twins and typed front ends run the prefix command's own callback through `ScoreSheetBot.run_slash`, so the
-guards, hooks and behaviour are shared and only the way arguments are collected differs.
+Both run the prefix command's own callback through `ScoreSheetBot.run_slash`, so the guards, hooks and
+behaviour are shared and only the way arguments are collected differs.
 """
 import inspect
 import re
@@ -27,15 +25,34 @@ if TYPE_CHECKING:
 
 DESCRIPTION_LIMIT = 100
 
-# Crew battle commands live under /cb <command>. Discord allows 25 commands per group and this is 25, so
-# the next one needs a subgroup (or to stay top level, like the character lookups `char` and `chars`).
-CB_COMMANDS: List[str] = [
-    'battle', 'mock', 'reg', 'strawhat', 'cowy', 'playoff', 'send', 'replace', 'end', 'endlag', 'undo',
-    'resize', 'forfeit', 'confirm', 'clear', 'status', 'timer', 'timerstock', 'ext', 'use_ext', 'arena',
-    'stream', 'lock', 'unlock', 'countdown']
+# The section each command lives in: /<section> <command>. Discord allows 25 commands per section.
+GROUPS: Dict[str, tuple] = {
+    # This one is full, which is why the character lookups `char` and `chars` are in misc.
+    'cb': ('Run a crew battle', [
+        'battle', 'mock', 'reg', 'strawhat', 'cowy', 'playoff', 'send', 'replace', 'end', 'endlag', 'undo',
+        'resize', 'forfeit', 'confirm', 'clear', 'status', 'timer', 'timerstock', 'ext', 'use_ext', 'arena',
+        'stream', 'lock', 'unlock', 'countdown']),
+    # Staff-only flairing tools are in /staff flair.
+    'f': ('Flair and unflair crew members', [
+        'flair', 'unflair', 'multiflair', 'multiunflair', 'promote', 'demote']),
+    'crew': ('Crew info, stats and rankings', [
+        'crew', 'crewstats', 'stats', 'playerstats', 'history', 'logo', 'slots', 'softcap', 'hardcap',
+        'rankings', 'battles', 'bigcrew', 'umbralotto', 'umbralottotest', 'po']),
+    'gambit': ('Bet G-Coins on crew battles', [
+        'bet', 'odds', 'coins', 'predict', 'predictions',
+        'gamb', 'gamb start', 'gamb close', 'gamb finish', 'gamb update']),
+    'roles': ('See who has which roles', [
+        'listroles', 'overlap', 'noverlap']),
+    'misc': ('Links, characters and everything else', [
+        'guide', 'invite', 'records', 'stagelist', 'disablelist', 'thank', 'thankboard', 'coin', 'vote',
+        'char', 'chars', 'result']),
+}
 
-# Flairing commands for crews live under /f <command>. Staff-only flairing tools are in /staff flair.
-F_COMMANDS: List[str] = ['flair', 'unflair', 'multiflair', 'multiunflair', 'promote', 'demote']
+# Slash names that differ from the prefix command's name, to read well inside their section.
+SLASH_NAMES = {
+    'crew': 'info',    # /crew info rather than /crew crew
+    'gamb': 'status',  # `,gamb` on its own shows the current gambit
+}
 
 # Where each staff command lives: /staff <group> <command>. Discord allows 25 commands per group.
 STAFF_GROUPS: Dict[str, tuple] = {
@@ -77,7 +94,6 @@ DESCRIPTIONS = {
     'noverlap': 'Lists the members who have the first role but not the second.',
     'result': 'Submits a best of 5 battle arena result for your opponent to confirm.',
     'help': 'Lists command groups, or explains one group or command.',
-    'gamb': 'Gambit management.',
 }
 
 # Option descriptions, by option name. A "command.option" key overrides the plain name for one command.
@@ -183,34 +199,30 @@ class SlashCommands:
         self.typed = self._typed_front_ends()
         prefix_commands = {command.qualified_name: command for command in cog.walk_commands()}
 
-        cb = app_commands.Group(name='cb', description='Run a crew battle', guild_only=True)
-        for name in CB_COMMANDS:
-            self._add(prefix_commands[name], parent=cb)
-
-        flairing = app_commands.Group(name='f', description='Flair and unflair crew members', guild_only=True)
-        for name in F_COMMANDS:
-            self._add(prefix_commands[name], parent=flairing)
+        top_level = []
+        for group_name, (group_description, names) in GROUPS.items():
+            group = app_commands.Group(name=group_name, description=group_description, guild_only=True)
+            top_level.append(group)
+            for name in names:
+                self._add(prefix_commands[name], parent=group)
 
         staff = app_commands.Group(name='staff', description='Staff commands', guild_only=True)
+        top_level.append(staff)
         for group_name, (group_description, names) in STAFF_GROUPS.items():
             group = app_commands.Group(name=group_name, description=group_description, parent=staff)
             for name in names:
                 self._add(prefix_commands[name], parent=group)
 
-        top_level = [cb, flairing, staff]
         for name, command in prefix_commands.items():
-            if name in PREFIX_ONLY or name in self.by_prefix_name:
-                continue
-            if isinstance(command, (commands.HybridCommand, commands.HybridGroup)):
-                self._document_hybrid(command)
-            else:
+            if name not in PREFIX_ONLY and name not in self.by_prefix_name:
                 top_level.append(self._add(command, parent=None))
         cog.__cog_app_commands__.extend(top_level)
 
     def _add(self, command: commands.Command, parent: Optional[app_commands.Group]) -> app_commands.Command:
         name = command.qualified_name
         callback = self.typed.get(name) or self._twin_callback(command)
-        slash = app_commands.Command(name=command.name, description=description(command), callback=callback)
+        slash = app_commands.Command(name=SLASH_NAMES.get(name, command.name), description=description(command),
+                                     callback=callback)
         self._describe_options(slash, name)
         if parent is not None:
             parent.add_command(slash)
@@ -218,26 +230,6 @@ class SlashCommands:
             slash.guild_only = True
         self.by_prefix_name[name] = slash
         return slash
-
-    def _document_hybrid(self, command: commands.Command) -> None:
-        slash = command.app_command
-        if slash is None:
-            return
-        name = command.qualified_name
-        if isinstance(slash, app_commands.Group):
-            slash.description = description(command)
-            slash.guild_only = True
-            if command.fallback:
-                fallback = slash.get_command(command.fallback)
-                # The fallback runs the group's own callback, so it is what the group's help describes.
-                fallback.description = (command.description or fallback.description)[:DESCRIPTION_LIMIT]
-                self.by_prefix_name[name] = fallback
-            return
-        slash.description = description(command)
-        if slash.parent is None:
-            slash.guild_only = True
-        self._describe_options(slash, name)
-        self.by_prefix_name[name] = slash
 
     def _describe_options(self, slash: app_commands.Command, name: str) -> None:
         options = {p.name for p in slash.parameters}
