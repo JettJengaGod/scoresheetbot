@@ -198,6 +198,18 @@ class CommandInventoryTest(unittest.TestCase):
         self.assertEqual({'char', 'chars'}, category - set(CB_COMMANDS))
         self.assertEqual(set(), set(CB_COMMANDS) - category)
 
+    def test_every_command_has_its_own_help_text(self):
+        """Catches a command decorated with another command's help entry, or with none."""
+        seen = {}
+        for name, command in self.prefix.items():
+            if name in PREFIX_ONLY or name == 'help':
+                continue
+            with self.subTest(command=name):
+                self.assertTrue(command.brief, 'no brief')
+                self.assertTrue(command.description, 'no description')
+                self.assertNotIn(command.description, seen, f'same help text as {seen.get(command.description)}')
+                seen[command.description] = name
+
     def test_discord_limits(self):
         valid_name = re.compile(r'^[-_a-z0-9]{1,32}$')
         roots = {id(root(slash)): root(slash) for slash in self.slash.values()}

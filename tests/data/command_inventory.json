@@ -1026,7 +1026,7 @@
  },
  "fixunflair": {
   "aliases": [],
-  "category": null,
+  "category": "staff",
   "guards": [
    "main_only",
    "flairing_required",
@@ -1220,7 +1220,7 @@
  },
  "gamb": {
   "aliases": [],
-  "category": null,
+  "category": "gambit",
   "guards": [
    "main_only",
    "role_call([MINION, ADMIN, LU])"
@@ -1235,7 +1235,7 @@
  },
  "gamb close": {
   "aliases": [],
-  "category": null,
+  "category": "gambit",
   "guards": [
    "main_only",
    "role_call([MINION, ADMIN, LU, GAMB_OL])"
@@ -1274,7 +1274,7 @@
  },
  "gamb finish": {
   "aliases": [],
-  "category": null,
+  "category": "gambit",
   "guards": [
    "main_only",
    "role_call([MINION, ADMIN, LU, GAMB_OL])"
@@ -1302,7 +1302,7 @@
  },
  "gamb start": {
   "aliases": [],
-  "category": null,
+  "category": "gambit",
   "guards": [
    "main_only",
    "role_call([MINION, ADMIN, LU, GAMB_OL])"
@@ -1341,7 +1341,7 @@
  },
  "gamb update": {
   "aliases": [],
-  "category": null,
+  "category": "gambit",
   "guards": [
    "main_only",
    "role_call([MINION, ADMIN, LU, GAMB_OL])"
@@ -1558,7 +1558,7 @@
  },
  "make_lead": {
   "aliases": [],
-  "category": null,
+  "category": "staff",
   "guards": [
    "main_only",
    "flairing_required",
@@ -1912,7 +1912,7 @@
   "slash": {
    "kind": "twin",
    "options": [],
-   "path": "staff flair pending"
+   "path": "staff battle pending"
   }
  },
  "pingnoverlap": {
@@ -2424,7 +2424,7 @@
  },
  "savenicks": {
   "aliases": [],
-  "category": "crews",
+  "category": "staff",
   "guards": [
    "role_call(STAFF_LIST)",
    "main_only"
@@ -3077,7 +3077,7 @@
  },
  "update_elos": {
   "aliases": [],
-  "category": "crews",
+  "category": "staff",
   "guards": [
    "role_call(STAFF_LIST)",
    "main_only"

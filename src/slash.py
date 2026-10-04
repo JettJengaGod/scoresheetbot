@@ -40,10 +40,10 @@ STAFF_GROUPS: Dict[str, tuple] = {
         'disband', 'freeze', 'retag', 'tomain', 'opt', 'tri', 'pair', 'register', 'overflow', 'non_crew',
         'crnumbers', 'flaircounts', 'cooldown']),
     'flair': ('Manage flairing and roles', [
-        'make_lead', 'fixunflair', 'flairing_on', 'flairing_off', 'pending', 'categoryrole', 'pingrole',
+        'make_lead', 'fixunflair', 'flairing_on', 'flairing_off', 'categoryrole', 'pingrole',
         'pingoverlap', 'pingnoverlap', 'savenicks']),
     'battle': ('Manage crew battle records', [
-        'addforfeit', 'addsheet', 'failedreg', 'weirdreg', 'cancelcb', 'manual_battle', 'vod', 'rate',
+        'addforfeit', 'addsheet', 'failedreg', 'weirdreg', 'cancelcb', 'manual_battle', 'pending', 'vod', 'rate',
         'update_elos', 'initalize_ratings', 'season', 'backfill']),
     'slots': ('Manage crew slots', [
         'setslots', 'setreturnslots', 'fixslot', 'slottotals', 'slotfinals']),
@@ -59,51 +59,22 @@ PREFIX_ONLY = {
     'test', 'test confirm',
 }
 
-# Slash descriptions for commands whose help text is missing, borrowed from another command, or too long.
+# Slash descriptions for commands whose help description is written for the prefix form (it gives an example
+# or explains how to type the arguments) or is longer than Discord allows. Everything else uses help.py.
 DESCRIPTIONS = {
-    'crew': "Shows a member's crew or a crew's info; your own crew if you leave it blank.",
-    'unflair': 'Unflairs you, or a member of your crew if you lead it. Staff can unflair anyone.',
-    'softcap': 'Unique players each crew used last month, or the players and battles for one crew.',
-    'hardcap': "Shows what a crew's hardcap would be if the month ended now.",
-    'strawhat': 'Start a Strawhat scoresheet against the tagged player\'s crew (size 6 or more).',
-    'cowy': 'Start a Cowy scoresheet against the tagged player\'s crew (size 7 or more).',
-    'playoff': 'Start a playoff scoresheet against the tagged player\'s crew.',
-    'umbralottotest': 'Test version of umbralotto.',
-    'deactivate': 'Deactivates a command until it is reactivated, or reactivates a deactivated one.',
-    'cooldown': 'Shows the cooldown of recently flaired members and fixes any that were missed.',
+    'end': 'Ends the current match with each player\'s character and the stocks they took.',
+    'endlag': 'Ends the current match like end, but without needing one player to win.',
+    'char': 'Shows the emoji for a character name; add a number for an alt, e.g. ness2.',
+    'undo': 'Undoes the last match.',
     'freeze': 'Stops a crew registering for a time (e.g. 3D, 2W, 1M), or unfreezes a frozen crew.',
-    'weirdreg': 'Adds a reg sheet where the registering crew won but did not register.',
     'multiflair': 'Flairs several members for your crew, or for a given crew if you are staff.',
     'multiunflair': 'Unflairs several members from your crew, or from any crew if you are staff.',
     'register': 'Flairs several members for a newly registered crew.',
-    'pair': 'Pairs two crews as destiny opponents.',
     'overlap': 'Lists the members who have both roles.',
     'noverlap': 'Lists the members who have the first role but not the second.',
-    'pingoverlap': 'Pings the members who have both roles.',
-    'pingnoverlap': 'Pings the members who have the first role but not the second.',
-    'end': 'Ends the current match with each player\'s character and the stocks they took.',
-    'endlag': 'Ends the current match as a lag match with each player\'s character and stocks taken.',
+    'result': 'Submits a best of 5 battle arena result for your opponent to confirm.',
     'help': 'Lists command groups, or explains one group or command.',
     'gamb': 'Gambit management.',
-    'gamb status': 'Shows the current gambit.',
-    'gamb start': 'Starts a gambit between two crews.',
-    'gamb close': 'Locks the gambit once the battle starts.',
-    'gamb finish': 'Finishes the gambit and pays out the winners.',
-    'gamb update': 'Refreshes the gambit message and sheet.',
-    'sync': 'Re-registers the slash commands with Discord.',
-    'tri': "Sets a crew's triforce and division.",
-    'fixunflair': "Repairs a crew's slots after a missed unflair.",
-    'update_elos': "Recalculates a crew's ratings.",
-    'categoryrole': "Fixes a member's category roles.",
-    'savenicks': "Records every member's nickname.",
-    'dele': 'Rebuilds the current crew battles summary.',
-    'stupid': 'One-off maintenance: recalculates battle weights for the season.',
-    'initalize_ratings': 'Resets every crew to the starting rating for the current league.',
-    'manual_battle': 'Re-runs the rating changes for a recorded crew battle.',
-    'backfill': 'Recalculates and stores the hardcap of every crew.',
-    'slotfinals': 'Calculates the end of month slot totals for every crew.',
-    'season': 'Season maintenance placeholder.',
-    'rate': 'Scores bracket predictions.',
 }
 
 # Option descriptions, by option name. A "command.option" key overrides the plain name for one command.
@@ -251,7 +222,8 @@ class SlashCommands:
             slash.guild_only = True
             if command.fallback:
                 fallback = slash.get_command(command.fallback)
-                fallback.description = DESCRIPTIONS.get(f'{name} {command.fallback}', fallback.description)
+                # The fallback runs the group's own callback, so it is what the group's help describes.
+                fallback.description = (command.description or fallback.description)[:DESCRIPTION_LIMIT]
                 self.by_prefix_name[name] = fallback
             return
         slash.description = description(command)
