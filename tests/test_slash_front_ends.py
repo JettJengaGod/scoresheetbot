@@ -3,6 +3,9 @@ import types
 import unittest
 import unittest.mock
 
+import discord
+
+from src.battle import Battle
 from src.constants import *
 from src.helpers import best_of_possibilities, crew_lookup, invocation_attachments, single_crew_plus_string
 from src.slash import GROUPS, STAFF_GROUPS, parse_members
@@ -249,6 +252,67 @@ class RunSlashTest(unittest.IsolatedAsyncioTestCase):
             sent[mode] = ctx.sent
         self.assertEqual(sent[PREFIX], sent[SLASH])
         self.assertIn('FSGood(FSG) forfeits against Holy Knights(HK)', sent[SLASH][0]['embed']['title'])
+
+
+class BroadcastTest(unittest.IsolatedAsyncioTestCase):
+    """`broadcast` sends a staff message to every channel with a battle running."""
+
+    def setUp(self):
+        self.cog = make_cog()
+        self.guild = self.cog.cache.scs
+        self.here = mocks.MockTextChannel(name='staff-chat', id=5, guild=self.guild)
+        self.staff = mocks.MockMember(id=1, display_name='Staff', roles=[mocks.admin])
+        self.player = mocks.MockMember(id=2, display_name='Player')
+        self.arenas = {101: self.arena(101), 102: self.arena(102)}
+        self.cog.bot.get_channel = self.arenas.get
+        self.cog.battle_map = {f'{self.guild}|101': Battle('A', 'B', 5), f'{self.guild}|102': Battle('C', 'D', 5)}
+
+    def arena(self, channel_id):
+        channel = mocks.MockTextChannel(id=channel_id, guild=self.guild)
+        channel.mention = f'<#{channel_id}>'
+        channel.send = unittest.mock.AsyncMock()
+        return channel
+
+    async def broadcast(self, author, message='Servers restart in 5 minutes'):
+        sent = {}
+        for mode in MODES:
+            ctx = FakeContext(self.cog, author, self.here, self.guild, mode)
+            await invoke(self.cog, 'broadcast', ctx, message=message)
+            sent[mode] = [reply['content'] for reply in ctx.sent]
+        self.assertEqual(sent[PREFIX], sent[SLASH])
+        return sent[SLASH]
+
+    async def test_every_battle_channel_gets_the_message(self):
+        replies = await self.broadcast(self.staff)
+        for arena in self.arenas.values():
+            for call in arena.send.await_args_list:
+                self.assertEqual('**Announcement from staff (Staff):**\nServers restart in 5 minutes', call.args[0])
+            self.assertEqual(len(MODES), arena.send.await_count)
+        self.assertEqual(['Sent to 2 battle channels: <#101> <#102>'], replies)
+        self.here.send.assert_not_called()
+
+    async def test_only_staff_can_broadcast(self):
+        replies = await self.broadcast(self.player)
+        self.assertIn('You need to be one of', replies[0])
+        for arena in self.arenas.values():
+            arena.send.assert_not_awaited()
+
+    async def test_nothing_is_sent_when_no_battle_is_running(self):
+        self.cog.battle_map = {f'{self.guild}|101': None}
+        self.assertEqual(['There are no battles running, so there is nowhere to send that.'],
+                         await self.broadcast(self.staff))
+        self.arenas[101].send.assert_not_awaited()
+
+    async def test_a_channel_that_cannot_be_reached_does_not_stop_the_rest(self):
+        refused = discord.HTTPException(unittest.mock.MagicMock(status=403), 'Missing Permissions')
+        self.arenas[101].send = unittest.mock.AsyncMock(side_effect=refused)
+        self.cog.battle_map[f'{self.guild}|103'] = Battle('E', 'F', 5)  # its channel has been deleted
+        replies = await self.broadcast(self.staff)
+        self.assertEqual(['Sent to 1 battle channel: <#102>\nCould not send to 2 battle channels.'], replies)
+        self.assertEqual(len(MODES), self.arenas[102].send.await_count)
+
+    def test_it_is_a_staff_slash_command(self):
+        self.assertEqual('staff battle broadcast', self.cog.slash.by_prefix_name['broadcast'].qualified_name)
 
 
 class HelpTest(unittest.IsolatedAsyncioTestCase):

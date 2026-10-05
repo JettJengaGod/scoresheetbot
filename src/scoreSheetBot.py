@@ -2922,6 +2922,31 @@ class ScoreSheetBot(commands.Cog):
         pages = PaginatorView(Paged(command_leaderboard(), title='Command usage counts').get_pages())
         await pages.start(ctx)
 
+    @commands.command(**help_doc['broadcast'], hidden=True)
+    @role_call(STAFF_LIST)
+    async def broadcast(self, ctx: Context, *, message: str):
+        channels = [self.bot.get_channel(channel_id_from_key(key)) for key, battle in self.battle_map.items()
+                    if battle]
+        if not channels:
+            await ctx.send('There are no battles running, so there is nowhere to send that.')
+            return
+        sent, failed = [], 0
+        for channel in channels:
+            # A channel may have been deleted, or the bot may not be allowed to post in it; the others
+            # should still hear it.
+            if channel is None:
+                failed += 1
+                continue
+            try:
+                await channel.send(f'**Announcement from staff ({ctx.author.display_name}):**\n{message}')
+                sent.append(channel.mention)
+            except discord.HTTPException:
+                failed += 1
+        summary = f'Sent to {len(sent)} battle channel{"" if len(sent) == 1 else "s"}: {" ".join(sent)}'
+        if failed:
+            summary += f'\nCould not send to {failed} battle channel{"" if failed == 1 else "s"}.'
+        await ctx.send(summary)
+
     @commands.command(**help_doc['pending'], hidden=True)
     @role_call(STAFF_LIST)
     async def pending(self, ctx: Context):

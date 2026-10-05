@@ -97,6 +97,8 @@ help_doc = dict(
     recache=HelpDoc(Categories.staff, 'Updates the cache. Admin only'),
     sync=HelpDoc(Categories.staff, 'Re-registers the slash commands with Discord. Admin only'),
     pending=HelpDoc(Categories.staff, 'Prints pending battles. Admin only'),
+    broadcast=HelpDoc(Categories.staff, 'Sends a message to every channel that has a battle running', '',
+                      'message'),
     po=HelpDoc(Categories.staff, 'Prints all final stand cbs in a summary'),
     disable=HelpDoc(Categories.staff, 'Disables the bot in a channel', '', 'ChannelMention'),
     usage=HelpDoc(Categories.staff, 'Shows the usage stats of each command'),
