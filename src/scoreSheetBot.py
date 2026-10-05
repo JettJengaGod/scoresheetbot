@@ -17,7 +17,7 @@ from decorators import *
 from help import help_doc
 from constants import *
 from bracket import Bracket, Questions, NUMBER_QUESTIONS, current_bracket, draw_bracket
-from slash import EPHEMERAL, SlashCommands
+from slash import EPHEMERAL, GROUPS, OLD_CATEGORIES, STAFF_DESCRIPTION, STAFF_GROUPS, SlashCommands
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -249,60 +249,75 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(help='Shows this command')
     async def help(self, ctx, *group):
-        """Gets all categories and commands of mine."""
+        """Lists the command sections, or explains one section or command."""
         main_user = self.cache.scs.get_member(ctx.author.id)
         if not main_user:
             await self._help_reply(ctx, 'You need to be a member of the scs to access this help.')
             return
         staff = check_roles(main_user, STAFF_LIST)
-        if not group:
-            halp = discord.Embed(title='Group Listing and Uncategorized Commands',
-                                 description=f'Use `{self.bot.command_prefix}help *group*` to find out more about them!')
-            groups_desc = ''
-            for cmd in self.bot.walk_commands():
-                if isinstance(cmd, discord.ext.commands.Group):
-                    groups_desc += ('{} - {}'.format(cmd, cmd.brief) + '\n')
-            halp.add_field(name='Cogs', value=groups_desc[0:len(groups_desc) - 1], inline=False)
-            cmds_desc = ''
-            for y in self.bot.walk_commands():
-                if y.name == 'help':
-                    cmds_desc += ('{} - {}'.format(y.name, y.help) + '\n')
-            halp.add_field(name='Help Commands', value=cmds_desc[0:len(cmds_desc) - 1], inline=False)
-            await self._help_reply(ctx, embed=halp)
+        prefix = self.bot.command_prefix
+        cmds = {cmd.qualified_name: cmd for cmd in self.bot.walk_commands()}
+        slash = self.slash.by_prefix_name
+        # A slash command sends everything as one string, e.g. "staff crew".
+        words = ' '.join(group).lower().split()
+        if words:
+            words[0] = OLD_CATEGORIES.get(words[0], words[0])
+        name = ' '.join(words)
+
+        def listing(title: str, description: str, names: List[str]) -> discord.Embed:
+            embed = discord.Embed(title=f'/{title} Command Listing',
+                                  description=f'{description}\nUse `{prefix}help *command*` to find out more '
+                                              f'about one. With the prefix, leave out the section.')
+            for cmd in sorted((cmds[n] for n in names), key=lambda c: slash[c.qualified_name].name):
+                if staff or not cmd.hidden:
+                    value = cmd.brief
+                    if slash[cmd.qualified_name].name != cmd.qualified_name:
+                        value += f' (`{prefix}{cmd.qualified_name}`)'
+                    embed.add_field(name=f'/{slash[cmd.qualified_name].qualified_name}', value=value, inline=False)
+            return embed
+
+        if not words:
+            halp = discord.Embed(title='Command Sections',
+                                 description=f'Use `{prefix}help *section*` to list the commands in one, or '
+                                             f'`{prefix}help *command*` to find out more about a command!\n'
+                                             f'Every command works as a slash command (`/cb send`) or with the '
+                                             f'prefix (`{prefix}send`).')
+            for section, (description, _) in GROUPS.items():
+                halp.add_field(name=f'/{section}', value=description, inline=False)
+            if staff:
+                halp.add_field(name='/staff', value=STAFF_DESCRIPTION, inline=False)
+            halp.add_field(name='/help', value=cmds['help'].help, inline=False)
+        elif name in GROUPS:
+            halp = listing(name, *GROUPS[name])
+        elif words[0] == 'staff' and not staff and (len(words) == 1 or words[1] in STAFF_GROUPS):
+            await self._help_reply(ctx, 'That section is for staff.')
+            return
+        elif name == 'staff':
+            halp = discord.Embed(title='/staff Command Listing',
+                                 description=f'{STAFF_DESCRIPTION}\nUse `{prefix}help staff *group*` to list the '
+                                             f'commands in one.')
+            for staff_group, (description, names) in STAFF_GROUPS.items():
+                halp.add_field(name=f'/staff {staff_group}',
+                               value=f'{description}\n{", ".join(f"`{n}`" for n in sorted(names))}', inline=False)
+        elif len(words) == 2 and words[0] == 'staff' and words[1] in STAFF_GROUPS:
+            halp = listing(name, *STAFF_GROUPS[words[1]])
         else:
-            if len(group) > 1:
-                halp = discord.Embed(title='Error!', description='You can only send 1 group or command name!',
+            # A command, by its prefix name (`send`, `gamb start`), slash name (`cb send`) or last word (`start`).
+            by_slash = {s.qualified_name: cmds[n] for n, s in slash.items()}
+            by_name = {cmd.name: cmd for cmd in cmds.values()}
+            cmd = cmds.get(name) or by_slash.get(name) or by_name.get(name)
+            if cmd is None:
+                halp = discord.Embed(title='Error!', description=f'Section or command `{name}` not found.',
                                      color=discord.Color.red())
-                await self._help_reply(ctx, embed=halp)
+            elif cmd.hidden and not staff:
+                await self._help_reply(ctx, 'That command is hidden.')
                 return
             else:
-                found = False
-                for cmd in self.bot.walk_commands():
-                    for grp in group:
-                        if cmd.name == grp:
-                            if isinstance(cmd, discord.ext.commands.Group) and not cmd.hidden:
-                                cmds = []
-                                halp = discord.Embed(title=group[0] + ' Command Listing',
-                                                     description=cmd.brief)
-                                for c in self.bot.walk_commands():
-                                    if c.help == cmd.name:
-                                        if staff or not c.hidden:
-                                            cmds.append(c)
-                                cmds.sort(key=lambda c: c.name)
-                                for c in cmds:
-                                    halp.add_field(name=c.name, value=c.brief, inline=False)
-                            else:
-                                if staff or not cmd.hidden:
-                                    halp = discord.Embed(title=group[0],
-                                                         description=f'{cmd.description}\n'
-                                                                     f'{self.bot.command_prefix}{cmd.name} {cmd.usage}')
-                                else:
-                                    await self._help_reply(ctx, 'That command is hidden.')
-                            found = True
-                if not found:
-                    halp = discord.Embed(title='Error!', description=f'Command {group} not found.',
-                                         color=discord.Color.red())
-                await self._help_reply(ctx, '', embed=halp)
+                lines = [cmd.description or cmd.help, f'`{prefix}{cmd.qualified_name} {cmd.usage or ""}'.rstrip() + '`']
+                if cmd.qualified_name in slash:
+                    lines.append(f'`/{slash[cmd.qualified_name].qualified_name}`')
+                halp = discord.Embed(title=cmd.qualified_name, description='\n'.join(lines))
+        await self._help_reply(ctx, embed=halp)
 
     ''' **********************************CB COMMANDS ******************************************'''
 

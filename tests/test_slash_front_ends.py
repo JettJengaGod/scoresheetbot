@@ -5,7 +5,7 @@ import unittest.mock
 
 from src.constants import *
 from src.helpers import best_of_possibilities, crew_lookup, invocation_attachments, single_crew_plus_string
-from src.slash import parse_members
+from src.slash import GROUPS, STAFF_GROUPS, parse_members
 from tests import mocks
 from tests.harness import (MODES, PREFIX, SLASH, FakeContext, FakeMessage, find_command, invoke, invoke_slash,
                            make_cog, no_external_services)
@@ -114,6 +114,8 @@ class TypedFrontEndTest(unittest.IsolatedAsyncioTestCase):
         names = [c.value for c in await slash.command_autocomplete(None, 'sen')]
         self.assertIn('send', names)
         self.assertNotIn('recache', [c.value for c in await slash.command_autocomplete(None, 'rec')])
+        # Sections come first, and the old help categories are not suggested.
+        self.assertEqual(['crew', 'crewstats'], [c.value for c in await slash.command_autocomplete(None, 'crew')])
 
 
 class RunSlashTest(unittest.IsolatedAsyncioTestCase):
@@ -258,7 +260,7 @@ class HelpTest(unittest.IsolatedAsyncioTestCase):
         return ctx
 
     async def test_prefix_help_is_sent_by_dm_and_slash_help_only_to_the_author(self):
-        for args in ((), ('cb',), ('send',), ('notacommand',)):
+        for args in ((), ('cb',), ('send',), ('crew info',), ('notacommand',)):
             with self.subTest(args=args):
                 prefix = await self.ask(PREFIX, *args)
                 dm = self.author.send.await_args.kwargs['embed'].to_dict()
@@ -268,6 +270,50 @@ class HelpTest(unittest.IsolatedAsyncioTestCase):
                 self.author.send.assert_not_awaited()
                 self.assertEqual(dm, slash.sent[0]['embed'])
                 self.assertTrue(slash.ephemeral[0])
+
+    async def help_embed(self, *args, staff=False):
+        with unittest.mock.patch('src.scoreSheetBot.check_roles', return_value=staff):
+            await self.ask(PREFIX, *args)
+        return self.author.send.await_args.kwargs['embed'].to_dict()
+
+    async def test_help_lists_the_slash_sections(self):
+        fields = (await self.help_embed())['fields']
+        self.assertEqual([f'/{section}' for section in GROUPS] + ['/help'], [f['name'] for f in fields])
+        self.assertEqual([description for description, _ in GROUPS.values()], [f['value'] for f in fields[:-1]])
+        self.assertIn('/staff', [f['name'] for f in (await self.help_embed(staff=True))['fields']])
+
+    async def test_help_lists_the_commands_of_a_section_by_their_slash_names(self):
+        for section, (_, names) in GROUPS.items():
+            with self.subTest(section=section):
+                listed = [f['name'] for f in (await self.help_embed(section, staff=True))['fields']]
+                self.assertCountEqual([f'/{self.cog.slash.by_prefix_name[name].qualified_name}' for name in names],
+                                      listed)
+        self.assertNotIn('/crew po', [f['name'] for f in (await self.help_embed('crew'))['fields']])
+        # The names of the old help categories still work.
+        self.assertEqual(await self.help_embed('crew'), await self.help_embed('crews'))
+        self.assertEqual(await self.help_embed('f'), await self.help_embed('flairing'))
+
+    async def test_help_lists_staff_sections_for_staff_only(self):
+        groups = (await self.help_embed('staff', staff=True))['fields']
+        self.assertEqual([f'/staff {group}' for group in STAFF_GROUPS], [f['name'] for f in groups])
+        for group, (_, names) in STAFF_GROUPS.items():
+            with self.subTest(group=group):
+                listed = [f['name'] for f in (await self.help_embed('staff', group, staff=True))['fields']]
+                self.assertCountEqual([f'/staff {group} {name}' for name in names], listed)
+        for args in (('staff',), ('staff', 'crew')):
+            with unittest.mock.patch('src.scoreSheetBot.check_roles', return_value=False):
+                await self.ask(PREFIX, *args)
+            self.author.send.assert_awaited_once_with('That section is for staff.')
+
+    async def test_help_for_a_command_shows_its_prefix_and_slash_forms(self):
+        for args, title, slash in ((('send',), 'send', '/cb send'), (('cb', 'send'), 'send', '/cb send'),
+                                   (('crew', 'info'), 'crew', '/crew info'),
+                                   (('gamb', 'start'), 'gamb start', '/gambit start')):
+            with self.subTest(args=args):
+                embed = await self.help_embed(*args, staff=True)
+                self.assertEqual(title, embed['title'])
+                self.assertIn(f'`,{title} ', embed['description'])
+                self.assertIn(f'`{slash}`', embed['description'])
 
 
 if __name__ == '__main__':
