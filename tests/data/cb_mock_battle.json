@@ -1,0 +1,310 @@
+[
+ {
+  "command": "mock",
+  "sent": [
+   {
+    "content": "Please enter a size greater than 0.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "mock",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n2 vs 2 Mock Crew battle\n\n\nCurrent score: Red[6] - Blue[6] \nRed: Waiting  \nBlue: Waiting",
+     "title": "Red vs Blue",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "mock",
+  "sent": [
+   {
+    "content": "A battle is already going in this channel.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": "During a mock you need to send with a teamname, like this `,send @playername teamname`.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n2 vs 2 Mock Crew battle\n\n\nCurrent score: Red[6] - Blue[6] \nRed: HK\\_Player  3 stocks  \nBlue: Waiting",
+     "title": "Red vs Blue",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n2 vs 2 Mock Crew battle\n\n\nCurrent score: Red[6] - Blue[6] \nRed: HK\\_Player  3 stocks  \nBlue: FSG Player  3 stocks",
+     "title": "Red vs Blue",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "arena",
+  "sent": [
+   {
+    "content": "Updated the id to ABCDE",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "arena",
+  "sent": [
+   {
+    "content": "The lobby id is ABCDE",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "stream",
+  "sent": [
+   {
+    "content": "Updated the stream to https://twitch.tv/jett",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "stream",
+  "sent": [
+   {
+    "content": "The stream is https://twitch.tv/jett",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "end",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: ABCDE\nStreamer: https://twitch.tv/jett\n\n2 vs 2 Mock Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (1) FSG Player [None]\n\nCurrent score: Red[5] - Blue[3] \nRed: HK\\_Player None 2 stocks  \nBlue: Waiting",
+     "title": "Red vs Blue",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "send",
+  "sent": [
+   {
+    "content": "\"send\" did not work because:This team already has a current player, HK\\_Player, use \",replace\" to replace them",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "timerstock",
+  "sent": [
+   {
+    "content": "<@!22>: timerstock failed because:No current player.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "ext",
+  "sent": [
+   {
+    "content": "Teams extension status:\nRed Extension used: False\nBlue Extension used: False",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "use_ext",
+  "sent": [
+   {
+    "content": "Red just used their extension. They now get 5 more minutes for their next player to be in the arena.",
+    "embed": null
+   },
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: ABCDE\nStreamer: https://twitch.tv/jett\n\n2 vs 2 Mock Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (1) FSG Player [None]\nRed used their extension\n\nCurrent score: Red[5] - Blue[3] \nRed: HK\\_Player None 2 stocks  \nBlue: Waiting",
+     "title": "Red vs Blue",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "use_ext",
+  "sent": [
+   {
+    "content": "Red has already used their extension.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "undo",
+  "sent": [
+   {
+    "content": "Note: undoing a replace on the scoresheet doesn't actually undo the replace, you need to use `,replace @player` with the original player to do that.",
+    "embed": null
+   },
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: ABCDE\nStreamer: https://twitch.tv/jett\n\n2 vs 2 Mock Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (1) FSG Player [None]\n\nCurrent score: Red[5] - Blue[3] \nRed: HK\\_Player None 2 stocks  \nBlue: Waiting",
+     "title": "Red vs Blue",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "resize",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: ABCDE\nStreamer: https://twitch.tv/jett\n\n3 vs 3 Mock Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (1) FSG Player [None]\n\nCurrent score: Red[8] - Blue[6] \nRed: HK\\_Player None 2 stocks  \nBlue: Waiting",
+     "title": "Red vs Blue",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "resize",
+  "sent": [
+   {
+    "content": "Too big. Pls stop",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "status",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: ABCDE\nStreamer: https://twitch.tv/jett\n\n3 vs 3 Mock Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (1) FSG Player [None]\n\nCurrent score: Red[8] - Blue[6] \nRed: HK\\_Player None 2 stocks  \nBlue: Waiting",
+     "title": "Red vs Blue",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "confirm",
+  "sent": [
+   {
+    "content": "The battle is not over yet, wait till then to confirm.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "replace",
+  "sent": [
+   {
+    "content": null,
+    "embed": {
+     "description": "Lobby ID: ABCDE\nStreamer: https://twitch.tv/jett\n\n3 vs 3 Mock Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (1) FSG Player [None]\nRed subbed HK\\_Player  with HK Lead with 2 stocks left.\n\nCurrent score: Red[8] - Blue[6] \nRed: HK Lead  2 stocks  \nBlue: Waiting",
+     "title": "Red vs Blue",
+     "type": "rich"
+    }
+   }
+  ]
+ },
+ {
+  "command": "end",
+  "sent": [
+   {
+    "content": "\"end\" did not work because:The match is not ready yet, ['Blue'] still need players",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "forfeit",
+  "sent": [
+   {
+    "content": "<@!31>:Red has 8 stocks left, are you sure you want to forfeit?",
+    "embed": null
+   },
+   {
+    "content": "<@!31>: forfeit canceled or timed out!",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "confirm",
+  "sent": [
+   {
+    "content": "The battle is not over yet, wait till then to confirm.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "clear",
+  "sent": [
+   {
+    "content": "If you just cleared a crew battle to troll people, be warned this is a bannable offence.",
+    "embed": null
+   },
+   {
+    "content": "Are you sure you want to clear this crew battle?",
+    "embed": null
+   },
+   {
+    "content": "<@!31> cleared the crew battle.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "clear",
+  "sent": [
+   {
+    "content": "Battle is not started.",
+    "embed": null
+   }
+  ]
+ },
+ {
+  "command": "status",
+  "sent": [
+   {
+    "content": "Battle is not started.",
+    "embed": null
+   }
+  ]
+ }
+]

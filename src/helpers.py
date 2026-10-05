@@ -29,7 +29,8 @@ from fuzzywuzzy import process, fuzz
 import asyncio
 import discord
 from statistics import stdev
-from discord.ext import commands, menus
+from discord import ui
+from discord.ext import commands
 from battle import *
 import time
 from constants import *
@@ -433,9 +434,22 @@ async def demote(member: discord.Member, bot: 'ScoreSheetBot') -> str:
     return ''
 
 
+async def delete_invocation(ctx: Context, delay: Optional[float] = None) -> None:
+    """Deletes the message that invoked a prefix command; a slash command has no such message."""
+    if ctx.interaction is None:
+        await ctx.message.delete(delay=delay)
+
+
+def invocation_attachments(ctx: Context) -> List[discord.Attachment]:
+    """The files sent with a command: attached to a prefix command's message, or given as slash options."""
+    if ctx.interaction is not None:
+        return getattr(ctx, 'slash_attachments', [])
+    return ctx.message.attachments
+
+
 async def response_message(ctx: Context, msg: str) -> discord.Message:
     msg = await ctx.send(f'{ctx.author.mention}: {msg}')
-    await ctx.message.delete(delay=1)
+    await delete_invocation(ctx, delay=1)
     return msg
 
 
@@ -586,52 +600,73 @@ def noverlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[disc
     return out
 
 
+class AuthorView(ui.View):
+    """A view whose buttons only `author` can press. `value` holds the answer once one is pressed."""
+
+    def __init__(self, author: discord.abc.User, timeout: float):
+        super().__init__(timeout=timeout)
+        self.author = author
+        self.value = None
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.author.id:
+            await interaction.response.send_message(f'Only {self.author.display_name} can answer this.',
+                                                    ephemeral=True)
+            return False
+        return True
+
+    def add_answer(self, emoji: str, style: discord.ButtonStyle, value) -> None:
+        button = ui.Button(emoji=emoji, style=style)
+
+        async def callback(interaction: discord.Interaction):
+            self.value = value
+            await interaction.response.edit_message(view=None)
+            self.stop()
+
+        button.callback = callback
+        self.add_item(button)
+
+    async def ask(self, message: discord.Message):
+        """Attaches the buttons to `message` and returns the answer, or None on timeout."""
+        await message.edit(view=self)
+        try:
+            # The view's own timeout only counts once discord.py has registered it, so it is enforced here too.
+            timed_out = await asyncio.wait_for(self.wait(), self.timeout)
+        except asyncio.TimeoutError:
+            timed_out = True
+            self.stop()
+        if timed_out:
+            try:
+                await message.edit(view=None)
+            except discord.HTTPException:
+                pass
+            return None
+        return self.value
+
+
 async def wait_for_reaction_on_message(confirm: str, cancel: Optional[str],
                                        message: discord.Message, author: discord.Member, bot: discord.Client,
                                        timeout: float = 30.0) -> bool:
-    await message.add_reaction(confirm)
-    await message.add_reaction(cancel)
-
-    def check(reaction, user):
-        return user == author and str(reaction.emoji) == confirm or cancel
-
-    while True:
-        try:
-            react, reactor = await bot.wait_for('reaction_add', timeout=timeout, check=check)
-        except asyncio.TimeoutError:
-            return False
-        if react.message.id != message.id:
-            continue
-        if str(react.emoji) == confirm and reactor == author:
-            return True
-        elif str(react.emoji) == cancel and reactor == author:
-            return False
+    """Asks `author` to confirm with buttons on `message`. False if they cancel or it times out."""
+    view = AuthorView(author, timeout)
+    view.add_answer(confirm, discord.ButtonStyle.green, True)
+    if cancel:
+        view.add_answer(cancel, discord.ButtonStyle.red, False)
+    return bool(await view.ask(message))
 
 
 async def wait_choice(options: int,
                       message: discord.Message, author: discord.Member, bot: discord.Client,
                       timeout: float = 30.0) -> int:
+    """Asks `author` to pick one of up to 4 numbered buttons. -1 if they cancel or it times out."""
     if options > 4:
         return -1
+    view = AuthorView(author, timeout)
     for i in range(options):
-        await message.add_reaction(OPTIONS[i])
-    await message.add_reaction(NO)
-
-    def check(reaction, user):
-        return user == author and str(reaction.emoji) in (OPTIONS) or str(reaction.emoji) == NO
-
-    while True:
-        try:
-            react, reactor = await bot.wait_for('reaction_add', timeout=timeout, check=check)
-        except asyncio.TimeoutError:
-            return False
-        if react.message.id != message.id:
-            continue
-        for i in range(options):
-            if str(react.emoji) == OPTIONS[i] and reactor == author:
-                return i
-        if str(react.emoji) == NO and reactor == author:
-            return -1
+        view.add_answer(OPTIONS[i], discord.ButtonStyle.blurple, i)
+    view.add_answer(NO, discord.ButtonStyle.red, -1)
+    answer = await view.ask(message)
+    return -1 if answer is None else answer
 
 
 async def wait_for_multiple_reactions(reactions: List[str], message: discord.Message,
@@ -863,25 +898,91 @@ def strfdelta(tdelta, fmt):
     return fmt.format(**d)
 
 
-class Paged(menus.ListPageSource):
+class PaginatorView(ui.View):
+    """Shows a list of embeds one at a time, with buttons for the invoker to move between them."""
+
+    def __init__(self, pages: List[discord.Embed], timeout: float = 180.0):
+        super().__init__(timeout=timeout)
+        self.pages = pages
+        self.current_page = 0
+        self.author: Optional[discord.abc.User] = None
+        self.message: Optional[discord.Message] = None
+        self._update_buttons()
+
+    def _update_buttons(self):
+        self.first_page.disabled = self.prev_page.disabled = self.current_page == 0
+        self.next_page.disabled = self.last_page.disabled = self.current_page >= len(self.pages) - 1
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if self.author and interaction.user.id != self.author.id:
+            await interaction.response.send_message('Run the command yourself to page through it.', ephemeral=True)
+            return False
+        return True
+
+    async def show(self, interaction: discord.Interaction, page: int):
+        self.current_page = max(0, min(page, len(self.pages) - 1))
+        self._update_buttons()
+        await interaction.response.edit_message(embed=self.pages[self.current_page], view=self)
+
+    @ui.button(label='<<', style=discord.ButtonStyle.grey)
+    async def first_page(self, interaction: discord.Interaction, button: ui.Button):
+        await self.show(interaction, 0)
+
+    @ui.button(label='<', style=discord.ButtonStyle.blurple)
+    async def prev_page(self, interaction: discord.Interaction, button: ui.Button):
+        await self.show(interaction, self.current_page - 1)
+
+    @ui.button(label='>', style=discord.ButtonStyle.blurple)
+    async def next_page(self, interaction: discord.Interaction, button: ui.Button):
+        await self.show(interaction, self.current_page + 1)
+
+    @ui.button(label='>>', style=discord.ButtonStyle.grey)
+    async def last_page(self, interaction: discord.Interaction, button: ui.Button):
+        await self.show(interaction, len(self.pages) - 1)
+
+    @ui.button(label='X', style=discord.ButtonStyle.red)
+    async def stop_pages(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.edit_message(view=None)
+        self.stop()
+
+    async def on_timeout(self):
+        if self.message:
+            try:
+                await self.message.edit(view=None)
+            except discord.HTTPException:
+                pass
+
+    async def start(self, ctx: Context):
+        self.author = ctx.author
+        if len(self.pages) == 1:
+            self.message = await ctx.send(embed=self.pages[0])
+            self.stop()
+        else:
+            self.message = await ctx.send(embed=self.pages[0], view=self)
+
+
+class Paged:
     def __init__(self, data, title: str, color: Optional[discord.Color] = discord.Color.purple(),
                  thumbnail: Optional[str] = '', per_page: Optional[int] = 10):
-        super().__init__(data, per_page=per_page)
+        self.data = list(data)
+        self.per_page = per_page
         self.title = title
         self.color = color
         self.thumbnail = thumbnail
 
-    async def format_page(self, menu, entries) -> discord.Embed:
-        offset = menu.current_page * self.per_page
+    def get_pages(self) -> List[discord.Embed]:
+        pages = []
+        for offset in range(0, max(len(self.data), 1), self.per_page):
+            entries = self.data[offset:offset + self.per_page]
+            joined = '\n'.join(f'{i + 1}. {v}' for i, v in enumerate(entries, start=offset))
+            embed = discord.Embed(description=joined, title=self.title, colour=self.color)
+            if self.thumbnail:
+                embed.set_thumbnail(url=self.thumbnail)
+            pages.append(embed)
+        return pages
 
-        joined = '\n'.join(f'{i + 1}. {v}' for i, v in enumerate(entries, start=offset))
-        embed = discord.Embed(description=joined, title=self.title, colour=self.color)
-        if self.thumbnail:
-            embed.set_thumbnail(url=self.thumbnail)
-        return embed
 
-
-class TriforceStatsPaged(menus.ListPageSource):
+class TriforceStatsPaged:
     def __init__(self, power: List[Tuple[str, int, int, int]], courage: List[Tuple[str, int, int, int]]):
 
         title = f'Triforce of Power Stats'
@@ -908,14 +1009,13 @@ class TriforceStatsPaged(menus.ListPageSource):
 
             courage_page.add_field(name=COURAGE_DIVS[i], value='\n'.join(thing), inline=False)
 
-        data = [power_page, courage_page]
-        super().__init__(data, per_page=1)
+        self.pages = [power_page, courage_page]
 
-    async def format_page(self, menu, entries) -> discord.Embed:
-        return entries
+    def get_pages(self) -> List[discord.Embed]:
+        return self.pages
 
 
-class PlayerStatsPaged(menus.ListPageSource):
+class PlayerStatsPaged:
     def __init__(self, member: discord.Member, bot: 'ScoreSheetBot'):
         season_stats = discord.Embed(title=f"Season Stats for {str(member)}", color=member.color)
         weighted, taken, lost, mvps = player_stocks(member, True)
@@ -973,11 +1073,10 @@ class PlayerStatsPaged(menus.ListPageSource):
                 ba_stats.add_field(name=emoji, value=f'{char[0]}', inline=True)
         else:
             ba_stats.description = 'This member has no battle arena history.'
-        data = [season_stats, cb_stats, ba_stats]
-        super().__init__(data, per_page=1)
+        self.pages = [season_stats, cb_stats, ba_stats]
 
-    async def format_page(self, menu, entries) -> discord.Embed:
-        return entries
+    def get_pages(self) -> List[discord.Embed]:
+        return self.pages
 
 
 def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[discord.Embed]:
@@ -1020,7 +1119,7 @@ def battle_summary(bot: 'ScoreSheetBot', battle_type: BattleType) -> Optional[di
     elif battle_type == BattleType.POWER_PLAYOFF:
         ty = 'Power Playoff'
     elif battle_type == BattleType.PLAYOFF:
-        ty = 'SCS 25.2 Playoff'
+        ty = 'SCS 26.2 Playoff'
     elif battle_type == BattleType.RANKED:
         ty = bot.current_league
     else:

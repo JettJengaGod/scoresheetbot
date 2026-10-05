@@ -226,7 +226,7 @@ leader = MockRole(name=LEADER)
 admin = MockRole(name=ADMIN)
 
 # Create a Member instance to get a realistic Mock of `discord.Member`
-member_data = {'user': 'lemon', 'roles': [1]}
+member_data = {'user': 'lemon', 'roles': [1], 'flags': 0}
 state_mock = unittest.mock.MagicMock()
 member_instance = discord.Member(data=member_data, guild=guild_instance, state=state_mock)
 
@@ -264,7 +264,8 @@ class MockMember(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin
     # Create a User instance to get a realistic Mock of `discord.User`
 
 
-user_instance = discord.User(data=unittest.mock.MagicMock(), state=unittest.mock.MagicMock())
+user_data = {'id': 1, 'username': 'user', 'discriminator': '0001', 'avatar': None}
+user_instance = discord.User(data=user_data, state=unittest.mock.MagicMock())
 
 
 class MockUser(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin):
@@ -306,7 +307,7 @@ class MockBot(CustomMockMixin, unittest.mock.MagicMock):
     Instances of this class will follow the specifications of `discord.ext.commands.Bot` instances.
     For more information, see the `MockGuild` docstring.
     """
-    spec_set = commands.Bot(command_prefix=',', guild=MockGuild(), emojis=MockEmoji())
+    spec_set = commands.Bot(command_prefix=',', intents=discord.Intents.default(), guild=MockGuild(), emojis=MockEmoji())
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -370,8 +371,6 @@ message_data = {
     'webhook_id': 431341013479718912,
     'attachments': [],
     'embeds': [],
-    'application': 'Python Discord',
-    'activity': 'mocking',
     'channel': unittest.mock.MagicMock(),
     'edited_timestamp': '2019-10-14T15:33:48+00:00',
     'type': 'message',
@@ -386,7 +385,8 @@ channel = unittest.mock.MagicMock()
 message_instance = discord.Message(state=state, channel=channel, data=message_data)
 
 # Create a Context instance to get a realistic MagicMock of `discord.ext.commands.Context`
-context_instance = Context(message=unittest.mock.MagicMock(), prefix=unittest.mock.MagicMock())
+context_instance = Context(message=unittest.mock.MagicMock(), prefix=',',
+                           bot=unittest.mock.MagicMock(), view=unittest.mock.MagicMock())
 
 
 class MockContext(CustomMockMixin, unittest.mock.MagicMock):
@@ -405,7 +405,9 @@ class MockContext(CustomMockMixin, unittest.mock.MagicMock):
         self.channel = kwargs.get('channel', MockTextChannel())
 
 
-attachment_instance = discord.Attachment(data=unittest.mock.MagicMock(id=1), state=unittest.mock.MagicMock())
+attachment_data = {'id': 1, 'size': 1, 'filename': 'file.png', 'url': 'https://example.com/file.png',
+                   'proxy_url': 'https://example.com/file.png'}
+attachment_instance = discord.Attachment(data=attachment_data, state=unittest.mock.MagicMock())
 
 
 class MockAttachment(CustomMockMixin, unittest.mock.MagicMock):
@@ -468,7 +470,7 @@ class MockReaction(CustomMockMixin, unittest.mock.MagicMock):
         self.__str__.return_value = str(self.emoji)
 
 
-webhook_instance = discord.Webhook(data=unittest.mock.MagicMock(), adapter=unittest.mock.MagicMock())
+webhook_instance = discord.Webhook(data=unittest.mock.MagicMock(), session=unittest.mock.MagicMock())
 
 
 class MockAsyncWebhook(CustomMockMixin, unittest.mock.MagicMock):
@@ -484,7 +486,6 @@ class MockAsyncWebhook(CustomMockMixin, unittest.mock.MagicMock):
 HK = Crew(
     name='Holy Knights',
     abbr='HK',
-    merit=100,
     member_count=10,
     leaders=['Meli'],
     advisors=['Bob']
@@ -492,7 +493,6 @@ HK = Crew(
 FSGood = Crew(
     name='FSGood',
     abbr='FSG',
-    merit=-100,
     member_count=10,
     leaders=['Cowy'],
     advisors=['Kip']
@@ -500,7 +500,6 @@ FSGood = Crew(
 Ballers = Crew(
     name='Ballers',
     abbr='BAL',
-    merit=-100,
     member_count=10,
     leaders=['Cowy'],
     advisors=['Kip'],
@@ -523,7 +522,7 @@ cowy = MockMember(name='cowy', id=329321079917248514, display_name='cowy')
 def cache() -> Cache:
     fake_cache = Cache()
     fake_cache.scs = MockGuild()
-    fake_cache.overflow_server = MockGuild()
+    fake_cache.overflow_server = MockGuild(name=OVERFLOW_SERVER)
     crews_by_name = {
         HK.name: HK,
         FSGood.name: FSGood,
@@ -559,7 +558,7 @@ def cache() -> Cache:
         MockRole(name=ADVISOR),
         ballers_role,
     ]
-    fake_cache.scs.channels = [MockTextChannel(name=FLAIRING_LOGS)]
+    fake_cache.scs.channels = [MockTextChannel(name=FLAIRING_LOGS), MockTextChannel(name=FLAIRING_INFO)]
     fake_cache.channels = fake_cache.channel_factory(fake_cache.scs)
     fake_cache.roles = fake_cache.role_factory(fake_cache.scs)
     fake_cache.main_members = fake_cache.members_by_name(fake_cache.scs.members)

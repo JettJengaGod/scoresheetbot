@@ -8,3 +8,5 @@
 /src/__pycache__/
 credentials.json
 token.pickle
+__pycache__/
+.venv/

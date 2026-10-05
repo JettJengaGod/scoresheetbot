@@ -9,12 +9,14 @@ TEAM2_NAME = 'Team 2'
 TEAM1 = Team(name=TEAM1_NAME, num_players=5, stocks=3 * 5)
 TEAM2 = Team(name=TEAM2_NAME, num_players=5, stocks=3 * 5)
 PLAYER1_NAME = 'Player 1'
-PLAYER1 = Player(name=PLAYER1_NAME, team_name=TEAM1_NAME)
-PLAYER1_WITH_CHAR = Player(name=PLAYER1_NAME, team_name=TEAM1_NAME)
+PLAYER1_ID = 1
+PLAYER1 = Player(name=PLAYER1_NAME, team_name=TEAM1_NAME, id=PLAYER1_ID)
+PLAYER1_WITH_CHAR = Player(name=PLAYER1_NAME, team_name=TEAM1_NAME, id=PLAYER1_ID)
 PLAYER2_NAME = 'Player 2'
-PLAYER2 = Player(name=PLAYER2_NAME, team_name=TEAM2_NAME)
-PLAYER2_WITH_CHAR = Player(name=PLAYER2_NAME, team_name=TEAM2_NAME)
-Players = [Player(name=f'Player {i}', team_name=f'Team {i + 7 // 7}') for i in range(14)]
+PLAYER2_ID = 2
+PLAYER2 = Player(name=PLAYER2_NAME, team_name=TEAM2_NAME, id=PLAYER2_ID)
+PLAYER2_WITH_CHAR = Player(name=PLAYER2_NAME, team_name=TEAM2_NAME, id=PLAYER2_ID)
+Players = [Player(name=f'Player {i}', team_name=f'Team {i + 7 // 7}', id=i) for i in range(14)]
 Chars = []
 for name, _ in CHARACTERS.items():
     Chars.append(Character(name, None))
@@ -39,13 +41,13 @@ class BattleSetupTest(unittest.TestCase):
         self.assertEqual(self.battle.lookup(TEAM2_NAME), TEAM2)
 
     def test_add_player(self):
-        self.battle.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME)
+        self.battle.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME, player_id=PLAYER1_ID)
         self.assertEqual(self.battle.lookup(TEAM1_NAME).current_player, PLAYER1)
         self.assertIn(PLAYER1, self.battle.lookup(TEAM1_NAME).players)
 
     def test_ready(self):
-        self.battle.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME)
-        self.battle.add_player(team_name=TEAM2_NAME, player_name=PLAYER2_NAME, leader=PLAYER2_NAME)
+        self.battle.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME, player_id=PLAYER1_ID)
+        self.battle.add_player(team_name=TEAM2_NAME, player_name=PLAYER2_NAME, leader=PLAYER2_NAME, player_id=PLAYER2_ID)
         self.assertTrue(self.battle.match_ready())
 
     def test_finish_match_fails_when_not_ready(self):
@@ -110,18 +112,18 @@ class BattleTimerTest(unittest.TestCase):
 class BattleInternalTest(unittest.TestCase):
     def setUp(self) -> None:
         self.battle = Battle(TEAM1_NAME, TEAM2_NAME, 5)
-        self.battle.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME)
-        self.battle.add_player(team_name=TEAM2_NAME, player_name=PLAYER2_NAME, leader=PLAYER2_NAME)
+        self.battle.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME, player_id=PLAYER1_ID)
+        self.battle.add_player(team_name=TEAM2_NAME, player_name=PLAYER2_NAME, leader=PLAYER2_NAME, player_id=PLAYER2_ID)
 
     def tearDown(self) -> None:
         self.battle = None
 
     def test_add_player_fails_when_already_exists(self):
         with self.assertRaises(StateError):
-            self.battle.add_player(TEAM2_NAME, PLAYER2_NAME, leader=PLAYER2_NAME)
+            self.battle.add_player(TEAM2_NAME, PLAYER2_NAME, leader=PLAYER2_NAME, player_id=PLAYER2_ID)
 
     def test_replace_current(self):
-        self.battle.replace_player(TEAM1_NAME, PLAYER2_NAME, leader=PLAYER1_NAME)
+        self.battle.replace_player(TEAM1_NAME, PLAYER2_NAME, leader=PLAYER1_NAME, player_id=PLAYER2_ID)
         self.assertEqual(self.battle.team1.current_player.name, PLAYER2_NAME)
         self.assertEqual(len(self.battle.team1.players), 1)
 
@@ -147,7 +149,7 @@ class BattleInternalTest(unittest.TestCase):
             self.battle.resize(0)
         match1 = Match(PLAYER1_WITH_CHAR, PLAYER2_WITH_CHAR, 3, 0, 1)
         self.battle.finish_match(3, 0, Chars[0], Chars[1])
-        self.battle.add_player(TEAM2_NAME, player_name=Players[2].name, leader=PLAYER2_NAME)
+        self.battle.add_player(TEAM2_NAME, player_name=Players[3].name, leader=PLAYER2_NAME, player_id=Players[3].id)
         self.battle.finish_match(3, 0, Chars[0], Chars[2])
 
         with self.assertRaises(StateError):
@@ -166,7 +168,7 @@ class BattleInternalTest(unittest.TestCase):
 
     def test_double_undo(self):
         self.battle.finish_match(3, 0, Chars[0], Chars[1])
-        self.battle.add_player(team_name=TEAM2_NAME, player_name=Players[2].name, leader=PLAYER2_NAME)
+        self.battle.add_player(team_name=TEAM2_NAME, player_name=Players[3].name, leader=PLAYER2_NAME, player_id=Players[3].id)
         self.battle.finish_match(3, 0, Chars[0], Chars[1])
         self.battle.undo()
         self.battle.undo()
@@ -176,16 +178,16 @@ class BattleInternalTest(unittest.TestCase):
 
     def test_battle_over(self):
         battle2 = Battle(TEAM1_NAME, TEAM2_NAME, 1)
-        battle2.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME)
-        battle2.add_player(team_name=TEAM2_NAME, player_name=PLAYER2_NAME, leader=PLAYER2_NAME)
+        battle2.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME, player_id=PLAYER1_ID)
+        battle2.add_player(team_name=TEAM2_NAME, player_name=PLAYER2_NAME, leader=PLAYER2_NAME, player_id=PLAYER2_ID)
         battle2.finish_match(3, 0, Chars[1], Chars[2])
 
         self.assertTrue(battle2.battle_over())
 
     def test_confirms(self):
         battle2 = Battle(TEAM1_NAME, TEAM2_NAME, 1)
-        battle2.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME)
-        battle2.add_player(team_name=TEAM2_NAME, player_name=PLAYER2_NAME, leader=PLAYER2_NAME)
+        battle2.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME, player_id=PLAYER1_ID)
+        battle2.add_player(team_name=TEAM2_NAME, player_name=PLAYER2_NAME, leader=PLAYER2_NAME, player_id=PLAYER2_ID)
         battle2.finish_match(3, 0, Chars[1], Chars[2])
         battle2.confirm(TEAM1_NAME)
         self.assertTrue(battle2.confirms[0])
@@ -196,10 +198,10 @@ class BattleInternalTest(unittest.TestCase):
 
     def test_battle_mvps(self):
         battle2 = Battle(TEAM1_NAME, TEAM2_NAME, 1)
-        battle2.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME)
-        battle2.add_player(team_name=TEAM2_NAME, player_name=Players[1].name, leader=PLAYER2_NAME)
+        battle2.add_player(team_name=TEAM1_NAME, player_name=PLAYER1_NAME, leader=PLAYER1_NAME, player_id=PLAYER1_ID)
+        battle2.add_player(team_name=TEAM2_NAME, player_name=Players[1].name, leader=PLAYER2_NAME, player_id=Players[1].id)
         battle2.finish_match(3, 0, Chars[1], Chars[2])
-        battle2.add_player(team_name=TEAM2_NAME, player_name=Players[2].name, leader=PLAYER2_NAME)
+        battle2.add_player(team_name=TEAM2_NAME, player_name=Players[2].name, leader=PLAYER2_NAME, player_id=Players[2].id)
         battle2.finish_match(3, 0, Chars[1], Chars[2])
         self.assertEqual([player.name for player in battle2.team2.mvp()], [Players[1].name, Players[2].name])
 
@@ -207,40 +209,40 @@ class BattleInternalTest(unittest.TestCase):
 class BattleBigTest(unittest.TestCase):
     def test_big_battle(self):
         battle = Battle(TEAM1_NAME, TEAM2_NAME, 7)
-        battle.add_player(team_name=TEAM1_NAME, player_name=Players[0].name, leader=PLAYER1_NAME)
-        battle.add_player(team_name=TEAM2_NAME, player_name=Players[7].name, leader=PLAYER2_NAME)
+        battle.add_player(team_name=TEAM1_NAME, player_name=Players[0].name, leader=PLAYER1_NAME, player_id=Players[0].id)
+        battle.add_player(team_name=TEAM2_NAME, player_name=Players[7].name, leader=PLAYER2_NAME, player_id=Players[7].id)
         battle.finish_match(3, 2, Chars[0], Chars[7])
         print(battle)
-        battle.add_player(team_name=TEAM2_NAME, player_name=Players[8].name, leader=PLAYER2_NAME)
+        battle.add_player(team_name=TEAM2_NAME, player_name=Players[8].name, leader=PLAYER2_NAME, player_id=Players[8].id)
         battle.finish_match(1, 1, Chars[0], Chars[8])
         print(battle)
-        battle.add_player(team_name=TEAM1_NAME, player_name=Players[1].name, leader=PLAYER1_NAME)
+        battle.add_player(team_name=TEAM1_NAME, player_name=Players[1].name, leader=PLAYER1_NAME, player_id=Players[1].id)
         battle.finish_match(2, 2, Chars[1], Chars[8])
         print(battle)
-        battle.add_player(team_name=TEAM2_NAME, player_name=Players[9].name, leader=PLAYER2_NAME)
+        battle.add_player(team_name=TEAM2_NAME, player_name=Players[9].name, leader=PLAYER2_NAME, player_id=Players[9].id)
         battle.finish_match(0, 1, Chars[1], Chars[9])
         print(battle)
-        battle.add_player(team_name=TEAM1_NAME, player_name=Players[2].name, leader=PLAYER1_NAME)
+        battle.add_player(team_name=TEAM1_NAME, player_name=Players[2].name, leader=PLAYER1_NAME, player_id=Players[2].id)
         battle.finish_match(3, 1, Chars[2], Chars[9])
         print(battle)
-        battle.add_player(team_name=TEAM2_NAME, player_name=Players[10].name, leader=PLAYER2_NAME)
+        battle.add_player(team_name=TEAM2_NAME, player_name=Players[10].name, leader=PLAYER2_NAME, player_id=Players[10].id)
         battle.finish_match(3, 1, Chars[2], Chars[10])
         print(battle)
-        battle.add_player(team_name=TEAM2_NAME, player_name=Players[11].name, leader=PLAYER2_NAME)
+        battle.add_player(team_name=TEAM2_NAME, player_name=Players[11].name, leader=PLAYER2_NAME, player_id=Players[11].id)
         battle.finish_match(1, 1, Chars[2], Chars[11])
         print(battle)
-        battle.add_player(team_name=TEAM1_NAME, player_name=Players[3].name, leader=PLAYER1_NAME)
+        battle.add_player(team_name=TEAM1_NAME, player_name=Players[3].name, leader=PLAYER1_NAME, player_id=Players[3].id)
         battle.finish_match(1, 3, Chars[3], Chars[11])
         print(battle)
-        battle.add_player(team_name=TEAM1_NAME, player_name=Players[4].name, leader=PLAYER1_NAME)
+        battle.add_player(team_name=TEAM1_NAME, player_name=Players[4].name, leader=PLAYER1_NAME, player_id=Players[4].id)
         battle.finish_match(1, 0, Chars[4], Chars[11])
         print(battle)
-        battle.add_player(team_name=TEAM2_NAME, player_name=Players[12].name, leader=PLAYER2_NAME)
+        battle.add_player(team_name=TEAM2_NAME, player_name=Players[12].name, leader=PLAYER2_NAME, player_id=Players[12].id)
         battle.finish_match(3, 2, Chars[4], Chars[12])
         print(battle)
-        battle.add_player(team_name=TEAM2_NAME, player_name=Players[13].name, leader=PLAYER2_NAME)
+        battle.add_player(team_name=TEAM2_NAME, player_name=Players[13].name, leader=PLAYER2_NAME, player_id=Players[13].id)
         battle.finish_match(1, 1, Chars[4], Chars[13])
         print(battle)
-        battle.add_player(team_name=TEAM1_NAME, player_name=Players[4].name, leader=PLAYER1_NAME)
+        battle.add_player(team_name=TEAM1_NAME, player_name=Players[4].name, leader=PLAYER1_NAME, player_id=Players[4].id)
         battle.finish_match(2, 1, Chars[5], Chars[13])
         print(battle)

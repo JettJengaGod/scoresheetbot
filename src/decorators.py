@@ -1,180 +1,125 @@
-import functools
 from typing import Iterable
 from helpers import *
 
 
-def ss_channel(func):
-    """Decorator that errors if not in the correct channel."""
-
-    @functools.wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        ctx = args[0]
-        if '⚔' not in ctx.channel.name:
-            await ctx.send('Cannot use this bot in this channel, try a channel with `⚔` in the channel name.')
-            return
-        return await func(self, *args, **kwargs)
-
-    return wrapper
+class GuardFailure(commands.CheckFailure):
+    """A guard refused to run the command and has already told the user why."""
 
 
-def gambit_channel(func):
-    """Decorator that errors if not in the correct channel."""
-
-    @functools.wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        ctx = args[0]
-        if 'gambit-bot-commands' not in ctx.channel.name:
-            await ctx.send(f'Please use gambit commands in <#{GAMBIT_BOT_ID}>.')
-            return
-        return await func(self, *args, **kwargs)
-
-    return wrapper
+async def refuse(ctx: Context, message: str):
+    """Tells the user why a command was refused (privately for a slash command) and stops it."""
+    await ctx.send(message, ephemeral=True)
+    raise GuardFailure(message)
 
 
-def main_only(func):
-    """Decorator that errors if not in the correct channel."""
+def guard(predicate):
+    """Makes a decorator out of `predicate(ctx)`, which runs before the command for prefix and slash alike.
 
-    @functools.wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        ctx = args[0]
-        if SCS not in ctx.guild.name:
-            await ctx.send('This command can only be used in the main SCS Server.')
-            return
-        return await func(self, *args, **kwargs)
+    Guards run in the order they are written above a command, top first. They are kept in their own list
+    behind a single check because discord.py reverses a command's check list each time its cog is created.
+    """
 
-    return wrapper
+    def decorator(func):
+        if not hasattr(func, '__guards__'):
+            func.__guards__ = []
 
+            async def run_guards(ctx: Context) -> bool:
+                for each in func.__guards__:
+                    await each(ctx)
+                return True
 
-def testing_only(func):
-    """Decorator that errors if not in the correct channel."""
+            commands.check(run_guards)(func)
+        func.__guards__.insert(0, predicate)
+        return func
 
-    @functools.wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        ctx = args[0]
-        if 'testing_grounds' not in ctx.channel.name:
-            await ctx.send('This is a testing only command. You can only run it in a testing_grounds channel.')
-            return
-        return await func(self, *args, **kwargs)
-
-    return wrapper
+    return decorator
 
 
-def has_sheet(func):
-    """Decorator that errors if no battle has started."""
-
-    @functools.wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        ctx = args[0]
-        battle = self.battle_map.get(key_string(ctx))
-        if battle is None:
-            await ctx.send('Battle is not started.')
-            return
-        # kwargs['battle'] = battle
-        return await func(self, *args, **kwargs)
-
-    return wrapper
+@guard
+async def ss_channel(ctx: Context):
+    """Errors if not in the correct channel."""
+    if '⚔' not in ctx.channel.name:
+        await refuse(ctx, 'Cannot use this bot in this channel, try a channel with `⚔` in the channel name.')
 
 
-def no_battle(func):
-    """Decorator that errors if no battle has started."""
-
-    @functools.wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        ctx = args[0]
-        battle = self.battle_map.get(key_string(ctx))
-        if battle is not None:
-            await ctx.send('A battle is already going in this channel.')
-            return
-        # kwargs['battle'] = battle
-        return await func(self, *args, **kwargs)
-
-    return wrapper
+@guard
+async def gambit_channel(ctx: Context):
+    """Errors if not in the correct channel."""
+    if 'gambit-bot-commands' not in ctx.channel.name:
+        await refuse(ctx, f'Please use gambit commands in <#{GAMBIT_BOT_ID}>.')
 
 
-def is_lead(func):
-    """Decorator that ensures caller is leader, or advisor."""
+@guard
+async def main_only(ctx: Context):
+    """Errors if not in the main server."""
+    if SCS not in ctx.guild.name:
+        await refuse(ctx, 'This command can only be used in the main SCS Server.')
 
-    @functools.wraps(func)
-    async def wrapper(self, *args, **kwargs):
 
-        ctx = args[0]
+@guard
+async def testing_only(ctx: Context):
+    """Errors if not in the correct channel."""
+    if 'testing_grounds' not in ctx.channel.name:
+        await refuse(ctx, 'This is a testing only command. You can only run it in a testing_grounds channel.')
 
-        battle = self.battle_map.get(key_string(ctx))
-        mock = False
-        if battle and battle.battle_type in (BattleType.MOCK, BattleType.REG):
-            mock = True
-        if not mock:
-            user = ctx.author
-            if not (any(role.name in ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion'] for role in user.roles)):
-                await ctx.send('Only a leader or advisor or admin can run this command.')
-                return
-        return await func(self, *args, **kwargs)
 
-    return wrapper
+@guard
+async def has_sheet(ctx: Context):
+    """Errors if no battle has started."""
+    if ctx.cog.battle_map.get(key_string(ctx)) is None:
+        await refuse(ctx, 'Battle is not started.')
+
+
+@guard
+async def no_battle(ctx: Context):
+    """Errors if a battle has already started."""
+    if ctx.cog.battle_map.get(key_string(ctx)) is not None:
+        await refuse(ctx, 'A battle is already going in this channel.')
+
+
+@guard
+async def is_lead(ctx: Context):
+    """Ensures caller is leader, or advisor."""
+    battle = ctx.cog.battle_map.get(key_string(ctx))
+    if battle and battle.battle_type in (BattleType.MOCK, BattleType.REG):
+        return
+    if not (any(role.name in ['Leader', 'Advisor', 'SCS Admin', 'v2 Minion'] for role in ctx.author.roles)):
+        await refuse(ctx, 'Only a leader or advisor or admin can run this command.')
 
 
 def role_call(required: Iterable):
-    """Decorator that checks if someone is in a roles list."""
+    """Checks if someone is in a roles list."""
 
-    def wrapper(func):
-        @functools.wraps(func)
-        async def wrapped_f(self, *args, **kwargs):
-            ctx = args[0]
-            if not check_roles(ctx.author, required):
-                await response_message(ctx, f'You need to be one of {required} to run {ctx.command.name}')
-                return
-            return await func(self, *args, **kwargs)
+    @guard
+    async def predicate(ctx: Context):
+        if not check_roles(ctx.author, required):
+            message = f'You need to be one of {required} to run {ctx.command.name}'
+            await response_message(ctx, message)
+            raise GuardFailure(message)
 
-        return wrapped_f
-
-    return wrapper
+    return predicate
 
 
 def banned_channels(disallowed: Iterable):
-    """Decorator that checks if someone is in a roles list."""
+    """Checks the command is not being used in one of the given channels."""
 
-    def wrapper(func):
-        @functools.wraps(func)
-        async def wrapped_f(self, *args, **kwargs):
-            ctx = args[0]
-            if ctx.channel.name in disallowed:
-                message = await response_message(ctx, f'{ctx.command.name} is banned in this channel.')
+    @guard
+    async def predicate(ctx: Context):
+        if ctx.channel.name in disallowed:
+            text = f'{ctx.command.name} is banned in this channel.'
+            message = await response_message(ctx, text)
+            await message.delete(delay=5)
+            raise GuardFailure(text)
 
-                await message.delete(delay=5)
-                return
-            return await func(self, *args, **kwargs)
-
-        return wrapped_f
-
-    return wrapper
+    return predicate
 
 
-def cache_update(func):
-    """Decorator that updates cache regularly."""
-
-    @functools.wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        ctx = args[0]
-        await self.cache.update(self)
-        return await func(self, *args, **kwargs)
-
-    return wrapper
-
-
-def flairing_required(func):
-    """Decorator that updates cache regularly."""
-
-    @functools.wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        ctx = args[0]
-        if not (check_roles(ctx.author, STAFF_LIST)):
-            if ctx.channel.name != FLAIRING_CHANNEL_NAME:
-                flairing_channel = discord.utils.get(ctx.guild.channels, name=FLAIRING_CHANNEL_NAME)
-                await ctx.send(f'Flairing commands can only be used in {flairing_channel.mention}.')
-                return
-        if not self.cache.flairing_allowed:
-            await ctx.send(f'Flaring is currently disabled, please wait for a mod to re-enable it.')
-            return
-        return await func(self, *args, **kwargs)
-
-    return wrapper
+@guard
+async def flairing_required(ctx: Context):
+    """Errors outside the flairing channel for non staff, or while flairing is disabled."""
+    if not (check_roles(ctx.author, STAFF_LIST)):
+        if ctx.channel.name != FLAIRING_CHANNEL_NAME:
+            flairing_channel = discord.utils.get(ctx.guild.channels, name=FLAIRING_CHANNEL_NAME)
+            await refuse(ctx, f'Flairing commands can only be used in {flairing_channel.mention}.')
+    if not ctx.cog.cache.flairing_allowed:
+        await refuse(ctx, f'Flaring is currently disabled, please wait for a mod to re-enable it.')
