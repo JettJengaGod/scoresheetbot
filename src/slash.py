@@ -18,10 +18,10 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from .character import CHARACTERS
+from character import CHARACTERS
 
 if TYPE_CHECKING:
-    from .scoreSheetBot import ScoreSheetBot
+    from scoreSheetBot import ScoreSheetBot
 
 DESCRIPTION_LIMIT = 100
 
