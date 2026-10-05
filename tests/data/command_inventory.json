@@ -17,32 +17,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "typed",
-   "options": [
-    {
-     "name": "winner",
-     "required": true,
-     "type": "str"
-    },
-    {
-     "name": "loser",
-     "required": true,
-     "type": "str"
-    },
-    {
-     "name": "screenshot",
-     "required": true,
-     "type": "Attachment"
-    },
-    {
-     "name": "screenshot2",
-     "required": false,
-     "type": "Attachment"
-    }
-   ],
-   "path": "staff battle addforfeit"
-  }
+  "slash": null
  },
  "addsheet": {
   "aliases": [],
@@ -145,11 +120,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff battle backfill"
-  }
+  "slash": null
  },
  "battle": {
   "aliases": [
@@ -200,11 +171,7 @@
   "guards": [],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "crew battles"
-  }
+  "slash": null
  },
  "bet": {
   "aliases": [],
@@ -221,22 +188,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "typed",
-   "options": [
-    {
-     "name": "amount",
-     "required": true,
-     "type": "str"
-    },
-    {
-     "name": "crew",
-     "required": true,
-     "type": "str"
-    }
-   ],
-   "path": "gambit bet"
-  }
+  "slash": null
  },
  "bigcrew": {
   "aliases": [],
@@ -316,17 +268,7 @@
     "type": "Member"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "member",
-     "required": true,
-     "type": "Member"
-    }
-   ],
-   "path": "staff flair categoryrole"
-  }
+  "slash": null
  },
  "cb": {
   "aliases": [],
@@ -388,27 +330,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "member",
-     "required": true,
-     "type": "Member"
-    },
-    {
-     "name": "amount",
-     "required": true,
-     "type": "int"
-    },
-    {
-     "name": "reason",
-     "required": false,
-     "type": "str"
-    }
-   ],
-   "path": "staff bot charge"
-  }
+  "slash": null
  },
  "chars": {
   "aliases": [],
@@ -482,17 +404,7 @@
     "type": "Member"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "member",
-     "required": false,
-     "type": "Member"
-    }
-   ],
-   "path": "gambit coins"
-  }
+  "slash": null
  },
  "confirm": {
   "aliases": [],
@@ -518,11 +430,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff crew cooldown"
-  }
+  "slash": null
  },
  "countdown": {
   "aliases": [],
@@ -577,22 +485,7 @@
     "type": "int"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "user",
-     "required": true,
-     "type": "Member"
-    },
-    {
-     "name": "size",
-     "required": true,
-     "type": "int"
-    }
-   ],
-   "path": "cb cowy"
-  }
+  "slash": null
  },
  "crew": {
   "aliases": [],
@@ -664,11 +557,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff crew crnumbers"
-  }
+  "slash": null
  },
  "deactivate": {
   "aliases": [],
@@ -705,11 +594,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff bot dele"
-  }
+  "slash": null
  },
  "demote": {
   "aliases": [],
@@ -772,11 +657,7 @@
   "guards": [],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "misc disablelist"
-  }
+  "slash": null
  },
  "disband": {
   "aliases": [],
@@ -960,42 +841,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "typed",
-   "options": [
-    {
-     "name": "winner",
-     "required": true,
-     "type": "str"
-    },
-    {
-     "name": "registering_crew",
-     "required": true,
-     "type": "str"
-    },
-    {
-     "name": "players",
-     "required": true,
-     "type": "int"
-    },
-    {
-     "name": "score",
-     "required": true,
-     "type": "int"
-    },
-    {
-     "name": "screenshot",
-     "required": true,
-     "type": "Attachment"
-    },
-    {
-     "name": "screenshot2",
-     "required": false,
-     "type": "Attachment"
-    }
-   ],
-   "path": "staff battle failedreg"
-  }
+  "slash": null
  },
  "fixslot": {
   "aliases": [],
@@ -1107,17 +953,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "long",
-     "required": false,
-     "type": "str"
-    }
-   ],
-   "path": "staff crew flaircounts"
-  }
+  "slash": null
  },
  "flairing": {
   "aliases": [],
@@ -1135,11 +971,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff flair flairing_off"
-  }
+  "slash": null
  },
  "flairing_on": {
   "aliases": [],
@@ -1149,11 +981,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff flair flairing_on"
-  }
+  "slash": null
  },
  "forfeit": {
   "aliases": [
@@ -1201,22 +1029,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "typed",
-   "options": [
-    {
-     "name": "crew",
-     "required": true,
-     "type": "str"
-    },
-    {
-     "name": "length",
-     "required": false,
-     "type": "str"
-    }
-   ],
-   "path": "staff crew freeze"
-  }
+  "slash": null
  },
  "gamb": {
   "aliases": [],
@@ -1227,11 +1040,7 @@
   ],
   "is_group": true,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "gambit status"
-  }
+  "slash": null
  },
  "gamb close": {
   "aliases": [],
@@ -1255,22 +1064,7 @@
     "type": "TextChannel"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "stream",
-     "required": false,
-     "type": "str"
-    },
-    {
-     "name": "channel",
-     "required": false,
-     "type": "TextChannel"
-    }
-   ],
-   "path": "gambit close"
-  }
+  "slash": null
  },
  "gamb finish": {
   "aliases": [],
@@ -1322,22 +1116,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "c1",
-     "required": true,
-     "type": "str"
-    },
-    {
-     "name": "c2",
-     "required": true,
-     "type": "str"
-    }
-   ],
-   "path": "gambit start"
-  }
+  "slash": null
  },
  "gamb update": {
   "aliases": [],
@@ -1348,11 +1127,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "gambit update"
-  }
+  "slash": null
  },
  "guide": {
   "aliases": [],
@@ -1600,17 +1375,7 @@
     "type": "int"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "battle_id",
-     "required": true,
-     "type": "int"
-    }
-   ],
-   "path": "staff battle manual_battle"
-  }
+  "slash": null
  },
  "misc": {
   "aliases": [],
@@ -1746,11 +1511,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff crew non_crew"
-  }
+  "slash": null
  },
  "noverlap": {
   "aliases": [],
@@ -1790,11 +1551,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "gambit odds"
-  }
+  "slash": null
  },
  "opt": {
   "aliases": [],
@@ -1812,17 +1569,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "name",
-     "required": false,
-     "type": "str"
-    }
-   ],
-   "path": "staff crew opt"
-  }
+  "slash": null
  },
  "overflow": {
   "aliases": [],
@@ -1832,11 +1579,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff crew overflow"
-  }
+  "slash": null
  },
  "overlap": {
   "aliases": [],
@@ -1884,22 +1627,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "typed",
-   "options": [
-    {
-     "name": "crew1",
-     "required": true,
-     "type": "str"
-    },
-    {
-     "name": "crew2",
-     "required": true,
-     "type": "str"
-    }
-   ],
-   "path": "staff crew pair"
-  }
+  "slash": null
  },
  "pending": {
   "aliases": [],
@@ -1909,11 +1637,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff battle pending"
-  }
+  "slash": null
  },
  "pingnoverlap": {
   "aliases": [],
@@ -2084,11 +1808,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "crew po"
-  }
+  "slash": null
  },
  "predict": {
   "aliases": [],
@@ -2096,11 +1816,7 @@
   "guards": [],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "gambit predict"
-  }
+  "slash": null
  },
  "predictions": {
   "aliases": [],
@@ -2108,11 +1824,7 @@
   "guards": [],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "gambit predictions"
-  }
+  "slash": null
  },
  "promote": {
   "aliases": [],
@@ -2162,11 +1874,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff battle rate"
-  }
+  "slash": null
  },
  "recache": {
   "aliases": [
@@ -2363,37 +2071,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "typed",
-   "options": [
-    {
-     "name": "opponent",
-     "required": true,
-     "type": "Member"
-    },
-    {
-     "name": "your_characters",
-     "required": true,
-     "type": "str"
-    },
-    {
-     "name": "your_score",
-     "required": true,
-     "type": "int"
-    },
-    {
-     "name": "opponent_score",
-     "required": true,
-     "type": "int"
-    },
-    {
-     "name": "opponent_characters",
-     "required": true,
-     "type": "str"
-    }
-   ],
-   "path": "misc result"
-  }
+  "slash": null
  },
  "retag": {
   "aliases": [],
@@ -2410,17 +2088,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "name",
-     "required": false,
-     "type": "str"
-    }
-   ],
-   "path": "staff crew retag"
-  }
+  "slash": null
  },
  "savenicks": {
   "aliases": [],
@@ -2431,11 +2099,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff flair savenicks"
-  }
+  "slash": null
  },
  "season": {
   "aliases": [],
@@ -2445,11 +2109,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff battle season"
-  }
+  "slash": null
  },
  "send": {
   "aliases": [
@@ -2739,22 +2399,7 @@
     "type": "int"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "user",
-     "required": true,
-     "type": "Member"
-    },
-    {
-     "name": "size",
-     "required": true,
-     "type": "int"
-    }
-   ],
-   "path": "cb strawhat"
-  }
+  "slash": null
  },
  "stream": {
   "aliases": [
@@ -2795,11 +2440,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff bot stupid"
-  }
+  "slash": null
  },
  "sync": {
   "aliases": [],
@@ -2809,11 +2450,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "staff bot sync"
-  }
+  "slash": null
  },
  "test": {
   "aliases": [],
@@ -2843,11 +2480,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "misc thank"
-  }
+  "slash": null
  },
  "thankboard": {
   "aliases": [],
@@ -2857,11 +2490,7 @@
   ],
   "is_group": false,
   "params": [],
-  "slash": {
-   "kind": "twin",
-   "options": [],
-   "path": "misc thankboard"
-  }
+  "slash": null
  },
  "timer": {
   "aliases": [
@@ -2924,17 +2553,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "name",
-     "required": false,
-     "type": "str"
-    }
-   ],
-   "path": "staff crew tomain"
-  }
+  "slash": null
  },
  "tri": {
   "aliases": [],
@@ -2952,17 +2571,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "name",
-     "required": false,
-     "type": "str"
-    }
-   ],
-   "path": "staff crew tri"
-  }
+  "slash": null
  },
  "umbralotto": {
   "aliases": [],
@@ -2977,17 +2586,7 @@
     "type": "int"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "rank",
-     "required": true,
-     "type": "int"
-    }
-   ],
-   "path": "crew umbralotto"
-  }
+  "slash": null
  },
  "umbralottotest": {
   "aliases": [],
@@ -3002,17 +2601,7 @@
     "type": "int"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "rank",
-     "required": true,
-     "type": "int"
-    }
-   ],
-   "path": "crew umbralottotest"
-  }
+  "slash": null
  },
  "undo": {
   "aliases": [],
@@ -3091,17 +2680,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "name",
-     "required": false,
-     "type": "str"
-    }
-   ],
-   "path": "staff battle update_elos"
-  }
+  "slash": null
  },
  "usage": {
   "aliases": [],
@@ -3167,22 +2746,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "battle_id",
-     "required": true,
-     "type": "int"
-    },
-    {
-     "name": "vod",
-     "required": true,
-     "type": "str"
-    }
-   ],
-   "path": "staff battle vod"
-  }
+  "slash": null
  },
  "vote": {
   "aliases": [],
@@ -3199,17 +2763,7 @@
     "type": "int"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "option",
-     "required": true,
-     "type": "int"
-    }
-   ],
-   "path": "misc vote"
-  }
+  "slash": null
  },
  "weirdreg": {
   "aliases": [],
@@ -3227,41 +2781,6 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "typed",
-   "options": [
-    {
-     "name": "losing_crew",
-     "required": true,
-     "type": "str"
-    },
-    {
-     "name": "registering_crew",
-     "required": true,
-     "type": "str"
-    },
-    {
-     "name": "players",
-     "required": true,
-     "type": "int"
-    },
-    {
-     "name": "score",
-     "required": true,
-     "type": "int"
-    },
-    {
-     "name": "screenshot",
-     "required": true,
-     "type": "Attachment"
-    },
-    {
-     "name": "screenshot2",
-     "required": false,
-     "type": "Attachment"
-    }
-   ],
-   "path": "staff battle weirdreg"
-  }
+  "slash": null
  }
 }

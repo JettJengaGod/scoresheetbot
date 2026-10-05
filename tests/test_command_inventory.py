@@ -20,7 +20,7 @@ from discord.ext import commands
 
 import src.cache
 from src import scoreSheetBot
-from src.slash import ALLOWED_IN_DMS, GROUPS, PREFIX_ONLY, SLASH_NAMES, STAFF_GROUPS
+from src.slash import ALLOWED_IN_DMS, GROUPS, NO_SLASH, PREFIX_ONLY, SLASH_NAMES, STAFF_GROUPS
 from tests.harness import assert_snapshot, is_hybrid, make_cog
 
 COMMAND_DECORATORS = ('command', 'group', 'hybrid_command', 'hybrid_group')
@@ -156,7 +156,16 @@ class CommandInventoryTest(unittest.TestCase):
 
     def test_every_prefix_command_has_a_slash_command(self):
         self.assertEqual(set(), PREFIX_ONLY - set(self.prefix), 'PREFIX_ONLY names a command that does not exist')
-        self.assertEqual(set(self.prefix) - PREFIX_ONLY, set(self.slash))
+        self.assertEqual(set(self.prefix) - PREFIX_ONLY - NO_SLASH, set(self.slash))
+        # A slash command that is switched off can still be built, for when it is switched back on.
+        self.assertEqual(set(self.prefix) - PREFIX_ONLY, set(make_cog(every_slash_command=True).slash.by_prefix_name))
+
+    def test_switched_off_slash_commands_are_real_and_stay_in_help(self):
+        sectioned = [name for _, names in list(GROUPS.values()) + list(STAFF_GROUPS.values()) for name in names]
+        self.assertEqual(set(), NO_SLASH - set(self.prefix), 'NO_SLASH names a command that does not exist')
+        self.assertEqual(set(), NO_SLASH - set(sectioned), 'help would no longer list it')
+        self.assertEqual(set(), NO_SLASH & PREFIX_ONLY)
+        self.assertEqual(set(), NO_SLASH & set(self.slash))
 
     def test_generated_and_hybrid_slash_commands_take_the_same_arguments(self):
         for name, command in self.prefix.items():
@@ -179,7 +188,8 @@ class CommandInventoryTest(unittest.TestCase):
         for name in grouped:
             with self.subTest(command=name):
                 self.assertTrue(any(g.startswith('role_call') for g in guards[name]), 'not a restricted command')
-                self.assertTrue(self.slash[name].qualified_name.startswith('staff '))
+                if name not in NO_SLASH:
+                    self.assertTrue(self.slash[name].qualified_name.startswith('staff '))
         for name in set(self.slash) - set(grouped):
             if name.startswith('gamb'):
                 continue
@@ -192,7 +202,7 @@ class CommandInventoryTest(unittest.TestCase):
         staff = [name for _, names in STAFF_GROUPS.values() for name in names]
         self.assertEqual(len(sectioned + staff), len(set(sectioned + staff)), 'a command is in two sections')
         for section, (_, names) in GROUPS.items():
-            for name in names:
+            for name in set(names) - NO_SLASH:
                 with self.subTest(command=name):
                     slash_name = SLASH_NAMES.get(name, self.prefix[name].name)
                     self.assertEqual(f'{section} {slash_name}', self.slash[name].qualified_name)

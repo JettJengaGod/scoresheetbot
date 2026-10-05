@@ -83,6 +83,30 @@ PREFIX_ONLY = {
     'test', 'test confirm',
 }
 
+# Commands whose slash command is switched off: the ones left unchecked in the keep column of the command
+# usage sheet. They still work with the prefix and stay in their section above, so help keeps listing them.
+# Take a name out of here to bring its slash command back.
+NO_SLASH = {
+    # /cb
+    'cowy', 'strawhat',
+    # /crew
+    'battles', 'po', 'umbralotto', 'umbralottotest',
+    # /gambit, where only finish is kept
+    'bet', 'odds', 'coins', 'predict', 'predictions', 'gamb', 'gamb start', 'gamb close', 'gamb update',
+    # /misc
+    'disablelist', 'result', 'thank', 'thankboard', 'vote',
+    # /staff crew
+    'freeze', 'retag', 'tomain', 'opt', 'tri', 'pair', 'overflow', 'non_crew', 'crnumbers', 'flaircounts',
+    'cooldown',
+    # /staff flair
+    'flairing_on', 'flairing_off', 'categoryrole', 'savenicks',
+    # /staff battle
+    'addforfeit', 'failedreg', 'weirdreg', 'manual_battle', 'pending', 'vod', 'rate', 'update_elos', 'season',
+    'backfill',
+    # /staff bot
+    'charge', 'stupid', 'dele', 'sync',
+}
+
 # Slash descriptions for commands whose help description is written for the prefix form (it gives an example
 # or explains how to type the arguments) or is longer than Discord allows. Everything else uses help.py.
 DESCRIPTIONS = {
@@ -209,7 +233,8 @@ class SlashCommands:
             group = app_commands.Group(name=group_name, description=group_description, guild_only=True)
             top_level.append(group)
             for name in names:
-                self._add(prefix_commands[name], parent=group)
+                if name not in NO_SLASH:
+                    self._add(prefix_commands[name], parent=group)
 
         # Hidden from everyone but server admins until the staff roles are added to /staff in the server's
         # Integrations settings. The role guards on each command are what stop anyone else running them.
@@ -219,10 +244,11 @@ class SlashCommands:
         for group_name, (group_description, names) in STAFF_GROUPS.items():
             group = app_commands.Group(name=group_name, description=group_description, parent=staff)
             for name in names:
-                self._add(prefix_commands[name], parent=group)
+                if name not in NO_SLASH:
+                    self._add(prefix_commands[name], parent=group)
 
         for name, command in prefix_commands.items():
-            if name not in PREFIX_ONLY and name not in self.by_prefix_name:
+            if name not in PREFIX_ONLY | NO_SLASH and name not in self.by_prefix_name:
                 top_level.append(self._add(command, parent=None))
         cog.__cog_app_commands__.extend(top_level)
 

@@ -265,10 +265,18 @@ class ScoreSheetBot(commands.Cog):
             embed = discord.Embed(title=f'/{title} Command Listing',
                                   description=f'{description}\nUse `{prefix}help *command*` to find out more '
                                               f'about one. With the prefix, leave out the section.')
-            for cmd in sorted((cmds[n] for n in names), key=lambda c: slash[c.qualified_name].name):
+
+            def slash_name(c: commands.Command) -> str:
+                return slash[c.qualified_name].name if c.qualified_name in slash else c.name
+
+            for cmd in sorted((cmds[n] for n in names), key=slash_name):
                 if staff or not cmd.hidden:
                     value = cmd.brief
-                    if slash[cmd.qualified_name].name != cmd.qualified_name:
+                    if cmd.qualified_name not in slash:
+                        # Its slash command is switched off, so it is listed the way it has to be typed.
+                        embed.add_field(name=f'{prefix}{cmd.qualified_name}', value=value, inline=False)
+                        continue
+                    if slash_name(cmd) != cmd.qualified_name:
                         value += f' (`{prefix}{cmd.qualified_name}`)'
                     embed.add_field(name=f'/{slash[cmd.qualified_name].qualified_name}', value=value, inline=False)
             return embed
@@ -277,8 +285,8 @@ class ScoreSheetBot(commands.Cog):
             halp = discord.Embed(title='Command Sections',
                                  description=f'Use `{prefix}help *section*` to list the commands in one, or '
                                              f'`{prefix}help *command*` to find out more about a command!\n'
-                                             f'Every command works as a slash command (`/cb send`) or with the '
-                                             f'prefix (`{prefix}send`).')
+                                             f'Every command works with the prefix (`{prefix}send`) and most also '
+                                             f'work as a slash command (`/cb send`).')
             for section, (description, _) in GROUPS.items():
                 halp.add_field(name=f'/{section}', value=description, inline=False)
             if staff:
