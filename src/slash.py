@@ -84,15 +84,16 @@ PREFIX_ONLY = {
 }
 
 # Commands whose slash command is switched off: the ones left unchecked in the keep column of the command
-# usage sheet. They still work with the prefix and stay in their section above, so help keeps listing them.
-# Take a name out of here to bring its slash command back.
+# usage sheet. They still work with the prefix, but help no longer lists them (`help <command>` still explains
+# one). Take a name out of here to bring its slash command, and its place in help, back.
 NO_SLASH = {
     # /cb
     'cowy', 'strawhat',
     # /crew
     'battles', 'po', 'umbralotto', 'umbralottotest',
-    # /gambit, where only finish is kept
-    'bet', 'odds', 'coins', 'predict', 'predictions', 'gamb', 'gamb start', 'gamb close', 'gamb update',
+    # /gambit, all of it; finish is checked in the sheet but the section was then switched off as a whole
+    'bet', 'odds', 'coins', 'predict', 'predictions', 'gamb', 'gamb start', 'gamb close', 'gamb finish',
+    'gamb update',
     # /misc
     'disablelist', 'result', 'thank', 'thankboard', 'vote',
     # /staff crew
@@ -231,10 +232,12 @@ class SlashCommands:
         top_level = []
         for group_name, (group_description, names) in GROUPS.items():
             group = app_commands.Group(name=group_name, description=group_description, guild_only=True)
-            top_level.append(group)
             for name in names:
                 if name not in NO_SLASH:
                     self._add(prefix_commands[name], parent=group)
+            # A section with every command switched off is left out; Discord has no use for an empty group.
+            if group.commands:
+                top_level.append(group)
 
         # Hidden from everyone but server admins until the staff roles are added to /staff in the server's
         # Integrations settings. The role guards on each command are what stop anyone else running them.
@@ -242,10 +245,12 @@ class SlashCommands:
                                    default_permissions=discord.Permissions())
         top_level.append(staff)
         for group_name, (group_description, names) in STAFF_GROUPS.items():
-            group = app_commands.Group(name=group_name, description=group_description, parent=staff)
+            group = app_commands.Group(name=group_name, description=group_description)
             for name in names:
                 if name not in NO_SLASH:
                     self._add(prefix_commands[name], parent=group)
+            if group.commands:
+                staff.add_command(group)
 
         for name, command in prefix_commands.items():
             if name not in PREFIX_ONLY | NO_SLASH and name not in self.by_prefix_name:
@@ -313,9 +318,12 @@ class SlashCommands:
 
     async def command_autocomplete(self, interaction: discord.Interaction, current: str):
         current = current.lower()
-        names = [section for section in GROUPS if current in section]
+        # Only what help lists: sections and commands that still have a slash command.
+        names = [section for section, (_, listed) in GROUPS.items()
+                 if current in section and any(name in self.by_prefix_name for name in listed)]
         names += sorted({command.name for command in self.cog.walk_commands()
-                         if not command.hidden and current in command.name} - set(names) - PREFIX_ONLY)
+                         if not command.hidden and current in command.name
+                         and command.qualified_name in self.by_prefix_name} - set(names))
         return [app_commands.Choice(name=name, value=name) for name in names[:25]]
 
     def _typed_front_ends(self) -> Dict[str, Callable]:

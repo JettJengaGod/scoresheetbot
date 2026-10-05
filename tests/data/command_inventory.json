@@ -1082,17 +1082,7 @@
     "type": "str"
    }
   ],
-  "slash": {
-   "kind": "twin",
-   "options": [
-    {
-     "name": "winner",
-     "required": true,
-     "type": "str"
-    }
-   ],
-   "path": "gambit finish"
-  }
+  "slash": null
  },
  "gamb start": {
   "aliases": [],

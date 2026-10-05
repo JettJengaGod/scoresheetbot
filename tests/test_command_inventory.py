@@ -160,10 +160,10 @@ class CommandInventoryTest(unittest.TestCase):
         # A slash command that is switched off can still be built, for when it is switched back on.
         self.assertEqual(set(self.prefix) - PREFIX_ONLY, set(make_cog(every_slash_command=True).slash.by_prefix_name))
 
-    def test_switched_off_slash_commands_are_real_and_stay_in_help(self):
+    def test_switched_off_slash_commands_are_real_and_keep_their_section(self):
         sectioned = [name for _, names in list(GROUPS.values()) + list(STAFF_GROUPS.values()) for name in names]
         self.assertEqual(set(), NO_SLASH - set(self.prefix), 'NO_SLASH names a command that does not exist')
-        self.assertEqual(set(), NO_SLASH - set(sectioned), 'help would no longer list it')
+        self.assertEqual(set(), NO_SLASH - set(sectioned), 'it would have no section to come back to')
         self.assertEqual(set(), NO_SLASH & PREFIX_ONLY)
         self.assertEqual(set(), NO_SLASH & set(self.slash))
 
