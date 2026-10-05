@@ -65,7 +65,7 @@ STAFF_GROUPS: Dict[str, tuple] = {
         'pingoverlap', 'pingnoverlap', 'savenicks']),
     'battle': ('Manage crew battle records', [
         'addforfeit', 'addsheet', 'failedreg', 'weirdreg', 'cancelcb', 'manual_battle', 'pending', 'vod', 'rate',
-        'update_elos', 'initalize_ratings', 'season', 'backfill']),
+        'update_elos', 'initalize_ratings', 'season', 'backfill', 'broadcast']),
     'slots': ('Manage crew slots', [
         'setslots', 'setreturnslots', 'fixslot', 'slottotals', 'slotfinals']),
     'bot': ('Manage the bot', [
@@ -171,6 +171,7 @@ OPTIONS = {
     'amount': 'Number of G-Coins',
     'bet.amount': 'Number of G-Coins, or "all"',
     'reason': 'Reason',
+    'message': 'The message to send',
     'num': 'Number of slots',
     'length': 'How long, e.g. 3D, 2W or 1M; leave blank to unfreeze',
     'channel': 'The channel',

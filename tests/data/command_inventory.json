@@ -215,6 +215,33 @@
    "path": "crew bigcrew"
   }
  },
+ "broadcast": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "message",
+    "required": true,
+    "rest": true,
+    "type": "str"
+   }
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "message",
+     "required": true,
+     "type": "str"
+    }
+   ],
+   "path": "staff battle broadcast"
+  }
+ },
  "cancelcb": {
   "aliases": [],
   "category": "staff",
