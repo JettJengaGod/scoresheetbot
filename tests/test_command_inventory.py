@@ -254,6 +254,16 @@ class CommandInventoryTest(unittest.TestCase):
             with self.subTest(command=name):
                 self.assertEqual(name not in ALLOWED_IN_DMS, bool(root(slash).guild_only))
 
+    def test_only_staff_commands_are_hidden_by_default(self):
+        """Discord shows /staff to server admins alone until its roles are added in the server's settings."""
+        for name, slash in self.slash.items():
+            with self.subTest(command=name):
+                payload = payload_of(root(slash))
+                if slash.qualified_name.startswith('staff '):
+                    self.assertEqual(0, payload['default_member_permissions'])
+                else:
+                    self.assertIsNone(payload['default_member_permissions'])
+
 
 class RealBotTest(unittest.IsolatedAsyncioTestCase):
     """Loads the cog into a real, unconnected bot, the way `main` does."""
