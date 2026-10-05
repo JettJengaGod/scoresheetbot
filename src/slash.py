@@ -211,7 +211,10 @@ class SlashCommands:
             for name in names:
                 self._add(prefix_commands[name], parent=group)
 
-        staff = app_commands.Group(name='staff', description=STAFF_DESCRIPTION, guild_only=True)
+        # Hidden from everyone but server admins until the staff roles are added to /staff in the server's
+        # Integrations settings. The role guards on each command are what stop anyone else running them.
+        staff = app_commands.Group(name='staff', description=STAFF_DESCRIPTION, guild_only=True,
+                                   default_permissions=discord.Permissions())
         top_level.append(staff)
         for group_name, (group_description, names) in STAFF_GROUPS.items():
             group = app_commands.Group(name=group_name, description=group_description, parent=staff)
