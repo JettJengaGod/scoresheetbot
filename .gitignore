@@ -10,3 +10,5 @@ credentials.json
 token.pickle
 __pycache__/
 .venv/
+# The running battles, saved by the bot so that they survive a restart
+/battles.json*

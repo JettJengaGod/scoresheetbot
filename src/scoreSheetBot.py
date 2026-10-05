@@ -5,6 +5,7 @@ from asyncio import sleep
 from discord.ext import commands, tasks
 from discord.ext.commands import Greedy
 
+import battle_store
 from elo_helpers import rating_update
 from sheet_helpers import update_gambit_sheet, update_ba_sheet, update_bf_sheet, update_mc_player_sheet, \
             update_mc_sheet, update_trinity_sheet, update_destiny_sheet, update_wisdom_sheet, update_rankings_sheet
@@ -28,6 +29,10 @@ class ScoreSheetBot(commands.Cog):
     def __init__(self, bot: commands.bot, cache: Cache):
         self.bot = bot
         self.battle_map: Dict[str, Battle] = {}
+        # Where the running battles are saved so that they survive a restart. `main` sets it; while it is
+        # None (as in the tests) battles are only kept in memory.
+        self.battle_file: Optional[str] = None
+        self._saved_battles: Optional[str] = None
         self.cache_value = cache
         self.cache_time = time.time()
         self._gambit_message = None
@@ -128,12 +133,47 @@ class ScoreSheetBot(commands.Cog):
                 raise Exception('You need to be an advisor or leader to run this command.')
             raise Exception('You are not in this battle, stop trying to mess with it.')
 
+    def save_battles(self) -> None:
+        """Writes the running battles to disk, if any of them changed since they were last written."""
+        if not self.battle_file:
+            return
+        try:
+            text = battle_store.dumps(self.battle_map)
+            if text != self._saved_battles:
+                battle_store.save_battles(self.battle_file, text)
+                self._saved_battles = text
+        except Exception:
+            # Failing to save must not get in the way of the command that was just run.
+            logging.exception('Could not save the running battles.')
+
+    def load_battles(self) -> None:
+        """Brings back the battles that were running when the bot last stopped."""
+        self.battle_map = battle_store.load_battles(self.battle_file)
+        self._saved_battles = battle_store.dumps(self.battle_map)
+        logging.info(f'Restored {len(self.battle_map)} running battles from {self.battle_file}.')
+
+    def drop_battles_without_a_channel(self) -> List[str]:
+        """Forgets restored battles whose channel was deleted while the bot was down, and returns their keys.
+
+        The battle summaries look every battle's channel up, so one without a channel would break them.
+        """
+        if any(guild.unavailable for guild in self.bot.guilds):
+            return []  # Discord has not sent every server's channels, so a missing one proves nothing.
+        gone = battle_store.keys_without_channel(self.battle_map, [c.id for c in self.bot.get_all_channels()])
+        for key in gone:
+            logging.warning(f'Dropping the restored battle for {key}: its channel no longer exists.')
+            del self.battle_map[key]
+        self.save_battles()
+        return gone
+
     async def _set_current(self, ctx: Context, battle: Battle):
         self.battle_map[key_string(ctx)] = battle
+        self.save_battles()
         await update_channel_open(NO, ctx.channel)
 
     async def _clear_current(self, ctx):
         self.battle_map.pop(key_string(ctx), None)
+        self.save_battles()
         await unlock(ctx.channel)
         await update_channel_open('', ctx.channel)
 
@@ -187,11 +227,17 @@ class ScoreSheetBot(commands.Cog):
             await command.call_after_hooks(ctx)
         except Exception as error:
             await self.on_command_error(ctx, error)
+        finally:
+            # A command that failed may still have changed a battle before it did.
+            self.save_battles()
 
     async def slash_context(self, interaction: discord.Interaction) -> Context:
         return await Context.from_interaction(interaction)
 
     async def cog_after_invoke(self, ctx):
+        # This runs after every command, including a prefix command that failed, so whatever the command
+        # did to a battle is on disk before the next one.
+        self.save_battles()
         if ctx.interaction and not getattr(ctx, 'slash_replied', False):
             # The command answered somewhere else (a DM, another channel) or had nothing to say.
             await ctx.send('Done.')
@@ -205,6 +251,11 @@ class ScoreSheetBot(commands.Cog):
     @auto_cache.before_loop
     async def wait_for_bot(self):
         await self.bot.wait_until_ready()
+        try:
+            self.drop_battles_without_a_channel()
+        except Exception:
+            # The recache loop starts after this, and must start whatever state the restored battles are in.
+            logging.exception('Could not check the restored battles against the channels.')
 
     @commands.Cog.listener()
     async def on_member_remove(self, user):
@@ -4046,7 +4097,10 @@ async def main():
     bot.remove_command('help')
     cache = Cache()
 
-    await bot.add_cog(ScoreSheetBot(bot, cache))
+    cog = ScoreSheetBot(bot, cache)
+    cog.battle_file = battle_store.battle_file()
+    cog.load_battles()
+    await bot.add_cog(cog)
     bot.setup_hook = lambda: sync_slash_commands(bot)
     await bot.start(token)
 
