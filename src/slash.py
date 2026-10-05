@@ -54,6 +54,7 @@ SLASH_NAMES = {
     'gamb': 'status',  # `,gamb` on its own shows the current gambit
 }
 
+STAFF_DESCRIPTION = 'Staff commands'
 # Where each staff command lives: /staff <group> <command>. Discord allows 25 commands per group.
 STAFF_GROUPS: Dict[str, tuple] = {
     'crew': ('Manage crews', [
@@ -70,6 +71,9 @@ STAFF_GROUPS: Dict[str, tuple] = {
     'bot': ('Manage the bot', [
         'disable', 'deactivate', 'usage', 'recache', 'charge', 'stupid', 'dele', 'sync']),
 }
+
+# Help categories from before the sections, which `help` still accepts, and the section that replaced each.
+OLD_CATEGORIES = {'crews': 'crew', 'flairing': 'f', 'ba': 'misc'}
 
 # Prefix commands that deliberately have no slash command.
 PREFIX_ONLY = {
@@ -93,7 +97,7 @@ DESCRIPTIONS = {
     'overlap': 'Lists the members who have both roles.',
     'noverlap': 'Lists the members who have the first role but not the second.',
     'result': 'Submits a best of 5 battle arena result for your opponent to confirm.',
-    'help': 'Lists command groups, or explains one group or command.',
+    'help': 'Lists the command sections, or explains one section or command.',
 }
 
 # Option descriptions, by option name. A "command.option" key overrides the plain name for one command.
@@ -146,6 +150,7 @@ OPTIONS = {
     'length': 'How long, e.g. 3D, 2W or 1M; leave blank to unfreeze',
     'channel': 'The channel',
     'command': 'Command name',
+    'help.command': 'Section or command name; leave blank to list the sections',
     'battle_id': 'ID of the crew battle',
     'vod': 'Link to the vod',
     'long': 'Add anything here for the long version',
@@ -206,7 +211,7 @@ class SlashCommands:
             for name in names:
                 self._add(prefix_commands[name], parent=group)
 
-        staff = app_commands.Group(name='staff', description='Staff commands', guild_only=True)
+        staff = app_commands.Group(name='staff', description=STAFF_DESCRIPTION, guild_only=True)
         top_level.append(staff)
         for group_name, (group_description, names) in STAFF_GROUPS.items():
             group = app_commands.Group(name=group_name, description=group_description, parent=staff)
@@ -279,8 +284,9 @@ class SlashCommands:
 
     async def command_autocomplete(self, interaction: discord.Interaction, current: str):
         current = current.lower()
-        names = sorted({command.name for command in self.cog.walk_commands()
-                        if not command.hidden and current in command.name})
+        names = [section for section in GROUPS if current in section]
+        names += sorted({command.name for command in self.cog.walk_commands()
+                         if not command.hidden and current in command.name} - set(names) - PREFIX_ONLY)
         return [app_commands.Choice(name=name, value=name) for name in names[:25]]
 
     def _typed_front_ends(self) -> Dict[str, Callable]:
