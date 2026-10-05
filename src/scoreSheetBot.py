@@ -264,6 +264,14 @@ class ScoreSheetBot(commands.Cog):
             words[0] = OLD_CATEGORIES.get(words[0], words[0])
         name = ' '.join(words)
 
+        def enabled(sections: Dict[str, tuple]) -> Dict[str, tuple]:
+            """The sections without the commands whose slash command is switched off, or that have none left."""
+            kept = {section: (description, [n for n in names if n in slash])
+                    for section, (description, names) in sections.items()}
+            return {section: listed for section, listed in kept.items() if listed[1]}
+
+        groups, staff_groups = enabled(GROUPS), enabled(STAFF_GROUPS)
+
         def listing(title: str, description: str, names: List[str]) -> discord.Embed:
             embed = discord.Embed(title=f'/{title} Command Listing',
                                   description=f'{description}\nUse `{prefix}help *command*` to find out more '
@@ -280,27 +288,27 @@ class ScoreSheetBot(commands.Cog):
             halp = discord.Embed(title='Command Sections',
                                  description=f'Use `{prefix}help *section*` to list the commands in one, or '
                                              f'`{prefix}help *command*` to find out more about a command!\n'
-                                             f'Every command works as a slash command (`/cb send`) or with the '
-                                             f'prefix (`{prefix}send`).')
-            for section, (description, _) in GROUPS.items():
+                                             f'Every command here works as a slash command (`/cb send`) or with '
+                                             f'the prefix (`{prefix}send`).')
+            for section, (description, _) in groups.items():
                 halp.add_field(name=f'/{section}', value=description, inline=False)
             if staff:
                 halp.add_field(name='/staff', value=STAFF_DESCRIPTION, inline=False)
             halp.add_field(name='/help', value=cmds['help'].help, inline=False)
-        elif name in GROUPS:
-            halp = listing(name, *GROUPS[name])
-        elif words[0] == 'staff' and not staff and (len(words) == 1 or words[1] in STAFF_GROUPS):
+        elif name in groups:
+            halp = listing(name, *groups[name])
+        elif words[0] == 'staff' and not staff and (len(words) == 1 or words[1] in staff_groups):
             await self._help_reply(ctx, 'That section is for staff.')
             return
         elif name == 'staff':
             halp = discord.Embed(title='/staff Command Listing',
                                  description=f'{STAFF_DESCRIPTION}\nUse `{prefix}help staff *group*` to list the '
                                              f'commands in one.')
-            for staff_group, (description, names) in STAFF_GROUPS.items():
+            for staff_group, (description, names) in staff_groups.items():
                 halp.add_field(name=f'/staff {staff_group}',
                                value=f'{description}\n{", ".join(f"`{n}`" for n in sorted(names))}', inline=False)
-        elif len(words) == 2 and words[0] == 'staff' and words[1] in STAFF_GROUPS:
-            halp = listing(name, *STAFF_GROUPS[words[1]])
+        elif len(words) == 2 and words[0] == 'staff' and words[1] in staff_groups:
+            halp = listing(name, *staff_groups[words[1]])
         else:
             # A command, by its prefix name (`send`, `gamb start`), slash name (`cb send`) or last word (`start`).
             by_slash = {s.qualified_name: cmds[n] for n, s in slash.items()}

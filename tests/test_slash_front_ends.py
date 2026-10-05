@@ -46,7 +46,7 @@ TYPED_ELSEWHERE = {'help', 'multiflair', 'register'}
 
 class TypedFrontEndTest(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.cog = make_cog()
+        self.cog = make_cog(every_slash_command=True)
         self.author = mocks.MockMember(id=1, roles=[mocks.admin])
         self.guild = self.cog.cache.scs
         self.ctx = FakeContext(self.cog, self.author, mocks.MockTextChannel(id=5), self.guild, SLASH)
@@ -118,11 +118,19 @@ class TypedFrontEndTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(['crew', 'crewstats'], [c.value for c in await slash.command_autocomplete(None, 'crew')])
 
 
+class HelpAutocompleteTest(unittest.IsolatedAsyncioTestCase):
+    async def test_switched_off_commands_and_sections_are_not_suggested(self):
+        slash = make_cog().slash
+        self.assertEqual([], [c.value for c in await slash.command_autocomplete(None, 'gamb')])
+        self.assertNotIn('thank', [c.value for c in await slash.command_autocomplete(None, 'than')])
+        self.assertIn('send', [c.value for c in await slash.command_autocomplete(None, 'sen')])
+
+
 class RunSlashTest(unittest.IsolatedAsyncioTestCase):
     """`run_slash` gives a slash front end everything the prefix command has."""
 
     def setUp(self):
-        self.cog = make_cog()
+        self.cog = make_cog(every_slash_command=True)
         self.guild = self.cog.cache.scs
         self.channel = mocks.MockTextChannel(name='staff-chat', id=5, guild=self.guild)
         self.staff = mocks.MockMember(id=1, display_name='Staff', roles=[mocks.admin])
@@ -278,17 +286,31 @@ class HelpTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_help_lists_the_slash_sections(self):
         fields = (await self.help_embed())['fields']
-        self.assertEqual([f'/{section}' for section in GROUPS] + ['/help'], [f['name'] for f in fields])
-        self.assertEqual([description for description, _ in GROUPS.values()], [f['value'] for f in fields[:-1]])
+        # gambit has every slash command switched off, so it is not a section any more.
+        sections = {section: description for section, (description, _) in GROUPS.items() if section != 'gambit'}
+        self.assertEqual([f'/{section}' for section in sections] + ['/help'], [f['name'] for f in fields])
+        self.assertEqual(list(sections.values()), [f['value'] for f in fields[:-1]])
+        self.assertEqual('Error!', (await self.help_embed('gambit', staff=True))['title'])
         self.assertIn('/staff', [f['name'] for f in (await self.help_embed(staff=True))['fields']])
+
+    def listed(self, names):
+        """Help lists a command by its slash name, and leaves out one whose slash command is switched off."""
+        slash = self.cog.slash.by_prefix_name
+        return [f'/{slash[name].qualified_name}' for name in names if name in slash]
 
     async def test_help_lists_the_commands_of_a_section_by_their_slash_names(self):
         for section, (_, names) in GROUPS.items():
+            if not self.listed(names):
+                continue
             with self.subTest(section=section):
                 listed = [f['name'] for f in (await self.help_embed(section, staff=True))['fields']]
-                self.assertCountEqual([f'/{self.cog.slash.by_prefix_name[name].qualified_name}' for name in names],
-                                      listed)
-        self.assertNotIn('/crew po', [f['name'] for f in (await self.help_embed('crew'))['fields']])
+                self.assertCountEqual(self.listed(names), listed)
+        crew = [f['name'] for f in (await self.help_embed('crew', staff=True))['fields']]
+        self.assertIn('/crew info', crew)
+        self.assertFalse([name for name in crew if name.endswith(' po') or not name.startswith('/crew ')])
+        bot = [f['name'] for f in (await self.help_embed('staff', 'bot', staff=True))['fields']]
+        self.assertIn('/staff bot recache', bot)
+        self.assertNotIn('/staff bot sync', bot)
         # The names of the old help categories still work.
         self.assertEqual(await self.help_embed('crew'), await self.help_embed('crews'))
         self.assertEqual(await self.help_embed('f'), await self.help_embed('flairing'))
@@ -299,7 +321,9 @@ class HelpTest(unittest.IsolatedAsyncioTestCase):
         for group, (_, names) in STAFF_GROUPS.items():
             with self.subTest(group=group):
                 listed = [f['name'] for f in (await self.help_embed('staff', group, staff=True))['fields']]
-                self.assertCountEqual([f'/staff {group} {name}' for name in names], listed)
+                self.assertCountEqual(self.listed(names), listed)
+                self.assertTrue(listed)
+        self.assertNotIn('gambit', [root.name for root in self.cog.__cog_app_commands__])
         for args in (('staff',), ('staff', 'crew')):
             with unittest.mock.patch('src.scoreSheetBot.check_roles', return_value=False):
                 await self.ask(PREFIX, *args)
@@ -307,13 +331,17 @@ class HelpTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_help_for_a_command_shows_its_prefix_and_slash_forms(self):
         for args, title, slash in ((('send',), 'send', '/cb send'), (('cb', 'send'), 'send', '/cb send'),
-                                   (('crew', 'info'), 'crew', '/crew info'),
-                                   (('gamb', 'start'), 'gamb start', '/gambit start')):
+                                   (('crew', 'info'), 'crew', '/crew info')):
             with self.subTest(args=args):
                 embed = await self.help_embed(*args, staff=True)
                 self.assertEqual(title, embed['title'])
                 self.assertIn(f'`,{title} ', embed['description'])
                 self.assertIn(f'`{slash}`', embed['description'])
+        # A command whose slash command is switched off is not listed, but asking for it by name still explains
+        # it, with only its prefix form.
+        embed = await self.help_embed('gamb', 'start', staff=True)
+        self.assertIn('`,gamb start ', embed['description'])
+        self.assertNotIn('`/', embed['description'])
 
 
 if __name__ == '__main__':

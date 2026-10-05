@@ -16,6 +16,7 @@ import discord
 from discord.ext import commands
 
 from src.scoreSheetBot import ScoreSheetBot
+from src.slash import NO_SLASH
 from tests import mocks
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -85,8 +86,12 @@ class FakeContext:
         return self.guild.me
 
 
-def make_cog() -> ScoreSheetBot:
-    """A real ScoreSheetBot cog wired to a mock bot and the mock cache."""
+def make_cog(every_slash_command: bool = False) -> ScoreSheetBot:
+    """A real ScoreSheetBot cog wired to a mock bot and the mock cache.
+
+    `every_slash_command` also builds the slash commands that are switched off (`NO_SLASH`), so the code that
+    is kept for them stays tested and they can be switched back on safely.
+    """
     cache = mocks.cache()
     cache.scs.name = mocks.SCS
     bot = mocks.MockBot()
@@ -94,7 +99,8 @@ def make_cog() -> ScoreSheetBot:
     bot.guilds = [cache.scs, cache.overflow_server]
     bot.command_prefix = ','
     bot._before_invoke = bot._after_invoke = None
-    cog = ScoreSheetBot(bot, cache)
+    with unittest.mock.patch('src.slash.NO_SLASH', set() if every_slash_command else NO_SLASH):
+        cog = ScoreSheetBot(bot, cache)
     bot.get_command = lambda name: find_command(cog, name)
     for command in cog.walk_commands():
         command.cog = cog  # normally done when the cog is added to a bot

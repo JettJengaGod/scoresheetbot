@@ -46,7 +46,7 @@ def service_functions():
 class ParitySweepTest(unittest.IsolatedAsyncioTestCase):
     def build(self, mode):
         """A fresh cog with a battle running, and a staff member who also leads one of the crews."""
-        cog = make_cog()
+        cog = make_cog(every_slash_command=True)
         guild = cog.cache.scs
         channel = mocks.MockTextChannel(name='⚔-gambit-bot-commands', id=555, guild=guild)
         roles = [mocks.hk_role, mocks.leader, mocks.admin, mocks.MockRole(name=VERIFIED)]
@@ -94,7 +94,7 @@ class ParitySweepTest(unittest.IsolatedAsyncioTestCase):
 
     @freeze_time('2026-01-15 12:00:00')
     async def test_every_command_sends_the_same_in_both_modes(self):
-        cog = make_cog()
+        cog = make_cog(every_slash_command=True)
         swept = 0
         for name in sorted(cog.slash.by_prefix_name):
             if name in SKIPPED or name in cog.slash.typed:
@@ -108,7 +108,7 @@ class ParitySweepTest(unittest.IsolatedAsyncioTestCase):
         self.assertGreater(swept, 190)
 
     def test_skips_are_real_commands(self):
-        self.assertEqual(set(), set(SKIPPED) - set(make_cog().slash.by_prefix_name))
+        self.assertEqual(set(), set(SKIPPED) - set(make_cog(every_slash_command=True).slash.by_prefix_name))
 
 
 if __name__ == '__main__':
