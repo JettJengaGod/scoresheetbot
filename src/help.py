@@ -170,7 +170,7 @@ help_doc = dict(
                    'If you pass in a time it will stop a crew from registering for that amount of time,'
                    ' accepts xD or xW or xM for x days, weeks or months respectively', 'CREW Optional[length]'),
     disband=HelpDoc(Categories.staff,
-                    'Disbands an overflow crew removing all crew related roles from all members (requires confirm)',
+                    'Disbands a crew removing all crew related roles from all members (requires confirm)',
                     usage='CrewName or Tag'),
     tomain=HelpDoc(Categories.staff,
                    'Move an overflow crew to main (requires confirm)',
