@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 from discord.ext.commands import Greedy
 
 import src.cache
-from src import battle_store
+from src import battle_store, no_members_intent
 from src.sheet_helpers import update_gambit_sheet, update_ba_sheet, update_bf_sheet, update_wisdom_sheet, \
     update_rankings_sheet
 from .bracket import Bracket, Questions, NUMBER_QUESTIONS, draw_bracket
@@ -15,7 +15,7 @@ from .constants import *
 from .db_helpers import *
 from .decorators import *
 from .help import help_doc
-from .slash import EPHEMERAL, GROUPS, MEMBER_ID, OLD_CATEGORIES, STAFF_DESCRIPTION, STAFF_GROUPS, SlashCommands
+from .slash import EPHEMERAL, GROUPS, OLD_CATEGORIES, STAFF_DESCRIPTION, STAFF_GROUPS, SlashCommands
 
 logging.basicConfig(level=logging.INFO)
 
@@ -208,37 +208,26 @@ class ScoreSheetBot(commands.Cog):
 
             ctx.send = tracked_send
             if not self.bot.intents.members:
-                await self._cache_command_members(ctx)
-
-    async def _cache_command_members(self, ctx: Context) -> None:
-        """Caches, fresh from Discord, the members a slash command is about: whoever ran it and anyone given in
-        its options, in this server and in the main and overflow servers.
-
-        Without the members intent Discord sends no member list and no member updates, so the cache only holds
-        what is fetched here, and the commands' `get_member` lookups find these members.
-        """
-        ids = {ctx.author.id}
-        for _, value in ctx.interaction.namespace:
-            if isinstance(value, (discord.Member, discord.User)):
-                ids.add(value.id)
-            elif isinstance(value, str):
-                ids.update(int(a or b) for a, b in MEMBER_ID.findall(value))
-        guilds = {guild.id: guild for guild in (ctx.guild, self.cache.scs, self.cache.overflow_server) if guild}
-        for guild in guilds.values():
-            for member_id in ids:
-                await self._fresh_member(guild, member_id)
+                await no_members_intent.cache_command_members(self, ctx)
 
     async def _fresh_member(self, guild: discord.Guild, member_id: int) -> Optional[discord.Member]:
         """`guild`'s member `member_id`, or None. Without the members intent the cache never sees role changes,
         so the member is fetched from Discord and the cache updated."""
         if self.bot.intents.members:
             return guild.get_member(member_id)
-        try:
-            member = await guild.fetch_member(member_id)
-        except discord.NotFound:
-            return None
-        guild._add_member(member)
-        return member
+        return await no_members_intent.fetch_member(self, guild, member_id)
+
+    async def _crew_members(self, cr: Crew) -> List[discord.Member]:
+        """The crew's members in the main server."""
+        if self.bot.intents.members:
+            return crew_members(cr, self)
+        return await no_members_intent.crew_members(self, cr)
+
+    async def _muted_crew_members(self, cr: Crew) -> List[discord.Member]:
+        """The crew's members who are muted."""
+        if self.bot.intents.members:
+            return overlap_members(MUTED, cr.name, self)
+        return await no_members_intent.muted_crew_members(self, cr)
 
     async def run_slash(self, interaction: discord.Interaction, command_name: str, *args, attachments=(), **kwargs):
         """Runs the prefix command `command_name` for a slash command, with the given arguments.
@@ -292,10 +281,15 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
+        await self._member_changed(before, after)
+
+    async def _member_changed(self, before: Optional[discord.Member], after: discord.Member):
+        """Brings the database's record of a member up to date after their name or roles changed. `before` is
+        None when there is no earlier copy to compare with, and then everything is recorded."""
         if os.getenv('VERSION') == 'PROD':
-            if before.display_name != after.display_name:
+            if before is None or before.display_name != after.display_name:
                 record_nicknames([(after.id, after.display_name)])
-            if before.roles != after.roles:
+            if before is None or before.roles != after.roles:
                 update_member_roles(after)
                 try:
                     after_crew = crew(after, self)
@@ -425,25 +419,25 @@ class ScoreSheetBot(commands.Cog):
                                                          manage_messages=False)
 
             crew_overwrite = discord.PermissionOverwrite(send_messages=True, add_reactions=True)
-            if crew_lookup(current.team1.name, self).overflow:
-                _, mems, _ = members_with_str_role(current.team1.name, self)
-                for mem in mems:
+            cr_1 = crew_lookup(current.team1.name, self)
+            if cr_1.overflow:
+                for mem in await self._crew_members(cr_1):
                     if not check_roles(mem, [MUTED]):
                         overwrites[mem] = crew_overwrite
             else:
                 cr_role_1 = discord.utils.get(ctx.guild.roles, name=current.team1.name)
                 overwrites[cr_role_1] = crew_overwrite
-                for mem in overlap_members(MUTED, current.team1.name, self):
+                for mem in await self._muted_crew_members(cr_1):
                     overwrites[mem] = muted_overwite
-            if crew_lookup(current.team2.name, self).overflow:
-                _, mems, _ = members_with_str_role(current.team2.name, self)
-                for mem in mems:
+            cr_2 = crew_lookup(current.team2.name, self)
+            if cr_2.overflow:
+                for mem in await self._crew_members(cr_2):
                     if not check_roles(mem, [MUTED]):
                         overwrites[mem] = crew_overwrite
             else:
                 cr_role_2 = discord.utils.get(ctx.guild.roles, name=current.team2.name)
                 overwrites[cr_role_2] = crew_overwrite
-                for mem in overlap_members(MUTED, current.team2.name, self):
+                for mem in await self._muted_crew_members(cr_2):
                     overwrites[mem] = muted_overwite
             everyone_overwrite = discord.PermissionOverwrite(send_messages=False, manage_messages=False,
                                                              add_reactions=False, create_public_threads=False,
@@ -3125,7 +3119,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('You must send in a crew name.')
             return
 
-        members = crew_members(dis_crew, self)
+        members = await self._crew_members(dis_crew)
         desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
         out = discord.Embed(title=f'{dis_crew.name} these players will have all crew roles stripped.',
                             description='\n'.join(desc), color=dis_crew.color)
@@ -3185,7 +3179,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send('You can only move overflow crews like this')
             return
 
-        members = crew_members(dis_crew, self)
+        members = await self._crew_members(dis_crew)
         message = f'{ctx.author.mention}: You are attempting to move {dis_crew.name} to main, ' \
                   f'this crew has {len(members)} members.' \
                   f' The overflow crew will be deleted, are you sure?'
@@ -3256,7 +3250,7 @@ class ScoreSheetBot(commands.Cog):
         if not dis_crew.overflow:
             await ctx.send('You can only retag overflow crews like this')
             return
-        members = crew_members(dis_crew, self)
+        members = await self._crew_members(dis_crew)
         preview = []
         for member in members:
             before = member.nick if member.nick else member.name

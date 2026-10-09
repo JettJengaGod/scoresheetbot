@@ -4,6 +4,7 @@ import time
 import discord
 from typing import Dict, Iterable, TYPE_CHECKING, Optional
 
+from . import no_members_intent
 from .helpers import strip_non_ascii
 
 if TYPE_CHECKING:
@@ -47,6 +48,9 @@ class Cache:
         self.main_members = self.members_by_name(self.scs.members)
         self.overflow_members = self.members_by_name(self.overflow_server.members)
         self.crew_populate()
+        if not bot.bot.intents.members:
+            # The member list holds only the members fetched so far, so the crews' members come from the database.
+            no_members_intent.crews_from_db(self)
 
     def minor_update(self, bot: 'ScoreSheetBot'):
         self.scs = discord.utils.get(bot.bot.guilds, name=SCS)

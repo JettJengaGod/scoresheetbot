@@ -4601,3 +4601,35 @@ from (SELECT EXTRACT(month FROM age(current_timestamp, gained)) as months, membe
          as b
 where months > 0
 """
+
+
+def crew_rosters() -> List[Tuple[str, int, str, List[str]]]:
+    """Every member of a crew that hasn't disbanded, as (crew name, member id, discord name, roles), where the
+    roles are whichever of Leader, Advisor and Crew Staff the member has. Members marked as having left the
+    server are left out."""
+    rosters = """select crews.name, members.id, members.discord_name,
+       coalesce(array_agg(distinct roles.name) filter (where roles.name is not null), '{}')
+from current_member_crews
+         join crews on crews.id = current_member_crews.crew_id
+         join members on members.id = current_member_crews.member_id
+         left join current_member_roles on current_member_roles.member_id = members.id
+         left join roles on roles.id = current_member_roles.role_id and roles.name in (%s, %s, %s)
+where crews.disbanded = false
+  and members.in_server is not false
+group by crews.name, members.id, members.discord_name;"""
+    conn = None
+    rows = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(rosters, (LEADER, ADVISOR, CREW_STAFF))
+        rows = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return [(name, member_id, discord_name, list(roles)) for name, member_id, discord_name, roles in rows]
