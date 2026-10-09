@@ -3,6 +3,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pprint
 import datetime
 import os
+from src.constants import PROJECT_DIR
 from src.db_helpers import gambit_standings, past_gambits, past_bets, ba_standings, trinity_crews, mc_stats, \
     destiny_crews, wisdom_crews, current_crews
 
@@ -10,7 +11,7 @@ scope = [
     'https://www.googleapis.com/auth/drive',
     'https://www.googleapis.com/auth/drive.file'
 ]
-file_name = 'C:/Users/Owner/PycharmProjects/scoresheetbot/client_key.json'
+file_name = os.path.join(PROJECT_DIR, 'client_key.json')
 creds = ServiceAccountCredentials.from_json_keyfile_name(file_name, scope)
 client = gspread.authorize(creds)
 crew_docs_name = 'SCS Crew Docs'  # if os.getenv('VERSION') == 'PROD' else 'Copy of SCS Crew Docs'

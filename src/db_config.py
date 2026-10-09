@@ -1,7 +1,10 @@
+import os
 from configparser import ConfigParser
 
+from src.constants import PROJECT_DIR
 
-def config(filename='C:/Users/Owner/PycharmProjects/scoresheetbot/database.ini', section='postgresql'):
+
+def config(filename=os.path.join(PROJECT_DIR, 'database.ini'), section='postgresql'):
     # create a parser
     parser = ConfigParser()
     # read config file

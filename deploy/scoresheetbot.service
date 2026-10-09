@@ -1,0 +1,22 @@
+# systemd service for the bot. Assumes the project is at /opt/scoresheetbot, with its virtualenv in .venv,
+# run by a `scoresheetbot` user that owns the folder; change the paths and user to match your server.
+# Install it with:
+#   sudo cp deploy/scoresheetbot.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now scoresheetbot
+[Unit]
+Description=Score Sheet Bot (Discord)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=scoresheetbot
+WorkingDirectory=/opt/scoresheetbot
+ExecStart=/opt/scoresheetbot/.venv/bin/python src/main.py
+Restart=on-failure
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

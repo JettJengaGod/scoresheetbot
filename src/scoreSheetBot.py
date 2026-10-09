@@ -3332,7 +3332,7 @@ class ScoreSheetBot(commands.Cog):
             else:
                 await ctx.send(f'{member.display_name} chose {choice_name} and lost the flip!')
         res = 'heads' if flip else 'tails'
-        await ctx.send(f'Your coin flip landed on {res}', file=discord.File(f'img/{res}.png'))
+        await ctx.send(f'Your coin flip landed on {res}', file=discord.File(os.path.join(SRC_DIR, 'img', f'{res}.png')))
 
     @commands.command(**help_doc['disablelist'])
     async def disablelist(self, ctx: Context):

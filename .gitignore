@@ -4,6 +4,7 @@
 /database.ini
 /src/__pycache__/
 credentials.json
+/client_key.json
 token.pickle
 __pycache__/
 .venv/

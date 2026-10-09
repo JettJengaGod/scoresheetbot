@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 from enum import Enum
 
 load_dotenv()
+# The project folder, where the credential and config files are kept, whatever the working directory.
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC_DIR = os.path.join(PROJECT_DIR, 'src')
 CACHE_TIME_SECONDS = 300
 CACHE_TIME_BACKUP = CACHE_TIME_SECONDS + 20  # 320 seconds (This is a backup to normal cache)
 OVERFLOW_SERVER = 'Overflow Beta' if os.getenv('VERSION') == 'ALPHA' else 'SCS Overflow Server'
