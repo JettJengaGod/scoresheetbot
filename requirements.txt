@@ -1,5 +1,6 @@
 aiohttp>=3.7.3
 async-timeout>=3.0.1
+atomicwrites>=1.4.0
 attrs>=20.3.0
 cachetools>=4.1.1
 certifi>=2020.11.8
@@ -38,6 +39,6 @@ yarl>=1.6.3
 matplotlib
 gspread
 oauth2client
-psycopg2-binary
+psycopg2
 fuzzywuzzy
 python-Levenshtein

@@ -5,12 +5,10 @@ import discord
 import asyncio
 from enum import Enum
 from dataclasses import dataclass
-import os
 from PIL import Image, ImageDraw, ImageFont
 import requests
 from io import BytesIO
 
-from src.constants import SRC_DIR
 from src.crew import Crew
 from src.db_helpers import add_bracket_predictions, add_bracket_questions, get_bracket_predictions
 
@@ -322,7 +320,7 @@ def draw_bracket(matches: List['Match']):
     img = Image.open(BytesIO(response.content))
 
     d1 = ImageDraw.Draw(img)
-    my_font = ImageFont.truetype(os.path.join(SRC_DIR, 'font', 'SquadaOne-Regular2.ttf'), 32)
+    my_font = ImageFont.truetype('C:/Users/Jett/Fonts/SquadaOne-Regular.ttf', 32)
     logo_size = 50
     for i, match in enumerate(matches):
         if match.round == Round.WINNERS_ROUND_1:

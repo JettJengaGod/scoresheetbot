@@ -116,9 +116,8 @@ class Cache:
 
     async def update_crews(self) -> Dict[str, Crew]:
         creds = None
-        token_file = os.path.join(PROJECT_DIR, 'token.pickle')
-        if os.path.exists(token_file):
-            with open(token_file, 'rb') as token:
+        if os.path.exists('token.pickle'):
+            with open('token.pickle', 'rb') as token:
                 creds = pickle.load(token)
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
@@ -126,10 +125,10 @@ class Cache:
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    os.path.join(PROJECT_DIR, 'credentials.json'), SCOPES)
+                    'credentials.json', SCOPES)
                 creds = flow.run_local_server(port=0)
             # Save the credentials for the next run
-            with open(token_file, 'wb') as token:
+            with open('token.pickle', 'wb') as token:
                 pickle.dump(creds, token)
 
         service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
