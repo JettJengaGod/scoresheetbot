@@ -18,7 +18,7 @@
 
 1. Create an application at https://discord.com/developers/applications.
 1. Under the app, create a Bot.
-1. Under Bot/Privileged Gateway Intents, enable both presence intent and server members intent.
+1. Under Bot/Privileged Gateway Intents, nothing needs enabling for now. The server members intent is switched off until it's approved; to switch it back on, enable it here and set `MEMBERS_INTENT=1` in `.env`. Until then, the member join, leave and update events and anything that goes through a whole member or role list (crew member lists, leader lists, `lock`, `listroles`) don't work. The bot never needs the presence or message content intents.
 1. Copy `.envexample` to `.env`, and add the token from the Bot page.
 1. Invite your bot to your test server via `https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&permissions=519232&scope=bot%20applications.commands`, where the client id is found in your General Information page.
    * The `applications.commands` scope is what lets the bot's slash commands show up. A bot invited without it can be re-authorised with the same link.
@@ -30,9 +30,9 @@
 
 ### Slash commands
 
-Every command can be used with the prefix (`,send`) or as a slash command (`/cb send`); both run the same code.
+Every command is a slash command (`/cb send`); the bot has no prefix commands and doesn't read messages for them.
 Slash commands are sorted into sections: `/cb` (crew battles), `/f` (flairing), `/crew`, `/gambit`, `/roles`, `/misc` and `/staff`, for example `/crew stats` or `/staff battle addsheet`. `/help` is on its own, and lists these sections; `/help cb` lists the commands in one.
-Slash commands are registered when the bot starts. After adding or changing a command, staff can re-register them with `,sync`.
+Slash commands are registered when the bot starts, so restart the bot after adding or changing a command.
 
 ### Tests
 

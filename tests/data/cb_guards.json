@@ -41,7 +41,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: Waiting  \nFSGood: Waiting",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: Waiting  \nFSGood: Waiting",
      "title": "Holy Knights vs FSGood",
      "type": "rich"
     }

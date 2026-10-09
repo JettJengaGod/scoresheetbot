@@ -86,7 +86,7 @@ class Team:
     def add_player(self, player_name: str, player_id: Optional[int]) -> None:
         if self.current_player:
             raise StateError(None,
-                             f"This team already has a current player, {self.current_player.name}, use \",replace\" "
+                             f"This team already has a current player, {self.current_player.name}, use `/cb replace` "
                              f"to replace them")
         self.current_player = Player(name=player_name, team_name=self.name, id=player_id)
         self.players.append(self.current_player)
@@ -227,8 +227,8 @@ class Battle:
         self.teams = (self.team1, self.team2)
         self.matches = []
         self.confirms = [False, False]
-        self.id = 'Not Set, use `,arena ID/PASS` to set '
-        self.stream = 'Not Set, use `,stream STREAMLINKHERE` to set '
+        self.id = 'Not Set, use `/cb arena` to set '
+        self.stream = 'Not Set, use `/cb stream` to set '
         self.color = colour.Color.from_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         self.time = datetime.now()
         self.battle_type = battle_type
