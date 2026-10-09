@@ -22,6 +22,8 @@ POWER_PO_CHANNEL_ID = 1170793046032515153
 COURAGE_PO_CHANNEL_ID = 1170793111337844796
 WISDOM_PO_CHANNEL_ID = 1170793181974106142
 MUTED = 'Muted'
+# Pinged in the flairing info channel when a member reaches the end of the join track.
+COWY_ID = 329321079917248514
 LEADER = 'Leader'
 FOURTYMAN = '40-Man'
 MINION = 'v2 Minion'

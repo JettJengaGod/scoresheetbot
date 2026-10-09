@@ -18,7 +18,7 @@
 
 1. Create an application at https://discord.com/developers/applications.
 1. Under the app, create a Bot.
-1. Under Bot/Privileged Gateway Intents, nothing needs enabling for now. The server members intent is switched off until it's approved; to switch it back on, enable it here and set `MEMBERS_INTENT=1` in `.env`. Until then, the member join, leave and update events and anything that goes through a whole member or role list (crew member lists, leader lists, `lock`, `listroles`) don't work. The bot never needs the presence or message content intents.
+1. Under Bot/Privileged Gateway Intents, nothing needs enabling for now. The server members intent is switched off until it's approved; to switch it back on, enable it here and set `MEMBERS_INTENT=1` in `.env`, and the bot goes back to using the member list everywhere. Until then, `src/no_members_intent.py` stands in for the member list: crew member counts, leaders and member lists come from the database, and members are fetched from Discord when a command needs them. The member join and leave events still don't arrive, and commands that list everyone with a role (`listroles`, `overlap`, `noverlap`, the staff ping commands) only see members the bot has fetched since it started. The bot never needs the presence or message content intents.
 1. Copy `.envexample` to `.env`, and add the token from the Bot page.
 1. Invite your bot to your test server via `https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&permissions=519232&scope=bot%20applications.commands`, where the client id is found in your General Information page.
    * The `applications.commands` scope is what lets the bot's slash commands show up. A bot invited without it can be re-authorised with the same link.
