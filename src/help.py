@@ -58,12 +58,12 @@ help_doc = dict(
                  '@Player Optional[TeamName]'),
     replace=HelpDoc(Categories.cb, 'Replaces current player with the tagged player', '', '@Player Optional[TeamName]'),
     end=HelpDoc(Categories.cb, 'End the game with characters and stocks for both teams',
-                'Example: `,end ness 3 palu 2`, you can also choose alts here. Use `,char CharName` to test it',
+                'Example: `/cb end char1:ness stocks1:3 char2:palu stocks2:2`, you can also choose alts here. Use `/misc char` to test it',
                 'Char1 StocksTaken1 Char2 StocksTaken2'),
     endlag=HelpDoc(Categories.cb,
                    'End the game with characters and stocks for both teams, without needing a winner',
                    'Same as end, but does not need to result in one player winning. '
-                   'Example: `,endlag ness 1 palu 2`, you can also choose alts here. Use `,char CharName` to test it',
+                   'Example: `/cb endlag char1:ness stocks1:1 char2:palu stocks2:2`, you can also choose alts here. Use `/misc char` to test it',
                    'Char1 StocksTaken1 Char2 StocksTaken2'),
     resize=HelpDoc(Categories.cb, 'Resize the crew battle', '', 'NewSize'),
     undo=HelpDoc(Categories.cb, 'Undo the last match',
@@ -81,7 +81,7 @@ help_doc = dict(
     confirm=HelpDoc(Categories.cb, 'Confirms the final score sheet is correct'),
     char=HelpDoc(Categories.cb, 'Prints the character emoji (you can use this to test before entering in the sheet)',
                  'Prints the character emoji, so you can test a name before entering it in the sheet. '
-                 'Put a number after the character name to use an alt, EG `,char ness2`',
+                 'Put a number after the character name to use an alt, EG `/misc char emoji:ness2`',
                  'CharName'),
     arena=HelpDoc(Categories.cb, 'Sets the arena ID if you are a streamer or leader, or prints it if you are not',
                   '', 'Optional[ID/PASS]'),

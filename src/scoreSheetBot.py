@@ -303,9 +303,9 @@ class ScoreSheetBot(commands.Cog):
             await self._help_reply(ctx, 'You need to be a member of the scs to access this help.')
             return
         staff = check_roles(main_user, STAFF_LIST)
-        prefix = self.bot.command_prefix
-        cmds = {cmd.qualified_name: cmd for cmd in self.bot.walk_commands()}
         slash = self.slash.by_prefix_name
+        # Only commands with a slash command can be run, so only they are explained.
+        cmds = {cmd.qualified_name: cmd for cmd in self.bot.walk_commands() if cmd.qualified_name in slash}
         # A slash command sends everything as one string, e.g. "staff crew".
         words = ' '.join(group).lower().split()
         if words:
@@ -322,22 +322,17 @@ class ScoreSheetBot(commands.Cog):
 
         def listing(title: str, description: str, names: List[str]) -> discord.Embed:
             embed = discord.Embed(title=f'/{title} Command Listing',
-                                  description=f'{description}\nUse `{prefix}help *command*` to find out more '
-                                              f'about one. With the prefix, leave out the section.')
+                                  description=f'{description}\nUse `/help *command*` to find out more about one.')
             for cmd in sorted((cmds[n] for n in names), key=lambda c: slash[c.qualified_name].name):
                 if staff or not cmd.hidden:
-                    value = cmd.brief
-                    if slash[cmd.qualified_name].name != cmd.qualified_name:
-                        value += f' (`{prefix}{cmd.qualified_name}`)'
-                    embed.add_field(name=f'/{slash[cmd.qualified_name].qualified_name}', value=value, inline=False)
+                    embed.add_field(name=f'/{slash[cmd.qualified_name].qualified_name}', value=cmd.brief,
+                                    inline=False)
             return embed
 
         if not words:
             halp = discord.Embed(title='Command Sections',
-                                 description=f'Use `{prefix}help *section*` to list the commands in one, or '
-                                             f'`{prefix}help *command*` to find out more about a command!\n'
-                                             f'Every command here works as a slash command (`/cb send`) or with '
-                                             f'the prefix (`{prefix}send`).')
+                                 description='Use `/help *section*` to list the commands in one, or '
+                                             '`/help *command*` to find out more about a command!')
             for section, (description, _) in groups.items():
                 halp.add_field(name=f'/{section}', value=description, inline=False)
             if staff:
@@ -350,7 +345,7 @@ class ScoreSheetBot(commands.Cog):
             return
         elif name == 'staff':
             halp = discord.Embed(title='/staff Command Listing',
-                                 description=f'{STAFF_DESCRIPTION}\nUse `{prefix}help staff *group*` to list the '
+                                 description=f'{STAFF_DESCRIPTION}\nUse `/help staff *group*` to list the '
                                              f'commands in one.')
             for staff_group, (description, names) in staff_groups.items():
                 halp.add_field(name=f'/staff {staff_group}',
@@ -358,7 +353,7 @@ class ScoreSheetBot(commands.Cog):
         elif len(words) == 2 and words[0] == 'staff' and words[1] in staff_groups:
             halp = listing(name, *staff_groups[words[1]])
         else:
-            # A command, by its prefix name (`send`, `gamb start`), slash name (`cb send`) or last word (`start`).
+            # A command, by its own name (`send`, `gamb start`), slash name (`cb send`) or last word (`start`).
             by_slash = {s.qualified_name: cmds[n] for n, s in slash.items()}
             by_name = {cmd.name: cmd for cmd in cmds.values()}
             cmd = cmds.get(name) or by_slash.get(name) or by_name.get(name)
@@ -369,17 +364,11 @@ class ScoreSheetBot(commands.Cog):
                 await self._help_reply(ctx, 'That command is hidden.')
                 return
             else:
-                lines = [cmd.description or cmd.help, f'`{prefix}{cmd.qualified_name} {cmd.usage or ""}'.rstrip() + '`']
-                if cmd.qualified_name in slash:
-                    lines.append(f'`/{slash[cmd.qualified_name].qualified_name}`')
+                lines = [cmd.description or cmd.help, f'`/{slash[cmd.qualified_name].qualified_name}`']
                 halp = discord.Embed(title=cmd.qualified_name, description='\n'.join(lines))
         await self._help_reply(ctx, embed=halp)
 
     ''' **********************************CB COMMANDS ******************************************'''
-
-    @commands.group(name='cb', brief='Commands for running a crew battle', invoke_without_command=True)
-    async def cb(self, ctx):
-        await self.help(ctx, 'cb')
 
     @commands.command(**help_doc['lock'], aliases=['mohamed', 'nohamed', 'lk'])
     @main_only
@@ -533,12 +522,12 @@ class ScoreSheetBot(commands.Cog):
     async def reg(self, ctx: Context, *, everything: str):
         split = everything.split(' ')
         if not split:
-            await response_message(ctx, 'Format for this command is `,reg RegisteringCrewName size`')
+            await response_message(ctx, 'Use `/cb reg` with the registering crew\'s name and the size.')
             return
         try:
             size = int(split[-1])
         except ValueError:
-            await response_message(ctx, 'Format for this command is `,reg RegisteringCrewName size`')
+            await response_message(ctx, 'Use `/cb reg` with the registering crew\'s name and the size.')
             return
         registering_crew = ' '.join(split[:-1])
         if size < 1:
@@ -780,7 +769,7 @@ class ScoreSheetBot(commands.Cog):
                 self._current(ctx).add_player(team, escape(user.display_name), ctx.author.mention, user.id)
             else:
                 await ctx.send(f'During a mock you need to send with a teamname, like this'
-                               f' `,send @playername teamname`.')
+                               f' `/cb send user:@playername team:teamname`.')
                 return
         else:
             if not check_roles(user, [VERIFIED]):
@@ -843,7 +832,7 @@ class ScoreSheetBot(commands.Cog):
                                    f'They now get 5 more minutes for their next player to be in the arena.')
             else:
                 await ctx.send(f'During a mock you need to use your extension, like this'
-                               f' `,ext teamname`.')
+                               f' `/cb use_ext team:teamname`.')
                 return
         else:
             await self._reject_outsiders(ctx)
@@ -883,7 +872,7 @@ class ScoreSheetBot(commands.Cog):
                 self._current(ctx).forfeit(team)
             else:
                 await ctx.send(f'During a mock you need to forfeit, like this'
-                               f' `,forfeit teamname`')
+                               f' `/cb forfeit team:teamname`')
                 return
         else:
             await self._reject_outsiders(ctx)
@@ -960,7 +949,7 @@ class ScoreSheetBot(commands.Cog):
                 self._current(ctx).replace_player(team, escape(user.display_name), ctx.author.mention, user.id)
             else:
                 await ctx.send(f'During a mock you need to replace with a teamname, like this'
-                               f' `,replace @playername teamname`.')
+                               f' `/cb replace user:@playername team:teamname`.')
                 return
         else:
             if not check_roles(user, [VERIFIED]):
@@ -1062,7 +1051,7 @@ class ScoreSheetBot(commands.Cog):
         await self._reject_outsiders(ctx)
         if not self._current(ctx).undo():
             await ctx.send('Note: undoing a replace on the scoresheet doesn\'t actually undo the replace, '
-                           'you need to use `,replace @player` with the original player to do that.')
+                           'you need to use `/cb replace` with the original player to do that.')
 
         await send_sheet(ctx, battle=self._current(ctx))
 
@@ -1399,7 +1388,7 @@ class ScoreSheetBot(commands.Cog):
                 self._current(ctx).timer_stock(team, ctx.author.mention)
             else:
                 await ctx.send(f'During a mock you need to take a timer_stock with a teamname, like this'
-                               f' `,timer_stock teamname`.')
+                               f' `/cb timerstock team:teamname`.')
                 return
         else:
             await self._reject_outsiders(ctx)
@@ -1427,10 +1416,6 @@ class ScoreSheetBot(commands.Cog):
         await send_long(ctx.author, "".join(out), ']')
 
     ''' *************************************** BATTLE ARENA COMMANDS ********************************************'''
-
-    @commands.group(name='ba', brief='Commands for battle_arena', invoke_without_command=True)
-    async def ba(self, ctx):
-        await self.help(ctx, 'crews')
 
     @commands.command(**help_doc['result'])
     async def result(self, ctx: Context, opponent: discord.Member, *, everything: str):
@@ -1509,10 +1494,6 @@ class ScoreSheetBot(commands.Cog):
         update_ba_sheet()
 
     ''' *************************************** CREW COMMANDS ********************************************'''
-
-    @commands.group(name='crews', brief='Commands for crews, including stats and rankings', invoke_without_command=True)
-    async def crews(self, ctx):
-        await self.help(ctx, 'crews')
 
     @commands.command(**help_doc['rankings'])
     async def rankings(self, ctx):
@@ -1710,10 +1691,6 @@ class ScoreSheetBot(commands.Cog):
 
     ''' ************************************FLAIRING COMMANDS ********************************************'''
 
-    @commands.group(name='flairing', brief='Commands for flairing and unflairing', invoke_without_command=True)
-    async def flairing(self, ctx):
-        await self.help(ctx, 'flairing')
-
     @commands.command(**help_doc['promote'])
     @main_only
     @flairing_required
@@ -1835,7 +1812,7 @@ class ScoreSheetBot(commands.Cog):
                 return
             if not check_roles(ctx.author, STAFF_LIST):
                 if member.id == ctx.author.id:
-                    await response_message(ctx, 'You can unflair yourself by typing `,unflair` with nothing after it.')
+                    await response_message(ctx, 'You can unflair yourself by using `/f unflair` with nothing after it.')
                     return
                 try:
                     compare_crew_and_power(ctx.author, member, self)
@@ -2257,10 +2234,6 @@ class ScoreSheetBot(commands.Cog):
                        f'\nIf you win bet on {cg.team2} you will get {cg.odds_2} extra G-Coins.')
 
     ''' ***********************************STAFF COMMANDS ************************************************'''
-
-    @commands.group(name='staff', brief='Commands for staff', invoke_without_command=True)
-    async def staff(self, ctx):
-        await self.help(ctx, 'staff')
 
     @commands.command(**help_doc['setslots'])
     @role_call(STAFF_LIST)
@@ -3283,10 +3256,6 @@ class ScoreSheetBot(commands.Cog):
 
     ''' ******************************* HELP AND MISC COMMANDS ******************************************'''
 
-    @commands.group(name='misc', brief='Miscellaneous commands', invoke_without_command=True)
-    async def misc(self, ctx):
-        await self.help(ctx, 'misc')
-
     @commands.command(**help_doc['stagelist'])
     async def stagelist(self, ctx: Context):
         await ctx.send(
@@ -3444,12 +3413,12 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['overlap'])
     async def overlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
         mems = overlap_members(best[0], best[1], self)
         if 'everyone' in best[0] or 'everyone' in best[1]:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         if len(mems) > 100:
             await ctx.send(f'This is over 100 members, file outputs will be implemented soon.')
@@ -3461,12 +3430,12 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['noverlap'])
     async def noverlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
         mems = noverlap_members(best[0], best[1], self)
         if 'everyone' in best[0] or 'everyone' in best[1]:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         if len(mems) > 100:
             await ctx.send(f'This is over 100 members, file outputs will be implemented soon.')
@@ -3479,13 +3448,13 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def pingoverlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
         mems = overlap_members(best[0], best[1], self)
 
         if 'everyone' in best[0] or 'everyone' in best[1]:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         if len(mems) > 10:
             resp = f'You are attempting to ping the overlap between {best[0]} and {best[1]} this ' \
@@ -3503,13 +3472,13 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def pingnoverlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
         mems = noverlap_members(best[0], best[1], self)
 
         if 'everyone' in best[0] or 'everyone' in best[1]:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `,listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         if len(mems) > 10:
             resp = f'You are attempting to ping all {best[0]} bot not {best[1]} this ' \
@@ -4059,8 +4028,6 @@ class ScoreSheetBot(commands.Cog):
 
         if isinstance(error, commands.DisabledCommand):
             await ctx.send(f'{ctx.command} has been disabled.')
-        elif isinstance(error, commands.CommandNotFound):
-            await ctx.send(f'{str(error)}, try ",help" for a list of commands.')
 
         elif isinstance(error, commands.NoPrivateMessage):
             try:
@@ -4074,7 +4041,7 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'"{ctx.command}" did not work because:{error.message}')
         elif isinstance(error, discord.ext.commands.errors.MemberNotFound):
             await ctx.send(f'{ctx.author.mention}: {ctx.command.name} failed because:{str(error)}\n'
-                           f'Try using `{self.bot.command_prefix}{ctx.command.name} @Member`.')
+                           'Try mentioning the member.')
         elif str(error) == 'The read operation timed out':
             await ctx.send('The google sheets API isn\'t responding, wait 60 seconds and try again')
         else:
@@ -4090,30 +4057,15 @@ class ScoreSheetBot(commands.Cog):
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
             lf.close()
 
-    ###########################################################################################
-    # Start test commands
-    # Test commands should be limited to dev only.
-    # No mutation should occur, and they are meant to test discord.py APIs.
-    ###########################################################################################
-
-    @commands.group(name='test')
-    @role_call(STAFF_LIST)
-    async def test_group(self, ctx):
-        if ctx.invoked_subcommand is None:
-            await ctx.send('Invalid test sub command')
-
-    @test_group.command(name='confirm')
-    @role_call(STAFF_LIST)
-    async def test_confirm(self, ctx):
-        msg = await ctx.send(datetime.today().strftime("%Y/%m/%d %H:%M:%S"))
-        result = await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot)
-        await ctx.send(f'{msg.content}: {result}')
-
 
 async def main():
     load_dotenv()
     token = os.getenv('DISCORD_TOKEN')
-    bot = commands.Bot(command_prefix=os.getenv('PREFIX'), intents=discord.Intents.all(), case_insensitive=True,
+    # The members intent is the only privileged one needed: for the member join, leave and update events and
+    # for the member lists. Commands are slash commands only, so messages are never read for a prefix.
+    intents = discord.Intents.default()
+    intents.members = True
+    bot = commands.Bot(command_prefix=[], intents=intents, case_insensitive=True,
                        allowed_mentions=discord.AllowedMentions(everyone=False))
     bot.remove_command('help')
     cache = src.cache.Cache()

@@ -141,13 +141,13 @@ async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battl
                     for leader in battle.team1.leader:
                         footer += f'{leader}, '
                     footer = footer[:-2]
-                    footer += ' please `,confirm`.'
+                    footer += ' please `/cb confirm`.'
                 if not battle.confirms[1]:
                     footer += f'\n {battle.team2.name}: '
                     for leader in battle.team2.leader:
                         footer += f'{leader}, '
                     footer = footer[:-2]
-                    footer += ' please `,confirm`.'
+                    footer += ' please `/cb confirm`.'
             await channel.send(footer)
     first = None
     for embed in embed_split:

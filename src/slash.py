@@ -1,13 +1,14 @@
-"""Slash command front ends for the bot's prefix commands.
+"""Slash commands, the only way to run the bot's commands.
 
-Prefix commands keep their flat names (`,send`), while their slash commands are sorted into sections
-(`/cb send`, `/staff battle addsheet`). Each slash command is one of two kinds:
+Each command is written as a discord.py text command with a flat name (`send`), which the bot never reads
+from messages. Its slash command is sorted into a section (`/cb send`, `/staff battle addsheet`) and is one
+of two kinds:
 
-* a "twin" generated here with the same options as the prefix command;
-* a hand written front end here, for commands whose prefix form takes free text that slash commands can ask
-  for as separate typed options.
+* a "twin" generated here with the same options as the text command;
+* a hand written front end here, for commands that take free text that slash commands can ask for as
+  separate typed options.
 
-Both run the prefix command's own callback through `ScoreSheetBot.run_slash`, so the guards, hooks and
+Both run the text command's own callback through `ScoreSheetBot.run_slash`, so the guards, hooks and
 behaviour are shared and only the way arguments are collected differs.
 """
 import inspect
@@ -75,17 +76,9 @@ STAFF_GROUPS: Dict[str, tuple] = {
 # Help categories from before the sections, which `help` still accepts, and the section that replaced each.
 OLD_CATEGORIES = {'crews': 'crew', 'flairing': 'f', 'ba': 'misc'}
 
-# Prefix commands that deliberately have no slash command.
-PREFIX_ONLY = {
-    # Placeholder groups that only exist to list a help category; /help covers them.
-    'cb', 'ba', 'crews', 'flairing', 'staff', 'misc',
-    # Developer checks of discord.py behaviour.
-    'test', 'test confirm',
-}
-
 # Commands whose slash command is switched off: the ones left unchecked in the keep column of the command
-# usage sheet. They still work with the prefix, but help no longer lists them (`help <command>` still explains
-# one). Take a name out of here to bring its slash command, and its place in help, back.
+# usage sheet. With no slash command they can't be run and help leaves them out. Take a name out of here to
+# bring its slash command, and its place in help, back.
 NO_SLASH = {
     # /cb
     'cowy', 'strawhat',
@@ -254,7 +247,7 @@ class SlashCommands:
                 staff.add_command(group)
 
         for name, command in prefix_commands.items():
-            if name not in PREFIX_ONLY | NO_SLASH and name not in self.by_prefix_name:
+            if name not in NO_SLASH and name not in self.by_prefix_name:
                 top_level.append(self._add(command, parent=None))
         cog.__cog_app_commands__.extend(top_level)
 

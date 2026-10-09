@@ -393,19 +393,17 @@ class HelpTest(unittest.IsolatedAsyncioTestCase):
                 await self.ask(PREFIX, *args)
             self.author.send.assert_awaited_once_with('That section is for staff.')
 
-    async def test_help_for_a_command_shows_its_prefix_and_slash_forms(self):
+    async def test_help_for_a_command_shows_its_slash_form(self):
         for args, title, slash in ((('send',), 'send', '/cb send'), (('cb', 'send'), 'send', '/cb send'),
                                    (('crew', 'info'), 'crew', '/crew info')):
             with self.subTest(args=args):
                 embed = await self.help_embed(*args, staff=True)
                 self.assertEqual(title, embed['title'])
-                self.assertIn(f'`,{title} ', embed['description'])
                 self.assertIn(f'`{slash}`', embed['description'])
-        # A command whose slash command is switched off is not listed, but asking for it by name still explains
-        # it, with only its prefix form.
+                self.assertNotIn('`,', embed['description'])
+        # A command whose slash command is switched off can't be run, so help doesn't explain it.
         embed = await self.help_embed('gamb', 'start', staff=True)
-        self.assertIn('`,gamb start ', embed['description'])
-        self.assertNotIn('`/', embed['description'])
+        self.assertEqual('Error!', embed['title'])
 
 
 if __name__ == '__main__':

@@ -23,7 +23,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: Waiting  \nFSGood: Waiting",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: Waiting  \nFSGood: Waiting",
      "title": "Holy Knights vs FSGood",
      "type": "rich"
     }
@@ -54,7 +54,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: HK\\_Player  3 stocks  \nFSGood: Waiting",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: HK\\_Player  3 stocks  \nFSGood: Waiting",
      "title": "Holy Knights vs FSGood",
      "type": "rich"
     }
@@ -67,7 +67,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: HK\\_Player  3 stocks  \nFSGood: FSG Player  3 stocks",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n5 vs 5 Crew battle\n\n\nCurrent score: Holy Knights[15] - FSGood[15] \nHoly Knights: HK\\_Player  3 stocks  \nFSGood: FSG Player  3 stocks",
      "title": "Holy Knights vs FSGood",
      "type": "rich"
     }
@@ -80,7 +80,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\n\nCurrent score: Holy Knights[15] - FSGood[12] \nHoly Knights: HK\\_Player None 3 stocks  \nFSGood: Waiting",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\n\nCurrent score: Holy Knights[15] - FSGood[12] \nHoly Knights: HK\\_Player None 3 stocks  \nFSGood: Waiting",
      "title": "Holy Knights vs FSGood",
      "type": "rich"
     }
@@ -120,7 +120,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\n\nCurrent score: Holy Knights[15] - FSGood[12] \nHoly Knights: HK\\_Player None 3 stocks  \nFSGood: FSG Lead  3 stocks",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\n\nCurrent score: Holy Knights[15] - FSGood[12] \nHoly Knights: HK\\_Player None 3 stocks  \nFSGood: FSG Lead  3 stocks",
      "title": "Holy Knights vs FSGood",
      "type": "rich"
     }
@@ -133,7 +133,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\n\nCurrent score: Holy Knights[14] - FSGood[12] \nHoly Knights: HK\\_Player None 2 stocks  \nFSGood: FSG Lead  3 stocks",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\n\nCurrent score: Holy Knights[14] - FSGood[12] \nHoly Knights: HK\\_Player None 2 stocks  \nFSGood: FSG Lead  3 stocks",
      "title": "Holy Knights vs FSGood",
      "type": "rich"
     }
@@ -146,7 +146,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\nHoly Knights subbed HK\\_Player  with HK Lead with 2 stocks left.\n\nCurrent score: Holy Knights[14] - FSGood[12] \nHoly Knights: HK Lead  2 stocks  \nFSGood: FSG Lead  3 stocks",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\nHoly Knights subbed HK\\_Player  with HK Lead with 2 stocks left.\n\nCurrent score: Holy Knights[14] - FSGood[12] \nHoly Knights: HK Lead  2 stocks  \nFSGood: FSG Lead  3 stocks",
      "title": "Holy Knights vs FSGood",
      "type": "rich"
     }
@@ -157,13 +157,13 @@
   "command": "undo",
   "sent": [
    {
-    "content": "Note: undoing a replace on the scoresheet doesn't actually undo the replace, you need to use `,replace @player` with the original player to do that.",
+    "content": "Note: undoing a replace on the scoresheet doesn't actually undo the replace, you need to use `/cb replace` with the original player to do that.",
     "embed": null
    },
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\n\nCurrent score: Holy Knights[14] - FSGood[12] \nHoly Knights: HK Lead  2 stocks  \nFSGood: FSG Lead  3 stocks",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n5 vs 5 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\n\nCurrent score: Holy Knights[14] - FSGood[12] \nHoly Knights: HK Lead  2 stocks  \nFSGood: FSG Lead  3 stocks",
      "title": "Holy Knights vs FSGood",
      "type": "rich"
     }
@@ -176,7 +176,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n6 vs 6 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\n\nCurrent score: Holy Knights[17] - FSGood[15] \nHoly Knights: HK Lead  2 stocks  \nFSGood: FSG Lead  3 stocks",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n6 vs 6 Crew battle\n\n**[None]HK\\_Player (3)** <a:vs:775901296171155456> (0) FSG Player [None]\nHK\\_Player on Holy Knights lost a stock to the timer.\n\nCurrent score: Holy Knights[17] - FSGood[15] \nHoly Knights: HK Lead  2 stocks  \nFSGood: FSG Lead  3 stocks",
      "title": "Holy Knights vs FSGood",
      "type": "rich"
     }

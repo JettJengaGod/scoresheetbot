@@ -14,7 +14,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n2 vs 2 Mock Crew battle\n\n\nCurrent score: Red[6] - Blue[6] \nRed: Waiting  \nBlue: Waiting",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n2 vs 2 Mock Crew battle\n\n\nCurrent score: Red[6] - Blue[6] \nRed: Waiting  \nBlue: Waiting",
      "title": "Red vs Blue",
      "type": "rich"
     }
@@ -34,7 +34,7 @@
   "command": "send",
   "sent": [
    {
-    "content": "During a mock you need to send with a teamname, like this `,send @playername teamname`.",
+    "content": "During a mock you need to send with a teamname, like this `/cb send user:@playername team:teamname`.",
     "embed": null
    }
   ]
@@ -45,7 +45,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n2 vs 2 Mock Crew battle\n\n\nCurrent score: Red[6] - Blue[6] \nRed: HK\\_Player  3 stocks  \nBlue: Waiting",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n2 vs 2 Mock Crew battle\n\n\nCurrent score: Red[6] - Blue[6] \nRed: HK\\_Player  3 stocks  \nBlue: Waiting",
      "title": "Red vs Blue",
      "type": "rich"
     }
@@ -58,7 +58,7 @@
    {
     "content": null,
     "embed": {
-     "description": "Lobby ID: Not Set, use `,arena ID/PASS` to set \nStreamer: Not Set, use `,stream STREAMLINKHERE` to set \n\n2 vs 2 Mock Crew battle\n\n\nCurrent score: Red[6] - Blue[6] \nRed: HK\\_Player  3 stocks  \nBlue: FSG Player  3 stocks",
+     "description": "Lobby ID: Not Set, use `/cb arena` to set \nStreamer: Not Set, use `/cb stream` to set \n\n2 vs 2 Mock Crew battle\n\n\nCurrent score: Red[6] - Blue[6] \nRed: HK\\_Player  3 stocks  \nBlue: FSG Player  3 stocks",
      "title": "Red vs Blue",
      "type": "rich"
     }
@@ -118,7 +118,7 @@
   "command": "send",
   "sent": [
    {
-    "content": "\"send\" did not work because:This team already has a current player, HK\\_Player, use \",replace\" to replace them",
+    "content": "\"send\" did not work because:This team already has a current player, HK\\_Player, use `/cb replace` to replace them",
     "embed": null
    }
   ]
@@ -171,7 +171,7 @@
   "command": "undo",
   "sent": [
    {
-    "content": "Note: undoing a replace on the scoresheet doesn't actually undo the replace, you need to use `,replace @player` with the original player to do that.",
+    "content": "Note: undoing a replace on the scoresheet doesn't actually undo the replace, you need to use `/cb replace` with the original player to do that.",
     "embed": null
    },
    {

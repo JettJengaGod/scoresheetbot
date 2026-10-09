@@ -20,7 +20,7 @@ from discord.ext import commands
 
 import src.cache
 from src import scoreSheetBot
-from src.slash import ALLOWED_IN_DMS, GROUPS, NO_SLASH, PREFIX_ONLY, SLASH_NAMES, STAFF_GROUPS
+from src.slash import ALLOWED_IN_DMS, GROUPS, NO_SLASH, SLASH_NAMES, STAFF_GROUPS
 from tests.harness import assert_snapshot, is_hybrid, make_cog
 
 COMMAND_DECORATORS = ('command', 'group', 'hybrid_command', 'hybrid_group')
@@ -154,17 +154,15 @@ class CommandInventoryTest(unittest.TestCase):
     def test_command_surface_unchanged(self):
         assert_snapshot(self, 'command_inventory', inventory(self.cog))
 
-    def test_every_prefix_command_has_a_slash_command(self):
-        self.assertEqual(set(), PREFIX_ONLY - set(self.prefix), 'PREFIX_ONLY names a command that does not exist')
-        self.assertEqual(set(self.prefix) - PREFIX_ONLY - NO_SLASH, set(self.slash))
+    def test_every_command_has_a_slash_command(self):
+        self.assertEqual(set(self.prefix) - NO_SLASH, set(self.slash))
         # A slash command that is switched off can still be built, for when it is switched back on.
-        self.assertEqual(set(self.prefix) - PREFIX_ONLY, set(make_cog(every_slash_command=True).slash.by_prefix_name))
+        self.assertEqual(set(self.prefix), set(make_cog(every_slash_command=True).slash.by_prefix_name))
 
     def test_switched_off_slash_commands_are_real_and_keep_their_section(self):
         sectioned = [name for _, names in list(GROUPS.values()) + list(STAFF_GROUPS.values()) for name in names]
         self.assertEqual(set(), NO_SLASH - set(self.prefix), 'NO_SLASH names a command that does not exist')
         self.assertEqual(set(), NO_SLASH - set(sectioned), 'it would have no section to come back to')
-        self.assertEqual(set(), NO_SLASH & PREFIX_ONLY)
         self.assertEqual(set(), NO_SLASH & set(self.slash))
 
     def test_generated_and_hybrid_slash_commands_take_the_same_arguments(self):
@@ -226,7 +224,7 @@ class CommandInventoryTest(unittest.TestCase):
         """Catches a command decorated with another command's help entry, or with none."""
         seen = {}
         for name, command in self.prefix.items():
-            if name in PREFIX_ONLY or name == 'help':
+            if name == 'help':
                 continue
             with self.subTest(command=name):
                 self.assertTrue(command.brief, 'no brief')

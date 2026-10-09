@@ -104,14 +104,6 @@
    "path": "cb arena"
   }
  },
- "ba": {
-  "aliases": [],
-  "category": null,
-  "guards": [],
-  "is_group": true,
-  "params": [],
-  "slash": null
- },
  "backfill": {
   "aliases": [],
   "category": "staff",
@@ -295,14 +287,6 @@
     "type": "Member"
    }
   ],
-  "slash": null
- },
- "cb": {
-  "aliases": [],
-  "category": null,
-  "guards": [],
-  "is_group": true,
-  "params": [],
   "slash": null
  },
  "char": {
@@ -540,14 +524,6 @@
    ],
    "path": "crew info"
   }
- },
- "crews": {
-  "aliases": [],
-  "category": null,
-  "guards": [],
-  "is_group": true,
-  "params": [],
-  "slash": null
  },
  "crewstats": {
   "aliases": [],
@@ -982,14 +958,6 @@
   ],
   "slash": null
  },
- "flairing": {
-  "aliases": [],
-  "category": null,
-  "guards": [],
-  "is_group": true,
-  "params": [],
-  "slash": null
- },
  "flairing_off": {
   "aliases": [],
   "category": "staff",
@@ -1392,14 +1360,6 @@
     "type": "int"
    }
   ],
-  "slash": null
- },
- "misc": {
-  "aliases": [],
-  "category": null,
-  "guards": [],
-  "is_group": true,
-  "params": [],
   "slash": null
  },
  "mock": {
@@ -2328,14 +2288,6 @@
    "path": "crew softcap"
   }
  },
- "staff": {
-  "aliases": [],
-  "category": null,
-  "guards": [],
-  "is_group": true,
-  "params": [],
-  "slash": null
- },
  "stagelist": {
   "aliases": [],
   "category": "misc",
@@ -2462,26 +2414,6 @@
  "sync": {
   "aliases": [],
   "category": "staff",
-  "guards": [
-   "role_call(STAFF_LIST)"
-  ],
-  "is_group": false,
-  "params": [],
-  "slash": null
- },
- "test": {
-  "aliases": [],
-  "category": null,
-  "guards": [
-   "role_call(STAFF_LIST)"
-  ],
-  "is_group": true,
-  "params": [],
-  "slash": null
- },
- "test confirm": {
-  "aliases": [],
-  "category": null,
   "guards": [
    "role_call(STAFF_LIST)"
   ],
