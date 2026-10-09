@@ -15,7 +15,7 @@ from .constants import *
 from .db_helpers import *
 from .decorators import *
 from .help import help_doc
-from .slash import EPHEMERAL, GROUPS, OLD_CATEGORIES, STAFF_DESCRIPTION, STAFF_GROUPS, SlashCommands
+from .slash import EPHEMERAL, GROUPS, MEMBER_ID, OLD_CATEGORIES, STAFF_DESCRIPTION, STAFF_GROUPS, SlashCommands
 
 logging.basicConfig(level=logging.INFO)
 
@@ -207,6 +207,38 @@ class ScoreSheetBot(commands.Cog):
                 return await send(*args, **kwargs)
 
             ctx.send = tracked_send
+            if not self.bot.intents.members:
+                await self._cache_command_members(ctx)
+
+    async def _cache_command_members(self, ctx: Context) -> None:
+        """Caches, fresh from Discord, the members a slash command is about: whoever ran it and anyone given in
+        its options, in this server and in the main and overflow servers.
+
+        Without the members intent Discord sends no member list and no member updates, so the cache only holds
+        what is fetched here, and the commands' `get_member` lookups find these members.
+        """
+        ids = {ctx.author.id}
+        for _, value in ctx.interaction.namespace:
+            if isinstance(value, (discord.Member, discord.User)):
+                ids.add(value.id)
+            elif isinstance(value, str):
+                ids.update(int(a or b) for a, b in MEMBER_ID.findall(value))
+        guilds = {guild.id: guild for guild in (ctx.guild, self.cache.scs, self.cache.overflow_server) if guild}
+        for guild in guilds.values():
+            for member_id in ids:
+                await self._fresh_member(guild, member_id)
+
+    async def _fresh_member(self, guild: discord.Guild, member_id: int) -> Optional[discord.Member]:
+        """`guild`'s member `member_id`, or None. Without the members intent the cache never sees role changes,
+        so the member is fetched from Discord and the cache updated."""
+        if self.bot.intents.members:
+            return guild.get_member(member_id)
+        try:
+            member = await guild.fetch_member(member_id)
+        except discord.NotFound:
+            return None
+        guild._add_member(member)
+        return member
 
     async def run_slash(self, interaction: discord.Interaction, command_name: str, *args, attachments=(), **kwargs):
         """Runs the prefix command `command_name` for a slash command, with the given arguments.
@@ -1730,7 +1762,7 @@ class ScoreSheetBot(commands.Cog):
                 return
         before = set(member.roles)
         result = await promote(member, self)
-        after = set(ctx.guild.get_member(member.id).roles)
+        after = set((await self._fresh_member(ctx.guild, member.id)).roles)
 
         await response_message(ctx, f'Successfully promoted {member.mention} to {result}.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
@@ -1763,7 +1795,7 @@ class ScoreSheetBot(commands.Cog):
             return
         before = set(member.roles)
         result = await demote(member, self)
-        after = set(ctx.guild.get_member(member.id).roles)
+        after = set((await self._fresh_member(ctx.guild, member.id)).roles)
         await response_message(ctx, f'Successfully demoted {member.mention} from {result}.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
@@ -1793,7 +1825,7 @@ class ScoreSheetBot(commands.Cog):
             return
         before = set(member.roles)
         await promote(member, self, True)
-        after = set(ctx.guild.get_member(member.id).roles)
+        after = set((await self._fresh_member(ctx.guild, member.id)).roles)
         await response_message(ctx, f'Successfully made {member.mention} a leader.')
         await self.cache.channels.flair_log.send(embed=role_change(before, after, ctx.author, member))
 
@@ -1832,7 +1864,7 @@ class ScoreSheetBot(commands.Cog):
                 await member.remove_roles(self.cache.roles.crew_staff)
                 await member.remove_roles(self.cache.roles.advisor, self.cache.roles.leader)
                 await track_cycle(member, self.cache.scs)
-                after = set(ctx.guild.get_member(member.id).roles)
+                after = set((await self._fresh_member(ctx.guild, member.id)).roles)
                 await response_message(ctx, f'Successfully unflaired {member.mention} from an overflow crew, '
                                             f'but they have left the overflow server so it\'s unclear which.')
                 await self.cache.channels.flair_log.send(
@@ -1857,10 +1889,10 @@ class ScoreSheetBot(commands.Cog):
                 await ctx.send(f'{user_crew.name} got a flair slot back for 3 unflairs. {remaining}/{total} left.')
             else:
                 await ctx.send(f'{unflairs}/3 unflairs for returning a slot.')
-        after = set(ctx.guild.get_member(member.id).roles)
+        after = set((await self._fresh_member(ctx.guild, member.id)).roles)
         if user_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
-            of_after = set(overflow_server.get_member(member.id).roles)
+            of_after = set((await self._fresh_member(overflow_server, member.id)).roles)
         await self.cache.channels.flair_log.send(
             embed=role_change(before, after, ctx.author, member, of_before, of_after))
 
@@ -1935,10 +1967,10 @@ class ScoreSheetBot(commands.Cog):
         mod_slot(flairing_crew, -1)
         record_flair(member, flairing_crew)
         await ctx.send(f'{flairing_crew.name} now has ({left - 1}/{total}) slots.')
-        after = set(ctx.guild.get_member(member.id).roles)
+        after = set((await self._fresh_member(ctx.guild, member.id)).roles)
         if flairing_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
-            of_after = set(overflow_server.get_member(member.id).roles)
+            of_after = set((await self._fresh_member(overflow_server, member.id)).roles)
         # if len(crew_members(flairing_crew, self)) == 40:
         #     message = 'You have just flaired the 40th person for your crew. When the first of the month hits, ' \
         #               'this will make you eligible for soft cap restrictions. Check out the SCS rules or use the ' \
@@ -2986,10 +3018,10 @@ class ScoreSheetBot(commands.Cog):
                 await response_message(ctx, str(ve))
                 return
 
-            after = set(ctx.guild.get_member(member.id).roles)
+            after = set((await self._fresh_member(ctx.guild, member.id)).roles)
             if flairing_crew.overflow:
                 overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
-                of_after = set(overflow_server.get_member(member.id).roles)
+                of_after = set((await self._fresh_member(overflow_server, member.id)).roles)
             await self.cache.channels.flair_log.send(
                 embed=role_change(before, after, ctx.author, member, of_before, of_after))
             success.append(member)
@@ -4061,10 +4093,13 @@ class ScoreSheetBot(commands.Cog):
 async def main():
     load_dotenv()
     token = os.getenv('DISCORD_TOKEN')
-    # The members intent is the only privileged one needed: for the member join, leave and update events and
-    # for the member lists. Commands are slash commands only, so messages are never read for a prefix.
+    # The members intent is the only privileged one the bot uses: for the member join, leave and update events
+    # and for the member lists. Commands are slash commands only, so messages are never read for a prefix.
     intents = discord.Intents.default()
-    intents.members = True
+    # Switched off for now, so the bot runs without the intent being approved; set MEMBERS_INTENT=1 to switch it
+    # back on. Without it only the members a command is about are cached (see `_cache_command_members`), so
+    # the member events and anything that goes through a whole member list or role list don't work.
+    intents.members = os.getenv('MEMBERS_INTENT') == '1'
     bot = commands.Bot(command_prefix=[], intents=intents, case_insensitive=True,
                        allowed_mentions=discord.AllowedMentions(everyone=False))
     bot.remove_command('help')

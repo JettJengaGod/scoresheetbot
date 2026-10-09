@@ -18,7 +18,7 @@
 
 1. Create an application at https://discord.com/developers/applications.
 1. Under the app, create a Bot.
-1. Under Bot/Privileged Gateway Intents, enable the server members intent. The bot doesn't need the presence or message content intents.
+1. Under Bot/Privileged Gateway Intents, nothing needs enabling for now. The server members intent is switched off until it's approved; to switch it back on, enable it here and set `MEMBERS_INTENT=1` in `.env`. Until then, the member join, leave and update events and anything that goes through a whole member or role list (crew member lists, leader lists, `lock`, `listroles`) don't work. The bot never needs the presence or message content intents.
 1. Copy `.envexample` to `.env`, and add the token from the Bot page.
 1. Invite your bot to your test server via `https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&permissions=519232&scope=bot%20applications.commands`, where the client id is found in your General Information page.
    * The `applications.commands` scope is what lets the bot's slash commands show up. A bot invited without it can be re-authorised with the same link.

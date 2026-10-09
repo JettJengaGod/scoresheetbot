@@ -195,9 +195,13 @@ def description(command: commands.Command) -> str:
     return text
 
 
+# A member's mention, or their bare id.
+MEMBER_ID = re.compile(r'<@!?(\d+)>|\b(\d{15,20})\b')
+
+
 def parse_members(guild: discord.Guild, text: str) -> List[discord.Member]:
     """Finds the members mentioned (or given by id) in `text`. Raises ValueError if any cannot be found."""
-    ids = re.findall(r'<@!?(\d+)>|\b(\d{15,20})\b', text)
+    ids = MEMBER_ID.findall(text)
     members, missing = [], []
     for mention_id, bare_id in ids:
         member_id = int(mention_id or bare_id)
