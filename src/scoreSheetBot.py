@@ -744,6 +744,7 @@ class ScoreSheetBot(commands.Cog):
     @ss_channel
     @is_lead
     async def send(self, ctx: Context, user: discord.Member, team: str = None):
+        sent_to = None
         if self._current(ctx).battle_type == BattleType.REG:
             if not check_roles(user, [VERIFIED]):
                 await response_message(ctx,
@@ -775,6 +776,7 @@ class ScoreSheetBot(commands.Cog):
                             f'12 hours ago and must wait to play ranked battles.')
                         return
                     self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
+                    sent_to = author_crew
                 else:
                     await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
                     return
@@ -787,12 +789,14 @@ class ScoreSheetBot(commands.Cog):
                                                 f'If they should no longer be on this crew, please unflair.')
                 else:
                     self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
+                    sent_to = author_crew
 
         elif self._current(ctx).battle_type == BattleType.MOCK:
             if not team:
                 team = self._current(ctx).team_from_member(ctx.author.mention)
             if team:
                 self._current(ctx).add_player(team, escape(user.display_name), ctx.author.mention, user.id)
+                sent_to = team
             else:
                 await ctx.send(f'During a mock you need to send with a teamname, like this'
                                f' `/cb send user:@playername team:teamname`.')
@@ -826,10 +830,14 @@ class ScoreSheetBot(commands.Cog):
                         f'12 hours ago and must wait to play ranked battles.')
                     return
                 self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
+                sent_to = author_crew
             else:
                 await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
                 return
         await send_sheet(ctx, battle=self._current(ctx))
+        if sent_to:
+            # A mention in the embed doesn't notify anyone, so ping the player in a message of its own.
+            await ctx.send(f'{user.mention} has been sent in for {sent_to}.')
 
     @commands.command(**help_doc['use_ext'])
     @has_sheet
@@ -1613,10 +1621,8 @@ class ScoreSheetBot(commands.Cog):
             pages = PaginatorView(PlayerStatsPaged(ctx.author, self).get_pages())
             await pages.start(ctx)
             return
+        # This season's record, which is 0-0 until the crew plays, above all its battles from every season.
         record = crew_record(actual_crew, CURRENT_LEAGUE_ID)
-        if not record[2]:
-            await ctx.send(f'{actual_crew.name} does not have any recorded crew battles with the bot.')
-            return
         title = f'{actual_crew.name}: {record[1]}-{int(record[2]) - int(record[1])}'
         pages = PaginatorView(Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon).get_pages())
         await pages.start(ctx)

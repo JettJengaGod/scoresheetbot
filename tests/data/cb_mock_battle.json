@@ -49,6 +49,10 @@
      "title": "Red vs Blue",
      "type": "rich"
     }
+   },
+   {
+    "content": "<@!12> has been sent in for Red.",
+    "embed": null
    }
   ]
  },
@@ -62,6 +66,10 @@
      "title": "Red vs Blue",
      "type": "rich"
     }
+   },
+   {
+    "content": "<@!22> has been sent in for Blue.",
+    "embed": null
    }
   ]
  },

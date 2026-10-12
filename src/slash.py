@@ -152,6 +152,8 @@ OPTIONS = {
     'stocks2': 'Stocks the second team\'s player took',
     'emoji': 'Character name',
     'role': 'Role name',
+    'playerstats.member': 'The player; leave blank for yourself',
+    'crewstats.role': 'The crew\'s role; leave blank for your own crew',
     'role1': 'First role',
     'role2': 'Second role',
     'rank': 'Crew rank',
@@ -333,8 +335,8 @@ class SlashCommands:
         cog = self.cog
         Score = app_commands.Range[int, 0, 3]
 
-        async def run(interaction: discord.Interaction, name: str, *args, **kwargs):
-            await cog.run_slash(interaction, name, *args, **kwargs)
+        async def run(interaction: discord.Interaction, command_name: str, *args, **kwargs):
+            await cog.run_slash(interaction, command_name, *args, **kwargs)
 
         def attachments(*files):
             return [file for file in files if file is not None]
@@ -383,6 +385,18 @@ class SlashCommands:
         async def pingnoverlap(interaction, role1: discord.Role, role2: discord.Role):
             await run(interaction, 'pingnoverlap', two_roles=f'{role1.name} {role2.name}')
 
+        async def playerstats(interaction, member: Optional[discord.Member] = None):
+            await run(interaction, 'playerstats', **({'name': member.mention} if member else {}))
+
+        async def crewstats(interaction, role: Optional[discord.Role] = None):
+            if role is None:
+                await run(interaction, 'crewstats')
+            elif role.name in cog.cache.crews_by_name:
+                # By tag, which the lookup matches exactly.
+                await run(interaction, 'crewstats', name=cog.cache.crews_by_name[role.name].abbr)
+            else:
+                await interaction.response.send_message(f'{role.name} isn\'t a crew\'s role.', ephemeral=True)
+
         async def reg(interaction, crew_name: str, size: int):
             await run(interaction, 'reg', everything=f'{crew_name} {size}')
 
@@ -420,7 +434,8 @@ class SlashCommands:
         return {
             'bet': bet, 'end': end, 'endlag': endlag, 'help': help_, 'multiflair': multiflair,
             'multiunflair': multiunflair, 'register': register, 'overlap': overlap, 'noverlap': noverlap,
-            'pingoverlap': pingoverlap, 'pingnoverlap': pingnoverlap, 'reg': reg, 'result': result,
+            'pingoverlap': pingoverlap, 'pingnoverlap': pingnoverlap, 'playerstats': playerstats,
+            'crewstats': crewstats, 'reg': reg, 'result': result,
             'freeze': freeze, 'pair': pair, 'addforfeit': addforfeit, 'addsheet': addsheet,
             'failedreg': failedreg, 'weirdreg': weirdreg,
         }

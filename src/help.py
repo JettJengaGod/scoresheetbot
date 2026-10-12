@@ -109,7 +109,7 @@ help_doc = dict(
                       'Optional[seconds]'),
     slots=HelpDoc(Categories.crews, 'Find out the remaining slots of a crew', '', 'Optional<User/Crew>'),
     logo=HelpDoc(Categories.crews, 'Find the logo of a crew', '', 'Optional<User/Crew>'),
-    rankings=HelpDoc(Categories.crews, 'Rankings of all legacy crews in order'),
+    rankings=HelpDoc(Categories.crews, 'Rankings of all crews in order'),
     crewstats=HelpDoc(Categories.crews, 'Stats for a crew or the crew of a player', '', 'Optional<User/Crew>'),
     umbralotto=HelpDoc(Categories.crews, 'Random crew of a certain rank', '', 'rank'),
     umbralottotest=HelpDoc(Categories.crews, 'Test version of umbralotto', '', 'rank'),
@@ -170,7 +170,7 @@ help_doc = dict(
                    'If you pass in a time it will stop a crew from registering for that amount of time,'
                    ' accepts xD or xW or xM for x days, weeks or months respectively', 'CREW Optional[length]'),
     disband=HelpDoc(Categories.staff,
-                    'Disbands an overflow crew removing all crew related roles from all members (requires confirm)',
+                    'Disbands a crew removing all crew related roles from all members (requires confirm)',
                     usage='CrewName or Tag'),
     tomain=HelpDoc(Categories.staff,
                    'Move an overflow crew to main (requires confirm)',
