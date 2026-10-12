@@ -4,7 +4,7 @@ import unittest.mock
 
 import discord
 
-from src import no_members_intent
+from src import helpers, no_members_intent
 from src.constants import ADVISOR, CREW_STAFF, LEADER, MUTED
 from src.crew import Crew
 from tests import mocks
@@ -140,6 +140,68 @@ class NoMembersIntentTest(unittest.IsolatedAsyncioTestCase):
             self.cog.bot.intents = discord.Intents.all()
             self.assertEqual(['listed'], await self.cog._crew_members(cr))
             self.assertEqual(['muted'], await self.cog._muted_crew_members(cr))
+
+    def cooldown_database(self, cooling):
+        """Stands in for the cooldown rows, which recording a member's lost cooldown role deletes."""
+        join_cd = mocks.MockRole(name='12h Join Cooldown')
+        self.cog.cache.roles = unittest.mock.MagicMock(join_cd=join_cd)
+        self.cog.cache.channels = unittest.mock.MagicMock()
+        self.cog.cache.channels.flair_log.send = unittest.mock.AsyncMock()
+
+        async def member_changed(before, after):
+            if before is not None and join_cd in before.roles and join_cd not in after.roles:
+                cooling.discard(after.id)
+
+        self.cog._member_changed.side_effect = member_changed
+        return join_cd, unittest.mock.patch.multiple(
+            'src.helpers', cooldown_finished=lambda: list(cooling),
+            cooldown_current=lambda: [(member_id, None) for member_id in cooling],
+            remove_expired_cooldown=unittest.mock.DEFAULT)
+
+    def with_role_removed_on_discord(self, member_id, roles):
+        member = self.on_discord(self.scs, member_id, roles=roles)
+        # Discord drops the role, but the copy the bot holds keeps it, as without the intent.
+        member.remove_roles = unittest.mock.AsyncMock(side_effect=lambda *_: self.on_discord(self.scs, member_id))
+        return member
+
+    async def test_an_ended_join_cooldown_is_announced_once(self):
+        cooling = {7}
+        join_cd, database = self.cooldown_database(cooling)
+        member = self.with_role_removed_on_discord(7, [join_cd])
+        self.cached[self.scs.id][7] = member
+        with database:
+            for _ in range(3):
+                await helpers.cooldown_handle(self.cog)
+        member.remove_roles.assert_awaited_once_with(join_cd)
+        self.cog.cache.channels.flair_log.send.assert_awaited_once()
+        self.assertEqual(set(), cooling)
+
+    async def test_a_join_cooldown_ends_for_someone_the_bot_had_not_seen(self):
+        cooling = {8}
+        join_cd, database = self.cooldown_database(cooling)
+        member = self.with_role_removed_on_discord(8, [join_cd])
+        with database as patched:
+            await helpers.cooldown_handle(self.cog)
+        member.remove_roles.assert_awaited_once_with(join_cd)
+        patched['remove_expired_cooldown'].assert_not_called()
+        self.cog.cache.channels.flair_log.send.assert_awaited_once()
+
+    async def test_each_track_step_reads_the_new_roles_back(self):
+        track = mocks.MockRole(name='Track 2')
+        self.on_discord(self.scs, 7, roles=[track])
+        stepped = []
+
+        async def track_decrement(member, _):
+            stepped.append(member)
+            self.on_discord(self.scs, 7, roles=[track])
+
+        with unittest.mock.patch('src.helpers.track_finished', return_value=[(7, 'Track 2', 2)]), \
+                unittest.mock.patch('src.helpers.track_decrement', side_effect=track_decrement), \
+                unittest.mock.patch('src.helpers.track_down_out') as down_out:
+            await helpers.track_handle(self.cog)
+        self.assertEqual(2, len(stepped))
+        self.assertIsNot(stepped[0], stepped[1])
+        down_out.assert_not_called()
 
     async def test_with_the_intent_the_cache_is_used(self):
         self.cog.bot.intents = discord.Intents.all()
