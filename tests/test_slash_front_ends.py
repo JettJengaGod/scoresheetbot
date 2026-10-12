@@ -29,6 +29,8 @@ TYPED = {
     'noverlap': (dict(role1=ROLE_A, role2=ROLE_B), (), dict(two_roles='Leader Advisor')),
     'pingoverlap': (dict(role1=ROLE_A, role2=ROLE_B), (), dict(two_roles='Leader Advisor')),
     'pingnoverlap': (dict(role1=ROLE_A, role2=ROLE_B), (), dict(two_roles='Leader Advisor')),
+    'playerstats': (dict(member=types.SimpleNamespace(mention='<@7>')), (), dict(name='<@7>')),
+    'crewstats': (dict(role=types.SimpleNamespace(name='Holy Knights')), (), dict(name='HK')),
     'reg': (dict(crew_name='New Crew', size=5), (), dict(everything='New Crew 5')),
     'result': (dict(opponent=OPPONENT, your_characters='ness3 pika4', your_score=3, opponent_score=2,
                     opponent_characters='palu1'), (OPPONENT,), dict(everything='ness3 pika4 3 2 palu1')),
@@ -75,6 +77,17 @@ class TypedFrontEndTest(unittest.IsolatedAsyncioTestCase):
         run.assert_awaited_once_with(self.ctx.interaction, 'help')
         run = await self.run_typed('help', command='send')
         run.assert_awaited_once_with(self.ctx.interaction, 'help', 'send')
+        # Left out, the stats are your own, or your crew's.
+        for name in ('playerstats', 'crewstats'):
+            run = await self.run_typed(name)
+            run.assert_awaited_once_with(self.ctx.interaction, name)
+
+    async def test_crewstats_needs_a_crew_role(self):
+        self.ctx.interaction.response.send_message = unittest.mock.AsyncMock()
+        run = await self.run_typed('crewstats', role=ROLE_A)
+        run.assert_not_awaited()
+        self.ctx.interaction.response.send_message.assert_awaited_once_with('Leader isn\'t a crew\'s role.',
+                                                                            ephemeral=True)
 
     async def test_member_lists(self):
         self.ctx.interaction.guild = self.guild

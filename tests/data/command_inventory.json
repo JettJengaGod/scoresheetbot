@@ -541,12 +541,12 @@
    }
   ],
   "slash": {
-   "kind": "twin",
+   "kind": "typed",
    "options": [
     {
-     "name": "name",
+     "name": "role",
      "required": false,
-     "type": "str"
+     "type": "Role"
     }
    ],
    "path": "crew crewstats"
@@ -1723,12 +1723,12 @@
    }
   ],
   "slash": {
-   "kind": "twin",
+   "kind": "typed",
    "options": [
     {
-     "name": "name",
+     "name": "member",
      "required": false,
-     "type": "str"
+     "type": "Member"
     }
    ],
    "path": "crew playerstats"
