@@ -127,12 +127,26 @@ def check_roles(user: discord.Member, roles: Iterable) -> bool:
     return any((role.name in roles for role in user.roles))
 
 
-async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battle) -> discord.Message:
+MESSAGE_LIMIT = 2000
+
+
+def join_lines(*lines: Optional[str]) -> str:
+    """The lines that aren't empty, one message with one per line."""
+    return '\n'.join(line for line in lines if line)
+
+
+async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battle, content: Optional[str] = None,
+                     prompt: Optional[discord.Message] = None) -> discord.Message:
+    """Sends the battle's sheet, with `content` and any request to confirm it as the text of its first message.
+
+    Given `prompt`, a confirmation prompt, the sheet goes in that message instead of a new one. Text too long to
+    share a message with the sheet is sent on its own first.
+    """
     embed_split = split_embed(embed=battle.embed(), length=2000)
+    footer = ''
     if battle.battle_over():
         if not all(battle.confirms):
-            footer = ''
-            footer += '\nPlease confirm: '
+            footer += 'Please confirm: '
             if battle.battle_type == BattleType.MOCK:
                 footer += 'anyone can confirm or clear a mock.'
             else:
@@ -148,14 +162,42 @@ async def send_sheet(channel: Union[discord.TextChannel, Context], battle: Battl
                         footer += f'{leader}, '
                     footer = footer[:-2]
                     footer += ' please `/cb confirm`.'
-            await channel.send(footer)
+    text = '\n'.join(part for part in (content, footer) if part) or None
+    if text and len(text) > MESSAGE_LIMIT:
+        for part in split_on_length_and_separator(text, MESSAGE_LIMIT, '\n'):
+            await channel.send(part)
+        text = None
     first = None
     for embed in embed_split:
-        if not first:
-            first = await channel.send(embed=embed)
-        else:
+        if first:
             await channel.send(embed=embed)
+        elif prompt:
+            await prompt.edit(content=text, embed=embed)
+            first = prompt
+        else:
+            first = await channel.send(text, embed=embed)
     return first
+
+
+_KEEP = object()
+
+
+async def answer_prompt(ctx: Context, prompt: discord.Message, content: Optional[str] = None, embed=_KEEP,
+                        **changes) -> discord.Message:
+    """Replaces a confirmation prompt's text with its outcome, so the question and its answer are one message.
+
+    `embed` replaces the prompt's embed (None removes it; left out, it stays). An embed too long for one message
+    has the rest sent after it, as `send_long_embed` does. Anything else is passed on to `Message.edit`.
+    """
+    rest = []
+    if embed is not _KEEP:
+        if embed is not None:
+            embed, *rest = split_embed(embed, length=2000)
+        changes['embed'] = embed
+    await prompt.edit(content=content, **changes)
+    for piece in rest:
+        await ctx.send(embed=piece)
+    return prompt
 
 
 def crew(user: discord.Member, bot: 'ScoreSheetBot') -> Optional[str]:
@@ -954,13 +996,14 @@ class PaginatorView(ui.View):
             except discord.HTTPException:
                 pass
 
-    async def start(self, ctx: Context):
+    async def start(self, ctx: Context, content: Optional[str] = None):
+        """Sends the first page, with `content` as the message's text."""
         self.author = ctx.author
         if len(self.pages) == 1:
-            self.message = await ctx.send(embed=self.pages[0])
+            self.message = await ctx.send(content, embed=self.pages[0])
             self.stop()
         else:
-            self.message = await ctx.send(embed=self.pages[0], view=self)
+            self.message = await ctx.send(content, embed=self.pages[0], view=self)
 
 
 class Paged:

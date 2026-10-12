@@ -255,6 +255,33 @@ class ScoreSheetBot(commands.Cog):
             if not self.bot.intents.members:
                 await no_members_intent.cache_command_members(self, ctx)
 
+    def _crew_with_note(self, ctx: Context, name: Optional[str]) -> Tuple[Crew, Optional[str]]:
+        """The crew `name` means: a crew by name or tag, or a member's crew, or with no name the author's.
+        For a member, the note says which crew they are in, to go in the command's reply."""
+        if name:
+            ambiguous = ambiguous_lookup(name, self)
+            if isinstance(ambiguous, discord.Member):
+                actual_crew = crew_lookup(crew(ambiguous, self), self)
+                return actual_crew, f'{ambiguous.display_name} is in {actual_crew.name}.'
+            return ambiguous, None
+        return crew_lookup(crew(ctx.author, self), self), f'{ctx.author.display_name} is in {crew(ctx.author, self)}.'
+
+    @staticmethod
+    def _set_slots(cr: Crew, num: int) -> List[str]:
+        """Sets the crew's slots, and says what they were and are now."""
+        left, total, uf = extra_slots(cr)
+        new = cur_slot_set(cr, num)
+        return [f'{cr.name} current slots: {left}/{total}  ({uf}/3) for unflair.', f'Set {cr.name} slots to {new}.']
+
+    @staticmethod
+    def _set_return_slots(cr: Crew, num: int) -> List[str]:
+        """Sets the crew's unflairs towards a returned slot, and says what its slots were and are now."""
+        left, total, uf = extra_slots(cr)
+        lines = [f'{cr.name} current slots: {left}/{total}  ({uf}/3) for unflair.']
+        uf, left, total = set_return_slots(cr, num)
+        lines.append(f'Set {cr.name} new slots: {left}/{total}  ({uf}/3) for unflair.')
+        return lines
+
     async def _fresh_member(self, guild: discord.Guild, member_id: int) -> Optional[discord.Member]:
         """`guild`'s member `member_id`, or None. Without the members intent the cache never sees role changes,
         so the member is fetched from Discord and the cache updated."""
@@ -835,6 +862,7 @@ class ScoreSheetBot(commands.Cog):
                     await response_message(ctx, f'{user.mention} is on {player_crew} which is not participating '
                                                 f'in this battle.'
                                                 f'If they should no longer be on this crew, please unflair.')
+                    return
                 else:
                     self._current(ctx).add_player(author_crew, escape(user.display_name), ctx.author.mention, user.id)
                     sent_to = author_crew
@@ -882,10 +910,9 @@ class ScoreSheetBot(commands.Cog):
             else:
                 await ctx.send(f'{escape(user.display_name)} is not on {author_crew} please choose someone else.')
                 return
-        await send_sheet(ctx, battle=self._current(ctx))
-        if sent_to:
-            # A mention in the embed doesn't notify anyone, so ping the player in a message of its own.
-            await ctx.send(f'{user.mention} has been sent in for {sent_to}.')
+        # The ping is the sheet message's text, since a mention in the embed wouldn't notify the player.
+        await send_sheet(ctx, battle=self._current(ctx),
+                         content=f'{user.mention} has been sent in for {sent_to}.' if sent_to else None)
 
     @commands.command(**help_doc['use_ext'])
     @has_sheet
@@ -910,8 +937,10 @@ class ScoreSheetBot(commands.Cog):
                     await ctx.send(f'{team} has already used their extension.')
                     return
                 else:
-                    await ctx.send(f'{team} just used their extension. '
-                                   f'They now get 5 more minutes for their next player to be in the arena.')
+                    await send_sheet(ctx, battle=self._current(ctx),
+                                     content=f'{team} just used their extension. '
+                                             f'They now get 5 more minutes for their next player to be in the arena.')
+                    return
             else:
                 await ctx.send(f'During a mock you need to use your extension, like this'
                                f' `/cb use_ext team:teamname`.')
@@ -940,7 +969,7 @@ class ScoreSheetBot(commands.Cog):
                                  f'{self._current(ctx).lookup(author_crew).stocks} stocks left, '
                                  f'are you sure you want to forfeit?')
             if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
         elif self._current(ctx).battle_type == BattleType.MOCK:
             if not team:
@@ -949,7 +978,7 @@ class ScoreSheetBot(commands.Cog):
                 msg = await ctx.send(f'{ctx.author.mention}:{team} has {self._current(ctx).lookup(team).stocks} stocks '
                                      f'left, are you sure you want to forfeit?')
                 if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                    await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                    await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                     return
                 self._current(ctx).forfeit(team)
             else:
@@ -963,10 +992,10 @@ class ScoreSheetBot(commands.Cog):
                                  f'{self._current(ctx).lookup(author_crew).stocks} stocks left, '
                                  f'are you sure you want to forfeit?')
             if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
             self._current(ctx).forfeit(author_crew)
-        await send_sheet(ctx, battle=self._current(ctx))
+        await send_sheet(ctx, battle=self._current(ctx), prompt=msg)
 
     @commands.command(**help_doc['ext'])
     @has_sheet
@@ -1021,6 +1050,7 @@ class ScoreSheetBot(commands.Cog):
                     await response_message(ctx, f'{user.mention} is on {player_crew} which is not participating '
                                                 f'in this battle.'
                                                 f'If they should no longer be on this crew, please unflair.')
+                    return
                 else:
                     self._current(ctx).replace_player(author_crew, escape(user.display_name), ctx.author.mention,
                                                       user.id)
@@ -1131,11 +1161,11 @@ class ScoreSheetBot(commands.Cog):
     @is_lead
     async def undo(self, ctx):
         await self._reject_outsiders(ctx)
+        note = None
         if not self._current(ctx).undo():
-            await ctx.send('Note: undoing a replace on the scoresheet doesn\'t actually undo the replace, '
-                           'you need to use `/cb replace` with the original player to do that.')
-
-        await send_sheet(ctx, battle=self._current(ctx))
+            note = ('Note: undoing a replace on the scoresheet doesn\'t actually undo the replace, '
+                    'you need to use `/cb replace` with the original player to do that.')
+        await send_sheet(ctx, battle=self._current(ctx), content=note)
 
     # @commands.command(**help_doc['difficulty'], aliases=['d'])
     # @main_only
@@ -1196,11 +1226,13 @@ class ScoreSheetBot(commands.Cog):
         await self._reject_outsiders(ctx)
         current = self._current(ctx)
         if current.battle_over():
+            battle = current
+            # Posted with the sheet, so confirming sends one message.
+            notes = []
 
             if current.battle_type == BattleType.REG:
 
                 current.confirm(await self._reg_crew_lookup(ctx))
-                await send_sheet(ctx, battle=current)
                 if current.confirmed():
                     today = date.today()
 
@@ -1211,6 +1243,8 @@ class ScoreSheetBot(commands.Cog):
                     loser = current.loser().name
                     current = self._current(ctx)
                     if not current:
+                        # Confirmed twice at once, and the other confirm finished the battle.
+                        await send_sheet(ctx, battle=battle)
                         return
                     await self._clear_current(ctx)
                     links = []
@@ -1255,7 +1289,7 @@ class ScoreSheetBot(commands.Cog):
                     #     update_mc_sheet()
                     # for link in links:
                     #     await link.edit(content=new_message)
-                    await ctx.send(
+                    notes.append(
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. ')
                     # f'(Battle number:{battle_id})')
@@ -1265,7 +1299,6 @@ class ScoreSheetBot(commands.Cog):
             elif current.battle_type in (
                     BattleType.POWER_PLAYOFF, BattleType.COURAGE_PLAYOFF, BattleType.WISDOM_PLAYOFF):
                 current.confirm(await self._battle_crew(ctx, ctx.author))
-                await send_sheet(ctx, battle=current)
                 if current.confirmed():
                     today = date.today()
                     if current.battle_type == BattleType.POWER_PLAYOFF:
@@ -1288,6 +1321,8 @@ class ScoreSheetBot(commands.Cog):
                     loser = current.loser().name
                     current = self._current(ctx)
                     if not current:
+                        # Confirmed twice at once, and the other confirm finished the battle.
+                        await send_sheet(ctx, battle=battle)
                         return
                     await self._clear_current(ctx)
                     links = []
@@ -1305,7 +1340,7 @@ class ScoreSheetBot(commands.Cog):
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
-                    await ctx.send(
+                    notes.append(
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
@@ -1315,11 +1350,10 @@ class ScoreSheetBot(commands.Cog):
                         if not extra_slot_used(cr):
                             if battles_since_sunday(cr) >= 3:
                                 mod_slot(cr, 1)
-                                await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                                notes.append(f'{cr.name} got a slot back for playing 3 battles this week!')
                                 set_extra_used(cr)
             elif current.battle_type == BattleType.PLAYOFF:
                 current.confirm(await self._battle_crew(ctx, ctx.author))
-                await send_sheet(ctx, battle=current)
                 if current.confirmed():
                     today = date.today()
                     output_channels = [
@@ -1330,6 +1364,8 @@ class ScoreSheetBot(commands.Cog):
                     loser = current.loser().name
                     current = self._current(ctx)
                     if not current:
+                        # Confirmed twice at once, and the other confirm finished the battle.
+                        await send_sheet(ctx, battle=battle)
                         return
                     await self._clear_current(ctx)
                     links = []
@@ -1347,7 +1383,7 @@ class ScoreSheetBot(commands.Cog):
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
-                    await ctx.send(
+                    notes.append(
                         f'The battle between {current.team1.name} and {current.team2.name} '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
@@ -1355,11 +1391,10 @@ class ScoreSheetBot(commands.Cog):
                         if not extra_slot_used(cr):
                             if battles_since_sunday(cr) >= 3:
                                 mod_slot(cr, 1)
-                                await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                                notes.append(f'{cr.name} got a slot back for playing 3 battles this week!')
                                 set_extra_used(cr)
             else:
                 current.confirm(await self._battle_crew(ctx, ctx.author))
-                await send_sheet(ctx, battle=current)
                 if current.confirmed():
                     today = date.today()
 
@@ -1370,6 +1405,8 @@ class ScoreSheetBot(commands.Cog):
                     league_id = CURRENT_LEAGUE_ID  # TODO Update Current League ID based on league end
                     current = self._current(ctx)
                     if not current:
+                        # Confirmed twice at once, and the other confirm finished the battle.
+                        await send_sheet(ctx, battle=battle)
                         return
                     await self._clear_current(ctx)
                     links = []
@@ -1412,7 +1449,7 @@ class ScoreSheetBot(commands.Cog):
                         f'**Battle:** {battle_id} from {ctx.channel.mention}')
                     for link in links:
                         await link.edit(content=new_message)
-                    await ctx.send(
+                    notes.append(
                         f'The battle between {winner}({w_placement_message}) and {loser}({l_placement_message}) '
                         f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
                         f'(Battle number:{battle_id})')
@@ -1420,8 +1457,10 @@ class ScoreSheetBot(commands.Cog):
                         if not extra_slot_used(cr):
                             if battles_since_sunday(cr) >= 3:
                                 mod_slot(cr, 1)
-                                await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                                notes.append(f'{cr.name} got a slot back for playing 3 battles this week!')
                                 set_extra_used(cr)
+            if battle.battle_type != BattleType.MOCK:
+                await send_sheet(ctx, battle=battle, content='\n'.join(notes) or None)
         else:
             await ctx.send('The battle is not over yet, wait till then to confirm.')
 
@@ -1432,19 +1471,19 @@ class ScoreSheetBot(commands.Cog):
     async def clear(self, ctx):
         if not check_roles(ctx.author, STAFF_LIST):
             await self._reject_outsiders(ctx)
+        question = 'Are you sure you want to clear this crew battle?'
         if self._current(ctx).battle_type == BattleType.MOCK:
-            await ctx.send('If you just cleared a crew battle to troll people, be warned this is a bannable offence.')
-
-        msg = await ctx.send(f'Are you sure you want to clear this crew battle?')
+            question = ('If you just cleared a crew battle to troll people, be warned this is a bannable offence.\n'
+                        + question)
+        msg = await ctx.send(question)
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
-            await resp.delete(delay=10)
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             await delete_invocation(ctx)
-            await msg.delete(delay=5)
+            await msg.delete(delay=10)
             return
 
         await self._clear_current(ctx)
-        await ctx.send(f'{ctx.author.mention} cleared the crew battle.')
+        await answer_prompt(ctx, msg, f'{ctx.author.mention} cleared the crew battle.')
 
     @commands.command(**help_doc['status'])
     @has_sheet
@@ -1484,8 +1523,8 @@ class ScoreSheetBot(commands.Cog):
         if is_usable_emoji(emoji, self.bot):
             await ctx.send(emoji)
         else:
-            await ctx.send(f'What you put: {string_to_emote(emoji, self.bot)}')
-            await ctx.send(f'All alts in order: {all_alts(emoji, self.bot)}')
+            await ctx.send(f'What you put: {string_to_emote(emoji, self.bot)}\n'
+                           f'All alts in order: {all_alts(emoji, self.bot)}')
 
     @commands.command(**help_doc['chars'])
     @ss_channel
@@ -1555,10 +1594,9 @@ class ScoreSheetBot(commands.Cog):
                         value=f'Loser: {loser_member.display_name}')
         msg = await ctx.send(f'{opponent.mention} please confirm this match.', embed=embed)
         if not await wait_for_reaction_on_message(YES, NO, msg, opponent, self.bot, 600.0):
-            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
-            await resp.delete(delay=10)
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             await delete_invocation(ctx)
-            await msg.delete(delay=5)
+            await msg.delete(delay=10)
             return
         win_elo = get_member_elo(winner_member.id)
         lose_elo = get_member_elo(loser_member.id)
@@ -1719,55 +1757,28 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['crewstats'])
     @main_only
     async def crewstats(self, ctx, *, name: str = None):
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        actual_crew, note = self._crew_with_note(ctx, name)
         record = crew_record(actual_crew)
         if not record[2]:
-            await ctx.send(f'{actual_crew.name} does not have any recorded crew battles with the bot.')
+            await ctx.send(join_lines(note, f'{actual_crew.name} does not have any recorded crew battles with the bot.'))
             return
         title = f'{actual_crew.name}: {record[1]}-{int(record[2]) - int(record[1])}'
         pages = PaginatorView(Paged(crew_matches(actual_crew), title=title, color=actual_crew.color, thumbnail=actual_crew.icon).get_pages())
-        await pages.start(ctx)
+        await pages.start(ctx, note)
 
     @commands.command(**help_doc['logo'])
     @main_only
     async def logo(self, ctx, *, name: str = None):
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        actual_crew, note = self._crew_with_note(ctx, name)
         embed = discord.Embed(title=f'{actual_crew.name}\'s logo', color=actual_crew.color)
         embed.set_image(url=actual_crew.icon)
-        await ctx.send(embed=embed)
+        await ctx.send(note, embed=embed)
 
     @commands.command(**help_doc['crew'])
     @main_only
     async def crew(self, ctx, *, name: str = None):
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
-        await ctx.send(embed=actual_crew.embed)
+        actual_crew, note = self._crew_with_note(ctx, name)
+        await ctx.send(note, embed=actual_crew.embed)
 
     ''' ************************************FLAIRING COMMANDS ********************************************'''
 
@@ -1925,18 +1936,18 @@ class ScoreSheetBot(commands.Cog):
             of_before = set(of_user.roles)
         before = set(member.roles)
         await unflair(member, ctx.author, self)
-        await response_message(ctx, f'Successfully unflaired {member.mention} from {user_crew.name}.')
         if check_roles(member, [JOIN_CD]):
             mod_slot(user_crew, 1)
             unflairs, left, total = record_unflair(member.id, user_crew, True)
-            await ctx.send(
-                f'{str(member)} was on 12h cooldown so {user_crew.name} gets back a slot ({left}/{total})')
+            slot_note = f'{str(member)} was on 12h cooldown so {user_crew.name} gets back a slot ({left}/{total})'
         else:
             unflairs, remaining, total = record_unflair(member.id, user_crew, False)
             if unflairs == 3:
-                await ctx.send(f'{user_crew.name} got a flair slot back for 3 unflairs. {remaining}/{total} left.')
+                slot_note = f'{user_crew.name} got a flair slot back for 3 unflairs. {remaining}/{total} left.'
             else:
-                await ctx.send(f'{unflairs}/3 unflairs for returning a slot.')
+                slot_note = f'{unflairs}/3 unflairs for returning a slot.'
+        await response_message(ctx, join_lines(f'Successfully unflaired {member.mention} from {user_crew.name}.',
+                                               slot_note))
         after = set((await self._fresh_member(ctx.guild, member.id)).roles)
         if user_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
@@ -2011,10 +2022,10 @@ class ScoreSheetBot(commands.Cog):
         except ValueError as ve:
             await response_message(ctx, str(ve))
             return
-        await response_message(ctx, f'Successfully flaired {member.mention} for {flairing_crew.name}.')
         mod_slot(flairing_crew, -1)
         record_flair(member, flairing_crew)
-        await ctx.send(f'{flairing_crew.name} now has ({left - 1}/{total}) slots.')
+        await response_message(ctx, join_lines(f'Successfully flaired {member.mention} for {flairing_crew.name}.',
+                                               f'{flairing_crew.name} now has ({left - 1}/{total}) slots.'))
         after = set((await self._fresh_member(ctx.guild, member.id)).roles)
         if flairing_crew.overflow:
             overflow_server = discord.utils.get(self.bot.guilds, name=OVERFLOW_SERVER)
@@ -2111,7 +2122,7 @@ class ScoreSheetBot(commands.Cog):
         crew1, crew2 = crew_lookup(c1, self), crew_lookup(c2, self)
         msg = await ctx.send(f'Would you like to start a gambit between {crew1.name} and {crew2.name}?')
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
         msg = await self.cache.channels.gambit_announce.send(
             f'{self.cache.roles.gambit.mention} a new gambit has started between {crew1.name} and {crew2.name}!'
@@ -2132,7 +2143,7 @@ class ScoreSheetBot(commands.Cog):
         if cg.locked:
             msg = await ctx.send(f'Gambit between {cg.team1} and {cg.team2} is already locked, do you want to unlock?')
             if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
             lock_gambit(False)
             await msg.delete()
@@ -2200,7 +2211,7 @@ class ScoreSheetBot(commands.Cog):
             return
         msg = await ctx.send(f'Are you sure you want to end the gambit as {win.name} beat {loser}?')
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
 
         await ctx.send('This might take awhile, so please do not repeat the command.')
@@ -2319,21 +2330,8 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     @main_only
     async def setslots(self, ctx, num: int, *, name: str = None):
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
-        left, total, uf = extra_slots(actual_crew)
-
-        await ctx.send(f'{actual_crew.name} current slots: {left}/{total}  ({uf}/3) for unflair.')
-        new = cur_slot_set(actual_crew, num)
-        await ctx.send(f'Set {actual_crew.name} slots to {new}.')
+        actual_crew, note = self._crew_with_note(ctx, name)
+        await ctx.send(join_lines(note, *self._set_slots(actual_crew, num)))
 
     @commands.command(**help_doc['tri'])
     @role_call(STAFF_LIST)
@@ -2393,48 +2391,27 @@ class ScoreSheetBot(commands.Cog):
             msg = await response_message(ctx, f'{num} must be 0,1,2 or 3 ')
             await msg.delete(delay=5)
             return
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
-        left, total, uf = extra_slots(actual_crew)
-
-        await ctx.send(f'{actual_crew.name} current slots: {left}/{total}  ({uf}/3) for unflair.')
-        uf, left, total = set_return_slots(actual_crew, num)
-        await ctx.send(f'Set {actual_crew.name} new slots: {left}/{total}  ({uf}/3) for unflair.')
+        actual_crew, note = self._crew_with_note(ctx, name)
+        await ctx.send(join_lines(note, *self._set_return_slots(actual_crew, num)))
 
     @commands.command(hidden=True, **help_doc['fixunflair'])
     @main_only
     @flairing_required
     @role_call(STAFF_LIST)
     async def fixunflair(self, ctx, *, name: str = None):
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        actual_crew, note = self._crew_with_note(ctx, name)
         left, total, uf = extra_slots(actual_crew)
+        lines = [note]
         if uf > 0:
             uf += 2
             uf %= 3
             left += 1
-            await self.setreturnslots(ctx, uf, name=actual_crew.name)
-            await self.setslots(ctx, left, name=actual_crew.name)
+            lines += self._set_return_slots(actual_crew, uf)
+            lines += self._set_slots(actual_crew, left)
         else:
-
             uf += 2
-            await self.setreturnslots(ctx, uf, name=actual_crew.name)
+            lines += self._set_return_slots(actual_crew, uf)
+        await ctx.send(join_lines(*lines))
 
     @commands.command(**help_doc['cooldown'], hidden=True)
     @role_call(STAFF_LIST)
@@ -2627,7 +2604,7 @@ class ScoreSheetBot(commands.Cog):
         )
         msg = await ctx.send(f'{ctx.author.mention}: Are you sure you want to confirm this crew battle?', embed=embed)
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot, 120):
-            await response_message(ctx, 'Canceled or timed out.')
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: Canceled or timed out.')
             return
 
         output_channels = [discord.utils.get(ctx.guild.channels, name=SCORESHEET_HISTORY),
@@ -2672,16 +2649,17 @@ class ScoreSheetBot(commands.Cog):
             f'**Battle:** {battle_id} from {ctx.channel.mention}')
         for link in links:
             await link.edit(content=new_message)
-        await ctx.send(
+        notes = [
             f'The battle between {winner_crew.name}({w_placement_message}) and {loser_crew.name}({l_placement_message}) '
             f'has been confirmed by both sides and posted in {output_channels[0].mention}. '
-            f'(Battle number:{battle_id})')
+            f'(Battle number:{battle_id})']
         for cr in (winner_crew, loser_crew):
             if not extra_slot_used(cr):
                 if battles_since_sunday(cr) >= 3:
                     mod_slot(cr, 1)
-                    await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+                    notes.append(f'{cr.name} got a slot back for playing 3 battles this week!')
                     set_extra_used(cr)
+        await answer_prompt(ctx, msg, join_lines(*notes))
 
     #
     #     elif current.battle_type in (BattleType.POWER, BattleType.COURAGE):
@@ -2933,17 +2911,17 @@ class ScoreSheetBot(commands.Cog):
         if channel.id in disabled_channels():
             msg = await ctx.send(f'{channel.name} is already disabled, re-enable?')
             if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
             remove_disabled_channel(channel.id)
-            await ctx.send(f'{channel.name} undisabled.')
+            await answer_prompt(ctx, msg, f'{channel.name} undisabled.')
         else:
             msg = await ctx.send(f'Really disable the bot in {channel.name}?')
             if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
             add_disabled_channel(channel.id)
-            await ctx.send(f'JettBot disabled in {channel.name}.')
+            await answer_prompt(ctx, msg, f'JettBot disabled in {channel.name}.')
 
     @commands.command(**help_doc['deactivate'])
     @role_call(STAFF_LIST)
@@ -2953,17 +2931,17 @@ class ScoreSheetBot(commands.Cog):
         if db_command[1]:
             msg = await ctx.send(f'`{command_name}` is already deactivated, re-activate?')
             if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
             set_command_activation(command_name, False)
-            await ctx.send(f'{command_name} reactivated.')
+            await answer_prompt(ctx, msg, f'{command_name} reactivated.')
         else:
             msg = await ctx.send(f'really deactivate `{command_name}`?')
             if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
             set_command_activation(command_name, True)
-            await ctx.send(f'`{command_name}` deactivated.')
+            await answer_prompt(ctx, msg, f'`{command_name}` deactivated.')
 
     @commands.command(**help_doc['usage'])
     @role_call([DOCS, MINION, ADMIN, CERTIFIED])
@@ -3034,7 +3012,7 @@ class ScoreSheetBot(commands.Cog):
 
         msg = await ctx.send(f'Are you sure you want to register {len(members)} members for {flairing_crew.name}')
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
         for member in members:
             try:
@@ -3042,16 +3020,12 @@ class ScoreSheetBot(commands.Cog):
             except ValueError:
                 user_crew = None
 
+            # The summary at the end lists who couldn't be flaired and why.
             if user_crew:
-                await response_message(ctx, f'{member.display_name} '
-                                            f'must be unflaired for their current crew before they can be flaired. ')
                 fail_on_crew.append(member)
                 continue
             overflow_mem = discord.utils.get(self.cache.overflow_server.members, id=member.id)
             if flairing_crew.overflow and not overflow_mem:
-                await response_message(ctx,
-                                       f'{member.mention} is not in the overflow server and '
-                                       f'{flairing_crew.name} is an overflow crew. https://discord.gg/ARqkTYg')
                 fail_not_overflow.append(member)
                 continue
             of_before, of_after = None, None
@@ -3079,11 +3053,12 @@ class ScoreSheetBot(commands.Cog):
         if fail_not_overflow or fail_on_crew:
             desc.append('Unsuccessful flairs')
             if fail_not_overflow:
-                desc.append('Not in overflow:')
+                desc.append(f'Not in the overflow server, which {flairing_crew.name} needs '
+                            f'(https://discord.gg/ARqkTYg):')
                 for s in fail_not_overflow:
                     desc.append(f'{s.display_name}: {s.mention}')
             if fail_on_crew:
-                desc.append('Already on a crew, needs to unflair')
+                desc.append('Already on a crew, must be unflaired from it before they can be flaired:')
                 for s in fail_on_crew:
                     desc.append(f'{s.display_name}: {s.mention}')
         _, total = slots(flairing_crew)
@@ -3097,7 +3072,7 @@ class ScoreSheetBot(commands.Cog):
         embed = discord.Embed(title=f'Crew Reg for {flairing_crew.name}', description='\n'.join(desc),
                               color=flairing_crew.color)
 
-        await send_long_embed(ctx, embed)
+        await answer_prompt(ctx, msg, embed=embed)
         await send_long_embed(self.cache.channels.flair_log, embed)
 
     @commands.command(**help_doc['fixslot'], hidden=True)
@@ -3112,10 +3087,10 @@ class ScoreSheetBot(commands.Cog):
                   f' are you sure?'
         msg = await ctx.send(message)
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
         mod_slot(cr, 1)
-        await ctx.send(f'{cr.name} got a slot back for playing 3 battles this week!')
+        await answer_prompt(ctx, msg, f'{cr.name} got a slot back for playing 3 battles this week!')
 
     @commands.command(**help_doc['freeze'])
     @role_call([DOCS, MINION, ADMIN, VIOS])
@@ -3134,7 +3109,7 @@ class ScoreSheetBot(commands.Cog):
             if not length:
                 msg = await ctx.send(f'{actual.name} is already frozen till {actual.freeze}, really unfreeze them?')
                 if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                    await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                    await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                     return
                 freeze_crew(actual, None)
                 await ctx.send(f'{actual.name} unfrozen.')
@@ -3143,7 +3118,7 @@ class ScoreSheetBot(commands.Cog):
                 msg = await ctx.send(f'{actual.name} is already frozen till {actual.freeze}'
                                      f' do you want to change their end date to {finish}?')
                 if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                    await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                    await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                     return
                 freeze_crew(actual, finish)
                 await ctx.send(f'{actual.name} frozen till {finish}.')
@@ -3152,14 +3127,14 @@ class ScoreSheetBot(commands.Cog):
                 finish = parseTime(length)
                 msg = await ctx.send(f'Do you want to freeze {actual.name} till {finish}?')
                 if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                    await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                    await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                     return
                 freeze_crew(actual, finish)
                 await ctx.send(f'{actual.name} frozen till {finish}.')
             else:
                 msg = await ctx.send(f'Do you want to freeze {actual.name} indefinitely?')
                 if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                    await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                    await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                     return
                 freeze_crew(actual, datetime(2069, 4, 20))
                 await ctx.send(f'{actual.name} frozen indefinitely.')
@@ -3178,12 +3153,15 @@ class ScoreSheetBot(commands.Cog):
         out = discord.Embed(title=f'{dis_crew.name} these players will have all crew roles stripped.',
                             description='\n'.join(desc), color=dis_crew.color)
 
-        await send_long_embed(ctx, out)
+        # The question goes with the list of members, or with its last part if the list is too long for one.
+        *preview, last = split_embed(out, length=2000)
+        for piece in preview:
+            await ctx.send(embed=piece)
         message = f'{ctx.author.mention}: You are attempting to disband {dis_crew.name}, all {len(members)} members' \
                   f' will have their crew roles stripped, are you sure?'
-        msg = await ctx.send(message)
+        msg = await ctx.send(message, embed=last)
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
         desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
         out = discord.Embed(title=f'{dis_crew.name} is disbanding, here is their players:',
@@ -3218,7 +3196,7 @@ class ScoreSheetBot(commands.Cog):
                                        color=dis_crew.color)
 
         disband_crew(dis_crew)
-        await send_long_embed(ctx, response_embed)
+        await answer_prompt(ctx, msg, embed=response_embed)
         await send_long_embed(self.cache.channels.flair_log, response_embed)
 
     @commands.command(**help_doc['tomain'], hidden=True)
@@ -3239,7 +3217,7 @@ class ScoreSheetBot(commands.Cog):
                   f' The overflow crew will be deleted, are you sure?'
         msg = await ctx.send(message)
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
         desc = [f'({len(members)}):', '\n'.join([str(mem) for mem in members])]
         out = discord.Embed(title=f'{dis_crew.name} this crew is moving to main.',
@@ -3326,7 +3304,7 @@ class ScoreSheetBot(commands.Cog):
 
         msg = await ctx.send(message)
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
             return
         name_change = []
         for member in members:
@@ -3382,12 +3360,16 @@ class ScoreSheetBot(commands.Cog):
                                  f'({YES} for heads {NO} for tails?)')
             choice = await wait_for_reaction_on_message(YES, NO, msg, member, self.bot, 60)
             choice_name = 'heads' if choice else 'tails'
-            if choice == flip:
-                await ctx.send(f'{member.display_name} chose {choice_name} and won the flip!')
-            else:
-                await ctx.send(f'{member.display_name} chose {choice_name} and lost the flip!')
+            outcome = 'won' if choice == flip else 'lost'
         res = 'heads' if flip else 'tails'
-        await ctx.send(f'Your coin flip landed on {res}', file=discord.File(f'img/{res}.png'))
+        landed = f'Your coin flip landed on {res}'
+        image = discord.File(f'img/{res}.png')
+        if member:
+            # The call, the result and the coin go in the message that asked for the call.
+            await answer_prompt(ctx, msg, f'{member.display_name} chose {choice_name} and {outcome} the flip!\n{landed}',
+                                attachments=[image])
+        else:
+            await ctx.send(landed, file=image)
 
     @commands.command(**help_doc['disablelist'])
     async def disablelist(self, ctx: Context):
@@ -3548,7 +3530,7 @@ class ScoreSheetBot(commands.Cog):
                    f'is {len(mems)} members, are you sure?'
             msg = await ctx.send(resp)
             if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
 
         out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([mem.mention for mem in mems])
@@ -3572,7 +3554,7 @@ class ScoreSheetBot(commands.Cog):
                    f'is {len(mems)} members, are you sure?'
             msg = await ctx.send(resp)
             if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+                await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
                 return
 
         out = f'Members that have {best[0]} but not {best[1]}:\n' + ', '.join([mem.mention for mem in mems])
@@ -3778,10 +3760,9 @@ class ScoreSheetBot(commands.Cog):
                                           f'On: {finished} [link]({link})', color=discord.Color.random())
         msg = await ctx.send(embed=embed)
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!', embed=None)
             await delete_invocation(ctx, delay=5)
-            await msg.delete(delay=2)
-            await resp.delete(delay=5)
+            await msg.delete(delay=5)
             return
         link = battle_cancel(battle_id)
         split = link.split('/')
@@ -3791,7 +3772,7 @@ class ScoreSheetBot(commands.Cog):
         message = await channel.fetch_message(message_id)
         await message.edit(content=f'{NO}Canceled by {ctx.author} {reason}\n' + message.content)
 
-        await ctx.send(f'Successfully canceled cb {battle_id}.')
+        await answer_prompt(ctx, msg, f'Successfully canceled cb {battle_id}.', embed=None)
 
     @commands.command(hidden=True, **help_doc['crnumbers'])
     @role_call(STAFF_LIST)
@@ -3862,10 +3843,9 @@ class ScoreSheetBot(commands.Cog):
                                           f'On: {finished} [link]({link})', color=discord.Color.random())
         msg = await ctx.send(embed=embed)
         if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-            resp = await ctx.send(f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!', embed=None)
             await delete_invocation(ctx, delay=5)
-            await msg.delete(delay=2)
-            await resp.delete(delay=5)
+            await msg.delete(delay=5)
             return
         winner_elo, winner_change, loser_elo, loser_change, d_winner_change, d_final, winner_k, loser_k = battle_elo_changes(
             battle_id)
@@ -3892,18 +3872,10 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['slots'])
     @main_only
     async def slots(self, ctx, *, name: str = None):
-        if name:
-            ambiguous = ambiguous_lookup(name, self)
-            if isinstance(ambiguous, discord.Member):
-                actual_crew = crew_lookup(crew(ambiguous, self), self)
-                await ctx.send(f'{ambiguous.display_name} is in {actual_crew.name}.')
-            else:
-                actual_crew = ambiguous
-        else:
-            actual_crew = crew_lookup(crew(ctx.author, self), self)
-            await ctx.send(f'{ctx.author.display_name} is in {crew(ctx.author, self)}.')
+        actual_crew, note = self._crew_with_note(ctx, name)
         left, total, unflairs = extra_slots(actual_crew)
-        await ctx.send(f'{actual_crew.name} has ({left}/{total} slots) and {unflairs}/3 unflairs till a new slot.')
+        await ctx.send(join_lines(note, f'{actual_crew.name} has ({left}/{total} slots) and {unflairs}/3 unflairs '
+                                        f'till a new slot.'))
 
     @commands.command(**help_doc['update_elos'])
     @role_call(STAFF_LIST)
@@ -4025,6 +3997,7 @@ class ScoreSheetBot(commands.Cog):
             #                f'being registration frozen.'
             crew_msg[cr.name] = message
 
+        problems = []
         for i, member in enumerate(self.cache.scs.members):
             if i % 100 == 0:
                 print(f'{i}/{len(self.cache.scs.members)} pt 2')
@@ -4034,14 +4007,15 @@ class ScoreSheetBot(commands.Cog):
                     cr = crew(member, self)
                     msg = crew_msg[cr]
                 except ValueError:
-                    await ctx.send(f'{str(member)} is a leader with no crew.')
+                    problems.append(f'{str(member)} is a leader with no crew.')
                 if msg:
                     try:
                         await member.send(msg)
                     except discord.errors.Forbidden:
-                        await ctx.send(f'{str(member)} is not accepting dms.')
+                        problems.append(f'{str(member)} is not accepting dms.')
 
-        embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc))
+        # Leaders who couldn't be messaged are listed under the totals, rather than in a message each.
+        embed = discord.Embed(title=f'Crew total slots.', description='\n'.join(desc + problems))
         await send_long_embed(ctx, embed)
 
     @commands.command(**help_doc['savenicks'])
