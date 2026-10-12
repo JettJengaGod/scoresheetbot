@@ -1,6 +1,8 @@
+import inspect
 import logging
 import math
 from asyncio import sleep
+from typing import Callable
 
 from discord.ext import commands, tasks
 from discord.ext.commands import Greedy
@@ -36,6 +38,7 @@ class ScoreSheetBot(commands.Cog):
         self._saved_battles: Optional[str] = None
         self.cache_value = cache
         self.cache_time = time.time()
+        self._recache_lock = asyncio.Lock()
         self._gambit_message = None
         self.current_league = ""
         self.past_2_weeks = False
@@ -48,47 +51,89 @@ class ScoreSheetBot(commands.Cog):
             asyncio.create_task(self._cache_process(True), name='recache')
         return self.cache_value
 
-    async def _cache_process(self, backup=False):
-        self.current_league, start_date, reset = current_league_name()
-        if start_date:
-            self.past_2_weeks = True if datetime.now().date() - start_date > timedelta(days=14) else False
-            if self.past_2_weeks and not reset:
-                reset_k()
-        self.cache_time = time.time()
-        if self.cache_value.channels and os.getenv('VERSION') == 'PROD':
-            if backup:
-                await self.cache_value.channels.recache_logs.send('(Backup)')
-            await self.cache_value.channels.recache_logs.send('Starting recache.')
+    async def _cache_process(self, backup=False, wait=False) -> List[str]:
+        """Refreshes the cache, then runs the jobs that go with it, and returns what went wrong, if anything.
 
-        await self.cache_value.update(self)
-        crew_update(self)
-        print(time.time() - self.cache_time)
+        It never raises, so the refresh loop keeps running: a failure is logged, posted in the recache logs
+        channel, and the next refresh tries again. Each job runs on its own, so one failing doesn't stop the
+        others. Only one refresh runs at a time: the loop and the backup skip theirs while one is running, and
+        `wait` waits for it to finish and then refreshes.
+        """
+        if self._recache_lock.locked() and not wait:
+            return []
+        async with self._recache_lock:
+            self.cache_time = started = time.time()
+            try:
+                self.current_league, start_date, reset = current_league_name()
+                if start_date:
+                    self.past_2_weeks = True if datetime.now().date() - start_date > timedelta(days=14) else False
+                    if self.past_2_weeks and not reset:
+                        reset_k()
+                if self.cache_value.channels and os.getenv('VERSION') == 'PROD':
+                    if backup:
+                        await self.cache_value.channels.recache_logs.send('(Backup)')
+                    await self.cache_value.channels.recache_logs.send('Starting recache.')
+
+                await self.cache_value.update(self)
+                crew_update(self)
+            except Exception as error:
+                await self._recache_failed('Recache', error)
+                return [f'Recache: {type(error).__name__}: {error}']
+            finally:
+                self.cache_time = time.time()
+            print(time.time() - started)
+
+            failed = []
+            for name, job in self._recache_jobs():
+                try:
+                    result = job()
+                    if inspect.isawaitable(result):
+                        await result
+                except Exception as error:
+                    failed.append(f'{name}: {type(error).__name__}: {error}')
+                    await self._recache_failed(name, error)
+            if os.getenv('VERSION') == 'PROD':
+                await self._recache_log('Successfully recached.' if not failed else
+                                        'Recached, but these failed: ' + ', '.join(f.split(':')[0] for f in failed))
+            print(time.time() - started)
+            self.cache_time = time.time()
+            return failed
+
+    def _recache_jobs(self) -> List[Tuple[str, Callable]]:
+        """What runs after each refresh, by name for the logs."""
+        jobs = [('Current battles', self._post_current_battles)]
+        if os.getenv('VERSION') == 'PROD':
+            jobs += [('Unfreezes', lambda: handle_unfreeze(self))]
+            if self.cache_value.scs:
+                jobs += [('Overflow check', lambda: overflow_anomalies(self))]
+            jobs += [('Join cooldowns', lambda: cooldown_handle(self)), ('Tracks', lambda: track_handle(self)),
+                     # update_wisdom_sheet, update_trinity_sheet, update_destiny_sheet and update_all_sheets
+                     # are switched off.
+                     ('Rankings sheet', update_rankings_sheet)]
+        return jobs
+
+    async def _post_current_battles(self):
         await clear_current_cbs(self)
         for battle_type in BattleType:
             summary = battle_summary(self, battle_type)
             if summary:
-                await send_long_embed(self.cache.channels.current_cbs, summary)
-        if os.getenv('VERSION') == 'PROD':
-            await clear_current_cbs(self)
-            for battle_type in BattleType:
-                summary = battle_summary(self, battle_type)
-                if summary:
-                    await send_long_embed(self.cache.channels.current_cbs, summary)
+                await send_long_embed(self.cache_value.channels.current_cbs, summary)
 
-            # await handle_decay(self)
-            await handle_unfreeze(self)
-            if self.cache_value.scs:
-                await overflow_anomalies(self)
-            await cooldown_handle(self)
-            await track_handle(self)
-            await self.cache_value.channels.recache_logs.send('Successfully recached.')
-            # update_wisdom_sheet()
-            update_rankings_sheet()
-            # update_trinity_sheet()
-            # update_destiny_sheet()
-            # update_all_sheets()
-        print(time.time() - self.cache_time)
-        self.cache_time = time.time()
+    async def _recache_failed(self, step: str, error: Exception):
+        """Logs a failed part of a refresh, to the log file and the recache logs channel."""
+        logging.error(f'{step} failed during a recache.', exc_info=error)
+        with logfile() as lf:
+            traceback.print_exception(type(error), error, error.__traceback__, file=lf)
+        if os.getenv('VERSION') == 'PROD':
+            await self._recache_log(f'{step} failed: {type(error).__name__}: {error}')
+
+    async def _recache_log(self, message: str):
+        if not self.cache_value.channels:
+            return
+        try:
+            await self.cache_value.channels.recache_logs.send(message[:2000])
+        except Exception:
+            logging.exception('Could not post in the recache logs channel.')
 
     def _current(self, ctx) -> Battle:
         if key_string(ctx) in self.battle_map:
@@ -3247,10 +3292,17 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['recache'], hidden=True, aliases=['rc'])
     @role_call(STAFF_LIST)
     async def recache(self, ctx: Context):
-        await self._cache_process()
-        self.auto_cache.cancel()
-        self.auto_cache.restart()
-        await ctx.send('The cache has been reset, everything should be updated now.')
+        failed = await self._cache_process(wait=True)
+        # Restart the refresh loop so the next refresh is a full interval away. A loop stopped by an error can't
+        # be restarted, only started again.
+        if self.auto_cache.is_running():
+            self.auto_cache.restart()
+        else:
+            self.auto_cache.start()
+        if failed:
+            await ctx.send('The cache could not be fully refreshed:\n' + '\n'.join(failed))
+        else:
+            await ctx.send('The cache has been reset, everything should be updated now.')
 
     @commands.command(**help_doc['retag'], hidden=True)
     @role_call(STAFF_LIST)

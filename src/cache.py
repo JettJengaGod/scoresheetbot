@@ -12,12 +12,16 @@ if TYPE_CHECKING:
 from constants import *
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from crew import *
 
 # If modifying these scopes, delete the file token.pickle.
 
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+SIGN_IN_NEEDED = ('The Google sign-in in token.pickle has expired or been revoked, and the server has no browser to '
+                  'sign in again with. Run the bot on a computer with a browser to sign in and make a new '
+                  'token.pickle, then copy it to the bot\'s folder on the server.')
 
 
 class Cache:
@@ -36,7 +40,17 @@ class Cache:
         self.flairing_allowed: bool = True
         self.current_league_id: int = 0
 
+    # Set by commands rather than read from Discord, the sheet or the database, so a refresh keeps them.
+    KEPT = ('flairing_allowed', 'current_league_id')
+
     async def update(self, bot: 'ScoreSheetBot'):
+        """Refreshes the cache. Everything is built on a new Cache and copied over only once it is complete, so
+        a refresh that fails part way leaves this one as it was rather than half updated."""
+        new = Cache()
+        await new._build(bot)
+        vars(self).update({name: value for name, value in vars(new).items() if name not in self.KEPT})
+
+    async def _build(self, bot: 'ScoreSheetBot'):
         self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
         self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
         self.channels = self.channel_factory(self.scs)
@@ -126,8 +140,14 @@ class Cache:
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
+                try:
+                    creds.refresh(Request())
+                except RefreshError:
+                    creds = None
+            if not creds or not creds.valid:
+                if os.getenv('VERSION') == 'PROD':
+                    # Signing in waits for a browser, which would hang this refresh, and every one after it, for good.
+                    raise RuntimeError(SIGN_IN_NEEDED)
                 flow = InstalledAppFlow.from_client_secrets_file(
                     'credentials.json', SCOPES)
                 creds = flow.run_local_server(port=0)
