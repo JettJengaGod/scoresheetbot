@@ -131,3 +131,39 @@ class CrewBattleFlowTest(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class CountdownTest(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.cog = make_cog()
+        self.channel = mocks.MockTextChannel(name=ARENA, id=555, guild=self.cog.cache.scs)
+
+    async def count(self, mode, seconds):
+        ctx = FakeContext(self.cog, mocks.MockMember(id=1), self.channel, self.cog.cache.scs, mode)
+        send = ctx.send
+        messages = []
+
+        async def recording_send(*args, **kwargs):
+            messages.append(await send(*args, **kwargs))
+            return messages[-1]
+
+        ctx.send = recording_send
+        with unittest.mock.patch('src.scoreSheetBot.sleep', unittest.mock.AsyncMock()) as sleep:
+            await invoke(self.cog, 'countdown', ctx, seconds)
+        return ctx, messages, sleep
+
+    async def test_counts_down_by_editing_one_message(self):
+        for mode in MODES:
+            with self.subTest(mode=mode):
+                ctx, messages, sleep = await self.count(mode, 3)
+                self.assertEqual(['3'], [m['content'] for m in ctx.sent if m['content'] != 'Done.'])
+                edits = [call.kwargs['content'] for call in messages[0].edit.await_args_list]
+                self.assertEqual(['2', '1', 'Finished!'], edits)
+                self.assertEqual(3, sleep.await_count)
+
+    async def test_only_counts_down_from_ten_or_less(self):
+        for seconds in (0, 11):
+            with self.subTest(seconds=seconds):
+                ctx, messages, sleep = await self.count(MODES[0], seconds)
+                self.assertEqual(['You can only countdown from 10 or less!'], [m['content'] for m in ctx.sent])
+                sleep.assert_not_awaited()

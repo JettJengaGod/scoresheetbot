@@ -737,12 +737,14 @@ class ScoreSheetBot(commands.Cog):
         if seconds > 10 or seconds < 1:
             await ctx.send('You can only countdown from 10 or less!')
             return
-        await ctx.send(f'Counting down from {seconds}')
-        while seconds > 0:
-            await ctx.send(f'{seconds}')
-            seconds -= 1
+        # One message, edited each second, rather than a message per number.
+        msg = await ctx.send(f'{seconds}')
+        while seconds > 1:
             await sleep(1)
-        await ctx.send('Finished!')
+            seconds -= 1
+            await msg.edit(content=f'{seconds}')
+        await sleep(1)
+        await msg.edit(content='Finished!')
 
     @commands.command(**help_doc['send'], aliases=['s'])
     @has_sheet
