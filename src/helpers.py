@@ -837,11 +837,15 @@ def crew_update(bot: 'ScoreSheetBot'):
 
 
 async def cooldown_handle(bot: 'ScoreSheetBot'):
+    # After changing a member's roles they are read back with `_fresh_member`. Without the members intent the
+    # cache never hears about the change, so that fetches them again and records it in the database, which
+    # ends the cooldown there; otherwise every recache would see the old roles and end it again.
     for user_id in cooldown_finished():
-        member = bot.cache_value.scs.get_member(user_id)
+        member = await bot._fresh_member(bot.cache_value.scs, user_id)
         if member:
             if check_roles(member, ['12h Join Cooldown']):
                 await member.remove_roles(bot.cache_value.roles.join_cd)
+                await bot._fresh_member(bot.cache_value.scs, user_id)
                 await bot.cache_value.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
             else:
                 remove_expired_cooldown(user_id)
@@ -852,16 +856,19 @@ async def cooldown_handle(bot: 'ScoreSheetBot'):
     for member in bot.cache_value.scs.members:
         if check_roles(member, ['12h Join Cooldown']) and member.id not in uids:
             await member.remove_roles(bot.cache_value.roles.join_cd)
+            await bot._fresh_member(bot.cache_value.scs, member.id)
             await bot.cache_value.channels.flair_log.send(f'{str(member)}\'s join cooldown ended.')
 
 
 async def track_handle(bot: 'ScoreSheetBot'):
     for mem_id, name, months in track_finished():
-        mem = bot.cache.scs.get_member(mem_id)
+        mem = await bot._fresh_member(bot.cache.scs, mem_id)
         if mem:
             if check_roles(mem, [name]):
                 for _ in range(months):
                     await track_decrement(mem, bot)
+                    # Read the new roles back, as in `cooldown_handle`, for the next step and the next recache.
+                    mem = await bot._fresh_member(bot.cache.scs, mem_id) or mem
             else:
                 if months == 1:
                     update_member_roles(mem)
