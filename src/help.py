@@ -209,6 +209,8 @@ help_doc = dict(
     backfill=HelpDoc(Categories.staff, 'Recalculates and saves the hardcap of every crew'),
     slotfinals=HelpDoc(Categories.staff,
                        'Sets the slots and hardcap of every crew for the new month and DMs the totals to leaders'),
+    syncmembers=HelpDoc(Categories.staff, "Brings the database's record of every member's roles, "
+                        "nickname and crew up to date; a dry run unless apply is set"),
     savenicks=HelpDoc(Categories.staff, 'Records the current nickname of every member'),
     cancelcb=HelpDoc(Categories.staff, 'Cancel a crew battle that happened in the past', '',
                      'battleId Optional[Reason]'),

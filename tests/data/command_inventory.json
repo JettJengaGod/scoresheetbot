@@ -2421,6 +2421,33 @@
   "params": [],
   "slash": null
  },
+ "syncmembers": {
+  "aliases": [],
+  "category": "staff",
+  "guards": [
+   "role_call(STAFF_LIST)"
+  ],
+  "is_group": false,
+  "params": [
+   {
+    "name": "apply",
+    "required": false,
+    "rest": false,
+    "type": "bool"
+   }
+  ],
+  "slash": {
+   "kind": "twin",
+   "options": [
+    {
+     "name": "apply",
+     "required": false,
+     "type": "bool"
+    }
+   ],
+   "path": "staff flair syncmembers"
+  }
+ },
  "thank": {
   "aliases": [],
   "category": "misc",

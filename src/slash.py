@@ -63,7 +63,7 @@ STAFF_GROUPS: Dict[str, tuple] = {
         'crnumbers', 'flaircounts', 'cooldown']),
     'flair': ('Manage flairing and roles', [
         'make_lead', 'fixunflair', 'flairing_on', 'flairing_off', 'categoryrole', 'pingrole',
-        'pingoverlap', 'pingnoverlap', 'savenicks']),
+        'pingoverlap', 'pingnoverlap', 'savenicks', 'syncmembers']),
     'battle': ('Manage crew battle records', [
         'addforfeit', 'addsheet', 'failedreg', 'weirdreg', 'cancelcb', 'manual_battle', 'pending', 'vod', 'rate',
         'update_elos', 'initalize_ratings', 'season', 'backfill', 'broadcast']),
@@ -175,6 +175,7 @@ OPTIONS = {
     'battle_id': 'ID of the crew battle',
     'vod': 'Link to the vod',
     'long': 'Add anything here for the long version',
+    'syncmembers.apply': 'Write the changes to the database; leave off to only see what would change',
     'your_characters': 'Characters you played, separated by spaces',
     'your_score': 'Games you won',
     'opponent_score': 'Games your opponent won',
