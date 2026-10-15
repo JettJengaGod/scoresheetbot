@@ -10,13 +10,13 @@ delete this module and the calls to it, each of which sits behind one of those c
 """
 import logging
 import os
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import discord
 
 from constants import ADVISOR, CREW_STAFF, LEADER, MUTED
 from crew import Crew
-from db_helpers import crew_rosters, db_crew_members, update_member_status
+from db_helpers import crew_rosters, db_crew_members, db_role_members, update_member_status
 from helpers import Context, check_roles, crew
 from slash import MEMBER_ID
 
@@ -68,10 +68,16 @@ async def fetch_member(cog: 'ScoreSheetBot', guild: discord.Guild, member_id: in
 async def crew_members(cog: 'ScoreSheetBot', cr: Crew) -> List[discord.Member]:
     """The crew's members in the main server, as `helpers.crew_members` would find them on the member list:
     the database's members of the crew, fetched fresh, who are still on it."""
-    members = []
+    return (await _crew_members_and_absent(cog, cr))[0]
+
+
+async def _crew_members_and_absent(cog: 'ScoreSheetBot', cr: Crew) -> Tuple[List[discord.Member], List[int]]:
+    """`crew_members`, and the ids of the members the database has on the crew who aren't in the main server."""
+    members, absent = [], []
     for member_id in db_crew_members(cr):
         member = await fetch_member(cog, cog.cache.scs, member_id)
         if member is None:
+            absent.append(member_id)
             continue
         if cr.overflow:
             # `crew` reads an overflow crew from the member's roles in the overflow server.
@@ -82,7 +88,32 @@ async def crew_members(cog: 'ScoreSheetBot', cr: Crew) -> List[discord.Member]:
             current = None
         if current == cr.name:
             members.append(member)
-    return members
+    return members, absent
+
+
+async def members_with_role(cog: 'ScoreSheetBot', role_name: str,
+                            limit: int) -> Optional[Tuple[List[discord.Member], List[int]]]:
+    """What `helpers.members_with_str_role` finds for the crew or main server role `role_name`: its members,
+    and for a crew the ids of the members flaired for it who aren't in the server. None if the database has
+    more than `limit` members with the role, rather than fetching them all.
+
+    The members come from the database's record of who has the role, fetched fresh, so someone who got the
+    role without the bot fetching them since is missed."""
+    cr = cog.cache.crews_by_name.get(role_name)
+    if cr is not None:
+        if len(db_crew_members(cr)) > limit:
+            return None
+        return await _crew_members_and_absent(cog, cr)
+    role = discord.utils.get(cog.cache.scs.roles, name=role_name)
+    member_ids = db_role_members(role.id) if role else []
+    if len(member_ids) > limit:
+        return None
+    members = []
+    for member_id in member_ids:
+        member = await fetch_member(cog, cog.cache.scs, member_id)
+        if member is not None and role in member.roles:
+            members.append(member)
+    return members, []
 
 
 async def muted_crew_members(cog: 'ScoreSheetBot', cr: Crew) -> List[discord.Member]:

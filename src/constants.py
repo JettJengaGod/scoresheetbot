@@ -5,7 +5,9 @@ from enum import Enum
 load_dotenv()
 CACHE_TIME_SECONDS = 300
 CACHE_TIME_BACKUP = CACHE_TIME_SECONDS + 20  # 320 seconds (This is a backup to normal cache)
-OVERFLOW_SERVER = 'Overflow Beta' if os.getenv('VERSION') == 'ALPHA' else 'SCS Overflow Server'
+# The most members a role command looks through. Without the members intent each one is fetched from Discord.
+MEMBER_SEARCH_LIMIT = 300
+OVERFLOW_SERVER ='Overflow Beta' if os.getenv('VERSION') == 'ALPHA' else 'SCS Overflow Server'
 
 TRACK = ['Track 1', 'Track 2', 'Move Locked Next Join']
 TRUE_LOCKED = 'Full Move Locked'
