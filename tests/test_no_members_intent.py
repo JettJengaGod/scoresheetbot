@@ -127,6 +127,55 @@ class NoMembersIntentTest(unittest.IsolatedAsyncioTestCase):
                 unittest.mock.patch('src.no_members_intent.crew', side_effect=crew):
             self.assertEqual([1], [m.id for m in await no_members_intent.crew_members(self.cog, cr)])
 
+    async def test_role_members_are_the_database_members_still_with_the_role(self):
+        role = mocks.MockRole(name='Some role')
+        self.scs.roles = [role]
+        self.cog.cache.crews_by_name = {}
+        self.on_discord(self.scs, 1, roles=[role])
+        self.on_discord(self.scs, 2)
+        with unittest.mock.patch('src.no_members_intent.db_role_members', return_value=[1, 2, ABSENT]) as db:
+            members, absent = await no_members_intent.members_with_role(self.cog, 'Some role', 150)
+            db.assert_called_once_with(role.id)
+            self.assertEqual(([1], []), ([m.id for m in members], absent))
+            self.assertIsNone(await no_members_intent.members_with_role(self.cog, 'Some role', 2))
+        self.assertNotIn(1, self.cached[self.overflow.id])
+
+    async def test_crew_role_members_include_those_flaired_but_not_in_the_server(self):
+        cr = Crew(name='Holy Knights', abbr='HK')
+        self.cog.cache.crews_by_name = {cr.name: cr}
+        self.on_discord(self.scs, 1)
+        with unittest.mock.patch('src.no_members_intent.db_crew_members', return_value=[1, ABSENT]), \
+                unittest.mock.patch('src.no_members_intent.crew', return_value='Holy Knights'):
+            members, absent = await no_members_intent.members_with_role(self.cog, 'Holy Knights', 150)
+            self.assertEqual(([1], [ABSENT]), ([m.id for m in members], absent))
+            self.assertIsNone(await no_members_intent.members_with_role(self.cog, 'Holy Knights', 1))
+
+    async def test_overlaps_search_the_crew_or_else_the_first_role(self):
+        fetched = unittest.mock.AsyncMock(return_value=(['fetched'], []))
+        self.cog.cache.crews = ['Holy Knights']
+        with unittest.mock.patch('src.no_members_intent.members_with_role', fetched):
+            self.assertEqual(['fetched'], await self.cog._overlap_candidates('Leader', 'Holy Knights', 300))
+            fetched.assert_awaited_with(self.cog, 'Holy Knights', 300)
+            await self.cog._overlap_candidates('Leader', 'Advisor', 300)
+            fetched.assert_awaited_with(self.cog, 'Leader', 300)
+            fetched.return_value = None
+            self.assertIsNone(await self.cog._overlap_candidates('Leader', 'Advisor', 300))
+            self.cog.bot.intents = discord.Intents.all()
+            self.assertIs(self.scs.members, await self.cog._overlap_candidates('Leader', 'Advisor', 300))
+
+    async def test_role_members_respect_the_limit_with_the_intent(self):
+        self.cog.bot.intents = discord.Intents.all()
+        with unittest.mock.patch('src.scoreSheetBot.members_with_role_name', return_value=([1, 2], [3])):
+            self.assertEqual(([1, 2], [3]), await self.cog._role_members('Some role', 2))
+            self.assertIsNone(await self.cog._role_members('Some role', 1))
+
+    async def test_overlap_helpers_go_through_the_members_given(self):
+        leader, advisor = mocks.MockRole(name='Leader'), mocks.MockRole(name='Advisor')
+        both, only = mocks.MockMember(id=1, roles=[leader, advisor]), mocks.MockMember(id=2, roles=[leader])
+        self.cog.cache.crews = []
+        self.assertEqual([both], helpers.overlap_members('Leader', 'Advisor', self.cog, [both, only]))
+        self.assertEqual([only], helpers.noverlap_members('Leader', 'Advisor', self.cog, [both, only]))
+
     async def test_the_cog_uses_the_member_list_with_the_intent_and_the_database_without(self):
         cr = Crew(name='Holy Knights', abbr='HK')
         with unittest.mock.patch('src.scoreSheetBot.crew_members', return_value=['listed']), \

@@ -545,13 +545,23 @@ def single_crew_plus_string(combined: str, bot: 'ScoreSheetBot'):
     return best
 
 
-def members_with_str_role(role: str, bot: 'ScoreSheetBot') -> Tuple[str, List[discord.Member], List[int]]:
+def role_name_lookup(role: str, bot: 'ScoreSheetBot') -> str:
+    """The name of the crew or main server role `role` best matches, taking a crew tag as its crew."""
+    if role.lower() in bot.cache.crews_by_tag:
+        return bot.cache.crews_by_tag[role.lower()].name
     all_role_names = {role.name for role in bot.cache.scs.roles}
     all_role_names = set.union(set(bot.cache.crews), all_role_names)
+    return process.extractOne(role, all_role_names)[0]
 
-    actual = process.extractOne(role, all_role_names)[0]
-    if role.lower() in bot.cache.crews_by_tag:
-        actual = bot.cache.crews_by_tag[role.lower()].name
+
+def members_with_str_role(role: str, bot: 'ScoreSheetBot') -> Tuple[str, List[discord.Member], List[int]]:
+    actual = role_name_lookup(role, bot)
+    return (actual, *members_with_role_name(actual, bot))
+
+
+def members_with_role_name(actual: str, bot: 'ScoreSheetBot') -> Tuple[List[discord.Member], List[int]]:
+    """The members with the crew or main server role named `actual`, and for a crew the ids of the members
+    flaired for it who aren't in the server."""
     out = []
     extra = []
     if actual in bot.cache.crews:
@@ -569,7 +579,7 @@ def members_with_str_role(role: str, bot: 'ScoreSheetBot') -> Tuple[str, List[di
             role_names = {r.name for r in member.roles}
             if actual in role_names:
                 out.append(member)
-    return actual, out, extra
+    return out, extra
 
 
 def search_two_roles_in_list(first_role: str, second_role: str, everything):
@@ -578,7 +588,8 @@ def search_two_roles_in_list(first_role: str, second_role: str, everything):
     return first, second
 
 
-def overlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[discord.Member]:
+def overlap_members(first: str, second: str, bot: 'ScoreSheetBot',
+                    members: Optional[Iterable[discord.Member]] = None) -> List[discord.Member]:
     crew_role = None
     other_role = None
     if first in bot.cache.crews:
@@ -591,8 +602,10 @@ def overlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[disco
         crew_role = second
         other_role = first
     out = []
+    if members is None:
+        members = bot.cache.scs.members
     if crew_role:
-        for member in bot.cache.scs.members:
+        for member in members:
             try:
                 if crew(member, bot) == crew_role:
                     for role in member.roles:
@@ -601,14 +614,15 @@ def overlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[disco
             except ValueError:
                 continue
     else:
-        for member in bot.cache.scs.members:
+        for member in members:
             role_names = {role.name for role in member.roles}
             if first in role_names and second in role_names:
                 out.append(member)
     return out
 
 
-def noverlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[discord.Member]:
+def noverlap_members(first: str, second: str, bot: 'ScoreSheetBot',
+                     members: Optional[Iterable[discord.Member]] = None) -> List[discord.Member]:
     crew_role = None
     other_role = None
     if first in bot.cache.crews:
@@ -621,8 +635,10 @@ def noverlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[disc
         crew_role = second
         other_role = first
     out = []
+    if members is None:
+        members = bot.cache.scs.members
     if crew_role:
-        for member in bot.cache.scs.members:
+        for member in members:
             try:
                 if crew(member, bot) == crew_role:
                     if not check_roles(member, [other_role]):
@@ -630,7 +646,7 @@ def noverlap_members(first: str, second: str, bot: 'ScoreSheetBot') -> List[disc
             except ValueError:
                 continue
     else:
-        for member in bot.cache.scs.members:
+        for member in members:
             role_names = {role.name for role in member.roles}
             if first in role_names and second not in role_names:
                 out.append(member)

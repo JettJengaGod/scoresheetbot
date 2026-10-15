@@ -3372,6 +3372,33 @@ def db_crew_members(cr: Crew) -> List[int]:
     return [mem[0] for mem in members]
 
 
+def db_role_members(role_id: int) -> List[int]:
+    """The ids of the members the database has with the role, leaving out those marked as having left the
+    server."""
+    mems = """select current_member_roles.member_id
+    from current_member_roles
+             join members on members.id = current_member_roles.member_id
+    where current_member_roles.role_id = %s
+      and members.in_server is not false;
+"""
+    conn = None
+    members = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(mems, (role_id,))
+        members = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return [mem[0] for mem in members]
+
+
 def name_from_id(mem_id: int) -> str:
     get_name = """select discord_name
         from members

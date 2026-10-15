@@ -301,6 +301,26 @@ class ScoreSheetBot(commands.Cog):
             return overlap_members(MUTED, cr.name, self)
         return await no_members_intent.muted_crew_members(self, cr)
 
+    async def _role_members(self, role_name: str,
+                            limit: int) -> Optional[Tuple[List[discord.Member], List[int]]]:
+        """The members with the crew or main server role `role_name`, and for a crew the ids of the members
+        flaired for it who aren't in the server. None if the role has more than `limit` members."""
+        if self.bot.intents.members:
+            mems, extra = members_with_role_name(role_name, self)
+            return None if len(mems) > limit else (mems, extra)
+        return await no_members_intent.members_with_role(self, role_name, limit)
+
+    async def _overlap_candidates(self, first: str, second: str,
+                                  limit: int) -> Optional[List[discord.Member]]:
+        """The members for `overlap_members` and `noverlap_members` to go through, or None if there are more
+        than `limit` to fetch. With the intent that's the whole member list; without it, the members of the
+        crew among the two roles, or else of `first`, which are the only ones either can return."""
+        if self.bot.intents.members:
+            return self.cache.scs.members
+        searched = second if second in self.cache.crews and first not in self.cache.crews else first
+        found = await no_members_intent.members_with_role(self, searched, limit)
+        return None if found is None else found[0]
+
     async def run_slash(self, interaction: discord.Interaction, command_name: str, *args, attachments=(), **kwargs):
         """Runs the prefix command `command_name` for a slash command, with the given arguments.
 
@@ -3384,14 +3404,16 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.command(**help_doc['listroles'], aliases=['roster'])
     async def listroles(self, ctx, *, role: str):
-        actual, mems, extra = members_with_str_role(role, self)
-        mems.sort(key=lambda x: str(x))
+        actual = role_name_lookup(role, self)
         if 'everyone' in actual:
             await ctx.send('I will literally ban you if you try this again.')
             return
-        if len(mems) > 150:
+        found = await self._role_members(actual, 150)
+        if found is None:
             await ctx.send(f'{actual} is too large of a role, use `.listroles`.')
             return
+        mems, extra = found
+        mems.sort(key=lambda x: str(x))
         desc = ['\n'.join([f'{str(member)} {member.mention}' for member in mems])]
         if extra:
             desc.append('These members are flaired for the crew, but not in the server')
@@ -3434,7 +3456,15 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['pingrole'])
     @role_call(STAFF_LIST)
     async def pingrole(self, ctx, *, role: str):
-        actual, mems, _ = members_with_str_role(role, self)
+        actual = role_name_lookup(role, self)
+        if 'everyone' in actual:
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone.')
+            return
+        found = await self._role_members(actual, MEMBER_SEARCH_LIMIT)
+        if found is None:
+            await ctx.send(f'{actual} has too many members to ping, over {MEMBER_SEARCH_LIMIT}.')
+            return
+        mems = found[0]
         out = [f'Pinging all members of role {actual}: ']
         for mem in mems:
             out.append(mem.mention)
@@ -3485,10 +3515,14 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
-        mems = overlap_members(best[0], best[1], self)
         if 'everyone' in best[0] or 'everyone' in best[1]:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
+        candidates = await self._overlap_candidates(best[0], best[1], MEMBER_SEARCH_LIMIT)
+        if candidates is None:
+            await ctx.send(f'{ctx.author.mention}: too many members have {best[0]} to check.')
+            return
+        mems = overlap_members(best[0], best[1], self, candidates)
         if len(mems) > 100:
             await ctx.send(f'This is over 100 members, file outputs will be implemented soon.')
             return
@@ -3502,10 +3536,14 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
-        mems = noverlap_members(best[0], best[1], self)
         if 'everyone' in best[0] or 'everyone' in best[1]:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
+        candidates = await self._overlap_candidates(best[0], best[1], MEMBER_SEARCH_LIMIT)
+        if candidates is None:
+            await ctx.send(f'{ctx.author.mention}: too many members have {best[0]} to check.')
+            return
+        mems = noverlap_members(best[0], best[1], self, candidates)
         if len(mems) > 100:
             await ctx.send(f'This is over 100 members, file outputs will be implemented soon.')
             return
@@ -3520,11 +3558,14 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
-        mems = overlap_members(best[0], best[1], self)
-
         if 'everyone' in best[0] or 'everyone' in best[1]:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
+        candidates = await self._overlap_candidates(best[0], best[1], MEMBER_SEARCH_LIMIT)
+        if candidates is None:
+            await ctx.send(f'{ctx.author.mention}: too many members have {best[0]} to check.')
+            return
+        mems = overlap_members(best[0], best[1], self, candidates)
         if len(mems) > 10:
             resp = f'You are attempting to ping the overlap between {best[0]} and {best[1]} this ' \
                    f'is {len(mems)} members, are you sure?'
@@ -3544,11 +3585,14 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
-        mems = noverlap_members(best[0], best[1], self)
-
         if 'everyone' in best[0] or 'everyone' in best[1]:
             await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
             return
+        candidates = await self._overlap_candidates(best[0], best[1], MEMBER_SEARCH_LIMIT)
+        if candidates is None:
+            await ctx.send(f'{ctx.author.mention}: too many members have {best[0]} to check.')
+            return
+        mems = noverlap_members(best[0], best[1], self, candidates)
         if len(mems) > 10:
             resp = f'You are attempting to ping all {best[0]} bot not {best[1]} this ' \
                    f'is {len(mems)} members, are you sure?'
