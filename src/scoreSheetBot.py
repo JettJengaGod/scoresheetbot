@@ -8,6 +8,7 @@ from discord.ext import commands, tasks
 from discord.ext.commands import Greedy
 
 import battle_store
+import member_sync
 import no_members_intent
 from elo_helpers import rating_update
 from sheet_helpers import update_gambit_sheet, update_ba_sheet, update_bf_sheet, update_mc_player_sheet, \
@@ -4076,6 +4077,14 @@ class ScoreSheetBot(commands.Cog):
             tuples.append((mem.id, mem.display_name))
             print(f'{i + 1}/{len(members)}')
         record_nicknames(tuples)
+
+    @commands.command(hidden=True, **help_doc['syncmembers'])
+    @role_call(STAFF_LIST)
+    async def syncmembers(self, ctx, apply: bool = False):
+        await ctx.send("Going through the server's members, which takes a few minutes.")
+        sync = await member_sync.sync_members(self, apply)
+        heading = 'Updated the database:' if apply else 'Dry run, nothing was written. This would change:'
+        await send_long(ctx, f'{heading}\n{sync.summary()}', '\n')
 
     @commands.command(hidden=True, **help_doc['flaircounts'])
     @role_call(STAFF_LIST)

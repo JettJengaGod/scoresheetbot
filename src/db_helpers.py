@@ -16,10 +16,12 @@ from gambit import Gambit
 from character import Character
 from elo_helpers import EloPlayer, rating_update
 from constants import *
+from psycopg2.extras import execute_values
 
 
 if TYPE_CHECKING:
     from bracket import Match
+    from member_sync import MemberSync
 
 
 def logfile():
@@ -4662,3 +4664,95 @@ group by crews.name, members.id, members.discord_name;"""
         if conn is not None:
             conn.close()
     return [(name, member_id, discord_name, list(roles)) for name, member_id, discord_name, roles in rows]
+
+
+def member_sync_state(guild_id: int) -> Tuple[Dict[int, Tuple[str, Optional[bool]]], Set[Tuple[int, int]],
+                                               Dict[int, int], Dict[int, int]]:
+    """What the database has for a member sync with server `guild_id`: each member's (nickname, in server),
+    the (member id, role id) pairs for the server's roles other than @everyone, each member's crew id, and the
+    crew id of each crew role that hasn't disbanded."""
+    members = """select id, nickname, in_server from members;"""
+    member_roles = """select current_member_roles.member_id, current_member_roles.role_id
+    from current_member_roles
+             join roles on roles.id = current_member_roles.role_id
+    where roles.guild_id = %s
+      and roles.name != '@everyone';"""
+    member_crews = """select member_id, crew_id from current_member_crews;"""
+    crew_ids = """select discord_id, id from crews where disbanded = false order by id;"""
+    conn = None
+    state = ({}, set(), {}, {})
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(members)
+        found_members = {member_id: (nickname, in_server) for member_id, nickname, in_server in cur.fetchall()}
+        cur.execute(member_roles, (guild_id,))
+        found_roles = set(cur.fetchall())
+        cur.execute(member_crews)
+        found_crews = dict(cur.fetchall())
+        cur.execute(crew_ids)
+        state = (found_members, found_roles, found_crews, dict(cur.fetchall()))
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return state
+
+
+def apply_member_sync(sync: 'MemberSync') -> None:
+    """Writes a member sync to the database in one transaction. Lost roles and changed crews go to the
+    history tables, as when a single member is updated."""
+    new_members = """insert into members (id, nickname, discord_name) values %s on conflict do nothing;"""
+    renamed = """update members set nickname = v.nickname
+    from (values %s) as v(id, nickname)
+    where members.id = v.id::bigint;"""
+    add_roles = """insert into roles (id, name, guild_id) values %s on conflict do nothing;"""
+    rename_roles = """update roles set name = v.name
+    from (values %s) as v(id, name)
+    where roles.id = v.id::bigint
+      and roles.name != v.name;"""
+    gained = """insert into current_member_roles (member_id, role_id, gained) values %s;"""
+    lost = """with gone as (
+        delete from current_member_roles
+            using (values %s) as v(member_id, role_id)
+            where current_member_roles.member_id = v.member_id::bigint
+              and current_member_roles.role_id = v.role_id::bigint
+            returning current_member_roles.member_id, current_member_roles.role_id, current_member_roles.gained)
+    insert into member_roles_history (member_id, role_id, gained, lost)
+    select member_id, role_id, gained, current_timestamp from gone;"""
+    in_server = """update members set in_server = %s where id = any(%s);"""
+    left_crew = """with gone as (
+        delete from current_member_crews where member_id = any(%s) returning member_id, crew_id, joined)
+    insert into member_crews_history (member_id, crew_id, joined, leave)
+    select member_id, crew_id, joined, current_timestamp from gone;"""
+    joined_crew = """insert into current_member_crews (member_id, crew_id, joined) values %s;"""
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        execute_values(cur, new_members, sync.new_members)
+        execute_values(cur, renamed, sync.renamed)
+        execute_values(cur, add_roles, sync.roles)
+        execute_values(cur, rename_roles, [(role_id, name) for role_id, name, _ in sync.roles])
+        execute_values(cur, gained, sync.gained, template='(%s, %s, current_timestamp)')
+        execute_values(cur, lost, sync.lost)
+        if sync.joined:
+            cur.execute(in_server, (True, sync.joined))
+        if sync.left:
+            cur.execute(in_server, (False, sync.left))
+        if sync.crews:
+            cur.execute(left_crew, ([member_id for member_id, _ in sync.crews],))
+            execute_values(cur, joined_crew, [change for change in sync.crews if change[1] is not None],
+                           template='(%s, %s, current_timestamp)')
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()

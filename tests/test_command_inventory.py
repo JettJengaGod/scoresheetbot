@@ -33,6 +33,7 @@ OPTION_TYPES = {
     discord.AppCommandOptionType.channel: 'TextChannel',
     discord.AppCommandOptionType.role: 'Role',
     discord.AppCommandOptionType.attachment: 'Attachment',
+    discord.AppCommandOptionType.boolean: 'bool',
 }
 PLACEHOLDER = '…'  # what discord.py uses for a missing description
 
