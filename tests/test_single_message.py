@@ -36,7 +36,7 @@ class SendSheetTest(unittest.IsolatedAsyncioTestCase):
         await send_sheet(channel, self.battle(over=True, confirms=(True, False)), content='A note')
         channel.send.assert_awaited_once()
         text = channel.send.await_args.args[0]
-        self.assertEqual('A note\nPlease confirm: \n FSGood: <@2> please `/cb confirm`.', text)
+        self.assertEqual('A note\nPlease confirm: \n FSGood: <@2> please `/confirm`.', text)
         self.assertEqual('Sheet', channel.send.await_args.kwargs['embed'].title)
 
     async def test_a_sheet_with_nothing_to_say_has_no_text(self):

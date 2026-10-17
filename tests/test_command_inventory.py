@@ -20,7 +20,7 @@ from discord.ext import commands
 
 import src.cache
 from src import scoreSheetBot
-from src.slash import ALLOWED_IN_DMS, GROUPS, NO_SLASH, SLASH_NAMES, STAFF_GROUPS
+from src.slash import ALLOWED_IN_DMS, GROUPS, NO_SLASH, SLASH_GROUPED, SLASH_NAMES, STAFF_GROUPS
 from tests.harness import assert_snapshot, is_hybrid, make_cog
 
 COMMAND_DECORATORS = ('command', 'group', 'hybrid_command', 'hybrid_group')
@@ -203,10 +203,16 @@ class CommandInventoryTest(unittest.TestCase):
         for section, (_, names) in GROUPS.items():
             for name in set(names) - NO_SLASH:
                 with self.subTest(command=name):
-                    slash_name = SLASH_NAMES.get(name, self.prefix[name].name)
-                    self.assertEqual(f'{section} {slash_name}', self.slash[name].qualified_name)
+                    if section in SLASH_GROUPED:
+                        slash_name = SLASH_NAMES.get(name, self.prefix[name].name)
+                        self.assertEqual(f'{section} {slash_name}', self.slash[name].qualified_name)
+                    else:
+                        self.assertEqual(self.prefix[name].name, self.slash[name].qualified_name)
         # help is the only command left outside a section.
         self.assertEqual({'help'}, set(self.slash) - set(sectioned) - set(staff))
+        top_level = [root.name for root in self.cog.__cog_app_commands__]
+        self.assertEqual(len(top_level), len(set(top_level)), 'two top level slash commands share a name')
+        self.assertLessEqual(len(top_level), 100, 'Discord allows 100 top level slash commands')
         self.assertEqual([], [name for name, command in self.prefix.items() if is_hybrid(command)],
                          'a hybrid would also register a top level slash command')
 

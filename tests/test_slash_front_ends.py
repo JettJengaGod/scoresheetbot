@@ -345,7 +345,7 @@ class HelpTest(unittest.IsolatedAsyncioTestCase):
         return ctx
 
     async def test_prefix_help_is_sent_by_dm_and_slash_help_only_to_the_author(self):
-        for args in ((), ('cb',), ('send',), ('crew info',), ('notacommand',)):
+        for args in ((), ('cb',), ('send',), ('stats',), ('notacommand',)):
             with self.subTest(args=args):
                 prefix = await self.ask(PREFIX, *args)
                 dm = self.author.send.await_args.kwargs['embed'].to_dict()
@@ -365,7 +365,8 @@ class HelpTest(unittest.IsolatedAsyncioTestCase):
         fields = (await self.help_embed())['fields']
         # gambit has every slash command switched off, so it is not a section any more.
         sections = {section: description for section, (description, _) in GROUPS.items() if section != 'gambit'}
-        self.assertEqual([f'/{section}' for section in sections] + ['/help'], [f['name'] for f in fields])
+        # The sections that aren't slash groups are named without a slash, as their commands are top level.
+        self.assertEqual(list(sections) + ['/help'], [f['name'] for f in fields])
         self.assertEqual(list(sections.values()), [f['value'] for f in fields[:-1]])
         self.assertEqual('Error!', (await self.help_embed('gambit', staff=True))['title'])
         self.assertIn('/staff', [f['name'] for f in (await self.help_embed(staff=True))['fields']])
@@ -383,8 +384,9 @@ class HelpTest(unittest.IsolatedAsyncioTestCase):
                 listed = [f['name'] for f in (await self.help_embed(section, staff=True))['fields']]
                 self.assertCountEqual(self.listed(names), listed)
         crew = [f['name'] for f in (await self.help_embed('crew', staff=True))['fields']]
-        self.assertIn('/crew info', crew)
-        self.assertFalse([name for name in crew if name.endswith(' po') or not name.startswith('/crew ')])
+        self.assertIn('/crew', crew)
+        self.assertIn('/stats', crew)
+        self.assertFalse([name for name in crew if name == '/po' or ' ' in name])
         bot = [f['name'] for f in (await self.help_embed('staff', 'bot', staff=True))['fields']]
         self.assertIn('/staff bot recache', bot)
         self.assertNotIn('/staff bot sync', bot)
@@ -407,8 +409,8 @@ class HelpTest(unittest.IsolatedAsyncioTestCase):
             self.author.send.assert_awaited_once_with('That section is for staff.')
 
     async def test_help_for_a_command_shows_its_slash_form(self):
-        for args, title, slash in ((('send',), 'send', '/cb send'), (('cb', 'send'), 'send', '/cb send'),
-                                   (('crew', 'info'), 'crew', '/crew info')):
+        for args, title, slash in ((('send',), 'send', '/send'), (('stats',), 'stats', '/stats'),
+                                   (('staff', 'bot', 'recache'), 'recache', '/staff bot recache')):
             with self.subTest(args=args):
                 embed = await self.help_embed(*args, staff=True)
                 self.assertEqual(title, embed['title'])

@@ -30,8 +30,8 @@
 
 ### Slash commands
 
-Every command is a slash command (`/cb send`); the bot has no prefix commands and doesn't read messages for them.
-Slash commands are sorted into sections: `/cb` (crew battles), `/f` (flairing), `/crew`, `/gambit`, `/roles`, `/misc` and `/staff`, for example `/crew stats` or `/staff battle addsheet`. `/help` is on its own, and lists these sections; `/help cb` lists the commands in one.
+Every command is a slash command (`/send`); the bot has no prefix commands and doesn't read messages for them.
+Most are top level, like `/send` or `/stats`. Gambit commands are grouped under `/gambit` and staff commands under `/staff`, for example `/gambit bet` or `/staff battle addsheet`. `/help` lists the commands by section (crew battles, flairing, crews, gambit, roles, misc and staff); `/help cb` lists the commands in one.
 Slash commands are registered when the bot starts, so restart the bot after adding or changing a command.
 
 ### Tests
