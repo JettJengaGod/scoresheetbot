@@ -17,7 +17,7 @@ from .constants import *
 from .db_helpers import *
 from .decorators import *
 from .help import help_doc
-from .slash import EPHEMERAL, GROUPS, OLD_CATEGORIES, STAFF_DESCRIPTION, STAFF_GROUPS, SlashCommands
+from .slash import EPHEMERAL, GROUPS, OLD_CATEGORIES, SLASH_GROUPED, STAFF_DESCRIPTION, STAFF_GROUPS, SlashCommands
 
 logging.basicConfig(level=logging.INFO)
 
@@ -438,8 +438,12 @@ class ScoreSheetBot(commands.Cog):
 
         groups, staff_groups = enabled(GROUPS), enabled(STAFF_GROUPS)
 
+        def label(section: str) -> str:
+            """How help names a section: as its slash group, for a section that is one."""
+            return f'/{section}' if section in SLASH_GROUPED or section.startswith('staff') else section
+
         def listing(title: str, description: str, names: List[str]) -> discord.Embed:
-            embed = discord.Embed(title=f'/{title} Command Listing',
+            embed = discord.Embed(title=f'{label(title)} Command Listing',
                                   description=f'{description}\nUse `/help *command*` to find out more about one.')
             for cmd in sorted((cmds[n] for n in names), key=lambda c: slash[c.qualified_name].name):
                 if staff or not cmd.hidden:
@@ -452,7 +456,7 @@ class ScoreSheetBot(commands.Cog):
                                  description='Use `/help *section*` to list the commands in one, or '
                                              '`/help *command*` to find out more about a command!')
             for section, (description, _) in groups.items():
-                halp.add_field(name=f'/{section}', value=description, inline=False)
+                halp.add_field(name=label(section), value=description, inline=False)
             if staff:
                 halp.add_field(name='/staff', value=STAFF_DESCRIPTION, inline=False)
             halp.add_field(name='/help', value=cmds['help'].help, inline=False)
@@ -640,12 +644,12 @@ class ScoreSheetBot(commands.Cog):
     async def reg(self, ctx: Context, *, everything: str):
         split = everything.split(' ')
         if not split:
-            await response_message(ctx, 'Use `/cb reg` with the registering crew\'s name and the size.')
+            await response_message(ctx, 'Use `/reg` with the registering crew\'s name and the size.')
             return
         try:
             size = int(split[-1])
         except ValueError:
-            await response_message(ctx, 'Use `/cb reg` with the registering crew\'s name and the size.')
+            await response_message(ctx, 'Use `/reg` with the registering crew\'s name and the size.')
             return
         registering_crew = ' '.join(split[:-1])
         if size < 1:
@@ -895,7 +899,7 @@ class ScoreSheetBot(commands.Cog):
                 sent_to = team
             else:
                 await ctx.send(f'During a mock you need to send with a teamname, like this'
-                               f' `/cb send user:@playername team:teamname`.')
+                               f' `/send user:@playername team:teamname`.')
                 return
         else:
             if not check_roles(user, [VERIFIED]):
@@ -963,7 +967,7 @@ class ScoreSheetBot(commands.Cog):
                     return
             else:
                 await ctx.send(f'During a mock you need to use your extension, like this'
-                               f' `/cb use_ext team:teamname`.')
+                               f' `/use_ext team:teamname`.')
                 return
         else:
             await self._reject_outsiders(ctx)
@@ -1003,7 +1007,7 @@ class ScoreSheetBot(commands.Cog):
                 self._current(ctx).forfeit(team)
             else:
                 await ctx.send(f'During a mock you need to forfeit, like this'
-                               f' `/cb forfeit team:teamname`')
+                               f' `/forfeit team:teamname`')
                 return
         else:
             await self._reject_outsiders(ctx)
@@ -1081,7 +1085,7 @@ class ScoreSheetBot(commands.Cog):
                 self._current(ctx).replace_player(team, escape(user.display_name), ctx.author.mention, user.id)
             else:
                 await ctx.send(f'During a mock you need to replace with a teamname, like this'
-                               f' `/cb replace user:@playername team:teamname`.')
+                               f' `/replace user:@playername team:teamname`.')
                 return
         else:
             if not check_roles(user, [VERIFIED]):
@@ -1184,7 +1188,7 @@ class ScoreSheetBot(commands.Cog):
         note = None
         if not self._current(ctx).undo():
             note = ('Note: undoing a replace on the scoresheet doesn\'t actually undo the replace, '
-                    'you need to use `/cb replace` with the original player to do that.')
+                    'you need to use `/replace` with the original player to do that.')
         await send_sheet(ctx, battle=self._current(ctx), content=note)
 
     # @commands.command(**help_doc['difficulty'], aliases=['d'])
@@ -1529,7 +1533,7 @@ class ScoreSheetBot(commands.Cog):
                 self._current(ctx).timer_stock(team, ctx.author.mention)
             else:
                 await ctx.send(f'During a mock you need to take a timer_stock with a teamname, like this'
-                               f' `/cb timerstock team:teamname`.')
+                               f' `/timerstock team:teamname`.')
                 return
         else:
             await self._reject_outsiders(ctx)
@@ -1923,7 +1927,7 @@ class ScoreSheetBot(commands.Cog):
                 return
             if not check_roles(ctx.author, STAFF_LIST):
                 if member.id == ctx.author.id:
-                    await response_message(ctx, 'You can unflair yourself by using `/f unflair` with nothing after it.')
+                    await response_message(ctx, 'You can unflair yourself by using `/unflair` with nothing after it.')
                     return
                 try:
                     compare_crew_and_power(ctx.author, member, self)
@@ -3512,11 +3516,11 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['overlap'])
     async def overlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
         if 'everyone' in best[0] or 'everyone' in best[1]:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/listroles`.')
             return
         candidates = await self._overlap_candidates(best[0], best[1], MEMBER_SEARCH_LIMIT)
         if candidates is None:
@@ -3533,11 +3537,11 @@ class ScoreSheetBot(commands.Cog):
     @commands.command(**help_doc['noverlap'])
     async def noverlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
         if 'everyone' in best[0] or 'everyone' in best[1]:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/listroles`.')
             return
         candidates = await self._overlap_candidates(best[0], best[1], MEMBER_SEARCH_LIMIT)
         if candidates is None:
@@ -3555,11 +3559,11 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def pingoverlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
         if 'everyone' in best[0] or 'everyone' in best[1]:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/listroles`.')
             return
         candidates = await self._overlap_candidates(best[0], best[1], MEMBER_SEARCH_LIMIT)
         if candidates is None:
@@ -3582,11 +3586,11 @@ class ScoreSheetBot(commands.Cog):
     @role_call(STAFF_LIST)
     async def pingnoverlap(self, ctx, *, two_roles: str = None):
         if 'everyone' in two_roles:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/listroles`.')
             return
         best = best_of_possibilities(two_roles, self)
         if 'everyone' in best[0] or 'everyone' in best[1]:
-            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/roles listroles`.')
+            await ctx.send(f'{ctx.author.mention}: do not use this command with everyone. Use `/listroles`.')
             return
         candidates = await self._overlap_candidates(best[0], best[1], MEMBER_SEARCH_LIMIT)
         if candidates is None:

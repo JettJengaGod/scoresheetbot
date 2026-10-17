@@ -1,8 +1,8 @@
 """Slash commands, the only way to run the bot's commands.
 
 Each command is written as a discord.py text command with a flat name (`send`), which the bot never reads
-from messages. Its slash command is sorted into a section (`/cb send`, `/staff battle addsheet`) and is one
-of two kinds:
+from messages. Its slash command is top level (`/send`), or in a group for gambit and staff commands
+(`/gambit bet`, `/staff battle addsheet`), and is one of two kinds:
 
 * a "twin" generated here with the same options as the text command;
 * a hand written front end here, for commands that take free text that slash commands can ask for as
@@ -26,9 +26,9 @@ if TYPE_CHECKING:
 
 DESCRIPTION_LIMIT = 100
 
-# The section each command lives in: /<section> <command>. Discord allows 25 commands per section.
+# The section each command is listed under in help. Discord allows 25 commands per group, and 100 top level.
 GROUPS: Dict[str, tuple] = {
-    # This one is full, which is why the character lookups `char` and `chars` are in misc.
+    # The character lookups `char` and `chars` are listed in misc, from when this was a full slash group.
     'cb': ('Run a crew battle', [
         'battle', 'mock', 'reg', 'strawhat', 'cowy', 'playoff', 'send', 'replace', 'end', 'endlag', 'undo',
         'resize', 'forfeit', 'confirm', 'clear', 'status', 'timer', 'timerstock', 'ext', 'use_ext', 'arena',
@@ -49,9 +49,12 @@ GROUPS: Dict[str, tuple] = {
         'char', 'chars', 'result']),
 }
 
-# Slash names that differ from the prefix command's name, to read well inside their section.
+# The sections whose commands are grouped in Discord: /<section> <command>. Every other section's commands are
+# top level, /<command>.
+SLASH_GROUPED = {'gambit'}
+
+# Slash names that differ from the prefix command's name, to read well inside their group.
 SLASH_NAMES = {
-    'crew': 'info',    # /crew info rather than /crew crew
     'gamb': 'status',  # `,gamb` on its own shows the current gambit
 }
 
@@ -232,6 +235,8 @@ class SlashCommands:
 
         top_level = []
         for group_name, (group_description, names) in GROUPS.items():
+            if group_name not in SLASH_GROUPED:
+                continue
             group = app_commands.Group(name=group_name, description=group_description, guild_only=True)
             for name in names:
                 if name not in NO_SLASH:
