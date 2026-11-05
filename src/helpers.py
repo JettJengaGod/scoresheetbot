@@ -392,15 +392,22 @@ async def unflair(member: discord.Member, author: discord.member, bot: 'ScoreShe
     if await track_cycle(member, bot.cache.scs) == 2:
         await flairing_info.send(f'<@{COWY_ID}> {member.mention} is locked on next join.')
     if check_roles(member, [LEADER]):
-        cr = crew_lookup(user_crew, bot)
-        remaining_req = 0
-        if str(member) in cr.leaders:
-            remaining_req = 1
-        if len(cr.leaders) == remaining_req:
-            await flairing_info.send(f'{bot.cache.roles.docs.mention}: {user_crew}\'s last leader just unflaired')
+        await leader_unflaired(crew_lookup(user_crew, bot), member.id, bot)
     await member.remove_roles(bot.cache.roles.advisor, bot.cache.roles.fortyman, bot.cache.roles.leader,
                               bot.cache.roles.poach_me, bot.cache.roles.crew_staff,
                               reason=f'Unflaired by {author.name}')
+
+
+async def leader_unflaired(cr: Crew, member_id: int, bot: 'ScoreSheetBot'):
+    """Takes the leader `member_id` off the crew's cached leaders, and tells the Doc Keepers if that was the
+    last of them."""
+    if member_id in cr.leader_ids:
+        index = cr.leader_ids.index(member_id)
+        del cr.leader_ids[index]
+        del cr.leaders[index]
+    if not cr.leader_ids:
+        await bot.cache.channels.flairing_info.send(
+            f'{bot.cache.roles.docs.mention}: {cr.name}\'s last leader just unflaired')
 
 
 def nick_without_prefix(nick: str) -> str:
@@ -1513,10 +1520,13 @@ async def unflair_gone_member(ctx: Context, user: str, bot: 'ScoreSheetBot'):
     remove_member_role(user_id, cr.role_id)
     desc = [f'Roles lost by {user_id}:', cr.name]
     member_roles = all_member_roles(user_id)
-    # Remove leadership + overflow role
-    roles_to_remove = [roles.overflow, roles.leader, roles.advisor]
+    # Remove leadership + overflow role, and the others `unflair` takes
+    if roles.leader.id in member_roles:
+        await leader_unflaired(cr, user_id, bot)
+    roles_to_remove = [roles.overflow, roles.leader, roles.advisor, roles.fortyman, roles.poach_me,
+                       roles.crew_staff]
     for role in roles_to_remove:
-        if role.id in member_roles:
+        if role and role.id in member_roles:
             desc.append(role.name)
             remove_member_role(user_id, role.id)
 

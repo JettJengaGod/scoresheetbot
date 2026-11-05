@@ -8,21 +8,26 @@ Nothing here runs with the intent on: every caller checks `intents.members` firs
 switch it on in the Discord Developer Portal and set MEMBERS_INTENT=1. To remove this for good afterwards,
 delete this module and the calls to it, each of which sits behind one of those checks.
 """
+import asyncio
 import logging
 import os
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 
 import discord
 
 from .constants import ADVISOR, CREW_STAFF, LEADER, MUTED
 from .crew import Crew
-from .db_helpers import crew_rosters, db_crew_members, db_role_members, update_member_status
+from .db_helpers import crew_rosters, db_crew_members, db_crew_members_in_server, db_role_members, \
+    update_member_status
 from .helpers import Context, check_roles, crew
 from .slash import MEMBER_ID
 
 if TYPE_CHECKING:
     from .cache import Cache
     from .scoreSheetBot import ScoreSheetBot
+
+# How many members are fetched from Discord at once. Fetching a crew one member at a time took a while.
+CONCURRENT_FETCHES = 10
 
 
 async def cache_command_members(cog: 'ScoreSheetBot', ctx: Context) -> None:
@@ -46,12 +51,14 @@ async def fetch_member(cog: 'ScoreSheetBot', guild: discord.Guild, member_id: in
 
     This also does what the member events would have: when the member's roles or name differ from the copy
     the bot had, or it had none, the database is brought up to date (`ScoreSheetBot._member_changed`), and
-    someone no longer in the main server is marked as having left.
+    someone no longer in the main server is marked as having left and dropped from the cache, so nothing
+    takes the copy the bot had for someone still in the server.
     """
     before = guild.get_member(member_id)
     try:
         member = await guild.fetch_member(member_id)
     except discord.NotFound:
+        guild._remove_member(discord.Object(id=member_id))
         if guild.id == cog.cache.scs.id and os.getenv('VERSION') == 'PROD':
             update_member_status((), (member_id,))
         return None
@@ -71,17 +78,35 @@ async def crew_members(cog: 'ScoreSheetBot', cr: Crew) -> List[discord.Member]:
     return (await _crew_members_and_absent(cog, cr))[0]
 
 
+async def fetch_members(cog: 'ScoreSheetBot', guild: discord.Guild,
+                        member_ids: Iterable[int]) -> List[Optional[discord.Member]]:
+    """`fetch_member` for each of `member_ids`, several at a time, in the same order."""
+    limit = asyncio.Semaphore(CONCURRENT_FETCHES)
+
+    async def fetch(member_id: int) -> Optional[discord.Member]:
+        async with limit:
+            return await fetch_member(cog, guild, member_id)
+
+    return list(await asyncio.gather(*(fetch(member_id) for member_id in member_ids)))
+
+
 async def _crew_members_and_absent(cog: 'ScoreSheetBot', cr: Crew) -> Tuple[List[discord.Member], List[int]]:
-    """`crew_members`, and the ids of the members the database has on the crew who aren't in the main server."""
-    members, absent = [], []
-    for member_id in db_crew_members(cr):
-        member = await fetch_member(cog, cog.cache.scs, member_id)
+    """`crew_members`, and the ids of the members the database has on the crew who aren't in the main server.
+
+    Those the database already has as having left aren't fetched: a member who rejoins is marked as back by
+    `ScoreSheetBot._member_joined`."""
+    roster = db_crew_members_in_server(cr)
+    absent = [member_id for member_id, in_server in roster if not in_server]
+    present = [member_id for member_id, in_server in roster if in_server]
+    fetched = await fetch_members(cog, cog.cache.scs, present)
+    if cr.overflow:
+        # `crew` reads an overflow crew from the member's roles in the overflow server.
+        await fetch_members(cog, cog.cache.overflow_server, [m.id for m in fetched if m is not None])
+    members = []
+    for member_id, member in zip(present, fetched):
         if member is None:
             absent.append(member_id)
             continue
-        if cr.overflow:
-            # `crew` reads an overflow crew from the member's roles in the overflow server.
-            await fetch_member(cog, cog.cache.overflow_server, member_id)
         try:
             current = crew(member, cog)
         except ValueError:
@@ -108,12 +133,8 @@ async def members_with_role(cog: 'ScoreSheetBot', role_name: str,
     member_ids = db_role_members(role.id) if role else []
     if len(member_ids) > limit:
         return None
-    members = []
-    for member_id in member_ids:
-        member = await fetch_member(cog, cog.cache.scs, member_id)
-        if member is not None and role in member.roles:
-            members.append(member)
-    return members, []
+    fetched = await fetch_members(cog, cog.cache.scs, member_ids)
+    return [member for member in fetched if member is not None and role in member.roles], []
 
 
 async def muted_crew_members(cog: 'ScoreSheetBot', cr: Crew) -> List[discord.Member]:

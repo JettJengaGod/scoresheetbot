@@ -23,6 +23,9 @@ SEARCH_LIMIT = 1000
 USERNAME_LENGTH = 32
 # The most members Discord returns for one request by id.
 ID_LIMIT = 100
+# A sync that finds fewer than this share of the server's members isn't applied, as everyone it missed would be
+# marked as having left. One that came back nearly empty marked almost every member as gone in October 2026.
+MIN_FOUND = 0.95
 
 
 @dataclass
@@ -40,6 +43,11 @@ class MemberSync:
     unknown_crews: Set[str] = field(default_factory=set)  # crew roles with no crew in the database
     found: int = 0
     member_count: Optional[int] = None
+
+    @property
+    def incomplete(self) -> bool:
+        """Whether too few of the server's members were found to trust that the rest have left."""
+        return self.member_count is None or self.found < self.member_count * MIN_FOUND
 
     def summary(self) -> str:
         lines = [f'Found {self.found} of the {self.member_count} members of the server.']
@@ -143,7 +151,8 @@ def plan(guild: discord.Guild, members: Dict[int, discord.Member], crew_names: I
 
 
 async def sync_members(cog: 'ScoreSheetBot', apply: bool) -> MemberSync:
-    """Works out what the database is missing about the main server's members, and writes it if `apply`."""
+    """Works out what the database is missing about the main server's members, and writes it if `apply` and
+    the sync isn't `incomplete`."""
     guild = cog.cache.scs
     db_members, db_roles, db_crews, crew_ids = member_sync_state(guild.id)
     if cog.bot.intents.members:
@@ -156,6 +165,6 @@ async def sync_members(cog: 'ScoreSheetBot', apply: bool) -> MemberSync:
                    if in_server is not False and member_id not in members]
         members.update(await members_by_id(guild, unfound))
     sync = plan(guild, members, cog.cache.crews, db_members, db_roles, db_crews, crew_ids)
-    if apply:
+    if apply and not sync.incomplete:
         apply_member_sync(sync)
     return sync
