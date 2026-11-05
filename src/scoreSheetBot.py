@@ -402,12 +402,31 @@ class ScoreSheetBot(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
+        await self._member_joined(member)
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        # Without the members intent there are no join events, but the main server's welcome messages still come.
+        if (not self.bot.intents.members and message.type == discord.MessageType.new_member
+                and message.guild and message.guild.id == self.cache.scs.id):
+            member = message.author
+            if not isinstance(member, discord.Member):
+                # Fetched directly rather than with `_fresh_member`, which would record the member's roles as
+                # the none they joined with before the ones they had could be given back.
+                member = await message.guild.fetch_member(member.id)
+            await self._member_joined(member)
+
+    async def _member_joined(self, member: discord.Member):
+        """Gives someone who joined the roles they had when they left, if they were here before, and marks
+        them as in the server."""
         if os.getenv('VERSION') == 'PROD':
+            update_member_status((member.id,), ())
             role_ids = find_member_roles(member)
             if role_ids:
-                roles = [discord.utils.get(member.guild.roles, id=role_id) for role_id in role_ids if
+                roles = [member.guild.get_role(role_id) for role_id in role_ids if
                          role_id not in (803364975539781662, 842888594519097394)]
-                await member.add_roles(*roles)
+                # A role deleted since they left is skipped.
+                await member.add_roles(*[role for role in roles if role])
             else:
                 add_member_and_roles(member)
 
@@ -3644,6 +3663,20 @@ class ScoreSheetBot(commands.Cog):
             f'{battles} crew battles bonus (max 12)')
         return
 
+    @staticmethod
+    def _usage_lines(usage: Dict[int, List[str]]) -> List[str]:
+        """A line for each member in `usage` with links to the battles they played, sorted by name. Names come
+        from the database, as without the members intent the bot doesn't know most of them."""
+        names = member_names(usage)
+        lines = []
+        for mem_id, links in usage.items():
+            link_str = ''.join(f'[link]({link}) ' for link in links)
+            if mem_id in names:
+                lines.append(f'{names[mem_id]}: {link_str}')
+            else:
+                lines.append(f'{mem_id}: {link_str} (name not found for some reason)')
+        return sorted(lines)
+
     @commands.command(hidden=True, **help_doc['softcap'])
     async def softcap(self, ctx, cr: Optional[str] = ''):
         if not cr:
@@ -3655,32 +3688,12 @@ class ScoreSheetBot(commands.Cog):
                 usage = crew_usage_jan(actual, 1)
             else:
                 usage = crew_usage(actual, 1)
-            desc = []
-            for mem_id, links in usage.items():
-                link_str = ''
-                for link in links:
-                    link_str += f'[link]({link}) '
-                member = self.bot.get_user(mem_id)
-                if not member:
-                    desc.append(f'{mem_id}: {link_str} (name not found for some reason)')
-                    continue
-                desc.append(f'{member.display_name}: {link_str}')
-            desc.sort()
+            desc = self._usage_lines(usage)
             embed = discord.Embed(title=f'Usage of each member of {actual.name} from last month ({len(usage)} total)',
                                   description='\n'.join(desc), color=discord.Color.random())
             await send_long_embed(ctx.author, embed)
             usage = crew_usage(actual, 0)
-            desc = []
-            for mem_id, links in usage.items():
-                link_str = ''
-                for link in links:
-                    link_str += f'[link]({link}) '
-                member = self.bot.get_user(mem_id)
-                if not member:
-                    desc.append(f'{mem_id}: {link_str} (name not found for some reason)')
-                    continue
-                desc.append(f'{member.display_name}: {link_str}')
-            desc.sort()
+            desc = self._usage_lines(usage)
             embed = discord.Embed(title=f'Usage of each member of {actual.name} from this month ({len(usage)} total)',
                                   description='\n'.join(desc), color=discord.Color.random())
             await send_long_embed(ctx.author, embed)
@@ -4087,7 +4100,13 @@ class ScoreSheetBot(commands.Cog):
     async def syncmembers(self, ctx, apply: bool = False):
         await ctx.send("Going through the server's members, which takes a few minutes.")
         sync = await member_sync.sync_members(self, apply)
-        heading = 'Updated the database:' if apply else 'Dry run, nothing was written. This would change:'
+        if not apply:
+            heading = 'Dry run, nothing was written. This would change:'
+        elif sync.incomplete:
+            heading = ("Nothing was written: too few of the server's members were found, and everyone missed "
+                       'would have been marked as having left. Try again later. This would have changed:')
+        else:
+            heading = 'Updated the database:'
         await send_long(ctx, f'{heading}\n{sync.summary()}', '\n')
 
     @commands.command(hidden=True, **help_doc['flaircounts'])

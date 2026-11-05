@@ -29,6 +29,7 @@ class NoMembersIntentTest(unittest.IsolatedAsyncioTestCase):
             guild.get_member = self.cached[guild.id].get
             guild.fetch_member = unittest.mock.AsyncMock(side_effect=self.fetch(guild))
             guild._add_member = self.add(guild)
+            guild._remove_member = self.remove(guild)
 
     def fetch(self, guild):
         def fetch_member(member_id):
@@ -43,6 +44,11 @@ class NoMembersIntentTest(unittest.IsolatedAsyncioTestCase):
         def add_member(member):
             self.cached[guild.id][member.id] = member
         return add_member
+
+    def remove(self, guild):
+        def remove_member(member):
+            self.cached[guild.id].pop(member.id, None)
+        return remove_member
 
     def on_discord(self, guild, member_id, roles=(), name=None):
         member = mocks.MockMember(id=member_id, display_name=name or str(member_id), roles=list(roles))
@@ -108,7 +114,8 @@ class NoMembersIntentTest(unittest.IsolatedAsyncioTestCase):
         self.on_discord(self.scs, 3)
         on_crew = {1: 'Holy Knights', 2: 'Holy Knights', 3: 'Other Crew'}
         cr = Crew(name='Holy Knights', abbr='HK')
-        with unittest.mock.patch('src.no_members_intent.db_crew_members', return_value=[1, 2, 3, ABSENT]), \
+        with unittest.mock.patch('src.no_members_intent.db_crew_members_in_server',
+                                 return_value=[(1, True), (2, True), (3, True), (ABSENT, True)]), \
                 unittest.mock.patch('src.no_members_intent.crew', side_effect=lambda m, _: on_crew[m.id]):
             self.assertEqual([1, 2], [m.id for m in await no_members_intent.crew_members(self.cog, cr)])
             self.assertEqual([2], [m.id for m in await no_members_intent.muted_crew_members(self.cog, cr)])
@@ -123,7 +130,7 @@ class NoMembersIntentTest(unittest.IsolatedAsyncioTestCase):
             # The overflow crew is read off the member's roles in the overflow server, so it must be cached.
             return 'Holy Knights' if member.id in self.cached[self.overflow.id] else None
 
-        with unittest.mock.patch('src.no_members_intent.db_crew_members', return_value=[1]), \
+        with unittest.mock.patch('src.no_members_intent.db_crew_members_in_server', return_value=[(1, True)]), \
                 unittest.mock.patch('src.no_members_intent.crew', side_effect=crew):
             self.assertEqual([1], [m.id for m in await no_members_intent.crew_members(self.cog, cr)])
 
@@ -145,10 +152,30 @@ class NoMembersIntentTest(unittest.IsolatedAsyncioTestCase):
         self.cog.cache.crews_by_name = {cr.name: cr}
         self.on_discord(self.scs, 1)
         with unittest.mock.patch('src.no_members_intent.db_crew_members', return_value=[1, ABSENT]), \
+                unittest.mock.patch('src.no_members_intent.db_crew_members_in_server',
+                                    return_value=[(1, True), (ABSENT, True)]), \
                 unittest.mock.patch('src.no_members_intent.crew', return_value='Holy Knights'):
             members, absent = await no_members_intent.members_with_role(self.cog, 'Holy Knights', 150)
             self.assertEqual(([1], [ABSENT]), ([m.id for m in members], absent))
             self.assertIsNone(await no_members_intent.members_with_role(self.cog, 'Holy Knights', 1))
+
+    async def test_someone_who_left_is_dropped_from_the_cache(self):
+        self.cached[self.scs.id][ABSENT] = mocks.MockMember(id=ABSENT)
+        self.assertIsNone(await no_members_intent.fetch_member(self.cog, self.scs, ABSENT))
+        self.assertIsNone(self.scs.get_member(ABSENT))
+
+    async def test_crew_members_the_database_has_as_gone_are_absent_without_being_fetched(self):
+        self.on_discord(self.scs, 1)
+        cr = Crew(name='Holy Knights', abbr='HK')
+        self.cog.cache.crews_by_name = {cr.name: cr}
+        with unittest.mock.patch('src.no_members_intent.db_crew_members', return_value=[1, 2, ABSENT]), \
+                unittest.mock.patch('src.no_members_intent.db_crew_members_in_server',
+                                    return_value=[(1, True), (2, False), (ABSENT, True)]), \
+                unittest.mock.patch('src.no_members_intent.crew', return_value='Holy Knights'):
+            members, absent = await no_members_intent.members_with_role(self.cog, 'Holy Knights', 150)
+        self.assertEqual(([1], [2, ABSENT]), ([m.id for m in members], absent))
+        fetched = [call.args[0] for call in self.scs.fetch_member.await_args_list]
+        self.assertCountEqual([1, ABSENT], fetched)
 
     async def test_overlaps_search_the_crew_or_else_the_first_role(self):
         fetched = unittest.mock.AsyncMock(return_value=(['fetched'], []))

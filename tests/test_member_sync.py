@@ -106,7 +106,7 @@ class FindMembersTest(unittest.IsolatedAsyncioTestCase):
     async def test_members_the_search_missed_are_looked_up_by_id_before_being_marked_as_left(self):
         cog = make_cog()
         cog.bot.intents = discord.Intents.default()
-        cog.cache.scs = guild(member_count=2)
+        cog.cache.scs = guild(member_count=1)
         cog.cache.crews = []
         state = ({1: ('member1', True), 2: ('member2', True), 3: ('member3', False)}, set(), {}, {})
         with unittest.mock.patch('src.member_sync.member_sync_state', return_value=state), \
@@ -120,6 +120,24 @@ class FindMembersTest(unittest.IsolatedAsyncioTestCase):
             apply.assert_not_called()
             self.assertEqual([2], sync.left)
             await member_sync.sync_members(cog, apply=True)
+            apply.assert_called_once()
+
+    async def test_a_sync_that_finds_too_few_members_is_not_applied(self):
+        cog = make_cog()
+        cog.bot.intents = discord.Intents.default()
+        cog.cache.scs = guild(member_count=100)
+        cog.cache.crews = []
+        state = ({member_id: (f'member{member_id}', True) for member_id in range(1, 101)}, set(), {}, {})
+        found = {member_id: member(member_id) for member_id in range(1, 95)}
+        with unittest.mock.patch('src.member_sync.member_sync_state', return_value=state), \
+                unittest.mock.patch('src.member_sync.all_members', unittest.mock.AsyncMock(return_value=found)), \
+                unittest.mock.patch('src.member_sync.members_by_id', unittest.mock.AsyncMock(return_value={})), \
+                unittest.mock.patch('src.member_sync.apply_member_sync') as apply:
+            sync = await member_sync.sync_members(cog, apply=True)
+            self.assertTrue(sync.incomplete)
+            apply.assert_not_called()
+            found[95] = member(95)
+            self.assertFalse((await member_sync.sync_members(cog, apply=True)).incomplete)
             apply.assert_called_once()
 
 

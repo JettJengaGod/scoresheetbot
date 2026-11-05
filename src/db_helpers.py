@@ -3376,6 +3376,54 @@ def db_crew_members(cr: Crew) -> List[int]:
     return [mem[0] for mem in members]
 
 
+def db_crew_members_in_server(cr: Crew) -> List[Tuple[int, bool]]:
+    """`db_crew_members`, each with whether the database has them as still in the server."""
+    mems = """select current_member_crews.member_id, members.in_server is not false
+    from current_member_crews
+             left join members on members.id = current_member_crews.member_id
+    where current_member_crews.crew_id = %s;
+"""
+    conn = None
+    members = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        crew_id = crew_id_from_crews(cr, cur)
+        cur.execute(mems, (crew_id,))
+        members = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return [(member_id, in_server) for member_id, in_server in members]
+
+
+def member_names(member_ids: Iterable[int]) -> Dict[int, str]:
+    """The name the database last saw each of the members go by in the server, by id. Members it doesn't
+    know are left out."""
+    names = """select id, coalesce(nickname, discord_name) from members where id = any(%s);"""
+    conn = None
+    found = []
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute(names, (list(member_ids),))
+        found = cur.fetchall()
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        log_error_and_reraise(error)
+    finally:
+        if conn is not None:
+            conn.close()
+    return {member_id: name for member_id, name in found if name}
+
+
 def db_role_members(role_id: int) -> List[int]:
     """The ids of the members the database has with the role, leaving out those marked as having left the
     server."""
