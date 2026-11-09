@@ -393,7 +393,7 @@ class ScoreSheetBot(commands.Cog):
                     update_member_crew(after.id, after_crew)
                     self.cache.minor_update(self)
 
-                await set_categories(after, self.cache.categories)
+                await set_categories(after, self.cache.category_roles())
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -3810,7 +3810,7 @@ class ScoreSheetBot(commands.Cog):
         # for i, member in (enumerate(ctx.guild.members)):
         #     print(i + 1, len(ctx.guild.members))
 
-        await set_categories(member, self.cache.categories)
+        await set_categories(member, self.cache.category_roles())
 
     @commands.command(hidden=True, **help_doc['cancelcb'])
     @role_call(STAFF_LIST)

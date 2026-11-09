@@ -291,7 +291,6 @@ class MemberChangedTest(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.cog = make_cog()
-        self.cog.cache.categories = []
         self.member = mocks.MockMember(id=7, display_name='Seven')
 
     async def record(self, before):

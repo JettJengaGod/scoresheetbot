@@ -54,7 +54,6 @@ class Cache:
         self.scs = discord.utils.get(bot.bot.guilds, name=SCS)
         self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
         self.channels = self.channel_factory(self.scs)
-        self.categories = self.category_roles()
         self.roles = self.role_factory(self.scs)
         self.crews_by_name = await self.update_crews()
         self.crews = self.crews_by_name.keys()
@@ -71,6 +70,8 @@ class Cache:
         self.overflow_server = discord.utils.get(bot.bot.guilds, name=OVERFLOW_SERVER)
 
     def category_roles(self) -> List[discord.Role]:
+        """The main server's category roles as they are now. They are read from the server each time rather
+        than kept, since a kept list still holds a deleted role until the next refresh and adding it fails."""
         ret = []
         for role in self.scs.roles:
             if 'ㅤㅤㅤㅤㅤ' in role.name:
