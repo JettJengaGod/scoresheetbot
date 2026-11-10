@@ -1253,8 +1253,12 @@ FROM crews
                       and opp_crew.id = case
                                             when newest_battle.crew_id = battle.crew_2 then battle.crew_1
                                             else battle.crew_2 end) as last_battle on last_battle.cid = crews.id
-         left join (select count(distinct member_id) as member_count, crew_id
+         -- Members who left keep their crew, to get it back if they rejoin, but don't count towards its size,
+         -- the same as in crew_rosters, which the crew staff that hardcap leaves out are counted from.
+         left join (select count(distinct current_member_crews.member_id) as member_count, crew_id
                     from current_member_crews
+                             left join members as m on m.id = current_member_crews.member_id
+                    where m.in_server is not false
                     group by crew_id) as members on members.crew_id = crews.id
 where disbanded = false;"""
     conn = None
