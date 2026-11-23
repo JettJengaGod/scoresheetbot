@@ -34,7 +34,7 @@ TYPED = {
     'reg': (dict(crew_name='New Crew', size=5), (), dict(everything='New Crew 5')),
     'result': (dict(opponent=OPPONENT, your_characters='ness3 pika4', your_score=3, opponent_score=2,
                     opponent_characters='palu1'), (OPPONENT,), dict(everything='ness3 pika4 3 2 palu1')),
-    'freeze': (dict(crew='HK', length='2W'), (), dict(everything='HK 2W')),
+    'freeze': (dict(crew='HK', until='12/31'), (), dict(everything='HK 12/31')),
     'pair': (dict(crew1='HK', crew2='FSG'), (), dict(everything='HK FSG')),
     'addforfeit': (dict(winner='HK', loser='FSG', screenshot=SHOT), (),
                    dict(everything='HK FSG', attachments=[SHOT])),

@@ -1,5 +1,6 @@
 import dataclasses
 import os
+import re
 from datetime import date, timedelta
 from typing import List, Iterable, Set, Union, Optional, TYPE_CHECKING, TextIO, Tuple, Dict, Sequence, ValuesView
 
@@ -1301,6 +1302,37 @@ def parseTime(timestr: str) -> datetime.date:
     return current
 
 
+def parse_freeze_end(text: str) -> datetime.date:
+    """When a freeze given as `text` ends: a date (2026-12-31, 12/31/2026 or 12/31, the next 12/31 to come) or a
+    length from today (3D, 2W, 1M, as `parseTime` reads it). Raises ValueError for anything else, or a date that
+    isn't after today."""
+    today = datetime.now().date()
+    text = text.strip()
+    for fmt in ('%Y-%m-%d', '%m/%d/%Y', '%m/%d/%y'):
+        try:
+            end = datetime.strptime(text, fmt).date()
+            break
+        except ValueError:
+            pass
+    else:
+        if re.fullmatch(r'\d{1,2}/\d{1,2}', text):
+            month, day = (int(part) for part in text.split('/'))
+            try:
+                end = date(today.year, month, day)
+            except ValueError:
+                raise ValueError(f'{text} isn\'t a date.')
+            if end <= today:
+                end = date(today.year + 1, month, day)
+        else:
+            try:
+                return parseTime(text)
+            except ValueError:
+                raise ValueError(f'{text} needs to be a date (e.g. 2026-12-31 or 12/31) or a length (e.g. 3D, 2W or 1M).')
+    if end <= today:
+        raise ValueError(f'{end.strftime("%m/%d/%Y")} has already passed, the freeze has to end after today.')
+    return end
+
+
 def add_months(source_date, months):
     month = source_date.month - 1 + months
     year = source_date.year + month // 12
@@ -1315,7 +1347,7 @@ async def handle_unfreeze(bot: 'ScoreSheetBot'):
     unfrozen = auto_unfreeze()
     if unfrozen:
         for cr in unfrozen:
-            await bot.cache.channels.flair_log.send(f'{cr[0]} finished their registration freeze.')
+            await bot.cache.channels.flair_log.send(f'{cr[0]} finished their flairing freeze and can flair again.')
 
 
 def closest_command(command: str, bot: 'ScoreSheetBot'):
