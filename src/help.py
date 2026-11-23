@@ -166,9 +166,12 @@ help_doc = dict(
     opt=HelpDoc(Categories.staff, 'Opts a crew out of destiny or back in (requires confirm)', '', 'Crew'),
     tri=HelpDoc(Categories.staff, 'Places a crew in a triforce and division (requires confirm)', '',
                 'Optional<User/Crew>'),
-    freeze=HelpDoc(Categories.staff, 'Freezes a crews registration for a time',
-                   'If you pass in a time it will stop a crew from registering for that amount of time,'
-                   ' accepts xD or xW or xM for x days, weeks or months respectively', 'CREW Optional[length]'),
+    freeze=HelpDoc(Categories.staff, 'Flairing freezes a crew until a date, so it can\'t flair anyone',
+                   'Stops a crew\'s leaders and advisors flairing anyone until the freeze ends. Give the end as a date'
+                   ' (2026-12-31, 12/31/2026 or 12/31) or a length from today (xD, xW or xM for x days, weeks or'
+                   ' months). Leave it out to unfreeze a frozen crew, or to freeze one indefinitely. Run it on a'
+                   ' frozen crew with a new end to change when its freeze ends. Staff can still flair for a frozen'
+                   ' crew.', 'CREW Optional[end date or length]'),
     disband=HelpDoc(Categories.staff,
                     'Disbands a crew removing all crew related roles from all members (requires confirm)',
                     usage='CrewName or Tag'),

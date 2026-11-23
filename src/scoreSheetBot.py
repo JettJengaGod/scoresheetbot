@@ -1,6 +1,7 @@
 import inspect
 import logging
 import math
+import re
 from asyncio import sleep
 from typing import Callable
 
@@ -2020,9 +2021,9 @@ class ScoreSheetBot(commands.Cog):
                 return
         else:
             flairing_crew = crew_lookup(crew(ctx.author, self), self)
-        if flairing_crew.freeze and not new_crew:
+        if flairing_crew.freeze and not check_roles(ctx.author, STAFF_LIST):
             await response_message(ctx,
-                                   f'{flairing_crew.name} is recruitment frozen till '
+                                   f'{flairing_crew.name} is flairing frozen till '
                                    f'{flairing_crew.freeze} and can\'t flair people!')
             return
         if member.id == ctx.author.id and user_crew == flairing_crew.name:
@@ -3139,48 +3140,51 @@ class ScoreSheetBot(commands.Cog):
     @role_call([DOCS, MINION, ADMIN, VIOS])
     async def freeze(self, ctx: Context, *, everything: str):
         split = everything.split()
-        try:
-            parseTime(split[-1])
-            length = split[-1]
-            cr = ''.join(split[:-1])
-        except ValueError:
-            length = ''
-            cr = ''.join(split)
-
+        until = split[-1] if len(split) > 1 else ''
+        finish = None
+        if until:
+            try:
+                finish = parse_freeze_end(until)
+            except ValueError as error:
+                # A last word that is clearly a date or length but can't be used; anything else is part of the name.
+                if re.fullmatch(r'\d+[a-zA-Z]|\d[\d/-]*[/-][\d/-]*', until):
+                    await ctx.send(str(error))
+                    return
+        cr = ' '.join(split[:-1]) if finish else ' '.join(split)
         actual = crew_lookup(cr, self)
-        if actual.freeze:
-            if not length:
-                msg = await ctx.send(f'{actual.name} is already frozen till {actual.freeze}, really unfreeze them?')
-                if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                    await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
-                    return
-                freeze_crew(actual, None)
-                await ctx.send(f'{actual.name} unfrozen.')
-            else:
-                finish = parseTime(length)
-                msg = await ctx.send(f'{actual.name} is already frozen till {actual.freeze}'
-                                     f' do you want to change their end date to {finish}?')
-                if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                    await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
-                    return
-                freeze_crew(actual, finish)
-                await ctx.send(f'{actual.name} frozen till {finish}.')
+
+        async def confirm(question: str) -> bool:
+            msg = await ctx.send(question)
+            if await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
+                return True
+            await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
+            return False
+
+        if actual.freeze and not finish:
+            if not await confirm(f'{actual.name} is flairing frozen till {actual.freeze}, really unfreeze them?'):
+                return
+            freeze_crew(actual, None)
+            actual.freeze = ''
+            result = f'{actual.name} is no longer flairing frozen and can flair again.'
         else:
-            if length:
-                finish = parseTime(length)
-                msg = await ctx.send(f'Do you want to freeze {actual.name} till {finish}?')
-                if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                    await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
-                    return
-                freeze_crew(actual, finish)
-                await ctx.send(f'{actual.name} frozen till {finish}.')
+            if not finish:
+                question = f'Do you want to flairing freeze {actual.name} indefinitely?'
+                finish = datetime(2069, 4, 20).date()
+                result = f'{actual.name} is flairing frozen indefinitely.'
             else:
-                msg = await ctx.send(f'Do you want to freeze {actual.name} indefinitely?')
-                if not await wait_for_reaction_on_message(YES, NO, msg, ctx.author, self.bot):
-                    await answer_prompt(ctx, msg, f'{ctx.author.mention}: {ctx.command.name} canceled or timed out!')
-                    return
-                freeze_crew(actual, datetime(2069, 4, 20))
-                await ctx.send(f'{actual.name} frozen indefinitely.')
+                shown = finish.strftime('%m/%d/%Y')
+                if actual.freeze:
+                    question = (f'{actual.name} is already flairing frozen till {actual.freeze}, do you want to change '
+                                f'their end date to {shown}?')
+                else:
+                    question = f'Do you want to flairing freeze {actual.name} till {shown}?'
+                result = f'{actual.name} is flairing frozen till {shown}.'
+            if not await confirm(question):
+                return
+            freeze_crew(actual, finish)
+            actual.freeze = finish.strftime('%m/%d/%Y')
+        await ctx.send(result)
+        await self.cache.channels.flair_log.send(f'{result} ({ctx.author.mention})')
 
     @commands.command(**help_doc['disband'], hidden=True)
     @role_call(STAFF_LIST)

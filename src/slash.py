@@ -93,7 +93,7 @@ NO_SLASH = {
     # /misc
     'disablelist', 'result', 'thank', 'thankboard', 'vote',
     # /staff crew
-    'freeze', 'retag', 'tomain', 'opt', 'tri', 'pair', 'overflow', 'non_crew', 'crnumbers', 'flaircounts',
+    'retag', 'tomain', 'opt', 'tri', 'pair', 'overflow', 'non_crew', 'crnumbers', 'flaircounts',
     'cooldown',
     # /staff flair
     'flairing_on', 'flairing_off', 'categoryrole', 'savenicks',
@@ -111,7 +111,7 @@ DESCRIPTIONS = {
     'endlag': 'Ends the current match like end, but without needing one player to win.',
     'char': 'Shows the emoji for a character name; add a number for an alt, e.g. ness2.',
     'undo': 'Undoes the last match.',
-    'freeze': 'Stops a crew registering for a time (e.g. 3D, 2W, 1M), or unfreezes a frozen crew.',
+    'freeze': 'Flairing freezes a crew until a date or for a time, or unfreezes a frozen crew.',
     'multiflair': 'Flairs several members for your crew, or for a given crew if you are staff.',
     'multiunflair': 'Unflairs several members from your crew, or from any crew if you are staff.',
     'register': 'Flairs several members for a newly registered crew.',
@@ -171,7 +171,7 @@ OPTIONS = {
     'reason': 'Reason',
     'message': 'The message to send',
     'num': 'Number of slots',
-    'length': 'How long, e.g. 3D, 2W or 1M; leave blank to unfreeze',
+    'until': 'End date (2026-12-31 or 12/31) or length (3D, 2W, 1M); blank unfreezes or freezes for good',
     'channel': 'The channel',
     'command': 'Command name',
     'help.command': 'Section or command name; leave blank to list the sections',
@@ -411,8 +411,8 @@ class SlashCommands:
             await run(interaction, 'result', opponent,
                       everything=f'{your_characters} {your_score} {opponent_score} {opponent_characters}')
 
-        async def freeze(interaction, crew: str, length: Optional[str] = None):
-            await run(interaction, 'freeze', everything=f'{crew} {length}' if length else crew)
+        async def freeze(interaction, crew: str, until: Optional[str] = None):
+            await run(interaction, 'freeze', everything=f'{crew} {until}' if until else crew)
 
         async def pair(interaction, crew1: str, crew2: str):
             await run(interaction, 'pair', everything=f'{crew1} {crew2}')

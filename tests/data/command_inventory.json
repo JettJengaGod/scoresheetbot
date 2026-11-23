@@ -1024,7 +1024,22 @@
     "type": "str"
    }
   ],
-  "slash": null
+  "slash": {
+   "kind": "typed",
+   "options": [
+    {
+     "name": "crew",
+     "required": true,
+     "type": "str"
+    },
+    {
+     "name": "until",
+     "required": false,
+     "type": "str"
+    }
+   ],
+   "path": "staff crew freeze"
+  }
  },
  "gamb": {
   "aliases": [],
