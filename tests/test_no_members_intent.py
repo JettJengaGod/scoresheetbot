@@ -332,6 +332,16 @@ class CrewsFromDbTest(unittest.TestCase):
         self.assertEqual((1, ['other'], [4], [], []),
                          (fsg.member_count, fsg.leaders, fsg.leader_ids, fsg.advisors, fsg.crew_staff))
 
+    def test_names_are_current_nicknames_without_the_crew_tag(self):
+        cache = mocks.cache()
+        hk = Crew(name='Holy Knights', abbr='HK')
+        cache.crews_by_name = {hk.name: hk}
+        # crew_rosters gives each member's nickname as last recorded, which carries their crew's tag.
+        rows = [('Holy Knights', 1, 'HK | Meli_', [LEADER]), ('Holy Knights', 2, 'Bob', [ADVISOR])]
+        with unittest.mock.patch('src.no_members_intent.crew_rosters', return_value=rows):
+            no_members_intent.crews_from_db(cache)
+        self.assertEqual((['Meli\\_'], ['Bob']), (hk.leaders, hk.advisors))
+
 
 if __name__ == '__main__':
     unittest.main()

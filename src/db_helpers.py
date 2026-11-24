@@ -3456,7 +3456,8 @@ def db_role_members(role_id: int) -> List[int]:
 
 
 def name_from_id(mem_id: int) -> str:
-    get_name = """select discord_name
+    """The member's current nickname as last recorded, or their username if none is."""
+    get_name = """select coalesce(nickname, discord_name)
         from members
         where id = %s;
     """
@@ -4687,10 +4688,10 @@ where months > 0
 
 
 def crew_rosters() -> List[Tuple[str, int, str, List[str]]]:
-    """Every member of a crew that hasn't disbanded, as (crew name, member id, discord name, roles), where the
-    roles are whichever of Leader, Advisor and Crew Staff the member has. Members marked as having left the
-    server are left out."""
-    rosters = """select crews.name, members.id, members.discord_name,
+    """Every member of a crew that hasn't disbanded, as (crew name, member id, name, roles), where the name is
+    the member's current nickname as last recorded (their username if none is), and the roles are whichever of
+    Leader, Advisor and Crew Staff the member has. Members marked as having left the server are left out."""
+    rosters = """select crews.name, members.id, coalesce(members.nickname, members.discord_name),
        coalesce(array_agg(distinct roles.name) filter (where roles.name is not null), '{}')
 from current_member_crews
          join crews on crews.id = current_member_crews.crew_id
@@ -4699,7 +4700,7 @@ from current_member_crews
          left join roles on roles.id = current_member_roles.role_id and roles.name in (%s, %s, %s)
 where crews.disbanded = false
   and members.in_server is not false
-group by crews.name, members.id, members.discord_name;"""
+group by crews.name, members.id, members.nickname, members.discord_name;"""
     conn = None
     rows = []
     try:
@@ -4715,7 +4716,7 @@ group by crews.name, members.id, members.discord_name;"""
     finally:
         if conn is not None:
             conn.close()
-    return [(name, member_id, discord_name, list(roles)) for name, member_id, discord_name, roles in rows]
+    return [(crew_name, member_id, name, list(roles)) for crew_name, member_id, name, roles in rows]
 
 
 def member_sync_state(guild_id: int) -> Tuple[Dict[int, Tuple[str, Optional[bool]]], Set[Tuple[int, int]],

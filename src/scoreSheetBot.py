@@ -3445,11 +3445,11 @@ class ScoreSheetBot(commands.Cog):
             await ctx.send(f'{actual} is too large of a role, use `.listroles`.')
             return
         mems, extra = found
-        mems.sort(key=lambda x: str(x))
-        desc = ['\n'.join([f'{str(member)} {member.mention}' for member in mems])]
+        mems.sort(key=lambda x: x.display_name.lower())
+        desc = ['\n'.join([f'{escape(member.display_name)} {member.mention}' for member in mems])]
         if extra:
             desc.append('These members are flaired for the crew, but not in the server')
-            desc.extend(['\n'.join([f'{name_from_id(mem_id)}: {str(mem_id)}' for mem_id in extra])])
+            desc.extend(['\n'.join([f'{escape(name_from_id(mem_id))}: {str(mem_id)}' for mem_id in extra])])
         if actual in self.cache.crews_by_name:
             cr = crew_lookup(actual, self)
             title = f'All {len(mems)} members on crew {actual}'
@@ -3558,7 +3558,7 @@ class ScoreSheetBot(commands.Cog):
         if len(mems) > 100:
             await ctx.send(f'This is over 100 members, file outputs will be implemented soon.')
             return
-        out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([escape(str(mem)) for mem in mems])
+        out = f'Overlap between {best[0]} and {best[1]}:\n' + ', '.join([escape(mem.display_name) for mem in mems])
 
         await send_long(ctx, out, ',')
 
@@ -3579,7 +3579,7 @@ class ScoreSheetBot(commands.Cog):
         if len(mems) > 100:
             await ctx.send(f'This is over 100 members, file outputs will be implemented soon.')
             return
-        out = f'Members that have {best[0]} but not {best[1]}:\n' + ', '.join([escape(str(mem)) for mem in mems])
+        out = f'Members that have {best[0]} but not {best[1]}:\n' + ', '.join([escape(mem.display_name) for mem in mems])
 
         await send_long(ctx, out, ',')
 

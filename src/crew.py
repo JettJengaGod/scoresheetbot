@@ -119,7 +119,7 @@ class Crew:
             description[-1] = description[-1][:-2]
             description.append('\n')
         if self.freeze:
-            description.append(f'**Recruitment frozen till:** {self.freeze}\n')
+            description.append(f'**Flairing frozen till:** {self.freeze}\n')
         if self.verify:
             description.append('**Verify required for flairing**\n')
         if self.total_slots:

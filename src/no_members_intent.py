@@ -19,7 +19,7 @@ from constants import ADVISOR, CREW_STAFF, LEADER, MUTED
 from crew import Crew
 from db_helpers import crew_rosters, db_crew_members, db_crew_members_in_server, db_role_members, \
     update_member_status
-from helpers import Context, check_roles, crew
+from helpers import Context, check_roles, crew, escape, nick_without_prefix
 from slash import MEMBER_ID
 
 if TYPE_CHECKING:
@@ -153,6 +153,8 @@ def crews_from_db(cache: 'Cache') -> None:
         if cr is None:
             continue
         cr.member_count += 1
+        # Shown under the crew, so its tag in front of the nickname would only repeat it.
+        name = escape(nick_without_prefix(name))
         if LEADER in roles:
             cr.leaders.append(name)
             cr.leader_ids.append(member_id)
