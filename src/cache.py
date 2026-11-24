@@ -5,7 +5,7 @@ import discord
 from typing import Dict, Iterable, TYPE_CHECKING, Optional
 
 from . import no_members_intent
-from .helpers import strip_non_ascii
+from .helpers import escape, nick_without_prefix, strip_non_ascii
 
 if TYPE_CHECKING:
     from .scoreSheetBot import ScoreSheetBot
@@ -208,14 +208,15 @@ class Cache:
         for member in self.scs.members:
             crew = self._crew(member)
             if crew:
+                name = escape(nick_without_prefix(member.display_name))
                 for r2 in member.roles:
                     if r2.name == LEADER:
-                        self.crews_by_name[crew].leaders.append(str(member))
+                        self.crews_by_name[crew].leaders.append(name)
                         self.crews_by_name[crew].leader_ids.append(member.id)
                     if r2.name == ADVISOR:
-                        self.crews_by_name[crew].advisors.append(str(member))
+                        self.crews_by_name[crew].advisors.append(name)
                     if r2.name == CREW_STAFF:
-                        self.crews_by_name[crew].crew_staff.append(str(member))
+                        self.crews_by_name[crew].crew_staff.append(name)
         for role in self.scs.roles:
             if role.name in self.crews_by_name.keys():
                 self.crews_by_name[role.name].color = role.color

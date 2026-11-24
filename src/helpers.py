@@ -412,13 +412,12 @@ async def leader_unflaired(cr: Crew, member_id: int, bot: 'ScoreSheetBot'):
 
 
 def nick_without_prefix(nick: str) -> str:
+    """The nickname without a crew tag in front, `TAG | name` -> `name`."""
     if '|' in nick:
-        index = nick.rindex('|') + 1
-        while nick[index] == ' ':
-            index += 1
-        return nick[index:]
-    else:
-        return nick
+        name = nick[nick.rindex('|') + 1:].lstrip(' ')
+        if name:
+            return name
+    return nick
 
 
 def role_change(before: Set[discord.Role], after: Set[discord.Role], changer: discord.Member,
